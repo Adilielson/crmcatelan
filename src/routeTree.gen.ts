@@ -161,6 +161,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  NoShowAnalyticsRoute: typeof NoShowAnalyticsRoute
   AiTrainingRoute: typeof AiTrainingRoute
   PerformanceRoute: typeof PerformanceRoute
   AgendaRoute: typeof AgendaRoute
