@@ -9,7 +9,8 @@ import {
   LogOut,
   Columns,
   Target,
-  ShieldCheck
+  ShieldCheck,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
@@ -21,6 +22,7 @@ const AppLayout = () => {
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
     { label: 'Performance', icon: Target, href: '/performance' },
+    { label: 'Treinamento IA', icon: Brain, href: '/ai-training' },
     { label: 'Kanban', icon: Columns, href: '/kanban' },
     { label: 'Chat', icon: MessageSquare, href: '/chat' },
     { label: 'Agenda', icon: Calendar, href: '/agenda' },

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
@@ -19,6 +20,11 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as IndexRouteImport } from './routes/index'
 
+const AiTrainingRoute = AiTrainingRouteImport.update({
+  id: '/ai-training',
+  path: '/ai-training',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -67,6 +73,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
@@ -90,6 +98,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ai-training'
     | '/performance'
     | '/agenda'
     | '/chat'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ai-training'
     | '/performance'
     | '/agenda'
     | '/chat'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/ai-training'
     | '/performance'
     | '/agenda'
     | '/chat'
@@ -137,6 +149,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiTrainingRoute: typeof AiTrainingRoute
   PerformanceRoute: typeof PerformanceRoute
   AgendaRoute: typeof AgendaRoute
   ChatRoute: typeof ChatRoute
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-training': {
+      id: '/ai-training'
+      path: '/ai-training'
+      fullPath: '/ai-training'
+      preLoaderRoute: typeof AiTrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -217,6 +237,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiTrainingRoute: AiTrainingRoute,
   PerformanceRoute: PerformanceRoute,
   AgendaRoute: AgendaRoute,
   ChatRoute: ChatRoute,
