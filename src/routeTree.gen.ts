@@ -218,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-training': {
+      id: '/ai-training'
+      path: '/ai-training'
+      fullPath: '/ai-training'
+      preLoaderRoute: typeof AiTrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
