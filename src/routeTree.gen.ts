@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SaasRouteImport } from './routes/saas'
+import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AgendaRouteImport } from './routes/agenda'
@@ -24,6 +26,16 @@ const UsersRoute = UsersRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SaasRoute = SaasRouteImport.update({
+  id: '/saas',
+  path: '/saas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketingRoute = MarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KanbanRoute = KanbanRouteImport.update({
@@ -52,6 +64,8 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
+  '/marketing': typeof MarketingRoute
+  '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
 }
@@ -60,6 +74,8 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
+  '/marketing': typeof MarketingRoute
+  '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
 }
@@ -69,20 +85,40 @@ export interface FileRoutesById {
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
+  '/marketing': typeof MarketingRoute
+  '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agenda' | '/chat' | '/kanban' | '/settings' | '/users'
+  fullPaths:
+    | '/'
+    | '/agenda'
+    | '/chat'
+    | '/kanban'
+    | '/marketing'
+    | '/saas'
+    | '/settings'
+    | '/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agenda' | '/chat' | '/kanban' | '/settings' | '/users'
+  to:
+    | '/'
+    | '/agenda'
+    | '/chat'
+    | '/kanban'
+    | '/marketing'
+    | '/saas'
+    | '/settings'
+    | '/users'
   id:
     | '__root__'
     | '/'
     | '/agenda'
     | '/chat'
     | '/kanban'
+    | '/marketing'
+    | '/saas'
     | '/settings'
     | '/users'
   fileRoutesById: FileRoutesById
@@ -92,6 +128,8 @@ export interface RootRouteChildren {
   AgendaRoute: typeof AgendaRoute
   ChatRoute: typeof ChatRoute
   KanbanRoute: typeof KanbanRoute
+  MarketingRoute: typeof MarketingRoute
+  SaasRoute: typeof SaasRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
 }
@@ -110,6 +148,20 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saas': {
+      id: '/saas'
+      path: '/saas'
+      fullPath: '/saas'
+      preLoaderRoute: typeof SaasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketing': {
+      id: '/marketing'
+      path: '/marketing'
+      fullPath: '/marketing'
+      preLoaderRoute: typeof MarketingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kanban': {
@@ -148,9 +200,21 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaRoute: AgendaRoute,
   ChatRoute: ChatRoute,
   KanbanRoute: KanbanRoute,
+  MarketingRoute: MarketingRoute,
+  SaasRoute: SaasRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

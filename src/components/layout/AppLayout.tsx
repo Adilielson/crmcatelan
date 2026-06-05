@@ -7,7 +7,9 @@ import {
   Calendar, 
   Settings, 
   LogOut,
-  Columns
+  Columns,
+  Target,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
@@ -21,15 +23,20 @@ const AppLayout = () => {
     { label: 'Kanban', icon: Columns, href: '/kanban' },
     { label: 'Chat', icon: MessageSquare, href: '/chat' },
     { label: 'Agenda', icon: Calendar, href: '/agenda' },
+    { label: 'Marketing', icon: Target, href: '/marketing' },
     { label: 'Usuários', icon: Users, href: '/users' },
     { label: 'Configurações', icon: Settings, href: '/settings' },
   ];
+
+  // Menu especial para Super Admin
+  if (user?.role === 'super_admin') {
+    menuItems.push({ label: 'Admin SaaS', icon: ShieldCheck, href: '/saas' });
+  }
 
   if (!user) return <Outlet />;
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
       <aside className="w-64 bg-white border-r flex flex-col">
         <div className="p-6 border-b">
           <h1 className="text-xl font-bold text-primary">Castelar CRM</h1>
@@ -75,11 +82,10 @@ const AppLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <header className="h-16 bg-white border-b flex items-center px-8 sticky top-0 z-10">
           <h2 className="text-lg font-semibold">
-            {menuItems.find(i => i.href === location.pathname)?.label || 'Bem-vindo'}
+            {menuItems.find(i => i.href === location.pathname)?.label || 'Painel'}
           </h2>
         </header>
         <div className="p-8">
