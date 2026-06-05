@@ -21,7 +21,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     id: 'tenant-1',
     name: 'Ótica Castelar Matriz',
     slug: 'castelar-matriz',
-    created_at: new Date().toISOString()
+    status: 'active',
+    plan: 'pro',
+    settings: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   setUser: (user: User | null) => set({ user }),
   setTenant: (tenant: Tenant | null) => set({ tenant }),
