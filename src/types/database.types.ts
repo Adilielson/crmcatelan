@@ -5,6 +5,14 @@ export type ConversationStatus = 'open' | 'waiting_seller' | 'finished' | 'autom
 export type MessageDirection = 'inbound' | 'outbound';
 export type MarketingPlatform = 'facebook_ads' | 'google_ads' | 'tiktok_ads';
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  tenant_id: string;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -107,3 +115,4 @@ export interface MarketingIntegration {
   created_at: string;
   updated_at: string;
 }
+
