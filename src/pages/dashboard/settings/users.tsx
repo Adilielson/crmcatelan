@@ -59,7 +59,7 @@ const UserManagement = () => {
     addUser({
       ...newUser,
       status: 'pending',
-      units: newUser.role === 'admin' ? ['Todas as Unidades'] : ['Unidade Sul'] // Mock logic
+      units: (newUser.role as string) === 'admin' ? ['Todas as Unidades'] : ['Unidade Sul'] // Mock logic
     });
     setNewUser({ full_name: '', email: '', role: 'seller', units: [] });
     setIsInviteModalOpen(false);
