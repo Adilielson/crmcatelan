@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Search, Filter, MoreHorizontal, Shield, Building2, Clock } from 'lucide-react';
+import { UserPlus, Search, Filter, MoreHorizontal, Shield, Building2, Clock, Mail, Phone, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,40 +19,51 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useUserStore } from '@/store/useUserStore';
 
 const UserManagement = () => {
+  const { users, addUser, updateUser, deleteUser } = useUserStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    full_name: '',
+    email: '',
+    role: 'seller' as const,
+    units: [] as string[]
+  });
 
-  // Mock data based on schema
-  const users = [
-    {
-      id: '1',
-      full_name: 'Admin Principal',
-      email: 'admin@castelar.com',
-      role: 'admin',
-      status: 'active',
-      units: ['Unidade Matriz'],
-      last_login: '2024-06-05T10:00:00Z',
-    },
-    {
-      id: '2',
-      full_name: 'Gerente Comercial',
-      email: 'gerente@castelar.com',
-      role: 'manager',
-      status: 'active',
-      units: ['Unidade Sul', 'Unidade Norte'],
-      last_login: '2024-06-04T15:30:00Z',
-    },
-    {
-      id: '3',
-      full_name: 'Vendedor 01',
-      email: 'vendedor@castelar.com',
-      role: 'seller',
+  const filteredUsers = users.filter(user => 
+    user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleInviteUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    addUser({
+      ...newUser,
       status: 'pending',
-      units: ['Unidade Sul'],
-      last_login: null,
-    }
-  ];
+      units: newUser.role === 'admin' ? ['Todas as Unidades'] : ['Unidade Sul'] // Mock logic
+    });
+    setNewUser({ full_name: '', email: '', role: 'seller', units: [] });
+    setIsInviteModalOpen(false);
+  };
 
   const getRoleBadge = (role: string) => {
     const roles: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -70,7 +81,9 @@ const UserManagement = () => {
       pending: 'secondary',
       inactive: 'destructive',
     };
-    return <Badge variant={variants[status] || 'outline'}>{status === 'active' ? 'Ativo' : status === 'pending' ? 'Pendente' : 'Inativo'}</Badge>;
+    return <Badge variant={variants[status] || 'outline'}>
+      {status === 'active' ? 'Ativo' : status === 'pending' ? 'Pendente' : 'Inativo'}
+    </Badge>;
   };
 
   return (
@@ -80,10 +93,67 @@ const UserManagement = () => {
           <h1 className="text-2xl font-bold tracking-tight">Gestão de Usuários</h1>
           <p className="text-muted-foreground">Gerencie acessos, permissões e horários da sua equipe.</p>
         </div>
-        <Button className="bg-[#e0c200] hover:bg-[#c7a700] text-black font-semibold">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Convidar Novo Usuário
-        </Button>
+        
+        <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#e0c200] hover:bg-[#c7a700] text-black font-semibold">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Convidar Novo Usuário
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <form onSubmit={handleInviteUser}>
+              <DialogHeader>
+                <DialogTitle>Convidar Novo Usuário</DialogTitle>
+                <DialogDescription>
+                  Insira os detalhes do novo colaborador. Um convite será preparado com status pendente.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">Nome</Label>
+                  <Input 
+                    id="name" 
+                    className="col-span-3" 
+                    required 
+                    value={newUser.full_name}
+                    onChange={(e) => setNewUser({...newUser, full_name: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">E-mail</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    className="col-span-3" 
+                    required 
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="role" className="text-right">Perfil</Label>
+                  <Select 
+                    value={newUser.role} 
+                    onValueChange={(v: any) => setNewUser({...newUser, role: v})}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Selecione o perfil" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="manager">Gerente de Unidade</SelectItem>
+                      <SelectItem value="seller">Atendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" className="bg-[#e0c200] hover:bg-[#c7a700] text-black">Convidar</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex items-center gap-4 bg-white p-4 rounded-lg border shadow-sm">
@@ -110,12 +180,11 @@ const UserManagement = () => {
               <TableHead>Perfil</TableHead>
               <TableHead>Unidade(s)</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Último Acesso</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex flex-col">
@@ -132,9 +201,6 @@ const UserManagement = () => {
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(user.status)}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {user.last_login ? new Date(user.last_login).toLocaleDateString('pt-BR') : 'Nunca'}
-                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -145,18 +211,33 @@ const UserManagement = () => {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Ações</DropdownMenuLabel>
                       <DropdownMenuItem className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" /> Editar Permissões
+                        <Shield className="mr-2 h-4 w-4" /> Permissões
                       </DropdownMenuItem>
                       <DropdownMenuItem className="cursor-pointer">
-                        <Building2 className="mr-2 h-4 w-4" /> Vincular Unidades
+                        <Building2 className="mr-2 h-4 w-4" /> Unidades
                       </DropdownMenuItem>
                       <DropdownMenuItem className="cursor-pointer">
-                        <Clock className="mr-2 h-4 w-4" /> Horário de Atendimento
+                        <Clock className="mr-2 h-4 w-4" /> Horários
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Lock className="mr-2 h-4 w-4" /> Resetar Senha
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive cursor-pointer">
-                        Inativar Usuário
-                      </DropdownMenuItem>
+                      {user.status !== 'inactive' ? (
+                        <DropdownMenuItem 
+                          className="text-destructive cursor-pointer"
+                          onClick={() => updateUser(user.id, { status: 'inactive' })}
+                        >
+                          Inativar Usuário
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem 
+                          className="text-green-600 cursor-pointer"
+                          onClick={() => updateUser(user.id, { status: 'active' })}
+                        >
+                          Reativar Usuário
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -170,3 +251,4 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
+
