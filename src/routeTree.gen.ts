@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
