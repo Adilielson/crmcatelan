@@ -16,6 +16,7 @@ import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AgendaRouteImport } from './routes/agenda'
+import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as IndexRouteImport } from './routes/index'
 
 const UsersRoute = UsersRouteImport.update({
@@ -53,6 +54,11 @@ const AgendaRoute = AgendaRouteImport.update({
   path: '/agenda',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PerformanceRoute = PerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -61,6 +67,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/performance'
     | '/agenda'
     | '/chat'
     | '/kanban'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/performance'
     | '/agenda'
     | '/chat'
     | '/kanban'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/performance'
     | '/agenda'
     | '/chat'
     | '/kanban'
@@ -125,6 +137,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PerformanceRoute: typeof PerformanceRoute
   AgendaRoute: typeof AgendaRoute
   ChatRoute: typeof ChatRoute
   KanbanRoute: typeof KanbanRoute
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgendaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/performance': {
+      id: '/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof PerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -197,6 +217,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PerformanceRoute: PerformanceRoute,
   AgendaRoute: AgendaRoute,
   ChatRoute: ChatRoute,
   KanbanRoute: KanbanRoute,
