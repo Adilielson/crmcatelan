@@ -85,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
   '/chat': typeof ChatRoute
