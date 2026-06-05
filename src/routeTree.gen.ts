@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as NoShowAnalyticsRouteImport } from './routes/analytics/no-show'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -20,6 +21,11 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as IndexRouteImport } from './routes/index'
 
+const NoShowAnalyticsRoute = NoShowAnalyticsRouteImport.update({
+  id: '/analytics/no-show',
+  path: '/analytics/no-show',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiTrainingRoute = AiTrainingRouteImport.update({
   id: '/ai-training',
   path: '/ai-training',
@@ -73,6 +79,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics/no-show': typeof NoShowAnalyticsRoute
   '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics/no-show': typeof NoShowAnalyticsRoute
   '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analytics/no-show': typeof NoShowAnalyticsRoute
   '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/analytics/no-show'
     | '/ai-training'
     | '/performance'
     | '/agenda'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/analytics/no-show'
     | '/ai-training'
     | '/performance'
     | '/agenda'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/analytics/no-show'
     | '/ai-training'
     | '/performance'
     | '/agenda'
@@ -149,6 +161,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  NoShowAnalyticsRoute: typeof NoShowAnalyticsRoute
   AiTrainingRoute: typeof AiTrainingRoute
   PerformanceRoute: typeof PerformanceRoute
   AgendaRoute: typeof AgendaRoute
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analytics/no-show': {
+      id: '/analytics/no-show'
+      path: '/analytics/no-show'
+      fullPath: '/analytics/no-show'
+      preLoaderRoute: typeof NoShowAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-training': {
       id: '/ai-training'
       path: '/ai-training'
@@ -237,6 +257,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  NoShowAnalyticsRoute: NoShowAnalyticsRoute,
   AiTrainingRoute: AiTrainingRoute,
   PerformanceRoute: PerformanceRoute,
   AgendaRoute: AgendaRoute,
