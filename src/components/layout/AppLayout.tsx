@@ -20,6 +20,7 @@ const AppLayout = () => {
 
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+    { label: 'Performance', icon: Target, href: '/performance' },
     { label: 'Kanban', icon: Columns, href: '/kanban' },
     { label: 'Chat', icon: MessageSquare, href: '/chat' },
     { label: 'Agenda', icon: Calendar, href: '/agenda' },
