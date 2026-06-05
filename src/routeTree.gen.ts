@@ -237,6 +237,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiTrainingRoute: AiTrainingRoute,
   PerformanceRoute: PerformanceRoute,
   AgendaRoute: AgendaRoute,
   ChatRoute: ChatRoute,
