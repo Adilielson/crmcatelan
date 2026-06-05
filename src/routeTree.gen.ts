@@ -231,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analytics/no-show': {
+      id: '/analytics/no-show'
+      path: '/analytics/no-show'
+      fullPath: '/analytics/no-show'
+      preLoaderRoute: typeof NoShowAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-training': {
       id: '/ai-training'
       path: '/ai-training'
