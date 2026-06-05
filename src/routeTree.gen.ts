@@ -112,6 +112,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ai-training'
     | '/performance'
     | '/agenda'
     | '/chat'
