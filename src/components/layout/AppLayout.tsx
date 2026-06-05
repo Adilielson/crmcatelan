@@ -7,7 +7,7 @@ import {
   Calendar, 
   Settings, 
   LogOut,
-  Trello
+  Columns
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
@@ -18,7 +18,7 @@ const AppLayout = () => {
 
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
-    { label: 'Kanban', icon: Trello, href: '/kanban' },
+    { label: 'Kanban', icon: Columns, href: '/kanban' },
     { label: 'Chat', icon: MessageSquare, href: '/chat' },
     { label: 'Agenda', icon: Calendar, href: '/agenda' },
     { label: 'Usuários', icon: Users, href: '/users' },
