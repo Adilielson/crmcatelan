@@ -1,3 +1,5 @@
+import { Tenant } from './database.types';
+
 export interface MarketingSource {
   id: string;
   name: string;
