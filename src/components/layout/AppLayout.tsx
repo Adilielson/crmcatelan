@@ -22,6 +22,7 @@ const AppLayout = () => {
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
     { label: 'Performance', icon: Target, href: '/performance' },
+    { label: 'Métricas No-Show', icon: TrendingDown, href: '/analytics/no-show' },
     { label: 'Treinamento IA', icon: Brain, href: '/ai-training' },
     { label: 'Kanban', icon: Columns, href: '/kanban' },
     { label: 'Chat', icon: MessageSquare, href: '/chat' },
