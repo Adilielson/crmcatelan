@@ -147,6 +147,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/analytics/no-show'
     | '/ai-training'
     | '/performance'
     | '/agenda'
