@@ -149,6 +149,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiTrainingRoute: typeof AiTrainingRoute
   PerformanceRoute: typeof PerformanceRoute
   AgendaRoute: typeof AgendaRoute
   ChatRoute: typeof ChatRoute
