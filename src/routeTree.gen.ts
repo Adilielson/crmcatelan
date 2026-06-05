@@ -124,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ai-training'
     | '/performance'
     | '/agenda'
     | '/chat'
