@@ -10,7 +10,8 @@ import {
   Columns,
   Target,
   ShieldCheck,
-  Brain
+  Brain,
+  TrendingDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
