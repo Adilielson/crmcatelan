@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
+import { NotificationCenter } from './NotificationCenter';
 
 const AppLayout = () => {
   const { user, tenant, logout } = useAuthStore();
@@ -92,6 +93,9 @@ const AppLayout = () => {
           <h2 className="text-lg font-semibold">
             {menuItems.find(i => i.href === location.pathname)?.label || 'Painel'}
           </h2>
+          <div className="ml-auto">
+            <NotificationCenter />
+          </div>
         </header>
         <div className="p-8">
           <Outlet />
