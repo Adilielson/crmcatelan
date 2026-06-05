@@ -79,6 +79,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics/no-show': typeof NoShowAnalyticsRoute
   '/ai-training': typeof AiTrainingRoute
   '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
