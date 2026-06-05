@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     slug: 'castelar-matriz',
     created_at: new Date().toISOString()
   },
-  setUser: (user) => set({ user }),
-  setTenant: (tenant) => set({ tenant }),
+  setUser: (user: User | null) => set({ user }),
+  setTenant: (tenant: Tenant | null) => set({ tenant }),
   logout: () => set({ user: null, tenant: null }),
 }));
