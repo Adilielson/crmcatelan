@@ -266,8 +266,82 @@ function SaaSAdmin() {
             </CardContent>
           </Card>
         </TabsContent>
-        {/* Outras abas mantidas como mock por enquanto conforme ETAPA 2 anterior */}
-      </Tabs>
+
+        <TabsContent value="plans" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <PlanCard 
+              name="Basic" 
+              price="R$ 199/mês" 
+              limits={{ users: 2, leads: 100, ia: '20k tokens' }}
+              features={['Agenda', 'Kanban Básico']}
+              activeCount={12}
+            />
+            <PlanCard 
+              name="Pro" 
+              price="R$ 499/mês" 
+              limits={{ users: 10, leads: 1000, ia: '100k tokens' }}
+              features={['Marketing', 'IA SDR Full', 'Kanban Avançado']}
+              activeCount={8}
+              highlight
+            />
+            <PlanCard 
+              name="Enterprise" 
+              price="R$ 1.200/mês" 
+              limits={{ users: 50, leads: 10000, ia: '500k tokens' }}
+              features={['Relatórios Custom', 'Suporte VIP', 'API Access']}
+              activeCount={4}
+            />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações Globais do Sistema</CardTitle>
+              <CardDescription>Parâmetros que afetam todas as instâncias do CRM.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/20">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-primary" />
+                    <span className="font-semibold">Modo de Manutenção</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Bloqueia o acesso de todos os clientes para atualizações de emergência.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Desativado</Badge>
+                  <Button variant="outline" size="sm">Ativar</Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Modelo Global de IA</Label>
+                  <Select defaultValue="gpt-4o">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gpt-4o">GPT-4o (Recomendado)</SelectItem>
+                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Multiplicador de Preço (Tokens)</Label>
+                  <div className="flex gap-2">
+                    <Input type="number" defaultValue="2.5" step="0.1" />
+                    <Button variant="outline" size="icon">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Define a margem de lucro sobre o custo bruto da OpenAI.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
     </div>
   )
 }
