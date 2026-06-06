@@ -300,7 +300,7 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
           </CardHeader>
           <CardContent>
             <div className="space-y-5">
-              {creativePerformance.map((item, i) => (
+              {creativePerformance.map((item: any, i: number) => (
                 <div key={i} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div>
