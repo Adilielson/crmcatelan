@@ -341,10 +341,11 @@ function SaaSAdmin() {
             </CardContent>
           </Card>
         </TabsContent>
-
+      </Tabs>
     </div>
   )
 }
+
 
 function TenantRow({ tenant }: { tenant: any }) {
   const isIAOverLimit = tenant.ia_used >= tenant.ia_quota
