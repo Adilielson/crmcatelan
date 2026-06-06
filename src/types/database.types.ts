@@ -69,6 +69,15 @@ export interface Lead {
   ia_urgency?: string;
   ia_profile?: string;
   ia_disqualified_reason?: string;
+  // Campos de Marketing/Ads
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  ad_id?: string;
+  conversion_event?: 'lead' | 'agendamento' | 'consulta_realizada';
+  conversion_value?: number;
+  attribution_date?: string;
+  external_id?: string; // Para desduplicação Pixel/API
   created_at: string;
   updated_at: string;
 }
@@ -107,11 +116,17 @@ export interface AIConfig {
 export interface MarketingIntegration {
   id: string;
   tenant_id: string;
-  platform: MarketingPlatform;
+  platform: 'facebook_ads' | 'google_ads' | 'tiktok_ads';
+  integration_type: 'pixel_browser' | 'conversions_api' | 'both';
   pixel_id?: string;
-  api_token?: string;
-  event_mapping: Record<string, any>;
-  status: string;
+  api_token?: string; // Secret
+  status: 'active' | 'inactive' | 'error';
+  event_mapping: Record<string, string>; // CRM Status -> Platform Event
+  test_mode: boolean;
+  test_id?: string;
+  default_conversion_value?: number;
+  domain_verification_code?: string;
+  last_event_sent_at?: string;
   created_at: string;
   updated_at: string;
 }
