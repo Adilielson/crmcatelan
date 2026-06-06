@@ -19,6 +19,12 @@ export interface Database {
           whatsapp_api_token: string | null
           plan: string
           settings: Json
+          contato_responsavel: string | null
+          limite_usuarios: number | null
+          ia_token_quota: number | null
+          ia_token_used: number | null
+          storage_used_bytes: number | null
+          storage_limit_bytes: number | null
           created_at: string
           updated_at: string
         }
@@ -31,6 +37,12 @@ export interface Database {
           whatsapp_api_token?: string | null
           plan?: string
           settings?: Json
+          contato_responsavel?: string | null
+          limite_usuarios?: number | null
+          ia_token_quota?: number | null
+          ia_token_used?: number | null
+          storage_used_bytes?: number | null
+          storage_limit_bytes?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -43,6 +55,12 @@ export interface Database {
           whatsapp_api_token?: string | null
           plan?: string
           settings?: Json
+          contato_responsavel?: string | null
+          limite_usuarios?: number | null
+          ia_token_quota?: number | null
+          ia_token_used?: number | null
+          storage_used_bytes?: number | null
+          storage_limit_bytes?: number | null
           created_at?: string
           updated_at?: string
         }
