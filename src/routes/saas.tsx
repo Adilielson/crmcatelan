@@ -350,7 +350,44 @@ function SaaSAdmin() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="security" className="space-y-4 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações Globais & Auditoria</CardTitle>
+              <CardDescription>Segurança e parâmetros do ecossistema.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/20">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-primary" />
+                    <span className="font-semibold">Modo de Manutenção</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Bloqueia o acesso de todos os clientes.</p>
+                </div>
+                <Button variant="outline" size="sm">Ativar</Button>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Logs de Auditoria Recentes</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <History className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-semibold">Admin Root</p>
+                        <p className="text-xs text-muted-foreground">Ação: Quota Increase | Alvo: Ótica Castelar</p>
+                      </div>
+                    </div>
+                    <p className="text-xs font-medium">Hoje, 14:20</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
     </div>
   )
 }
