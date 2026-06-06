@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 
 import { useKanban, Lead } from '@/hooks/use-kanban'
+import { useAgenda } from '@/hooks/use-agenda'
 import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -35,6 +36,7 @@ const InstagramIcon = ({ className }: { className?: string }) => (
 
 export function KanbanBoard() {
   const { pipelines, currentPipelineId, setCurrentPipeline, leads, moveLead, updateLead } = useKanban()
+  const { addAppointment } = useAgenda()
   const { addNotification } = useNotificationStore()
   const currentPipeline = pipelines.find(p => p.id === currentPipelineId) || pipelines[0]
 
@@ -68,11 +70,38 @@ export function KanbanBoard() {
 
   const confirmSchedule = () => {
     if (selectedLead && scheduleData.date && scheduleData.time) {
-      moveLead(selectedLead.id, 'Agendado')
-      updateLead(selectedLead.id, { scheduledAt: `${scheduleData.date}T${scheduleData.time}` })
-      setModalType(null)
-      setSelectedLead(null)
-      toast.success('Agendamento realizado com sucesso!')
+      // Calcular horário de fim (padrão 1h)
+      const [hours, minutes] = scheduleData.time.split(':')
+      const endHours = (parseInt(hours) + 1).toString().padStart(2, '0')
+      const endTime = `${endHours}:${minutes}`
+
+      const success = addAppointment({
+        leadId: selectedLead.id,
+        leadName: selectedLead.name,
+        date: scheduleData.date,
+        startTime: scheduleData.time,
+        endTime: endTime,
+        status: 'pendente',
+        examType: 'Consulta Oftalmológica',
+        reminderSent: false,
+        professionalId: 'dr-claudio',
+        unit: 'Loja Centro',
+        origin: 'manual',
+        value: 150,
+        propensityScore: 0.85,
+        notificationChannel: 'whatsapp',
+        rescheduleCount: 0,
+        needsTransport: false
+      })
+
+      if (success) {
+        setModalType(null)
+        setSelectedLead(null)
+        toast.success('Agendamento realizado e lead movido!')
+        console.log('API WhatsApp: Disparando template para', selectedLead.name)
+      } else {
+        toast.error('Conflito de horário na Agenda Mestre!')
+      }
     }
   }
 
