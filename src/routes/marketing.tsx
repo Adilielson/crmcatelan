@@ -142,7 +142,7 @@ function IntegrationsView() {
           </div>
 
             <div className="space-y-4 pt-4 border-t">
-            <h4 className="text-xs font-bold text-slate-700">Mapeamento de Eventos (CRM &rarr; Ads)</h4>
+            <h4 className="text-xs font-bold text-slate-700">Mapeamento de Eventos (CRM {"\u2192"} Ads)</h4>
             <div className="space-y-3">
               {[
                 { label: 'Lead Gerado', crmStatus: 'Novo Lead', defaultEvent: 'Lead' },
