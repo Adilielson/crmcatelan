@@ -155,8 +155,8 @@ function SaaSAdmin() {
     const limit = parseInt(formData.get('limit') as string)
 
     try {
-      const { error } = await supabase
-        .from('tenants')
+      const { error } = await (supabase
+        .from('tenants') as any)
         .insert({
           name,
           cnpj,
@@ -164,8 +164,9 @@ function SaaSAdmin() {
           plan,
           limite_usuarios: limit,
           status: 'trial',
-          slug: name.toLowerCase().replace(/ /g, '-') // Temporary slug generation
-        } as any)
+          slug: name.toLowerCase().replace(/ /g, '-')
+        })
+
 
 
       if (error) {
@@ -521,10 +522,11 @@ function TenantRow({ tenant, onUpdate }: { tenant: any, onUpdate: () => void }) 
 
   const handleToggleStatus = async (newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({ status: newStatus } as any)
+      const { error } = await (supabase
+        .from('tenants') as any)
+        .update({ status: newStatus })
         .eq('id', tenant.id)
+
 
 
       if (error) throw error
