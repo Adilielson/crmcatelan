@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useNotificationStore } from '@/store/useNotificationStore'
+
 
 // Manual Instagram icon to avoid import issues
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -31,7 +33,9 @@ const InstagramIcon = ({ className }: { className?: string }) => (
 
 export function KanbanBoard() {
   const { pipelines, currentPipelineId, setCurrentPipeline, leads, moveLead, updateLead } = useKanban()
+  const { addNotification } = useNotificationStore()
   const currentPipeline = pipelines.find(p => p.id === currentPipelineId) || pipelines[0]
+
   
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [modalType, setModalType] = useState<'schedule' | 'loss' | null>(null)
@@ -51,8 +55,14 @@ export function KanbanBoard() {
     } else {
       moveLead(leadId, newStatus)
       toast.success(`Lead movido para ${newStatus}`)
+      addNotification({
+        title: 'Movimentação de Lead',
+        message: `${lead.name} foi movido para ${newStatus}.`,
+        category: 'lead_alert'
+      })
     }
   }
+
 
   const confirmSchedule = () => {
     if (selectedLead && scheduleData.date && scheduleData.time) {
