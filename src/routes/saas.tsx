@@ -92,7 +92,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
-export const Route = createFileRoute('/saas')({
+export const Route = createFileRoute('/saas' as any)({
   component: SaaSAdmin,
 })
 

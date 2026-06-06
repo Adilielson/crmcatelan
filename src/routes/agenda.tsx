@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-export const Route = createFileRoute('/agenda')({
+export const Route = createFileRoute('/agenda' as any)({
   component: Agenda,
 })
 

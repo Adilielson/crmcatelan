@@ -49,7 +49,7 @@ import { useChatStore } from '@/hooks/use-chat'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/' as any)({
   component: Dashboard,
 })
 
