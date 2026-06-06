@@ -32,16 +32,23 @@ const creativePerformance = [
 
 function MarketingPartnerDashboard() {
   const [selectedLoja, setSelectedLoja] = useState('Loja Centro')
+  const [activeMainTab, setActiveMainTab] = useState('performance')
 
   return (
     <div className="space-y-6">
       {/* Header com Filtros Globais */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Performance de Campanhas</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Painel de Marketing</h1>
           <p className="text-slate-500 text-sm">Dashboard de Parceiro - Agência Performance</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mr-4">
+            <TabsList className="bg-slate-100">
+              <TabsTrigger value="performance" className="text-xs font-bold">Performance</TabsTrigger>
+              <TabsTrigger value="integrations" className="text-xs font-bold">Integrações & Pixel</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border">
             <Filter className="w-4 h-4 text-slate-400" />
             <select 
@@ -53,11 +60,167 @@ function MarketingPartnerDashboard() {
               <option>Loja Sul</option>
             </select>
           </div>
-          <Button variant="outline" size="sm" className="font-bold">Exportar PDF</Button>
-          <Button size="sm" className="font-bold bg-primary hover:bg-primary/90">Sync Pixel</Button>
         </div>
       </div>
 
+      {activeMainTab === 'performance' ? (
+        <PerformanceView performanceData={performanceData} creativePerformance={creativePerformance} />
+      ) : (
+        <IntegrationsView />
+      )}
+    </div>
+  )
+}
+
+function IntegrationsView() {
+  const [platform, setPlatform] = useState<'facebook_ads' | 'google_ads' | 'tiktok_ads'>('facebook_ads')
+  const [isTesting, setIsTesting] = useState(false)
+  const [showToken, setShowToken] = useState(false)
+
+  const handleTestConnection = () => {
+    setIsTesting(true)
+    setTimeout(() => {
+      setIsTesting(false)
+      alert("Disparo de teste realizado com sucesso! Evento 'Lead' recebido pela plataforma.")
+    }, 2000)
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Card className="lg:col-span-2 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold">Configurar Integração Ads</CardTitle>
+          <CardDescription>Configure o Pixel e a API de Conversão para rastreamento de ROAS</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase">Plataforma</label>
+              <select 
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value as any)}
+              >
+                <option value="facebook_ads">Facebook / Meta Ads</option>
+                <option value="google_ads">Google Ads</option>
+                <option value="tiktok_ads">TikTok Ads</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase">Tipo de Integração</label>
+              <select className="w-full border rounded-lg px-3 py-2 text-sm">
+                <option>API de Conversão (Recomendado)</option>
+                <option>Pixel Browser</option>
+                <option>Ambos (Desduplicação Ativa)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase">ID do Pixel / Conta de Anúncios</label>
+              <input type="text" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Ex: 123456789012345" />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase">Token de Acesso (API de Conversão)</label>
+              <div className="relative">
+                <input 
+                  type={showToken ? "text" : "password"} 
+                  className="w-full border rounded-lg px-3 py-2 text-sm pr-20" 
+                  placeholder="EAA..." 
+                />
+                <button 
+                  onClick={() => setShowToken(!showToken)}
+                  className="absolute right-2 top-1.5 text-[10px] font-bold text-primary hover:underline bg-white px-2"
+                >
+                  {showToken ? "Ocultar" : "Revelar"}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400">O token é armazenado de forma criptografada e nunca é exibido em texto plano após salvo.</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t">
+            <h4 className="text-xs font-bold text-slate-700">Mapeamento de Eventos (CRM -> Ads)</h4>
+            <div className="space-y-3">
+              {[
+                { label: 'Lead Gerado', crmStatus: 'Novo Lead', defaultEvent: 'Lead' },
+                { label: 'Agendamento Confirmado', crmStatus: 'Agendado', defaultEvent: 'Schedule' },
+                { label: 'Check-in Realizado', crmStatus: 'Compareceu', defaultEvent: 'Purchase' },
+              ].map((map, i) => (
+                <div key={i} className="flex items-center gap-4 bg-slate-50 p-3 rounded-lg border border-dashed">
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-700">{map.label}</p>
+                    <p className="text-[10px] text-slate-400">Gatilho: Status {map.crmStatus}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400">Enviar como:</span>
+                    <input type="text" defaultValue={map.defaultEvent} className="border rounded px-2 py-1 text-xs w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center pt-6 border-t">
+            <Button 
+              variant="outline" 
+              onClick={handleTestConnection} 
+              disabled={isTesting}
+              className="font-bold text-xs"
+            >
+              {isTesting ? "Testando..." : "Realizar Disparo de Teste"}
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" className="font-bold text-xs">Cancelar</Button>
+              <Button className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700">Salvar Integração</Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-6">
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-sm font-bold">Status da Conexão</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-500">Facebook API</span>
+              <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px]">Ativo</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-500">Google Ads</span>
+              <Badge variant="outline" className="text-slate-400 font-bold text-[10px]">Inativo</Badge>
+            </div>
+            <div className="pt-2 border-t text-[10px] text-slate-400">
+              <p>Último evento enviado: 12min atrás</p>
+              <p>Qualidade da desduplicação: 98%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm bg-blue-50/50 border-blue-100">
+          <CardHeader>
+            <CardTitle className="text-sm font-bold text-blue-800 flex items-center gap-2">
+              <Brain className="w-4 h-4" /> Dica Pro Agência
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-[11px] text-blue-700 leading-relaxed">
+              O uso da API de Conversão com o identifikador <span className="font-bold italic">external_id</span> garante que eventos não sejam perdidos por bloqueadores de anúncios e evita contagem duplicada.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function PerformanceView({ performanceData, creativePerformance }: any) {
+  return (
+    <>
       {/* Principais KPIs de Performance */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard 
@@ -234,7 +397,6 @@ function MarketingPartnerDashboard() {
     </>
   )
 }
-
 
 function MetricCard({ title, value, change, icon, color }: any) {
   const colorMap: any = {
