@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, Phone, Info, Layout, PlusCircle, Settings, ChevronRight } from 'lucide-react'
+import { CheckCircle2, User, Send, Phone, Info, Layout, PlusCircle, Settings, ChevronRight, MessageSquare, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import { useChatStore } from '@/hooks/use-chat'
 import { Button } from '@/components/ui/button'
