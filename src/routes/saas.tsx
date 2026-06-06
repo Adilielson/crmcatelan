@@ -347,6 +347,7 @@ function SaaSAdmin() {
 }
 
 
+
 function TenantRow({ tenant }: { tenant: any }) {
   const isIAOverLimit = tenant.ia_used >= tenant.ia_quota
   const isUsersAtLimit = tenant.users >= tenant.user_limit
