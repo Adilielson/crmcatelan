@@ -1,9 +1,190 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      tenants: {
+        Row: {
+          id: string
+          name: string
+          cnpj: string | null
+          status: string
+          slug: string
+          whatsapp_api_token: string | null
+          plan: string
+          settings: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          cnpj?: string | null
+          status?: string
+          slug: string
+          whatsapp_api_token?: string | null
+          plan?: string
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          cnpj?: string | null
+          status?: string
+          slug?: string
+          whatsapp_api_token?: string | null
+          plan?: string
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      profiles: {
+        Row: {
+          id: string
+          tenant_id: string
+          full_name: string | null
+          role: 'super_admin' | 'admin' | 'manager' | 'seller' | 'marketing_partner'
+          status: string
+          avatar_url: string | null
+          last_login_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          tenant_id: string
+          full_name?: string | null
+          role?: 'super_admin' | 'admin' | 'manager' | 'seller' | 'marketing_partner'
+          status?: string
+          avatar_url?: string | null
+          last_login_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          full_name?: string | null
+          role?: 'super_admin' | 'admin' | 'manager' | 'seller' | 'marketing_partner'
+          status?: string
+          avatar_url?: string | null
+          last_login_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      leads: {
+        Row: {
+          id: string
+          tenant_id: string
+          unit_id: string | null
+          source_id: string | null
+          assigned_user_id: string | null
+          full_name: string
+          email: string | null
+          phone: string | null
+          status: 'open' | 'in_progress' | 'scheduled' | 'showed_up' | 'no_show' | 'lost'
+          sales_value: number
+          priority: string
+          next_contact_at: string | null
+          tags: string[]
+          score_ia: number | null
+          ia_summary: string | null
+          ia_sentiment: string | null
+          ia_urgency: string | null
+          ia_profile: string | null
+          ia_disqualified_reason: string | null
+          utm_source: string | null
+          utm_medium: string | null
+          utm_campaign: string | null
+          ad_id: string | null
+          conversion_event: string | null
+          conversion_value: number | null
+          attribution_date: string | null
+          external_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          unit_id?: string | null
+          source_id?: string | null
+          assigned_user_id?: string | null
+          full_name: string
+          email?: string | null
+          phone?: string | null
+          status?: 'open' | 'in_progress' | 'scheduled' | 'showed_up' | 'no_show' | 'lost'
+          sales_value?: number
+          priority?: string
+          next_contact_at?: string | null
+          tags?: string[]
+          score_ia?: number | null
+          ia_summary?: string | null
+          ia_sentiment?: string | null
+          ia_urgency?: string | null
+          ia_profile?: string | null
+          ia_disqualified_reason?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          ad_id?: string | null
+          conversion_event?: string | null
+          conversion_value?: number | null
+          attribution_date?: string | null
+          external_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          unit_id?: string | null
+          source_id?: string | null
+          assigned_user_id?: string | null
+          full_name?: string
+          email?: string | null
+          phone?: string | null
+          status?: 'open' | 'in_progress' | 'scheduled' | 'showed_up' | 'no_show' | 'lost'
+          sales_value?: number
+          priority?: string
+          next_contact_at?: string | null
+          tags?: string[]
+          score_ia?: number | null
+          ia_summary?: string | null
+          ia_sentiment?: string | null
+          ia_urgency?: string | null
+          ia_profile?: string | null
+          ia_disqualified_reason?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          ad_id?: string | null
+          conversion_event?: string | null
+          conversion_value?: number | null
+          attribution_date?: string | null
+          external_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+  }
+}
+
+// Keep the legacy types for compatibility with existing code
 export type UserRole = 'super_admin' | 'admin' | 'manager' | 'seller' | 'marketing_partner';
 export type LeadStatus = 'open' | 'in_progress' | 'scheduled' | 'showed_up' | 'no_show' | 'lost';
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'no_show' | 'cancelled';
-export type ConversationStatus = 'open' | 'waiting_seller' | 'finished' | 'automated_ia';
-export type MessageDirection = 'inbound' | 'outbound';
-export type MarketingPlatform = 'facebook_ads' | 'google_ads' | 'tiktok_ads';
 
 export interface User {
   id: string;
@@ -22,29 +203,6 @@ export interface Tenant {
   whatsapp_api_token?: string;
   plan: string;
   settings: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Unit {
-  id: string;
-  tenant_id: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  business_hours: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Profile {
-  id: string;
-  tenant_id: string;
-  full_name?: string;
-  role: UserRole;
-  status: string;
-  avatar_url?: string;
-  last_login_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -69,65 +227,16 @@ export interface Lead {
   ia_urgency?: string;
   ia_profile?: string;
   ia_disqualified_reason?: string;
-  // Campos de Marketing/Ads
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
   ad_id?: string;
-  conversion_event?: 'lead' | 'agendamento' | 'consulta_realizada';
+  conversion_event?: string;
   conversion_value?: number;
   attribution_date?: string;
-  external_id?: string; // Para desduplicação Pixel/API
+  external_id?: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface Appointment {
-  id: string;
-  tenant_id: string;
-  lead_id: string;
-  unit_id?: string;
-  professional_id?: string;
-  scheduled_at: string;
-  status: AppointmentStatus;
-  type_exam?: string;
-  notes?: string;
-  cancellation_reason?: string;
-  checkin_at?: string;
-  checkout_at?: string;
-  propensity_score?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AIConfig {
-  id: string;
-  tenant_id: string;
-  prompt_system?: string;
-  knowledge_base?: string;
-  qualification_questions: any[];
-  triggers?: string;
-  model_temperature: number;
-  goal: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MarketingIntegration {
-  id: string;
-  tenant_id: string;
-  platform: 'facebook_ads' | 'google_ads' | 'tiktok_ads';
-  integration_type: 'pixel_browser' | 'conversions_api' | 'both';
-  pixel_id?: string;
-  api_token?: string; // Secret
-  status: 'active' | 'inactive' | 'error';
-  event_mapping: Record<string, string>; // CRM Status -> Platform Event
-  test_mode: boolean;
-  test_id?: string;
-  default_conversion_value?: number;
-  domain_verification_code?: string;
-  last_event_sent_at?: string;
-  created_at: string;
-  updated_at: string;
-}
 
