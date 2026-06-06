@@ -35,6 +35,14 @@ export interface Lead {
   ia_tags?: string[]
   ia_receita_validade?: string
   ia_receita_grau?: string
+  // Campos de Marketing/Ads
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  ad_id?: string
+  conversion_value?: number
+  attribution_date?: string
+  external_id?: string
 }
 
 export interface Pipeline {
