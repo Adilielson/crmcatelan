@@ -9,28 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as NoShowAnalyticsRouteImport } from './routes/analytics/no-show'
-import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
+import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AgendaRouteImport } from './routes/agenda'
-import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 
-const NoShowAnalyticsRoute = NoShowAnalyticsRouteImport.update({
-  id: '/analytics/no-show',
-  path: '/analytics/no-show',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AiTrainingRoute = AiTrainingRouteImport.update({
-  id: '/ai-training',
-  path: '/ai-training',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -44,6 +34,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SaasRoute = SaasRouteImport.update({
   id: '/saas',
   path: '/saas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerformanceRoute = PerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketingRoute = MarketingRouteImport.update({
@@ -61,14 +56,14 @@ const ChatRoute = ChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiTrainingRoute = AiTrainingRouteImport.update({
+  id: '/ai-training',
+  path: '/ai-training',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AgendaRoute = AgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerformanceRoute = PerformanceRouteImport.update({
-  id: '/performance',
-  path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -76,101 +71,106 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
+  id: '/analytics/no-show',
+  path: '/analytics/no-show',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analytics/no-show': typeof NoShowAnalyticsRoute
-  '/ai-training': typeof AiTrainingRoute
-  '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
+  '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
   '/marketing': typeof MarketingRoute
+  '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analytics/no-show': typeof NoShowAnalyticsRoute
-  '/ai-training': typeof AiTrainingRoute
-  '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
+  '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
   '/marketing': typeof MarketingRoute
+  '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/analytics/no-show': typeof NoShowAnalyticsRoute
-  '/ai-training': typeof AiTrainingRoute
-  '/performance': typeof PerformanceRoute
   '/agenda': typeof AgendaRoute
+  '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
   '/marketing': typeof MarketingRoute
+  '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/analytics/no-show'
-    | '/ai-training'
-    | '/performance'
     | '/agenda'
+    | '/ai-training'
     | '/chat'
     | '/kanban'
     | '/marketing'
+    | '/performance'
     | '/saas'
     | '/settings'
     | '/users'
+    | '/analytics/no-show'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/analytics/no-show'
-    | '/ai-training'
-    | '/performance'
     | '/agenda'
+    | '/ai-training'
     | '/chat'
     | '/kanban'
     | '/marketing'
+    | '/performance'
     | '/saas'
     | '/settings'
     | '/users'
+    | '/analytics/no-show'
   id:
     | '__root__'
     | '/'
-    | '/analytics/no-show'
-    | '/ai-training'
-    | '/performance'
     | '/agenda'
+    | '/ai-training'
     | '/chat'
     | '/kanban'
     | '/marketing'
+    | '/performance'
     | '/saas'
     | '/settings'
     | '/users'
+    | '/analytics/no-show'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  NoShowAnalyticsRoute: typeof NoShowAnalyticsRoute
-  AiTrainingRoute: typeof AiTrainingRoute
-  PerformanceRoute: typeof PerformanceRoute
   AgendaRoute: typeof AgendaRoute
+  AiTrainingRoute: typeof AiTrainingRoute
   ChatRoute: typeof ChatRoute
   KanbanRoute: typeof KanbanRoute
   MarketingRoute: typeof MarketingRoute
+  PerformanceRoute: typeof PerformanceRoute
   SaasRoute: typeof SaasRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
+  AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -196,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SaasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/performance': {
+      id: '/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof PerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/marketing': {
       id: '/marketing'
       path: '/marketing'
@@ -217,32 +224,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agenda': {
-      id: '/agenda'
-      path: '/agenda'
-      fullPath: '/agenda'
-      preLoaderRoute: typeof AgendaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/performance': {
-      id: '/performance'
-      path: '/performance'
-      fullPath: '/performance'
-      preLoaderRoute: typeof PerformanceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/analytics/no-show': {
-      id: '/analytics/no-show'
-      path: '/analytics/no-show'
-      fullPath: '/analytics/no-show'
-      preLoaderRoute: typeof NoShowAnalyticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/ai-training': {
       id: '/ai-training'
       path: '/ai-training'
       fullPath: '/ai-training'
       preLoaderRoute: typeof AiTrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agenda': {
+      id: '/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AgendaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -252,21 +245,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analytics/no-show': {
+      id: '/analytics/no-show'
+      path: '/analytics/no-show'
+      fullPath: '/analytics/no-show'
+      preLoaderRoute: typeof AnalyticsNoShowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  NoShowAnalyticsRoute: NoShowAnalyticsRoute,
-  AiTrainingRoute: AiTrainingRoute,
-  PerformanceRoute: PerformanceRoute,
   AgendaRoute: AgendaRoute,
+  AiTrainingRoute: AiTrainingRoute,
   ChatRoute: ChatRoute,
   KanbanRoute: KanbanRoute,
   MarketingRoute: MarketingRoute,
+  PerformanceRoute: PerformanceRoute,
   SaasRoute: SaasRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
+  AnalyticsNoShowRoute: AnalyticsNoShowRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
