@@ -435,7 +435,7 @@ function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" 
     </Card>
   )
 }
-}
+
 
 function PlanCard({ name, price, limits, features, activeCount, highlight }: any) {
   return (
