@@ -193,36 +193,41 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
   const sourceIcons = {
     whatsapp: <MessageCircle className="w-4 h-4 text-green-500" />,
     instagram: <InstagramIcon className="text-pink-500" />,
+
     google: <MessageSquare className="w-4 h-4 text-blue-500" />,
     direct: <MessageSquare className="w-4 h-4 text-slate-500" />,
   }
 
   return (
-    <motion.div
+    <div
       draggable
       onDragStart={onDragStart}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ 
-        opacity: 1, 
-        y: 0,
-        boxShadow: lead.isUrgent ? [
-          "0 0 0 rgba(239, 68, 68, 0)",
-          "0 0 15px rgba(239, 68, 68, 0.4)",
-          "0 0 0 rgba(239, 68, 68, 0)"
-        ] : "none"
-      }}
-      transition={lead.isUrgent ? { 
-        duration: 2, 
-        repeat: Infinity,
-        ease: "easeInOut"
-      } : {}}
       className={`bg-white p-4 rounded-xl border shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors group relative ${lead.isUrgent ? 'border-red-200' : 'border-slate-200'}`}
     >
+      <AnimatePresence>
+        {lead.isUrgent && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0.4, 1, 0.4],
+              scale: [1, 1.02, 1]
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute inset-0 rounded-xl border-2 border-red-500 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+
       {lead.isUrgent && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full animate-bounce">
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-10">
           URGENTE
         </div>
       )}
+
       
       <div className="flex justify-between items-start mb-3">
         <div>
@@ -259,6 +264,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
           Agendado: {new Date(lead.scheduledAt).toLocaleString('pt-BR')}
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }
+
