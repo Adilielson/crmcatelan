@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
 import { 
   Building2, 
   CreditCard, 
@@ -26,7 +26,8 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  TrendingDown
+  TrendingDown,
+  Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -52,9 +53,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-
-
 
 import { 
   Card, 
@@ -91,53 +89,12 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { supabase } from '@/integrations/supabase/client'
+import { useAuthStore } from '@/hooks/use-auth'
 
 export const Route = createFileRoute('/saas')({
   component: SaaSAdmin,
 })
-
-// Mock data based on new PRD fields
-const initialTenants = [
-  { 
-    id: '1', 
-    name: 'Ótica Castelar Matriz', 
-    cnpj: '12.345.678/0001-90',
-    plan: 'enterprise', 
-    users: 12, 
-    user_limit: 20,
-    ia_used: 45200, 
-    ia_quota: 100000,
-    status: 'ativo',
-    responsible: 'João Castelar',
-    slug: 'castelar-matriz'
-  },
-  { 
-    id: '2', 
-    name: 'Ótica Visão Perfeita', 
-    cnpj: '98.765.432/0001-11',
-    plan: 'pro', 
-    users: 5, 
-    user_limit: 5,
-    ia_used: 98000, 
-    ia_quota: 100000,
-    status: 'ativo',
-    responsible: 'Maria Silva',
-    slug: 'visao-perfeita'
-  },
-  { 
-    id: '3', 
-    name: 'Luz & Brilho', 
-    cnpj: '45.678.901/0001-22',
-    plan: 'basic', 
-    users: 2, 
-    user_limit: 2,
-    ia_used: 12100, 
-    ia_quota: 20000,
-    status: 'inadimplente',
-    responsible: 'Carlos Luz',
-    slug: 'luz-brilho'
-  }
-]
 
 const revenueData = [
   { month: 'Jan', mrr: 8200, profit: 5400 },
@@ -147,41 +104,107 @@ const revenueData = [
   { month: 'Mai', mrr: 12400, profit: 8600 },
 ]
 
-const planDistribution = [
-  { name: 'Basic', value: 12, color: '#94a3b8' },
-  { name: 'Pro', value: 8, color: '#6366f1' },
-  { name: 'Enterprise', value: 4, color: '#1e1b4b' },
-]
-
 function SaaSAdmin() {
-  const [tenants, setTenants] = useState(initialTenants)
+  const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const [tenants, setTenants] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [period, setPeriod] = useState('30d')
 
-  const handleCreateTenant = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Simulated logic for duplicate CNPJ check
-    const formData = new FormData(e.target as HTMLFormElement)
-    const cnpj = formData.get('cnpj') as string
-    
-    if (tenants.some(t => t.cnpj === cnpj)) {
-      toast.error("Erro: CNPJ já cadastrado no sistema.")
-      return
+  // Check super_admin role
+  useEffect(() => {
+    if (user && user.role !== 'super_admin') {
+      toast.error("Acesso negado. Apenas Super Admins podem acessar esta área.")
+      navigate({ to: '/dashboard' })
     }
+  }, [user, navigate])
 
-    toast.success("Ótica cadastrada com sucesso! Tenant ID gerado.")
-    setIsCreateOpen(false)
+  const fetchTenants = async () => {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select(`
+          *,
+          profiles(count)
+        `)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setTenants(data || [])
+    } catch (error: any) {
+      toast.error("Erro ao carregar inquilinos: " + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTenants()
+  }, [])
+
+  const handleCreateTenant = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const formData = new FormData(e.target as HTMLFormElement)
+    const name = formData.get('name') as string
+    const cnpj = formData.get('cnpj') as string
+    const responsible = formData.get('responsible') as string
+    const plan = formData.get('plan') as string
+    const limit = parseInt(formData.get('limit') as string)
+
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .insert({
+          name,
+          cnpj,
+          contato_responsavel: responsible,
+          plan,
+          limite_usuarios: limit,
+          status: 'trial'
+        })
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error("Erro: CNPJ já cadastrado no sistema.")
+        } else {
+          throw error
+        }
+        return
+      }
+
+      toast.success("Ótica cadastrada com sucesso!")
+      setIsCreateOpen(false)
+      fetchTenants()
+    } catch (error: any) {
+      toast.error("Erro ao criar ótica: " + error.message)
+    }
   }
 
   const filteredTenants = tenants.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase()) || 
-    t.cnpj.includes(search)
+    (t.cnpj && t.cnpj.includes(search))
   )
+
+  const planDistribution = [
+    { name: 'Basic', value: tenants.filter(t => t.plan === 'basic').length, color: '#94a3b8' },
+    { name: 'Pro', value: tenants.filter(t => t.plan === 'pro').length, color: '#6366f1' },
+    { name: 'Enterprise', value: tenants.filter(t => t.plan === 'enterprise').length, color: '#1e1b4b' },
+  ]
+
+  if (loading && tenants.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <ShieldCheck className="w-8 h-8 text-primary" />
@@ -189,7 +212,7 @@ function SaaSAdmin() {
           </h1>
           <p className="text-muted-foreground">Gestão global de inquilinos e infraestrutura.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[180px] bg-white">
               <Calendar className="w-4 h-4 mr-2" />
@@ -205,7 +228,6 @@ function SaaSAdmin() {
           <Button variant="outline" className="gap-2">
             <History className="w-4 h-4" /> Auditoria
           </Button>
-
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
@@ -251,10 +273,6 @@ function SaaSAdmin() {
                     <Label htmlFor="limit">Limite de Usuários</Label>
                     <Input id="limit" name="limit" type="number" defaultValue="5" />
                   </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="whatsapp">Token WhatsApp API (Opcional)</Label>
-                    <Input id="whatsapp" name="whatsapp" type="password" placeholder="Token de integração" />
-                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
@@ -267,15 +285,14 @@ function SaaSAdmin() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatsCard title="MRR Total" value="R$ 12.400" trend="+12%" icon={<CreditCard className="w-4 h-4 text-green-600" />} />
-        <StatsCard title="LTV Estimado" value="R$ 4.250" trend="Benchmark" icon={<DollarSign className="w-4 h-4 text-primary" />} />
-        <StatsCard title="Churn Rate" value="2.4%" trend="-0.5%" icon={<TrendingDown className="w-4 h-4 text-red-600" />} />
-        <StatsCard title="Tokens IA (Mês)" value="840k" trend="+45k hoje" icon={<Cpu className="w-4 h-4 text-purple-600" />} />
-        <StatsCard title="SLA Médio IA" value="12s" trend="Excelente" icon={<Clock className="w-4 h-4 text-blue-600" />} />
+        <StatsCard title="Inquilinos Ativos" value={tenants.filter(t => t.status === 'active').length} trend="Total na base" icon={<Building2 className="w-4 h-4 text-primary" />} />
+        <StatsCard title="MRR Estimado" value={`R$ ${(tenants.reduce((acc, t) => acc + (t.plan === 'enterprise' ? 1200 : t.plan === 'pro' ? 499 : 199), 0)).toLocaleString()}`} trend="Baseado em planos" icon={<CreditCard className="w-4 h-4 text-green-600" />} />
+        <StatsCard title="IA Tokens Total" value={`${(tenants.reduce((acc, t) => acc + (t.ia_token_used || 0), 0) / 1000).toFixed(0)}k`} trend="Consumo do mês" icon={<Cpu className="w-4 h-4 text-purple-600" />} />
+        <StatsCard title="Usuários Ativos" value={tenants.reduce((acc, t) => acc + (t.profiles?.[0]?.count || 0), 0)} trend="Em toda a rede" icon={<Users className="w-4 h-4 text-blue-600" />} />
+        <StatsCard title="SLA Médio" value="99.9%" trend="Disponibilidade" icon={<Activity className="w-4 h-4 text-green-500" />} />
       </div>
 
-
-      <Tabs defaultValue="dashboard" className="w-full">
+      <Tabs defaultValue="tenants" className="w-full">
         <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
           <TabsTrigger value="dashboard">Visão Geral</TabsTrigger>
           <TabsTrigger value="tenants">Lista de Óticas</TabsTrigger>
@@ -289,7 +306,7 @@ function SaaSAdmin() {
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Crescimento Mensal de Receita (MRR)</CardTitle>
-                <CardDescription>Evolução do faturamento recorrente e lucro líquido.</CardDescription>
+                <CardDescription>Evolução do faturamento recorrente.</CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -305,7 +322,6 @@ function SaaSAdmin() {
                     <YAxis fontSize={12} />
                     <Tooltip />
                     <Area type="monotone" dataKey="mrr" name="MRR" stroke="#6366f1" fillOpacity={1} fill="url(#colorMrr)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="profit" name="Lucro Líquido" stroke="#22c55e" fillOpacity={0} strokeWidth={2} strokeDasharray="5 5" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -349,86 +365,21 @@ function SaaSAdmin() {
               </CardContent>
             </Card>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Alertas de Saúde do Ecossistema</CardTitle>
-                <CardDescription>Inquilinos e serviços que exigem atenção imediata.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-full">
-                      <Zap className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-amber-900">Limite de Tokens Próximo</p>
-                      <p className="text-[10px] text-amber-800">Ótica Visão Perfeita atingiu 98% da quota mensal.</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="h-8 text-xs">Aumentar Quota</Button>
-                </div>
-                <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-100 rounded-full">
-                      <Ban className="w-4 h-4 text-red-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-red-900">Assinatura Inadimplente</p>
-                      <p className="text-[10px] text-red-800">Luz & Brilho está com faturamento atrasado há 5 dias.</p>
-                    </div>
-                  </div>
-                  <Button variant="destructive" size="sm" className="h-8 text-xs">Cobrar</Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Consumidores de IA</CardTitle>
-                <CardDescription>Clientes com maior volume de requisições hoje.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: 'Ótica Castelar', tokens: '45.2k', trend: '+12%' },
-                    { name: 'Ótica Visão', tokens: '32.8k', trend: '+8%' },
-                    { name: 'Luz & Brilho', tokens: '12.1k', trend: '-5%' },
-                  ].map((client) => (
-                    <div key={client.name} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{client.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-bold">{client.tokens}</span>
-                        <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
-                          {client.trend}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
-
 
         <TabsContent value="tenants" className="space-y-4 pt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <CardTitle>Gestão de Clientes (Tenants)</CardTitle>
                 <CardDescription>Visualize o status e limites de cada ótica.</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full md:w-[300px]">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input 
                     placeholder="Buscar por nome ou CNPJ..." 
-                    className="pl-9 w-[300px]"
+                    className="pl-9"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -436,8 +387,8 @@ function SaaSAdmin() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-left">
+              <div className="border rounded-lg overflow-x-auto">
+                <table className="w-full text-left min-w-[800px]">
                   <thead className="bg-muted/50 text-xs text-muted-foreground uppercase font-medium">
                     <tr>
                       <th className="px-6 py-3">Ótica</th>
@@ -448,9 +399,17 @@ function SaaSAdmin() {
                     </tr>
                   </thead>
                   <tbody className="divide-y text-sm">
-                    {filteredTenants.map(tenant => (
-                      <TenantRow key={tenant.id} tenant={tenant} />
-                    ))}
+                    {filteredTenants.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
+                          Nenhum inquilino encontrado.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTenants.map(tenant => (
+                        <TenantRow key={tenant.id} tenant={tenant} onUpdate={fetchTenants} />
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -465,14 +424,14 @@ function SaaSAdmin() {
               price="R$ 199/mês" 
               limits={{ users: 2, leads: 100, ia: '20k tokens' }}
               features={['Agenda', 'Kanban Básico']}
-              activeCount={12}
+              activeCount={tenants.filter(t => t.plan === 'basic').length}
             />
             <PlanCard 
               name="Pro" 
               price="R$ 499/mês" 
               limits={{ users: 10, leads: 1000, ia: '100k tokens' }}
               features={['Marketing', 'IA SDR Full', 'Kanban Avançado']}
-              activeCount={8}
+              activeCount={tenants.filter(t => t.plan === 'pro').length}
               highlight
             />
             <PlanCard 
@@ -480,60 +439,45 @@ function SaaSAdmin() {
               price="R$ 1.200/mês" 
               limits={{ users: 50, leads: 10000, ia: '500k tokens' }}
               features={['Relatórios Custom', 'Suporte VIP', 'API Access']}
-              activeCount={4}
+              activeCount={tenants.filter(t => t.plan === 'enterprise').length}
             />
           </div>
+        </TabsContent>
 
-          <Card>
+        <TabsContent value="ia" className="space-y-6 pt-4">
+           <Card>
             <CardHeader>
               <CardTitle>Monitoramento de Performance IA (ROI)</CardTitle>
               <CardDescription>Visão consolidada de consumo e lucratividade dos tokens.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 border rounded-lg bg-indigo-50/30">
-                  <p className="text-xs font-semibold text-indigo-600 uppercase">Faturamento Tokens</p>
-                  <p className="text-2xl font-bold">R$ 4.250,00</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Margem média: 65%</p>
-                </div>
-                <div className="p-4 border rounded-lg bg-green-50/30">
-                  <p className="text-xs font-semibold text-green-600 uppercase">Lucro Bruto IA</p>
-                  <p className="text-2xl font-bold">R$ 2.760,00</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Após custos da OpenAI</p>
-                </div>
-                <div className="p-4 border rounded-lg bg-amber-50/30">
-                  <p className="text-xs font-semibold text-amber-600 uppercase">Eficiência SDR</p>
-                  <p className="text-2xl font-bold">84%</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Taxa de agendamento assistido</p>
-                </div>
-              </div>
-
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-left">
+              <div className="border rounded-lg overflow-x-auto">
+                <table className="w-full text-left min-w-[600px]">
                   <thead className="bg-muted/50 text-[10px] text-muted-foreground uppercase font-bold">
                     <tr>
                       <th className="px-4 py-2">Ótica</th>
                       <th className="px-4 py-2">Tokens Usados</th>
-                      <th className="px-4 py-2">Custo Base</th>
-                      <th className="px-4 py-2">Faturado</th>
-                      <th className="px-4 py-2">Margem</th>
+                      <th className="px-4 py-2">Custo Base (Est.)</th>
+                      <th className="px-4 py-2">Quota Atual</th>
+                      <th className="px-4 py-2">Status Consumo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y text-xs">
-                    <tr>
-                      <td className="px-4 py-3 font-medium">Ótica Castelar</td>
-                      <td className="px-4 py-3">45.200</td>
-                      <td className="px-4 py-3">R$ 18,08</td>
-                      <td className="px-4 py-3">R$ 45,20</td>
-                      <td className="px-4 py-3 text-green-600 font-bold">60%</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3 font-medium">Ótica Visão</td>
-                      <td className="px-4 py-3">32.800</td>
-                      <td className="px-4 py-3">R$ 13,12</td>
-                      <td className="px-4 py-3">R$ 32,80</td>
-                      <td className="px-4 py-3 text-green-600 font-bold">60%</td>
-                    </tr>
+                    {tenants.map(t => (
+                      <tr key={t.id}>
+                        <td className="px-4 py-3 font-medium">{t.name}</td>
+                        <td className="px-4 py-3">{(t.ia_token_used || 0).toLocaleString()}</td>
+                        <td className="px-4 py-3">R$ {((t.ia_token_used || 0) * 0.0004).toFixed(2)}</td>
+                        <td className="px-4 py-3">{(t.ia_token_quota || 0).toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className={cn(
+                            (t.ia_token_used || 0) > (t.ia_token_quota || 0) * 0.9 ? "text-red-600 border-red-200" : "text-green-600 border-green-200"
+                          )}>
+                            {Math.round(((t.ia_token_used || 0) / (t.ia_token_quota || 1)) * 100)}%
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -542,138 +486,51 @@ function SaaSAdmin() {
         </TabsContent>
 
         <TabsContent value="security" className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Trilha de Auditoria do SaaS</CardTitle>
-                  <CardDescription>Histórico completo de ações administrativas e segurança.</CardDescription>
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações Globais</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <p className="font-medium">Modo Manutenção</p>
+                  <p className="text-sm text-muted-foreground">Impede o login de todos os usuários (exceto Super Admins).</p>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="w-3.5 h-3.5" /> Filtrar
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <AuditLogRow 
-                    user="Admin Root" 
-                    action="Upgrade de Plano" 
-                    target="Ótica Castelar" 
-                    date="Hoje, 14:20" 
-                    severity="info"
-                    metadata="Pro → Enterprise"
-                  />
-                  <AuditLogRow 
-                    user="Suporte Dev" 
-                    action="Login via Impersonate" 
-                    target="Ótica Visão" 
-                    date="Hoje, 13:45" 
-                    severity="warning"
-                    metadata="Sessão de suporte técnica"
-                  />
-                  <AuditLogRow 
-                    user="Sistema" 
-                    action="Bloqueio de Quota IA" 
-                    target="Foco Visual" 
-                    date="Hoje, 09:12" 
-                    severity="critical"
-                    metadata="Limite de tokens excedido (110%)"
-                  />
-                  <AuditLogRow 
-                    user="Admin Root" 
-                    action="Reset de Senha Admin" 
-                    target="Unidade Sul" 
-                    date="Ontem, 18:30" 
-                    severity="info"
-                  />
+                <Button variant="outline">Ativar</Button>
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <p className="font-medium">Forçar Logout Global</p>
+                  <p className="text-sm text-muted-foreground">Invalida todas as sessões ativas imediatamente.</p>
                 </div>
-                <Button variant="ghost" className="w-full mt-4 text-xs">Ver histórico completo →</Button>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Segurança Global</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-bold uppercase text-muted-foreground">Modo Manutenção</span>
-                      <p className="text-[10px] text-muted-foreground">Bloqueia acesso de inquilinos</p>
-                    </div>
-                    <Button variant="outline" size="sm">Ativar</Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-bold uppercase text-muted-foreground">Forçar 2FA</span>
-                      <p className="text-[10px] text-muted-foreground">Obrigatório para Admins</p>
-                    </div>
-                    <Button variant="ghost" size="sm">Config</Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-red-100 bg-red-50/20">
-                <CardHeader>
-                  <CardTitle className="text-sm text-red-600 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" /> Alertas Críticos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="p-2 border border-red-100 rounded bg-white">
-                      <p className="text-[10px] font-bold text-red-700">TENTATIVA DE BRUTE FORCE</p>
-                      <p className="text-[10px] text-muted-foreground">IP 192.168.1.1 bloqueado após 5 tentativas.</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                <Button variant="destructive">Executar</Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
-
       </Tabs>
-
     </div>
   )
 }
 
-function AuditLogRow({ user, action, target, date, severity, metadata }: any) {
-  const severityColors: any = {
-    info: "bg-blue-100 text-blue-700",
-    warning: "bg-amber-100 text-amber-700",
-    critical: "bg-red-100 text-red-700"
+function TenantRow({ tenant, onUpdate }: { tenant: any, onUpdate: () => void }) {
+  const isIAOverLimit = (tenant.ia_token_used || 0) >= (tenant.ia_token_quota || 0)
+  const isUsersAtLimit = (tenant.profiles?.[0]?.count || 0) >= (tenant.limite_usuarios || 0)
+
+  const handleToggleStatus = async (newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ status: newStatus })
+        .eq('id', tenant.id)
+
+      if (error) throw error
+      toast.success(`Status alterado para ${newStatus}`)
+      onUpdate()
+    } catch (error: any) {
+      toast.error("Erro ao alterar status: " + error.message)
+    }
   }
-
-  return (
-    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
-      <div className="flex items-center gap-4">
-        <div className={cn("p-2 rounded-full", severity ? severityColors[severity] : "bg-muted")}>
-          <History className="w-4 h-4" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm">{user}</span>
-            <Badge variant="outline" className="text-[10px] uppercase font-bold">{action}</Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Alvo: <span className="font-medium text-foreground">{target}</span>
-            {metadata && <span className="ml-2 italic opacity-70">({metadata})</span>}
-          </p>
-        </div>
-      </div>
-      <p className="text-xs font-medium text-muted-foreground whitespace-nowrap">{date}</p>
-    </div>
-  )
-}
-
-
-
-
-function TenantRow({ tenant }: { tenant: any }) {
-  const isIAOverLimit = tenant.ia_used >= tenant.ia_quota
-  const isUsersAtLimit = tenant.users >= tenant.user_limit
 
   return (
     <tr className="group hover:bg-muted/30 transition-colors">
@@ -684,33 +541,34 @@ function TenantRow({ tenant }: { tenant: any }) {
         </div>
       </td>
       <td className="px-6 py-4">
-        <p className="text-xs font-medium">{tenant.cnpj}</p>
-        <p className="text-[10px] text-muted-foreground">{tenant.responsible}</p>
+        <p className="text-xs font-medium">{tenant.cnpj || 'Sem CNPJ'}</p>
+        <p className="text-[10px] text-muted-foreground">{tenant.contato_responsavel || 'Sem contato'}</p>
       </td>
       <td className="px-6 py-4 space-y-1">
         <Badge variant="outline" className="capitalize">{tenant.plan}</Badge>
         <br />
         <Badge 
-          className={
-            tenant.status === 'ativo' ? 'bg-green-50 text-green-700 border-green-200' : 
-            tenant.status === 'inadimplente' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
+          className={cn(
+            "capitalize",
+            tenant.status === 'active' || tenant.status === 'ativo' ? 'bg-green-50 text-green-700 border-green-200' : 
+            tenant.status === 'overdue' || tenant.status === 'inadimplente' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
             'bg-red-50 text-red-700 border-red-200'
-          }
+          )}
         >
-          {tenant.status.toUpperCase()}
+          {tenant.status}
         </Badge>
       </td>
       <td className="px-6 py-4 space-y-1">
         <div className="flex items-center gap-2">
           <Users className="w-3 h-3 text-muted-foreground" />
-          <span className={`text-xs ${isUsersAtLimit ? 'text-amber-600 font-bold' : ''}`}>
-            {tenant.users} / {tenant.user_limit}
+          <span className={cn("text-xs", isUsersAtLimit ? 'text-amber-600 font-bold' : '')}>
+            {tenant.profiles?.[0]?.count || 0} / {tenant.limite_usuarios || 0}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <Cpu className="w-3 h-3 text-muted-foreground" />
-          <span className={`text-xs ${isIAOverLimit ? 'text-red-600 font-bold' : ''}`}>
-            {(tenant.ia_used / 1000).toFixed(1)}k / {(tenant.ia_quota / 1000).toFixed(1)}k
+          <span className={cn("text-xs", isIAOverLimit ? 'text-red-600 font-bold' : '')}>
+            {((tenant.ia_token_used || 0) / 1000).toFixed(1)}k / {((tenant.ia_token_quota || 0) / 1000).toFixed(1)}k
           </span>
           {isIAOverLimit && <Lock className="w-3 h-3 text-red-600" />}
         </div>
@@ -728,14 +586,13 @@ function TenantRow({ tenant }: { tenant: any }) {
               <Zap className="w-3.5 h-3.5" /> Acessar (Impersonate)
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2">
-              <ExternalLink className="w-3.5 h-3.5" /> Editar Cadastro
+            <DropdownMenuItem className="gap-2" onClick={() => handleToggleStatus('active')}>
+              <CheckCircle2 className="w-3.5 h-3.5" /> Ativar
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
-              <Lock className="w-3.5 h-3.5" /> Ajustar Quotas
+            <DropdownMenuItem className="gap-2" onClick={() => handleToggleStatus('overdue')}>
+              <AlertCircle className="w-3.5 h-3.5" /> Marcar Atraso
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 text-red-600">
+            <DropdownMenuItem className="gap-2 text-red-600" onClick={() => handleToggleStatus('inactive')}>
               <Ban className="w-3.5 h-3.5" /> Bloquear Acesso
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -759,7 +616,6 @@ function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" 
     </Card>
   )
 }
-
 
 function PlanCard({ name, price, limits, features, activeCount, highlight }: any) {
   return (
@@ -799,5 +655,3 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
     </Card>
   )
 }
-
-
