@@ -448,6 +448,36 @@ function SaaSAdmin() {
   )
 }
 
+function AuditLogRow({ user, action, target, date, severity, metadata }: any) {
+  const severityColors: any = {
+    info: "bg-blue-100 text-blue-700",
+    warning: "bg-amber-100 text-amber-700",
+    critical: "bg-red-100 text-red-700"
+  }
+
+  return (
+    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className={cn("p-2 rounded-full", severity ? severityColors[severity] : "bg-muted")}>
+          <History className="w-4 h-4" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm">{user}</span>
+            <Badge variant="outline" className="text-[10px] uppercase font-bold">{action}</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Alvo: <span className="font-medium text-foreground">{target}</span>
+            {metadata && <span className="ml-2 italic opacity-70">({metadata})</span>}
+          </p>
+        </div>
+      </div>
+      <p className="text-xs font-medium text-muted-foreground whitespace-nowrap">{date}</p>
+    </div>
+  )
+}
+
+
 
 
 function TenantRow({ tenant }: { tenant: any }) {
