@@ -163,8 +163,10 @@ function SaaSAdmin() {
           contato_responsavel: responsible,
           plan,
           limite_usuarios: limit,
-          status: 'trial'
-        })
+          status: 'trial',
+          slug: name.toLowerCase().replace(/ /g, '-') // Temporary slug generation
+        } as any)
+
 
       if (error) {
         if (error.code === '23505') {
@@ -521,8 +523,9 @@ function TenantRow({ tenant, onUpdate }: { tenant: any, onUpdate: () => void }) 
     try {
       const { error } = await supabase
         .from('tenants')
-        .update({ status: newStatus })
+        .update({ status: newStatus } as any)
         .eq('id', tenant.id)
+
 
       if (error) throw error
       toast.success(`Status alterado para ${newStatus}`)
