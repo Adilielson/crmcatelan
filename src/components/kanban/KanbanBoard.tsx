@@ -1,4 +1,6 @@
+/** @jsxImportSource react */
 import React, { useState } from 'react'
+
 import { useKanban, Lead } from '@/hooks/use-kanban'
 import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
