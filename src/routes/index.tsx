@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { 
   Card, 
   CardContent, 
@@ -15,14 +15,12 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
-  Legend,
   AreaChart,
   Area,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  Legend
 } from 'recharts'
 import { 
   Users, 
@@ -35,153 +33,173 @@ import {
   TrendingUp,
   Clock,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  DollarSign,
+  Store,
+  MessageSquare,
+  Settings
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
+import { useKanban } from '@/hooks/use-kanban'
+import { useAgenda } from '@/hooks/use-agenda'
+import { useChatStore } from '@/hooks/use-chat'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Progress } from '@/components/ui/progress'
 
 export const Route = createFileRoute('/')({
   component: Dashboard,
 })
 
-const trendData = [
-  { name: 'Seg', leads: 45, agendamentos: 28 },
-  { name: 'Ter', leads: 52, agendamentos: 32 },
-  { name: 'Qua', leads: 38, agendamentos: 24 },
-  { name: 'Qui', leads: 65, agendamentos: 42 },
-  { name: 'Sex', leads: 48, agendamentos: 31 },
-  { name: 'Sáb', leads: 30, agendamentos: 18 },
-  { name: 'Dom', leads: 22, agendamentos: 12 },
+const funnelData = [
+  { name: 'Leads Prontos', value: 120, color: '#94a3b8' },
+  { name: 'Em Atendimento', value: 85, color: '#6366f1' },
+  { name: 'Agendado', value: 42, color: '#10b981' },
+  { name: 'Perdido', value: 15, color: '#ef4444' },
 ]
 
-const statusData = [
-  { name: 'Compareceu', value: 72, color: '#10b981' },
-  { name: 'No-Show', value: 18, color: '#ef4444' },
-  { name: 'Cancelado', value: 10, color: '#94a3b8' },
+const sourceData = [
+  { name: 'WhatsApp', value: 65, color: '#22c55e' },
+  { name: 'Instagram', value: 25, color: '#ec4899' },
+  { name: 'Google', value: 10, color: '#3b82f6' },
 ]
 
 function Dashboard() {
+  const { leads, pipelines } = useKanban()
+  const { appointments } = useAgenda()
+  const { sessions } = useChatStore()
+  const [selectedUnit, setSelectedUnit] = useState('all')
+
+  const stats = useMemo(() => {
+    const totalLeads = leads.length
+    const totalValue = leads.reduce((acc, lead) => acc + lead.value, 0)
+    const confirmedAppts = appointments.filter(a => a.status === 'confirmado').length
+    const qualRate = leads.filter(l => l.ia_status === 'qualificado').length / (leads.length || 1) * 100
+    
+    return {
+      totalLeads,
+      totalValue: `R$ ${(totalValue / 1000).toFixed(1)}k`,
+      confirmedAppts,
+      qualRate: `${qualRate.toFixed(0)}%`
+    }
+  }, [leads, appointments])
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Resumo Executivo</h1>
-          <p className="text-muted-foreground">Visão geral de performance, IA e conversão da rede.</p>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Painel de Gestão</h1>
+          <p className="text-muted-foreground">Monitoramento em tempo real da unidade e performance IA.</p>
         </div>
-        <div className="flex items-center gap-2">
-           <Badge variant="outline" className="px-3 py-1 bg-blue-50 text-blue-700 border-blue-200">
-             <div className="w-2 h-2 rounded-full bg-blue-500 mr-2 animate-pulse" />
-             IA Operando Normal
-           </Badge>
-           <Button variant="outline" size="sm">Últimos 30 dias</Button>
+        <div className="flex items-center gap-3">
+           <Select value={selectedUnit} onValueChange={setSelectedUnit}>
+             <SelectTrigger className="w-[180px] bg-white">
+               <Store className="w-4 h-4 mr-2 text-slate-400" />
+               <SelectValue placeholder="Todas as Unidades" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">Todas as Unidades</SelectItem>
+               {pipelines.map(p => (
+                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+           <Button variant="outline" className="bg-white">Relatório Completo</Button>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link to="/kanban">
-          <StatCard 
-            title="Total de Leads" 
-            value="348" 
-            change="+12% que ontem" 
-            icon={<Users className="w-4 h-4" />}
-          />
-        </Link>
-        <Link to="/performance">
-          <StatCard 
-            title="Taxa de Conversão" 
-            value="32.5%" 
-            change="+4% este mês" 
-            icon={<Target className="w-4 h-4" />}
-            color="text-blue-600"
-          />
-        </Link>
-        <Link to="/analytics/no-show">
-          <StatCard 
-            title="No-Show" 
-            value="18.4%" 
-            change="-2% vs média" 
-            icon={<AlertTriangle className="w-4 h-4" />}
-            color="text-red-600"
-            alert={true}
-          />
-        </Link>
-        <Link to="/performance">
-          <StatCard 
-            title="CPA Médio" 
-            value="R$ 42,10" 
-            change="R$ 3,20 abaixo da meta" 
-            icon={<TrendingUp className="w-4 h-4" />}
-            color="text-green-600"
-          />
-        </Link>
+        <StatCard 
+          title="Total de Leads" 
+          value={stats.totalLeads.toString()} 
+          change="+12% vs semana anterior" 
+          icon={<Users className="w-4 h-4" />}
+          link="/kanban"
+        />
+        <StatCard 
+          title="Valor em Pipeline" 
+          value={stats.totalValue} 
+          change="Leads ativos no funil" 
+          icon={<DollarSign className="w-4 h-4" />}
+          color="text-blue-600"
+          link="/kanban"
+        />
+        <StatCard 
+          title="Consultas Confirmadas" 
+          value={stats.confirmedAppts.toString()} 
+          change="Próximos 7 dias" 
+          icon={<Calendar className="w-4 h-4" />}
+          color="text-green-600"
+          link="/agenda"
+        />
+        <StatCard 
+          title="Qualificação IA" 
+          value={stats.qualRate} 
+          change="Performance SDR" 
+          icon={<Brain className="w-4 h-4" />}
+          color="text-purple-600"
+          link="/performance"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Trend Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Fluxo de Captação e Agendamento</CardTitle>
-              <CardDescription>Volume diário de novos leads vs. agendamentos finalizados pela IA.</CardDescription>
-            </div>
-            <Link to="/performance">
-              <Button variant="ghost" size="sm" className="gap-2">
-                Ver Detalhes <ChevronRight className="w-4 h-4" />
-              </Button>
-            </Link>
+        {/* Funil de Vendas */}
+        <Card className="lg:col-span-2 shadow-sm border-none bg-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-slate-500">
+              <TrendingUp className="w-4 h-4" /> Funil de Conversão (Kanban)
+            </CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="leads" name="Novos Leads" stroke="#8884d8" fillOpacity={1} fill="url(#colorLeads)" />
-                <Area type="monotone" dataKey="agendamentos" name="Agendamentos" stroke="#10b981" fillOpacity={0} />
-              </AreaChart>
+              <BarChart data={funnelData} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" fontSize={11} fontWeight="bold" axisLine={false} tickLine={false} />
+                <Tooltip cursor={{fill: '#f8fafc'}} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={32}>
+                  {funnelData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Status Pie */}
-        <Card className="lg:col-span-1">
+        {/* Origem dos Leads */}
+        <Card className="shadow-sm border-none bg-white">
           <CardHeader>
-            <CardTitle>Status de Comparecimento</CardTitle>
-            <CardDescription>Performance de presença nos últimos 30 dias.</CardDescription>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500">Origem dos Leads</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px] flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height={220}>
+          <CardContent className="h-[280px] flex flex-col items-center">
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
-                  data={statusData}
+                  data={sourceData}
                   innerRadius={60}
                   outerRadius={80}
-                  paddingAngle={5}
+                  paddingAngle={8}
                   dataKey="value"
                 >
-                  {statusData.map((entry, index) => (
+                  {sourceData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div className="grid grid-cols-3 gap-4 mt-4 w-full">
-               {statusData.map((item) => (
-                 <div key={item.name} className="text-center">
-                   <p className="text-[10px] text-muted-foreground uppercase">{item.name}</p>
-                   <p className="font-bold text-sm" style={{ color: item.color }}>{item.value}%</p>
+            <div className="grid grid-cols-1 gap-2 mt-4 w-full">
+               {sourceData.map((item) => (
+                 <div key={item.name} className="flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                     <span className="text-[11px] font-bold text-slate-600">{item.name}</span>
+                   </div>
+                   <span className="text-[11px] font-bold text-slate-900">{item.value}%</span>
                  </div>
                ))}
             </div>
@@ -190,60 +208,76 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* IA Training Quick Access */}
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Brain className="w-5 h-5 text-blue-600" />
+        {/* Atividade da IA SDR */}
+        <Card className="shadow-sm border-none bg-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Brain className="w-5 h-5 text-purple-600" />
+              </div>
+              <CardTitle className="text-sm font-bold">Atividade Recente IA SDR</CardTitle>
             </div>
-            <div>
-              <CardTitle>Status de Treinamento IA</CardTitle>
-              <CardDescription>Qualidade de resposta e qualificação de leads.</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Última atualização:</span>
-              <span className="font-medium">Hoje, 14:20</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Taxa de Qualificação:</span>
-              <span className="font-medium text-green-600">72%</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">SLA Médio (Resposta):</span>
-              <span className="font-medium">4m 12s</span>
-            </div>
-            <Link to="/ai-training" className="block">
-              <Button variant="outline" className="w-full gap-2">
-                Ajustar Comportamento <ExternalLink className="w-4 h-4" />
-              </Button>
+            <Link to="/performance">
+              <Button variant="ghost" size="sm" className="text-xs h-8">Ver métricas de IA</Button>
             </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {leads.filter(l => l.ia_status).slice(0, 3).map((lead, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                  <div className="flex items-center gap-3">
+                    <Badge className={cn(
+                      "text-[10px] uppercase font-bold",
+                      lead.ia_status === 'qualificado' ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
+                    )}>
+                      {lead.ia_status}
+                    </Badge>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{lead.name}</p>
+                      <p className="text-[10px] text-slate-500 truncate max-w-[200px]">{lead.ia_resumo}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] font-bold border-slate-200">
+                    {lead.ia_score}%
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Critical Tasks */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Prioridades de Conversão</CardTitle>
-            <CardDescription>Leads qualificados que ainda não agendaram.</CardDescription>
+        {/* Alertas de SLA e Estagnação */}
+        <Card className="shadow-sm border-none bg-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-50 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <CardTitle className="text-sm font-bold">Leads em Alerta (SLA)</CardTitle>
+            </div>
+            <Link to="/settings">
+              <Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="w-4 h-4 text-slate-400" /></Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {[
-                { name: 'Ana Souza', score: 95, time: '2h atrás', unit: 'Sul' },
-                { name: 'Roberto Lima', score: 88, time: '5h atrás', unit: 'Norte' },
-                { name: 'Carla Pereira', score: 82, time: '8h atrás', unit: 'Sul' },
-              ].map((task, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                { name: 'Roberto Lima', stage: 'Leads Prontos', wait: '5h', priority: 'VIP' },
+                { name: 'Ana Souza', stage: 'Em Atendimento', wait: '26h', priority: 'Alta' },
+              ].map((alert, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border border-red-50 rounded-xl bg-red-50/30">
                   <div className="flex items-center gap-3">
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{task.score}</Badge>
+                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-red-600" />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium">{task.name}</p>
-                      <p className="text-[10px] text-muted-foreground">Qualificado há {task.time} • Unidade {task.unit}</p>
+                      <p className="text-sm font-bold text-slate-800">{alert.name} <Badge className="ml-2 bg-red-100 text-red-700 text-[9px] border-none">{alert.priority}</Badge></p>
+                      <p className="text-[10px] text-slate-500">Parado em {alert.stage} há {alert.wait}</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="secondary">Agendar</Button>
+                  <Link to="/chat">
+                    <Button size="sm" className="h-7 text-[10px] font-bold">Assumir Chat</Button>
+                  </Link>
                 </div>
               ))}
             </div>
@@ -254,21 +288,23 @@ function Dashboard() {
   )
 }
 
-function StatCard({ title, value, change, icon, color, alert }: { title: string; value: string; change: string; icon: React.ReactNode; color?: string; alert?: boolean }) {
+function StatCard({ title, value, change, icon, color, link }: { title: string; value: string; change: string; icon: React.ReactNode; color?: string; link: string }) {
   return (
-    <Card className={cn("hover:shadow-md transition-shadow cursor-pointer", alert && "border-red-100")}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <div className="p-2 bg-slate-50 rounded-lg text-slate-500">
-            {icon}
+    <Link to={link}>
+      <Card className="hover:shadow-md transition-all cursor-pointer border-none shadow-sm bg-white group">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+            <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+              {icon}
+            </div>
           </div>
-        </div>
-        <div className="space-y-1">
-          <h3 className={cn("text-2xl font-bold", color)}>{value}</h3>
-          <p className="text-xs text-muted-foreground">{change}</p>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="space-y-1">
+            <h3 className={cn("text-2xl font-bold text-slate-800", color)}>{value}</h3>
+            <p className="text-[10px] font-bold text-slate-400">{change}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }
