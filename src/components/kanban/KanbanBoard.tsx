@@ -36,6 +36,7 @@ const InstagramIcon = ({ className }: { className?: string }) => (
 
 export function KanbanBoard() {
   const { pipelines, currentPipelineId, setCurrentPipeline, leads, moveLead, updateLead } = useKanban()
+  const { addAppointment } = useAgenda()
   const { addNotification } = useNotificationStore()
   const currentPipeline = pipelines.find(p => p.id === currentPipelineId) || pipelines[0]
 
