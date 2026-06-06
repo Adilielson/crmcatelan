@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useKanban, Lead } from '@/hooks/use-kanban'
-import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, Instagram } from 'lucide-react'
+import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+
+// Manual Instagram icon to avoid import issues
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+)
 
 export function KanbanBoard() {
   const { pipelines, currentPipelineId, setCurrentPipeline, leads, moveLead, updateLead } = useKanban()
@@ -172,7 +192,7 @@ export function KanbanBoard() {
 function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.DragEvent) => void }) {
   const sourceIcons = {
     whatsapp: <MessageCircle className="w-4 h-4 text-green-500" />,
-    instagram: <Instagram className="w-4 h-4 text-pink-500" />,
+    instagram: <InstagramIcon className="text-pink-500" />,
     google: <MessageSquare className="w-4 h-4 text-blue-500" />,
     direct: <MessageSquare className="w-4 h-4 text-slate-500" />,
   }
