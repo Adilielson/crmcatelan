@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 
-export const Route = createFileRoute('/kanban')({
+export const Route = createFileRoute('/kanban' as any)({
   component: Kanban,
 })
 
