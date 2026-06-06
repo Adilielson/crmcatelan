@@ -6,20 +6,21 @@ import {
   Activity, 
   Cpu, 
   ShieldCheck, 
-  Users, 
   Search, 
   Filter, 
   MoreVertical,
-  ArrowUpRight,
-  ArrowDownRight,
   Plus,
   Zap,
   Lock,
   History,
   AlertCircle,
   ExternalLink,
-  Ban
+  Ban,
+  CheckCircle2,
+  XCircle,
+  Users
 } from 'lucide-react'
+
 import { 
   Card, 
   CardContent, 
@@ -45,39 +46,95 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  Cell
-} from 'recharts'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { toast } from "sonner"
 
 export const Route = createFileRoute('/saas')({
   component: SaaSAdmin,
 })
 
-const iaPerformanceData = [
-  { name: 'Ótica Castelar', tokens: 45000, conversion: 32, performance: 88 },
-  { name: 'Ótica Visão', tokens: 32000, conversion: 28, performance: 82 },
-  { name: 'Luz & Brilho', tokens: 28000, conversion: 24, performance: 75 },
-  { name: 'Ótica Real', tokens: 15000, conversion: 18, performance: 60 },
-  { name: 'Foco Visual', tokens: 8000, conversion: 12, performance: 45 },
-]
-
-const auditLogs = [
-  { id: 1, user: 'Admin Root', action: 'Alteração de Plano', target: 'Ótica Castelar', date: '2024-06-05 14:20', ip: '192.168.1.1' },
-  { id: 2, user: 'Suporte Dev', action: 'Impersonate Login', target: 'Ótica Visão', date: '2024-06-05 13:45', ip: '192.168.1.5' },
-  { id: 3, user: 'Admin Root', action: 'Bloqueio de IA', target: 'Ótica Real', date: '2024-06-05 11:10', ip: '192.168.1.1' },
-  { id: 4, user: 'Sistema', action: 'Auto-Pause (Limit)', target: 'Foco Visual', date: '2024-06-05 09:30', ip: 'internal' },
+// Mock data based on new PRD fields
+const initialTenants = [
+  { 
+    id: '1', 
+    name: 'Ótica Castelar Matriz', 
+    cnpj: '12.345.678/0001-90',
+    plan: 'enterprise', 
+    users: 12, 
+    user_limit: 20,
+    ia_used: 45200, 
+    ia_quota: 100000,
+    status: 'ativo',
+    responsible: 'João Castelar',
+    slug: 'castelar-matriz'
+  },
+  { 
+    id: '2', 
+    name: 'Ótica Visão Perfeita', 
+    cnpj: '98.765.432/0001-11',
+    plan: 'pro', 
+    users: 5, 
+    user_limit: 5,
+    ia_used: 98000, 
+    ia_quota: 100000,
+    status: 'ativo',
+    responsible: 'Maria Silva',
+    slug: 'visao-perfeita'
+  },
+  { 
+    id: '3', 
+    name: 'Luz & Brilho', 
+    cnpj: '45.678.901/0001-22',
+    plan: 'basic', 
+    users: 2, 
+    user_limit: 2,
+    ia_used: 12100, 
+    ia_quota: 20000,
+    status: 'inadimplente',
+    responsible: 'Carlos Luz',
+    slug: 'luz-brilho'
+  }
 ]
 
 function SaaSAdmin() {
+  const [tenants, setTenants] = useState(initialTenants)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [search, setSearch] = useState('')
+
+  const handleCreateTenant = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Simulated logic for duplicate CNPJ check
+    const formData = new FormData(e.target as HTMLFormElement)
+    const cnpj = formData.get('cnpj') as string
+    
+    if (tenants.some(t => t.cnpj === cnpj)) {
+      toast.error("Erro: CNPJ já cadastrado no sistema.")
+      return
+    }
+
+    toast.success("Ótica cadastrada com sucesso! Tenant ID gerado.")
+    setIsCreateOpen(false)
+  }
+
+  const filteredTenants = tenants.filter(t => 
+    t.name.toLowerCase().includes(search.toLowerCase()) || 
+    t.cnpj.includes(search)
+  )
 
   return (
     <div className="space-y-6">
@@ -87,74 +144,104 @@ function SaaSAdmin() {
             <ShieldCheck className="w-8 h-8 text-primary" />
             Painel Super Admin
           </h1>
-          <p className="text-muted-foreground">Gestão global do ecossistema Castelar CRM.</p>
+          <p className="text-muted-foreground">Gestão global de inquilinos e infraestrutura.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
-            <History className="w-4 h-4" /> Logs Globais
+            <History className="w-4 h-4" /> Auditoria
           </Button>
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" /> Nova Ótica
-          </Button>
+          
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" /> Nova Ótica
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <form onSubmit={handleCreateTenant}>
+                <DialogHeader>
+                  <DialogTitle>Cadastrar Nova Ótica</DialogTitle>
+                  <DialogDescription>
+                    Insira as informações da nova unidade cliente. O Tenant ID será gerado automaticamente.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4 grid-cols-2">
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="name">Nome Fantasia</Label>
+                    <Input id="name" name="name" placeholder="Ex: Ótica do Povo" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Input id="cnpj" name="cnpj" placeholder="00.000.000/0000-00" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="responsible">Responsável</Label>
+                    <Input id="responsible" name="responsible" placeholder="Nome do contato" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="plan">Plano</Label>
+                    <Select name="plan" defaultValue="basic">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o plano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basic">Basic</SelectItem>
+                        <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="enterprise">Enterprise</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="limit">Limite de Usuários</Label>
+                    <Input id="limit" name="limit" type="number" defaultValue="5" />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="whatsapp">Token WhatsApp API (Opcional)</Label>
+                    <Input id="whatsapp" name="whatsapp" type="password" placeholder="Token de integração" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+                  <Button type="submit">Finalizar Cadastro</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard 
-          title="Total de Óticas" 
-          value="24" 
-          trend="+3 este mês" 
-          icon={<Building2 className="w-4 h-4 text-primary" />} 
-        />
-        <StatsCard 
-          title="MRR Total" 
-          value="R$ 12.400" 
-          trend="+12%" 
-          icon={<CreditCard className="w-4 h-4 text-green-600" />} 
-        />
-        <StatsCard 
-          title="Tokens IA (Mês)" 
-          value="840k" 
-          trend="+45k hoje" 
-          icon={<Cpu className="w-4 h-4 text-purple-600" />} 
-        />
-        <StatsCard 
-          title="Saúde do Sistema" 
-          value="99.9%" 
-          trend="Estável" 
-          icon={<Activity className="w-4 h-4 text-blue-600" />} 
-          statusColor="text-green-600"
-        />
+        <StatsCard title="Total de Óticas" value={tenants.length.toString()} trend="+3 este mês" icon={<Building2 className="w-4 h-4 text-primary" />} />
+        <StatsCard title="MRR Total" value="R$ 12.400" trend="+12%" icon={<CreditCard className="w-4 h-4 text-green-600" />} />
+        <StatsCard title="Tokens IA (Mês)" value="840k" trend="+45k hoje" icon={<Cpu className="w-4 h-4 text-purple-600" />} />
+        <StatsCard title="Saúde do Sistema" value="99.9%" trend="Estável" icon={<Activity className="w-4 h-4 text-blue-600" />} statusColor="text-green-600" />
       </div>
 
       <Tabs defaultValue="tenants" className="w-full">
         <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
-          <TabsTrigger value="tenants">Óticas (Tenants)</TabsTrigger>
-          <TabsTrigger value="plans">Planos & Limites</TabsTrigger>
-          <TabsTrigger value="ia-monitor">Monitoramento IA</TabsTrigger>
-          <TabsTrigger value="security">Segurança & Auditoria</TabsTrigger>
+          <TabsTrigger value="tenants">Lista de Óticas</TabsTrigger>
+          <TabsTrigger value="plans">Planos & Config</TabsTrigger>
+          <TabsTrigger value="ia">Performance IA</TabsTrigger>
+          <TabsTrigger value="security">Segurança</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tenants" className="space-y-4">
+        <TabsContent value="tenants" className="space-y-4 pt-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Gestão de Multi-tenancy</CardTitle>
-                <CardDescription>Visualize e gerencie todas as óticas clientes.</CardDescription>
+                <CardTitle>Gestão de Clientes (Tenants)</CardTitle>
+                <CardDescription>Visualize o status e limites de cada ótica.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input 
-                    placeholder="Buscar ótica ou CNPJ..." 
+                    placeholder="Buscar por nome ou CNPJ..." 
                     className="pl-9 w-[300px]"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
-                <Button variant="outline" size="icon">
-                  <Filter className="w-4 h-4" />
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -163,173 +250,99 @@ function SaaSAdmin() {
                   <thead className="bg-muted/50 text-xs text-muted-foreground uppercase font-medium">
                     <tr>
                       <th className="px-6 py-3">Ótica</th>
-                      <th className="px-6 py-3">Plano</th>
-                      <th className="px-6 py-3">Usuários</th>
-                      <th className="px-6 py-3">Consumo IA</th>
-                      <th className="px-6 py-3">Status</th>
+                      <th className="px-6 py-3">CNPJ / Responsável</th>
+                      <th className="px-6 py-3">Plano / Status</th>
+                      <th className="px-6 py-3">Limites (Usuários/IA)</th>
                       <th className="px-6 py-3 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y text-sm">
-                    <TenantRow 
-                      name="Ótica Castelar Matriz" 
-                      plan="Enterprise" 
-                      users="12 / 20" 
-                      ia="45.2k tokens" 
-                      status="Ativo"
-                    />
-                    <TenantRow 
-                      name="Ótica Visão Perfeita" 
-                      plan="Pro" 
-                      users="5 / 5" 
-                      ia="32.8k tokens" 
-                      status="Ativo"
-                      alertIA
-                    />
-                    <TenantRow 
-                      name="Luz & Brilho" 
-                      plan="Basic" 
-                      users="2 / 2" 
-                      ia="12.1k tokens" 
-                      status="Atraso"
-                    />
-                    <TenantRow 
-                      name="Ótica Real (Demo)" 
-                      plan="Trial" 
-                      users="1 / 3" 
-                      ia="850 tokens" 
-                      status="Inativo"
-                    />
+                    {filteredTenants.map(tenant => (
+                      <TenantRow key={tenant.id} tenant={tenant} />
+                    ))}
                   </tbody>
                 </table>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="plans" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <PlanCard 
-              name="Basic" 
-              price="R$ 199/mês" 
-              limits={{ users: 2, leads: 100, ia: 'Padrão' }}
-              activeCount={12}
-            />
-            <PlanCard 
-              name="Pro" 
-              price="R$ 499/mês" 
-              limits={{ users: 10, leads: 500, ia: 'Avançado' }}
-              activeCount={8}
-              highlight
-            />
-            <PlanCard 
-              name="Enterprise" 
-              price="Sob Consulta" 
-              limits={{ users: 'Ilimitado', leads: 'Ilimitado', ia: 'Custom' }}
-              activeCount={4}
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="ia-monitor" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Performance de IA por Ótica</CardTitle>
-                <CardDescription>Ranking de conversão e eficiência dos agendamentos via IA.</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={iaPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                    />
-                    <Bar dataKey="performance" name="Performance (%)" fill="#6366f1" radius={[4, 4, 0, 0]}>
-                      {iaPerformanceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.performance > 70 ? '#6366f1' : entry.performance > 50 ? '#f59e0b' : '#ef4444'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Alertas de Estouro</CardTitle>
-                  <CardDescription>Monitoramento de quotas em tempo real.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold text-red-900 uppercase">Bloqueio Automático</p>
-                      <p className="text-xs text-red-800">Ótica Foco Visual atingiu 110% da quota. IA pausada.</p>
-                      <Button variant="link" className="h-auto p-0 text-xs text-red-900 font-bold mt-1">Liberar Quota →</Button>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold text-amber-900 uppercase">Aviso de Consumo</p>
-                      <p className="text-xs text-amber-800">Ótica Visão atingiu 90% da quota mensal.</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Custo Médio Token</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">R$ 0,08</div>
-                  <p className="text-xs text-muted-foreground mt-1">Margem bruta: 65%</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Logs de Auditoria de Segurança</CardTitle>
-              <CardDescription>Rastreabilidade completa de ações administrativas.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {auditLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-muted rounded-full">
-                        <History className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{log.user}</span>
-                          <Badge variant="outline" className="text-[10px]">{log.action}</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Alvo: <span className="font-medium text-foreground">{log.target}</span></p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{log.date}</p>
-                      <p className="text-xs text-muted-foreground">{log.ip}</p>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="ghost" className="w-full text-xs">Carregar mais registros...</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Outras abas mantidas como mock por enquanto conforme ETAPA 2 anterior */}
       </Tabs>
     </div>
+  )
+}
+
+function TenantRow({ tenant }: { tenant: any }) {
+  const isIAOverLimit = tenant.ia_used >= tenant.ia_quota
+  const isUsersAtLimit = tenant.users >= tenant.user_limit
+
+  return (
+    <tr className="group hover:bg-muted/30 transition-colors">
+      <td className="px-6 py-4">
+        <div>
+          <p className="font-semibold">{tenant.name}</p>
+          <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">slug: {tenant.slug}</p>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <p className="text-xs font-medium">{tenant.cnpj}</p>
+        <p className="text-[10px] text-muted-foreground">{tenant.responsible}</p>
+      </td>
+      <td className="px-6 py-4 space-y-1">
+        <Badge variant="outline" className="capitalize">{tenant.plan}</Badge>
+        <br />
+        <Badge 
+          className={
+            tenant.status === 'ativo' ? 'bg-green-50 text-green-700 border-green-200' : 
+            tenant.status === 'inadimplente' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
+            'bg-red-50 text-red-700 border-red-200'
+          }
+        >
+          {tenant.status.toUpperCase()}
+        </Badge>
+      </td>
+      <td className="px-6 py-4 space-y-1">
+        <div className="flex items-center gap-2">
+          <Users className="w-3 h-3 text-muted-foreground" />
+          <span className={`text-xs ${isUsersAtLimit ? 'text-amber-600 font-bold' : ''}`}>
+            {tenant.users} / {tenant.user_limit}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Cpu className="w-3 h-3 text-muted-foreground" />
+          <span className={`text-xs ${isIAOverLimit ? 'text-red-600 font-bold' : ''}`}>
+            {(tenant.ia_used / 1000).toFixed(1)}k / {(tenant.ia_quota / 1000).toFixed(1)}k
+          </span>
+          {isIAOverLimit && <Lock className="w-3 h-3 text-red-600" />}
+        </div>
+      </td>
+      <td className="px-6 py-4 text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuLabel>Gestão da Ótica</DropdownMenuLabel>
+            <DropdownMenuItem className="gap-2 text-primary font-bold">
+              <Zap className="w-3.5 h-3.5" /> Acessar (Impersonate)
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2">
+              <ExternalLink className="w-3.5 h-3.5" /> Editar Cadastro
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2">
+              <Lock className="w-3.5 h-3.5" /> Ajustar Quotas
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2 text-red-600">
+              <Ban className="w-3.5 h-3.5" /> Bloquear Acesso
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+    </tr>
   )
 }
 
@@ -342,105 +355,9 @@ function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" 
       </CardHeader>
       <CardContent>
         <div className={`text-2xl font-bold ${statusColor}`}>{value}</div>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-          {trend.includes('+') ? (
-            <ArrowUpRight className="w-3 h-3 text-green-600" />
-          ) : trend.includes('-') ? (
-            <ArrowDownRight className="w-3 h-3 text-red-600" />
-          ) : null}
-          {trend}
-        </p>
+        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">{trend}</p>
       </CardContent>
     </Card>
   )
 }
 
-function TenantRow({ name, plan, users, ia, status, alertIA }: any) {
-  return (
-    <tr className="group hover:bg-muted/30 transition-colors">
-      <td className="px-6 py-4">
-        <div>
-          <p className="font-semibold">{name}</p>
-          <p className="text-xs text-muted-foreground truncate max-w-[200px]">ID: tenant_{name.toLowerCase().replace(/ /g, '_')}</p>
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <Badge variant="outline">{plan}</Badge>
-      </td>
-      <td className="px-6 py-4 text-xs font-medium">{users}</td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-medium ${alertIA ? 'text-amber-600 font-bold' : ''}`}>{ia}</span>
-          {alertIA && <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />}
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <Badge 
-          className={
-            status === 'Ativo' ? 'bg-green-50 text-green-700 border-green-200' : 
-            status === 'Atraso' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
-            'bg-gray-50 text-gray-700 border-gray-200'
-          }
-        >
-          {status}
-        </Badge>
-      </td>
-      <td className="px-6 py-4 text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[180px]">
-            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-            <DropdownMenuItem className="gap-2">
-              <ExternalLink className="w-3.5 h-3.5" /> Ver Detalhes
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 text-primary font-bold">
-              <Zap className="w-3.5 h-3.5" /> Impersonate
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2">
-              <Lock className="w-3.5 h-3.5" /> Editar Limites
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 text-red-600">
-              <Ban className="w-3.5 h-3.5" /> Bloquear Acesso
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </td>
-    </tr>
-  )
-}
-
-function PlanCard({ name, price, limits, activeCount, highlight }: any) {
-  return (
-    <Card className={highlight ? 'border-primary ring-1 ring-primary' : ''}>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <Badge variant={highlight ? 'default' : 'secondary'}>{name}</Badge>
-          <span className="text-xs text-muted-foreground">{activeCount} ativos</span>
-        </div>
-        <CardTitle className="text-2xl pt-2">{price}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Usuários:</span>
-            <span className="font-semibold">{limits.users}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Leads/mês:</span>
-            <span className="font-semibold">{limits.leads}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Suporte IA:</span>
-            <span className="font-semibold">{limits.ia}</span>
-          </div>
-        </div>
-        <Button variant={highlight ? 'default' : 'outline'} className="w-full">Editar Plano</Button>
-      </CardContent>
-    </Card>
-  )
-}
