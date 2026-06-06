@@ -48,7 +48,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
-export const Route = createFileRoute('/analytics/no-show' as any)({
+export const Route = createFileRoute('/analytics/no-show')({
   component: NoShowAnalytics,
 })
 
