@@ -1,5 +1,25 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Calendar, MessageSquare, MapPin, DollarSign, Instagram, Mail, Globe, MessageCircle } from 'lucide-react'
+import { Calendar, MessageSquare, MapPin, DollarSign, Mail, Globe, MessageCircle } from 'lucide-react'
+
+// Manual Instagram icon if not found in current lucide-react version or for custom styling
+const InstagramIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="text-pink-500"
+  >
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+)
 
 export const Route = createFileRoute('/kanban')({
   component: Kanban,
@@ -38,7 +58,7 @@ function Kanban() {
                       <p className="text-sm text-primary font-semibold">{lead.value}</p>
                     </div>
                     {lead.source === 'whatsapp' && <MessageCircle className="w-4 h-4 text-green-500" />}
-                    {lead.source === 'instagram' && <Instagram className="w-4 h-4 text-pink-500" />}
+                    {lead.source === 'instagram' && <InstagramIcon />}
                   </div>
                   <div className="flex gap-2 pt-2 border-t">
                     <button className="p-2 hover:bg-gray-100 rounded-lg text-muted-foreground" title="Agenda">
