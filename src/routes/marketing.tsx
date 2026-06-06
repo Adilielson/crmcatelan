@@ -46,7 +46,7 @@ function MarketingPartnerDashboard() {
           <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mr-4">
             <TabsList className="bg-slate-100">
               <TabsTrigger value="performance" className="text-xs font-bold">Performance</TabsTrigger>
-              <TabsTrigger value="integrations" className="text-xs font-bold">Integrações & Pixel</TabsTrigger>
+              <TabsTrigger value="integrations" className="text-xs font-bold">Integrações {'&'} Pixel</TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border">
@@ -142,7 +142,7 @@ function IntegrationsView() {
           </div>
 
             <div className="space-y-4 pt-4 border-t">
-            <h4 className="text-xs font-bold text-slate-700">Mapeamento de Eventos (CRM {"\u2192"} Ads)</h4>
+            <h4 className="text-xs font-bold text-slate-700">Mapeamento de Eventos (CRM {'\u2192'} Ads)</h4>
             <div className="space-y-3">
               {[
                 { label: 'Lead Gerado', crmStatus: 'Novo Lead', defaultEvent: 'Lead' },
