@@ -1,11 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings as SettingsIcon, Store, Shield, Bell, MessageSquare, Clock } from 'lucide-react'
+import { Settings as SettingsIcon, Store, Shield, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { useAutomations } from '@/hooks/use-automations'
+import { toast } from 'sonner'
+
+
 
 export const Route = createFileRoute('/settings')({
   component: Settings,
@@ -25,9 +29,11 @@ function Settings() {
         <TabsList className="bg-white border mb-6 w-full justify-start h-12 p-1">
           <TabsTrigger value="unit" className="flex items-center gap-2 px-4"><Store className="w-4 h-4" /> Unidade</TabsTrigger>
           <TabsTrigger value="ia" className="flex items-center gap-2 px-4"><Shield className="w-4 h-4" /> IA SDR</TabsTrigger>
+          <TabsTrigger value="automations" className="flex items-center gap-2 px-4"><Zap className="w-4 h-4" /> Automações & SLAs</TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2 px-4"><Bell className="w-4 h-4" /> Notificações</TabsTrigger>
           <TabsTrigger value="chat" className="flex items-center gap-2 px-4"><MessageSquare className="w-4 h-4" /> Chat & WhatsApp</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="unit">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -136,7 +142,98 @@ function Settings() {
           </section>
         </TabsContent>
 
+        <TabsContent value="automations" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section className="bg-white border rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary" /> SLAs e Tempos de Estagnação
+              </h3>
+              <p className="text-xs text-slate-500 mb-6">Defina por quanto tempo um lead pode ficar parado em cada etapa antes de gerar um alerta.</p>
+              
+              <div className="space-y-4">
+                {useAutomations.getState().rules.map((rule) => (
+                  <div key={rule.id} className="p-4 bg-slate-50 rounded-lg border space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-slate-700">{rule.columnName}</span>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          type="number" 
+                          className="w-16 h-8 text-xs text-center" 
+                          defaultValue={rule.slaHours} 
+                          onChange={(e) => useAutomations.getState().updateRule(rule.id, { slaHours: parseInt(e.target.value) })}
+                        />
+                        <span className="text-[10px] font-bold text-slate-400">HORAS</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <Switch defaultChecked={rule.notifyAgent} onCheckedChange={(val) => useAutomations.getState().updateRule(rule.id, { notifyAgent: val })} />
+                        <span className="text-[10px] font-medium text-slate-600">Avisar Atendente</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch defaultChecked={rule.notifyManager} onCheckedChange={(val) => useAutomations.getState().updateRule(rule.id, { notifyManager: val })} />
+                        <span className="text-[10px] font-medium text-slate-600">Avisar Gerente</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-primary">Abandono Crítico (Leads VIP)</p>
+                      <p className="text-[10px] text-slate-500">Alerta máximo para leads de fundo de funil sem interação.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number" 
+                        className="w-16 h-8 text-xs text-center bg-white" 
+                        defaultValue={useAutomations.getState().abandonmentThreshold} 
+                        onChange={(e) => useAutomations.getState().setAbandonmentThreshold(parseInt(e.target.value))}
+                      />
+                      <span className="text-[10px] font-bold text-slate-400">HORAS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white border rounded-xl p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-primary" /> Webhooks (Marketing)
+                </h3>
+                <Button size="sm" variant="outline" className="h-8 gap-1">
+                  <Plus className="w-3 h-3" /> Novo
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 mb-6">Envie eventos em tempo real para o Facebook Conversion API ou sua agência.</p>
+
+              <div className="space-y-4">
+                {useAutomations.getState().webhooks.map((webhook) => (
+                  <div key={webhook.id} className="p-4 border rounded-lg space-y-3 relative group">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{webhook.name}</p>
+                        <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{webhook.url}</p>
+                      </div>
+                      <Switch defaultChecked={webhook.active} onCheckedChange={(val) => useAutomations.getState().updateWebhook(webhook.id, { active: val })} />
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <Badge variant="secondary" className="text-[9px] uppercase tracking-wider">{webhook.event.replace('_', ' ')}</Badge>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300 hover:text-red-500">
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        </TabsContent>
+
         <TabsContent value="chat">
+
           <section className="bg-white border rounded-xl p-6 shadow-sm max-w-4xl">
             <h3 className="text-lg font-bold text-slate-800 mb-4">Configurações de Chat</h3>
             <div className="space-y-6">
