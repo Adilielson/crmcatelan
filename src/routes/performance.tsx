@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-export const Route = createFileRoute('/performance' as any)({
+export const Route = createFileRoute('/performance')({
   component: IAMetrics,
 })
 

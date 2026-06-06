@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { MarketingMetrics } from '@/components/kanban/MarketingMetrics'
 
-export const Route = createFileRoute('/marketing' as any)({
+export const Route = createFileRoute('/marketing')({
   component: MarketingPage,
 })
 

@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 
 
 
-export const Route = createFileRoute('/settings' as any)({
+export const Route = createFileRoute('/settings')({
   component: Settings,
 })
 

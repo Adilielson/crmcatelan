@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from 'sonner'
 
-export const Route = createFileRoute('/chat' as any)({
+export const Route = createFileRoute('/chat')({
   component: Chat,
 })
 
