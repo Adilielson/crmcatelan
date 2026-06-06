@@ -141,11 +141,12 @@ function IntegrationsView() {
             </div>
           </div>
 
-          <div className="space-y-4 pt-4 border-t">
-            <h4 className="text-xs font-bold text-slate-700">Mapeamento de Eventos (CRM -> Ads)</h4>
+            <div className="space-y-4 pt-4 border-t">
+            <h4 className="text-xs font-bold text-slate-700">Mapeamento de Eventos (CRM &rarr; Ads)</h4>
             <div className="space-y-3">
               {[
                 { label: 'Lead Gerado', crmStatus: 'Novo Lead', defaultEvent: 'Lead' },
+
                 { label: 'Agendamento Confirmado', crmStatus: 'Agendado', defaultEvent: 'Schedule' },
                 { label: 'Check-in Realizado', crmStatus: 'Compareceu', defaultEvent: 'Purchase' },
               ].map((map, i) => (
