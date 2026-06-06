@@ -18,9 +18,30 @@ import {
   Ban,
   CheckCircle2,
   XCircle,
-  Users
+  Users,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  PieChart as PieChartIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  Cell,
+  PieChart,
+  Pie,
+  AreaChart,
+  Area
+} from 'recharts'
+
 
 
 import { 
@@ -113,10 +134,25 @@ const initialTenants = [
   }
 ]
 
+const revenueData = [
+  { month: 'Jan', mrr: 8200, profit: 5400 },
+  { month: 'Fev', mrr: 9100, profit: 6000 },
+  { month: 'Mar', mrr: 10500, profit: 7100 },
+  { month: 'Abr', mrr: 11200, profit: 7800 },
+  { month: 'Mai', mrr: 12400, profit: 8600 },
+]
+
+const planDistribution = [
+  { name: 'Basic', value: 12, color: '#94a3b8' },
+  { name: 'Pro', value: 8, color: '#6366f1' },
+  { name: 'Enterprise', value: 4, color: '#1e1b4b' },
+]
+
 function SaaSAdmin() {
   const [tenants, setTenants] = useState(initialTenants)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [search, setSearch] = useState('')
+
 
   const handleCreateTenant = (e: React.FormEvent) => {
     e.preventDefault()
@@ -219,13 +255,146 @@ function SaaSAdmin() {
         <StatsCard title="Saúde do Sistema" value="99.9%" trend="Estável" icon={<Activity className="w-4 h-4 text-blue-600" />} statusColor="text-green-600" />
       </div>
 
-      <Tabs defaultValue="tenants" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
+          <TabsTrigger value="dashboard">Visão Geral</TabsTrigger>
           <TabsTrigger value="tenants">Lista de Óticas</TabsTrigger>
           <TabsTrigger value="plans">Planos & Config</TabsTrigger>
           <TabsTrigger value="ia">Performance IA</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Crescimento Mensal de Receita (MRR)</CardTitle>
+                <CardDescription>Evolução do faturamento recorrente e lucro líquido.</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueData}>
+                    <defs>
+                      <linearGradient id="colorMrr" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="mrr" name="MRR" stroke="#6366f1" fillOpacity={1} fill="url(#colorMrr)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="profit" name="Lucro Líquido" stroke="#22c55e" fillOpacity={0} strokeWidth={2} strokeDasharray="5 5" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribuição de Planos</CardTitle>
+                <CardDescription>Percentual por nível de assinatura.</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px] flex flex-col justify-center">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={planDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {planDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-4 space-y-2">
+                  {planDistribution.map((plan) => (
+                    <div key={plan.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: plan.color }} />
+                        <span className="text-muted-foreground">{plan.name}</span>
+                      </div>
+                      <span className="font-bold">{plan.value} Óticas</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Alertas de Saúde do Ecossistema</CardTitle>
+                <CardDescription>Inquilinos e serviços que exigem atenção imediata.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-full">
+                      <Zap className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-amber-900">Limite de Tokens Próximo</p>
+                      <p className="text-[10px] text-amber-800">Ótica Visão Perfeita atingiu 98% da quota mensal.</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" className="h-8 text-xs">Aumentar Quota</Button>
+                </div>
+                <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-100 rounded-full">
+                      <Ban className="w-4 h-4 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-red-900">Assinatura Inadimplente</p>
+                      <p className="text-[10px] text-red-800">Luz & Brilho está com faturamento atrasado há 5 dias.</p>
+                    </div>
+                  </div>
+                  <Button variant="destructive" size="sm" className="h-8 text-xs">Cobrar</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Consumidores de IA</CardTitle>
+                <CardDescription>Clientes com maior volume de requisições hoje.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { name: 'Ótica Castelar', tokens: '45.2k', trend: '+12%' },
+                    { name: 'Ótica Visão', tokens: '32.8k', trend: '+8%' },
+                    { name: 'Luz & Brilho', tokens: '12.1k', trend: '-5%' },
+                  ].map((client) => (
+                    <div key={client.name} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{client.name}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-bold">{client.tokens}</span>
+                        <Badge variant="outline" className="text-[10px] text-green-600 border-green-200">
+                          {client.trend}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
 
         <TabsContent value="tenants" className="space-y-4 pt-4">
           <Card>
