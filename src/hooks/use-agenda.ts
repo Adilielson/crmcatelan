@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { useKanban } from './use-kanban'
 import { useNotificationStore } from '@/store/useNotificationStore'
+import { useAutomations } from './use-automations'
+
 
 export type AppointmentStatus = 'pendente' | 'confirmado' | 'realizado' | 'no-show' | 'cancelado'
 export type AppointmentOrigin = 'manual' | 'automatizado_ia' | 'link_externo'
@@ -99,7 +101,20 @@ export const useAgenda = create<AgendaState>((set, get) => ({
     const { updateLead } = useKanban.getState()
     updateLead(data.leadId, { status: 'Agendado', scheduledAt: `${data.date}T${data.startTime}` })
     
+    // Automação: Webhook para Facebook Conversion API
+    const { webhooks } = useAutomations.getState()
+    const fbWebhook = webhooks.find(w => w.event === 'appointment_scheduled' && w.active)
+    if (fbWebhook) {
+      console.log(`[Webhook] Enviando evento '${fbWebhook.event}' para ${fbWebhook.url}`)
+      useNotificationStore.getState().addNotification({
+        title: 'Webhook Enviado',
+        message: `Evento de agendamento disparado para ${fbWebhook.name}.`,
+        category: 'webhook_event'
+      })
+    }
+
     return true
+
   },
   updateAppointment: (id, updates) => {
     const { appointments } = get()

@@ -4,7 +4,8 @@ export type Notification = {
   id: string
   title: string
   message: string
-  category: 'ai_training' | 'performance' | 'system_error' | 'lead_alert'
+  category: 'ai_training' | 'performance' | 'system_error' | 'lead_alert' | 'sla_warning' | 'webhook_event' | 'chat_update'
+
   read_at: string | null
   created_at: string
   link?: string

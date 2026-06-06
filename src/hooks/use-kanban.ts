@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { useNotificationStore } from '@/store/useNotificationStore'
+
 
 export type LeadSource = 'whatsapp' | 'instagram' | 'google' | 'direct'
 export type IAStatus = 'aguardando' | 'processando' | 'qualificado' | 'desqualificado'
@@ -88,11 +90,38 @@ export const useKanban = create<KanbanState>((set) => ({
   addLead: (lead) => set((state) => ({
     leads: [...state.leads, { ...lead, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() }]
   })),
-  moveLead: (leadId, newStatus) => set((state) => ({
-    leads: state.leads.map(l => l.id === leadId ? { ...l, status: newStatus } : l)
-  })),
-  updateLead: (leadId, updates) => set((state) => ({
-    leads: state.leads.map(l => l.id === leadId ? { ...l, ...updates } : l)
-  })),
+  moveLead: (leadId, newStatus) => set((state) => {
+    const lead = state.leads.find(l => l.id === leadId)
+    
+    // Automação: Notificar quando movido manualmente para atendimento
+    if (lead && newStatus === 'Em Atendimento') {
+      useNotificationStore.getState().addNotification({
+        title: 'Lead em Atendimento',
+        message: `${lead.name} foi movido para sua coluna de atendimento.`,
+        category: 'push' as any
+      })
+    }
+
+    return {
+      leads: state.leads.map(l => l.id === leadId ? { ...l, status: newStatus } : l)
+    }
+  }),
+  updateLead: (leadId, updates) => set((state) => {
+    const lead = state.leads.find(l => l.id === leadId)
+    
+    // Automação: Notificar quando IA qualifica
+    if (updates.ia_status === 'qualificado' && lead?.ia_status !== 'qualificado') {
+      useNotificationStore.getState().addNotification({
+        title: 'Lead Qualificado por IA',
+        message: `${lead?.name || 'Novo lead'} pronto para atendimento!`,
+        category: 'lead_alert'
+      })
+    }
+
+    return {
+      leads: state.leads.map(l => l.id === leadId ? { ...l, ...updates } : l)
+    }
+  }),
+
   setCurrentPipeline: (id) => set({ currentPipelineId: id }),
 }))
