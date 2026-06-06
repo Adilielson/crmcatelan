@@ -12,9 +12,9 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: {
     id: '1',
-    email: 'admin@castelar.com',
-    name: 'Admin Castelar',
-    role: 'admin',
+    email: 'agencia@marketing.com',
+    name: 'Agência Performance',
+    role: 'marketing_partner',
     tenant_id: 'tenant-1'
   },
   tenant: {

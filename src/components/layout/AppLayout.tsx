@@ -34,6 +34,12 @@ const AppLayout = () => {
     { label: 'Configurações', icon: Settings, href: '/settings' },
   ];
 
+  // Adicionar Parceiro de Marketing para visualização/teste
+  if (user?.role === 'marketing_partner') {
+    // Para parceiros de marketing, talvez queiramos simplificar o menu
+    // Mas conforme solicitado, é uma aba restrita no CRM atual
+  }
+
   // Menu especial para Super Admin
   if (user?.role === 'super_admin') {
     menuItems.push({ label: 'Admin SaaS', icon: ShieldCheck, href: '/saas' });
