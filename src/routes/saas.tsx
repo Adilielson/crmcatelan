@@ -157,7 +157,7 @@ function SaaSAdmin() {
   const [tenants, setTenants] = useState(initialTenants)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [search, setSearch] = useState('')
-
+  const [period, setPeriod] = useState('30d')
 
   const handleCreateTenant = (e: React.FormEvent) => {
     e.preventDefault()
@@ -190,9 +190,22 @@ function SaaSAdmin() {
           <p className="text-muted-foreground">Gestão global de inquilinos e infraestrutura.</p>
         </div>
         <div className="flex gap-2">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[180px] bg-white">
+              <Calendar className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Últimos 7 dias</SelectItem>
+              <SelectItem value="30d">Últimos 30 dias</SelectItem>
+              <SelectItem value="90d">Últimos 90 dias</SelectItem>
+              <SelectItem value="ytd">Este Ano</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" className="gap-2">
             <History className="w-4 h-4" /> Auditoria
           </Button>
+
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
