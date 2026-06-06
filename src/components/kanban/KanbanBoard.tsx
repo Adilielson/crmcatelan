@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 
 import { useKanban, Lead } from '@/hooks/use-kanban'
+import { useAgenda } from '@/hooks/use-agenda'
 import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
