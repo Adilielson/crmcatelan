@@ -7,8 +7,7 @@ export const Route = createFileRoute('/marketing')({
 
 function MarketingPage() {
   return (
-    <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-bold">Métricas do Gestor de Tráfego</h2>
+    <div className="space-y-6">
       <MarketingMetrics />
     </div>
   )
