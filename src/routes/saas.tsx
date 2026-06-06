@@ -295,52 +295,61 @@ function SaaSAdmin() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Configurações Globais do Sistema</CardTitle>
-              <CardDescription>Parâmetros que afetam todas as instâncias do CRM.</CardDescription>
+              <CardTitle>Monitoramento de Performance IA (ROI)</CardTitle>
+              <CardDescription>Visão consolidada de consumo e lucratividade dos tokens.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/20">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-primary" />
-                    <span className="font-semibold">Modo de Manutenção</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Bloqueia o acesso de todos os clientes para atualizações de emergência.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 border rounded-lg bg-indigo-50/30">
+                  <p className="text-xs font-semibold text-indigo-600 uppercase">Faturamento Tokens</p>
+                  <p className="text-2xl font-bold">R$ 4.250,00</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Margem média: 65%</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Desativado</Badge>
-                  <Button variant="outline" size="sm">Ativar</Button>
+                <div className="p-4 border rounded-lg bg-green-50/30">
+                  <p className="text-xs font-semibold text-green-600 uppercase">Lucro Bruto IA</p>
+                  <p className="text-2xl font-bold">R$ 2.760,00</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Após custos da OpenAI</p>
+                </div>
+                <div className="p-4 border rounded-lg bg-amber-50/30">
+                  <p className="text-xs font-semibold text-amber-600 uppercase">Eficiência SDR</p>
+                  <p className="text-2xl font-bold">84%</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Taxa de agendamento assistido</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Modelo Global de IA</Label>
-                  <Select defaultValue="gpt-4o">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gpt-4o">GPT-4o (Recomendado)</SelectItem>
-                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Multiplicador de Preço (Tokens)</Label>
-                  <div className="flex gap-2">
-                    <Input type="number" defaultValue="2.5" step="0.1" />
-                    <Button variant="outline" size="icon">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">Define a margem de lucro sobre o custo bruto da OpenAI.</p>
-                </div>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-muted/50 text-[10px] text-muted-foreground uppercase font-bold">
+                    <tr>
+                      <th className="px-4 py-2">Ótica</th>
+                      <th className="px-4 py-2">Tokens Usados</th>
+                      <th className="px-4 py-2">Custo Base</th>
+                      <th className="px-4 py-2">Faturado</th>
+                      <th className="px-4 py-2">Margem</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y text-xs">
+                    <tr>
+                      <td className="px-4 py-3 font-medium">Ótica Castelar</td>
+                      <td className="px-4 py-3">45.200</td>
+                      <td className="px-4 py-3">R$ 18,08</td>
+                      <td className="px-4 py-3">R$ 45,20</td>
+                      <td className="px-4 py-3 text-green-600 font-bold">60%</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium">Ótica Visão</td>
+                      <td className="px-4 py-3">32.800</td>
+                      <td className="px-4 py-3">R$ 13,12</td>
+                      <td className="px-4 py-3">R$ 32,80</td>
+                      <td className="px-4 py-3 text-green-600 font-bold">60%</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+
       </Tabs>
     </div>
   )
