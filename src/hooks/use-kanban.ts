@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 
 export type LeadSource = 'whatsapp' | 'instagram' | 'google' | 'direct'
+export type IAStatus = 'aguardando' | 'processando' | 'qualificado' | 'desqualificado'
+export type IAUrgencia = 'baixa' | 'media' | 'alta'
+export type IASentimento = 'positivo' | 'neutro' | 'negativo'
+export type IAPerfil = 'analitico' | 'pragmatico' | 'expressivo' | 'afavel'
 
 export interface Lead {
   id: string
@@ -13,6 +17,22 @@ export interface Lead {
   lossReason?: string
   scheduledAt?: string
   createdAt: string
+  // Campos IA SDR
+  ia_score?: number // 0-100
+  ia_status?: IAStatus
+  ia_resumo?: string
+  ia_motivo_desqualificacao?: string
+  ia_sugestao_proximo_passo?: string
+  ia_interesses?: string[]
+  ia_urgencia?: IAUrgencia
+  ia_sentimento?: IASentimento
+  ia_perfil?: IAPerfil
+  ia_tokens_uso?: number
+  ia_pergunta_chave_respondida?: boolean
+  ia_probabilidade_comparecimento?: number
+  ia_tags?: string[]
+  ia_receita_validade?: string
+  ia_receita_grau?: string
 }
 
 export interface Pipeline {
@@ -46,6 +66,13 @@ export const useKanban = create<KanbanState>((set) => ({
       status: 'Leads Prontos', 
       pipelineId: 'p1', 
       isUrgent: true,
+      ia_status: 'qualificado',
+      ia_score: 85,
+      ia_urgencia: 'alta',
+      ia_sentimento: 'positivo',
+      ia_interesses: ['Lentes Multifocais', 'Armação Titanium'],
+      ia_resumo: 'O lead possui receita recente e busca lentes de alta tecnologia.',
+      ia_tags: ['Lead VIP', 'Pronto para Atendimento'],
       createdAt: new Date().toISOString() 
     },
     { 

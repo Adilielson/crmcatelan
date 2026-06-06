@@ -1,283 +1,110 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription 
-} from "@/components/ui/card"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs"
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area
-} from 'recharts'
-import { 
-  TrendingUp, 
-  Users, 
-  Calendar, 
-  Clock, 
-  Target, 
-  AlertTriangle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Download,
-  Filter
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Brain, Users, TrendingUp, MessageCircle, AlertTriangle, Target, Clock, Filter, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 
-export const Route = createFileRoute('/performance' as any)({
-  component: PerformanceDashboard,
+export const Route = createFileRoute('/performance')({
+  component: IAMetrics,
 })
 
-const funnelData = [
-  { name: 'Leads Totais', value: 450, fill: '#8884d8' },
-  { name: 'Qualificados IA', value: 320, fill: '#83a6ed' },
-  { name: 'Agendados', value: 180, fill: '#8dd1e1' },
-  { name: 'Compareceram', value: 145, fill: '#82ca9d' },
-]
+function IAMetrics() {
+  const stats = [
+    { title: 'Total Processado', value: '1.284', change: '+12%', icon: Brain, color: 'text-blue-600' },
+    { title: 'Qualificados (SDR)', value: '842', change: '+18%', icon: Target, color: 'text-green-600' },
+    { title: 'Desqualificados', value: '442', change: '-5%', icon: Filter, color: 'text-slate-600' },
+    { title: 'Economia Horas/Atendimento', value: '215h', change: '+22%', icon: Clock, color: 'text-purple-600' },
+  ]
 
-const performanceData = [
-  { name: 'Seg', leads: 40, scheduled: 24, conversion: 60 },
-  { name: 'Ter', leads: 30, scheduled: 13, conversion: 43 },
-  { name: 'Qua', leads: 20, scheduled: 98, conversion: 49 },
-  { name: 'Qui', leads: 27, scheduled: 39, conversion: 44 },
-  { name: 'Sex', leads: 18, scheduled: 48, conversion: 46 },
-  { name: 'Sáb', leads: 23, scheduled: 38, conversion: 41 },
-  { name: 'Dom', leads: 34, scheduled: 43, conversion: 42 },
-]
+  const funnelData = [
+    { label: 'Primeiro Contato', count: 1284, percentage: 100 },
+    { label: 'Identificação de Necessidade', count: 1020, percentage: 79 },
+    { label: 'Qualificação Financeira', count: 890, percentage: 69 },
+    { label: 'Pronto para Agendamento', count: 842, percentage: 65 },
+  ]
 
-const sellerRanking = [
-  { id: 1, name: 'Ana Silva', unit: 'Unidade Sul', conversion: 42.5, appointments: 45, sla: '2m', status: 'Benchmark' },
-  { id: 2, name: 'Carlos Santos', unit: 'Unidade Norte', conversion: 38.2, appointments: 38, sla: '5m', status: 'Normal' },
-  { id: 3, name: 'Beatriz Oliveira', unit: 'Unidade Sul', conversion: 15.4, appointments: 12, sla: '18m', status: 'Atenção' },
-  { id: 4, name: 'Ricardo Melo', unit: 'Unidade Centro', conversion: 31.0, appointments: 29, sla: '4m', status: 'Normal' },
-]
-
-function PerformanceDashboard() {
-  const [period, setPeriod] = useState('monthly')
-  const [unit, setUnit] = useState('all')
+  const dropOffReasons = [
+    { question: 'Qualificação de Receita', drop: 15, color: 'bg-red-500' },
+    { question: 'Consulta de Preço', drop: 12, color: 'bg-orange-500' },
+    { question: 'Localização da Unidade', drop: 8, color: 'bg-yellow-500' },
+    { question: 'Urgência do Problema', drop: 4, color: 'bg-blue-500' },
+  ]
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Relatórios de Performance</h1>
-          <p className="text-muted-foreground">Monitore KPIs de vendas, atendimento e conversão da IA.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Métricas de Inteligência Artificial</h1>
+          <p className="text-sm text-slate-500">Acompanhamento de performance da IA SDR SDR</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2">
-            <Download className="w-4 h-4" /> Exportar PDF
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <Download className="w-4 h-4" /> Exportar CSV
-          </Button>
-        </div>
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 py-1 px-3">
+          IA Ativa 24/7
+        </Badge>
       </div>
 
-      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl border">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Filtros:</span>
-        </div>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Período" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="daily">Hoje</SelectItem>
-            <SelectItem value="weekly">Esta Semana</SelectItem>
-            <SelectItem value="monthly">Este Mês</SelectItem>
-            <SelectItem value="yearly">Este Ano</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={unit} onValueChange={setUnit}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Unidade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Unidades</SelectItem>
-            <SelectItem value="sul">Unidade Sul</SelectItem>
-            <SelectItem value="norte">Unidade Norte</SelectItem>
-            <SelectItem value="centro">Unidade Centro</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard 
-          title="Taxa de Conversão" 
-          value="32.2%" 
-          trend="+4.1%" 
-          trendUp={true} 
-          icon={<Target className="w-5 h-5" />} 
-          description="Leads → Agendados"
-        />
-        <MetricCard 
-          title="Tempo Médio Resposta (SLA)" 
-          value="4m 12s" 
-          trend="-15%" 
-          trendUp={true} 
-          icon={<Clock className="w-5 h-5" />} 
-          description="IA / Atendimento Humano"
-        />
-        <MetricCard 
-          title="Custo por Agendamento" 
-          value="R$ 42,50" 
-          trend="+R$ 2,10" 
-          trendUp={false} 
-          icon={<TrendingUp className="w-5 h-5" />} 
-          description="Investimento Ads / Agendamentos"
-        />
-        <MetricCard 
-          title="Taxa de No-Show" 
-          value="22%" 
-          trend="+5%" 
-          trendUp={false} 
-          icon={<AlertTriangle className="w-5 h-5" />} 
-          description="Não comparecimento"
-          alert={true}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, i) => (
+          <Card key={i} className="border-none shadow-sm bg-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest">{stat.title}</CardTitle>
+              <stat.icon className={cn("w-4 h-4", stat.color)} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-800">{stat.value}</div>
+              <p className="text-[10px] flex items-center gap-1 mt-1 font-bold">
+                {stat.change.startsWith('+') ? (
+                  <ArrowUpRight className="w-3 h-3 text-green-500" />
+                ) : (
+                  <ArrowDownRight className="w-3 h-3 text-red-500" />
+                )}
+                <span className={stat.change.startsWith('+') ? 'text-green-500' : 'text-red-500'}>
+                  {stat.change} em relação ao mês anterior
+                </span>
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Funnel Chart */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-2 border-none shadow-sm bg-white">
           <CardHeader>
-            <CardTitle>Funil de Vendas (IA SDR)</CardTitle>
-            <CardDescription>Fluxo desde a captura até o comparecimento.</CardDescription>
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" /> Funil de Conversão SDR
+            </CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={funnelData}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={100} fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#8884d8" radius={[0, 4, 4, 0]} label={{ position: 'right' }} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Volume Over Time */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Volume de Leads vs Agendamentos</CardTitle>
-            <CardDescription>Performance diária no período selecionado.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData}>
-                <defs>
-                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis fontSize={12} />
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <Tooltip />
-                <Area type="monotone" dataKey="leads" stroke="#8884d8" fillOpacity={1} fill="url(#colorLeads)" />
-                <Area type="monotone" dataKey="scheduled" stroke="#82ca9d" fillOpacity={0} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Seller Ranking */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Ranking de Vendedores</CardTitle>
-            <CardDescription>Performance individual por taxa de conversão.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {sellerRanking.map((seller) => (
-                <div key={seller.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-sm">
-                      {seller.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{seller.name}</p>
-                      <p className="text-xs text-muted-foreground">{seller.unit}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="font-bold text-sm">{seller.conversion}%</p>
-                      <p className="text-[10px] text-muted-foreground">Conversão</p>
-                    </div>
-                    <Badge variant={seller.status === 'Benchmark' ? 'default' : seller.status === 'Atenção' ? 'destructive' : 'secondary'}>
-                      {seller.status}
-                    </Badge>
-                  </div>
+          <CardContent className="space-y-6">
+            {funnelData.map((item, i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-600">{item.label}</span>
+                  <span className="text-slate-400">{item.count} leads ({item.percentage}%)</span>
                 </div>
-              ))}
-            </div>
+                <Progress value={item.percentage} className="h-2 bg-slate-100" />
+              </div>
+            ))}
           </CardContent>
         </Card>
 
-        {/* IA Insights & Disqualifications */}
-        <Card>
+        <Card className="border-none shadow-sm bg-white">
           <CardHeader>
-            <CardTitle>Insights da IA SDR</CardTitle>
-            <CardDescription>Principais motivos de desqualificação e perda.</CardDescription>
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500" /> Pontos de Abandono (Drop-off)
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm font-medium mb-3">Motivos de Desqualificação</p>
-                <div className="space-y-2">
-                  <ReasonProgress label="Fora da Região Atendida" value={45} color="bg-blue-500" />
-                  <ReasonProgress label="Sem Orçamento (Ticket Médio)" value={30} color="bg-indigo-500" />
-                  <ReasonProgress label="Curiosidade / Sem intenção imediata" value={15} color="bg-slate-400" />
-                  <ReasonProgress label="Outros" value={10} color="bg-slate-200" />
+          <CardContent className="space-y-6">
+            <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
+              Análise de onde os leads param de responder durante a qualificação automática.
+            </p>
+            {dropOffReasons.map((item, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className={cn("w-1 h-8 rounded-full", item.color)} />
+                <div className="flex-1">
+                  <div className="text-xs font-bold text-slate-700">{item.question}</div>
+                  <div className="text-[10px] text-slate-400">{item.drop}% de desistência nesta etapa</div>
                 </div>
               </div>
-              
-              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <div className="flex gap-2 items-start">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-amber-900">Prioridade de Recuperação</p>
-                    <p className="text-xs text-amber-800">12 leads qualificados como "Alta Intenção" não converteram em agendamento nas últimas 48h.</p>
-                    <Button variant="link" className="h-auto p-0 text-xs text-amber-900 font-bold mt-2">Visualizar lista →</Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -285,46 +112,6 @@ function PerformanceDashboard() {
   )
 }
 
-function MetricCard({ title, value, trend, trendUp, icon, description, alert }: any) {
-  return (
-    <Card className={cn(alert && "border-red-200 bg-red-50/30")}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className={cn("p-2 rounded-lg bg-slate-100", alert && "bg-red-100 text-red-600")}>
-          {icon}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="flex items-center gap-1 mt-1">
-          {trendUp ? (
-            <ArrowUpRight className={cn("w-3 h-3", alert ? "text-red-600" : "text-green-600")} />
-          ) : (
-            <ArrowDownRight className={cn("w-3 h-3", alert ? "text-red-600" : "text-red-600")} />
-          )}
-          <span className={cn("text-xs font-medium", trendUp ? (alert ? "text-red-600" : "text-green-600") : "text-red-600")}>
-            {trend}
-          </span>
-          <span className="text-xs text-muted-foreground ml-1">vs mês ant.</span>
-        </div>
-        <p className="text-[10px] text-muted-foreground mt-3">{description}</p>
-      </CardContent>
-    </Card>
-  )
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(' ')
 }
-
-function ReasonProgress({ label, value, color }: { label: string, value: number, color: string }) {
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-[11px]">
-        <span>{label}</span>
-        <span className="font-bold">{value}%</span>
-      </div>
-      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-        <div className={cn("h-full", color)} style={{ width: `${value}%` }} />
-      </div>
-    </div>
-  )
-}
-
-import { cn } from '@/lib/utils'
