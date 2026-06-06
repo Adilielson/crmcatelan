@@ -356,4 +356,6 @@ function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" 
         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">{trend}</p>
       </CardContent>
     </Card>
+  )
 }
+
