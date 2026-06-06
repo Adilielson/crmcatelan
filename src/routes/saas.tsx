@@ -17,8 +17,10 @@ import {
   ExternalLink,
   Ban,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Users
 } from 'lucide-react'
+
 import { 
   Card, 
   CardContent, 
