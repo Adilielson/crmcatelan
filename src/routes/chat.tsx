@@ -5,6 +5,8 @@ import { useChatStore } from '@/hooks/use-chat'
 import { useKanban } from '@/hooks/use-kanban'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from 'sonner'
