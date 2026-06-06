@@ -231,9 +231,10 @@ function MarketingPartnerDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   )
 }
+
 
 function MetricCard({ title, value, change, icon, color }: any) {
   const colorMap: any = {
