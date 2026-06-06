@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings as SettingsIcon, Store, Shield, Bell, MessageSquare, Clock } from 'lucide-react'
+import { Settings as SettingsIcon, Store, Shield, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { useAutomations } from '@/hooks/use-automations'
-import { Zap, Globe, Clock, Bell, Trash2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+
 
 
 export const Route = createFileRoute('/settings')({
