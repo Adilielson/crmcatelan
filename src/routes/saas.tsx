@@ -22,7 +22,11 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Calendar,
+  Clock,
+  DollarSign,
+  TrendingDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -41,6 +45,14 @@ import {
   AreaChart,
   Area
 } from 'recharts'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 
 
 
@@ -248,12 +260,14 @@ function SaaSAdmin() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Total de Óticas" value={tenants.length.toString()} trend="+3 este mês" icon={<Building2 className="w-4 h-4 text-primary" />} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard title="MRR Total" value="R$ 12.400" trend="+12%" icon={<CreditCard className="w-4 h-4 text-green-600" />} />
+        <StatsCard title="LTV Estimado" value="R$ 4.250" trend="Benchmark" icon={<DollarSign className="w-4 h-4 text-primary" />} />
+        <StatsCard title="Churn Rate" value="2.4%" trend="-0.5%" icon={<TrendingDown className="w-4 h-4 text-red-600" />} />
         <StatsCard title="Tokens IA (Mês)" value="840k" trend="+45k hoje" icon={<Cpu className="w-4 h-4 text-purple-600" />} />
-        <StatsCard title="Saúde do Sistema" value="99.9%" trend="Estável" icon={<Activity className="w-4 h-4 text-blue-600" />} statusColor="text-green-600" />
+        <StatsCard title="SLA Médio IA" value="12s" trend="Excelente" icon={<Clock className="w-4 h-4 text-blue-600" />} />
       </div>
+
 
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
