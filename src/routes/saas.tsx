@@ -435,4 +435,45 @@ function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" 
     </Card>
   )
 }
+}
+
+function PlanCard({ name, price, limits, features, activeCount, highlight }: any) {
+  return (
+    <Card className={highlight ? 'border-primary ring-1 ring-primary' : ''}>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <Badge variant={highlight ? 'default' : 'secondary'}>{name}</Badge>
+          <span className="text-xs text-muted-foreground">{activeCount} ativos</span>
+        </div>
+        <CardTitle className="text-2xl pt-2">{price}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Usuários:</span>
+            <span className="font-semibold">{limits.users}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Leads/mês:</span>
+            <span className="font-semibold">{limits.leads}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Suporte IA:</span>
+            <span className="font-semibold">{limits.ia}</span>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Features:</p>
+          <div className="flex flex-wrap gap-1">
+            {features.map((f: string) => (
+              <Badge key={f} variant="outline" className="text-[9px] px-1 py-0">{f}</Badge>
+            ))}
+          </div>
+        </div>
+        <Button variant={highlight ? 'default' : 'outline'} className="w-full">Editar Plano</Button>
+      </CardContent>
+    </Card>
+  )
+}
+
 
