@@ -70,11 +70,38 @@ export function KanbanBoard() {
 
   const confirmSchedule = () => {
     if (selectedLead && scheduleData.date && scheduleData.time) {
-      moveLead(selectedLead.id, 'Agendado')
-      updateLead(selectedLead.id, { scheduledAt: `${scheduleData.date}T${scheduleData.time}` })
-      setModalType(null)
-      setSelectedLead(null)
-      toast.success('Agendamento realizado com sucesso!')
+      // Calcular horário de fim (padrão 1h)
+      const [hours, minutes] = scheduleData.time.split(':')
+      const endHours = (parseInt(hours) + 1).toString().padStart(2, '0')
+      const endTime = `${endHours}:${minutes}`
+
+      const success = addAppointment({
+        leadId: selectedLead.id,
+        leadName: selectedLead.name,
+        date: scheduleData.date,
+        startTime: scheduleData.time,
+        endTime: endTime,
+        status: 'pendente',
+        examType: 'Consulta Oftalmológica',
+        reminderSent: false,
+        professionalId: 'dr-claudio',
+        unit: 'Loja Centro',
+        origin: 'manual',
+        value: 150,
+        propensityScore: 0.85,
+        notificationChannel: 'whatsapp',
+        rescheduleCount: 0,
+        needsTransport: false
+      })
+
+      if (success) {
+        setModalType(null)
+        setSelectedLead(null)
+        toast.success('Agendamento realizado e lead movido!')
+        console.log('API WhatsApp: Disparando template para', selectedLead.name)
+      } else {
+        toast.error('Conflito de horário na Agenda Mestre!')
+      }
     }
   }
 
