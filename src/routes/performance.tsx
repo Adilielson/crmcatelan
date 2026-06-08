@@ -31,36 +31,49 @@ function IAMetrics() {
   ]
 
   return (
-    <div className="space-y-6 text-ink">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight font-jakarta">Métricas de Inteligência Artificial</h1>
-          <p className="text-sm text-gray-500">Acompanhamento de performance da IA SDR</p>
+    <div className="space-y-10 text-ink animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-1 rounded-full bg-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Performance de Qualificação</span>
+          </div>
+          <h1 className="text-[36px] font-black tracking-tight font-jakarta leading-none mb-3">Inteligência Artificial</h1>
+          <p className="text-[15px] text-gray-500 font-medium">Análise granular da eficiência operacional da sua IA SDR em tempo real.</p>
         </div>
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 py-1 px-3">
-          IA Ativa 24/7
-        </Badge>
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="flex flex-col items-end mr-4">
+            <span className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-widest">Status do Sistema</span>
+            <span className="text-xs font-bold text-[#1FA463]">IA Operacional 24/7</span>
+          </div>
+          <div className="p-3 bg-green-50 rounded-[14px] border border-green-100">
+            <div className="w-3 h-3 bg-[#1FA463] rounded-full animate-pulse shadow-[0_0_10px_rgba(31,164,99,0.5)]" />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, i) => (
-          <Card key={i} className="border border-border shadow-card bg-white">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold text-gray-500 uppercase tracking-widest">{stat.title}</CardTitle>
-              <stat.icon className={cn("w-4 h-4", stat.color)} />
+          <Card key={i} className="border border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] bg-white rounded-[24px] overflow-hidden hover:shadow-[0_12px_30px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all duration-300 group">
+            <CardHeader className="flex flex-row items-center justify-between pb-6 pt-8 px-8">
+              <CardTitle className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em]">{stat.title}</CardTitle>
+              <div className={cn("p-3 rounded-[14px] transition-all group-hover:scale-110", stat.color.replace('text-', 'bg-').replace('-600', '-50'))}>
+                <stat.icon className={cn("w-5 h-5", stat.color)} />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-ink">{stat.value}</div>
-              <p className="text-[10px] flex items-center gap-1 mt-1 font-bold">
-                {stat.change.startsWith('+') ? (
-                  <ArrowUpRight className="w-3 h-3 text-green-500" />
-                ) : (
-                  <ArrowDownRight className="w-3 h-3 text-red-500" />
-                )}
-                <span className={stat.change.startsWith('+') ? 'text-green-500' : 'text-red-500'}>
-                  {stat.change} em relação ao mês anterior
-                </span>
-              </p>
+            <CardContent className="px-8 pb-8">
+              <div className="text-[32px] font-black text-ink tracking-tight mb-2">{stat.value}</div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black",
+                  stat.change.startsWith('+') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                )}>
+                  {stat.change.startsWith('+') ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  {stat.change}
+                </div>
+                <span className="text-[11px] font-bold text-[#A7ADB8]">vs mês anterior</span>
+              </div>
             </CardContent>
           </Card>
         ))}

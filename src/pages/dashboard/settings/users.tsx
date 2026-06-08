@@ -87,18 +87,23 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-6 text-ink">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight font-jakarta">Gestão de Usuários</h1>
-          <p className="text-muted-foreground">Gerencie acessos, permissões e horários da sua equipe.</p>
+    <div className="space-y-10 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-1 rounded-full bg-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Gestão de Talentos</span>
+          </div>
+          <h1 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none mb-3">Controle de Usuários</h1>
+          <p className="text-[15px] text-gray-500 font-medium">Administre níveis de acesso, permissões e horários operacionais da sua equipe.</p>
         </div>
         
         <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#e0c200] hover:bg-[#c7a700] text-black font-semibold">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Convidar Novo Usuário
+            <Button className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black text-[11px] h-14 px-8 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-[1.05] uppercase tracking-widest border-none">
+              <UserPlus className="mr-3 h-5 w-5" />
+              CONVIDAR NOVO USUÁRIO
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
@@ -156,19 +161,19 @@ const UserManagement = () => {
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-border shadow-card">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-4 bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-sm">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#A7ADB8] transition-colors group-focus-within:text-primary" />
           <Input 
-            placeholder="Buscar por nome ou e-mail..." 
-            className="pl-10"
+            placeholder="Buscar por nome, e-mail ou unidade..." 
+            className="pl-12 h-14 bg-[#F6F7F9] border-none rounded-[14px] text-sm font-bold text-ink placeholder:text-[#A7ADB8] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-primary/20 transition-all shadow-inner"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filtros
+        <Button variant="outline" className="h-14 px-8 border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] uppercase tracking-widest rounded-[14px]">
+          <Filter className="mr-3 h-4 w-4" />
+          FILTROS AVANÇADOS
         </Button>
       </div>
 

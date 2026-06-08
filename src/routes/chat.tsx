@@ -60,7 +60,7 @@ function Chat() {
   const [isRoutingOpen, setIsRoutingOpen] = useState(false)
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl h-[calc(100vh-140px)] flex overflow-hidden shadow-sm">
+    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-160px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
       <Dialog open={isRoutingOpen} onOpenChange={setIsRoutingOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -134,21 +134,21 @@ function Chat() {
       </Dialog>
 
       {/* Coluna 1: Lista de Sessões */}
-      <div className="w-80 border-r border-gray-100 flex flex-col bg-gray-50/30">
-        <div className="p-6 border-b border-gray-100 bg-white flex justify-between items-center h-[73px]">
-          <h2 className="font-jakarta font-bold text-lg text-ink">Conversas</h2>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-gray-50 hover:bg-gray-100">
-            <PlusCircle className="w-5 h-5 text-gray-600" />
+      <div className="w-[360px] border-r border-[#E3E6EB] flex flex-col bg-gray-50/50">
+        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
+          <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
+          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-gray-50 hover:bg-[#FFC400]/10 hover:text-[#FFC400] transition-all">
+            <PlusCircle className="w-5 h-5" />
           </Button>
         </div>
         
-        <div className="p-4 bg-white/50">
+        <div className="p-5 bg-white">
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
             <input 
               type="text" 
-              placeholder="Pesquisar..." 
-              className="w-full bg-gray-100/50 border border-transparent rounded-xl pl-10 pr-4 py-2.5 text-sm focus:bg-white focus:border-primary/30 transition-all outline-none text-ink font-medium placeholder:text-gray-400"
+              placeholder="Pesquisar contatos..." 
+              className="w-full bg-[#F6F7F9] border border-transparent rounded-[16px] pl-12 pr-4 py-3.5 text-sm focus:bg-white focus:border-primary/30 transition-all outline-none text-ink font-bold placeholder:text-gray-400 shadow-inner"
             />
           </div>
         </div>
@@ -160,22 +160,22 @@ function Chat() {
                 key={session.id} 
                 onClick={() => setSelectedSession(session.id)}
                 className={cn(
-                  "p-4 border-b border-gray-50/50 cursor-pointer transition-all flex gap-3 relative hover:bg-white group",
-                  selectedSessionId === session.id ? "bg-white shadow-sm z-10" : ""
+                  "p-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
+                  selectedSessionId === session.id ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100"
                 )}
               >
                 {selectedSessionId === session.id && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
+                  <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-[#FFC400] rounded-r-full shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
                 )}
                 
                 <div className="relative flex-shrink-0">
-                  <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                    <AvatarFallback className="bg-gray-100 text-gray-500 font-bold uppercase">
+                  <Avatar className="h-14 w-14 border-2 border-white shadow-md rounded-[18px]">
+                    <AvatarFallback className="bg-gradient-to-br from-[#F6F7F9] to-[#E3E6EB] text-[#A7ADB8] font-black uppercase text-base">
                       {session.name.substring(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   {session.status === 'online' && (
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-success border-2 border-white rounded-full"></div>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#1FA463] border-[3px] border-white rounded-full"></div>
                   )}
                 </div>
 
@@ -212,36 +212,37 @@ function Chat() {
       <div className="flex-1 flex flex-col bg-white relative">
         {selectedSession ? (
           <>
-            <div className="p-4 px-6 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-md z-20 h-[73px]">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 border border-gray-100">
-                  <AvatarFallback className="bg-gray-50 text-gray-400 font-bold">
+            <div className="p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px]">
+                  <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
                     {selectedSession.name.substring(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-jakarta font-bold text-sm text-ink">{selectedSession.name}</h3>
-                  <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-                    </span>
-                    <span className="text-[10px] text-success font-bold uppercase tracking-wider">Disponível</span>
+                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">{selectedSession.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex h-2 w-2">
+                      <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1FA463] opacity-40"></div>
+                      <div className="relative inline-flex rounded-full h-2 w-2 bg-[#1FA463]"></div>
+                    </div>
+                    <span className="text-[10px] text-[#1FA463] font-black uppercase tracking-[0.1em]">Cliente Ativo</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"
+                  className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"
                   onClick={() => setIsRoutingOpen(true)}
                   title="Encaminhar para Equipe"
                 >
-                  <Users className="w-4 h-4" />
+                  <Users className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"><Phone className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"><MoreVertical className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"><Phone className="w-5 h-5" /></Button>
+                <div className="h-6 w-[1px] bg-[#E3E6EB] mx-1" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
               </div>
             </div>
             
