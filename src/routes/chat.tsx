@@ -60,7 +60,7 @@ function Chat() {
   const [isRoutingOpen, setIsRoutingOpen] = useState(false)
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl h-[calc(100vh-140px)] flex overflow-hidden shadow-sm">
+    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-160px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
       <Dialog open={isRoutingOpen} onOpenChange={setIsRoutingOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
