@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { useNotificationStore } from '@/store/useNotificationStore'
+import { cn } from '@/lib/utils'
 
 
 // Manual Instagram icon to avoid import issues
@@ -116,12 +117,15 @@ export function KanbanBoard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl border shadow-sm">
-        <div className="flex items-center gap-4">
-          <h3 className="text-lg font-bold text-slate-800">Pipeline</h3>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-6">
+          <div className="flex flex-col">
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Fluxo de Vendas</h3>
+            <p className="text-xs font-bold text-slate-900 mt-1">Gerencie seus leads e pipeline</p>
+          </div>
           <Select value={currentPipelineId} onValueChange={setCurrentPipeline}>
-            <SelectTrigger className="w-[250px]">
+            <SelectTrigger className="w-full md:w-[300px] h-11 bg-slate-50 border-slate-200/60 font-bold text-xs uppercase tracking-wider">
               <SelectValue placeholder="Selecionar Unidade" />
             </SelectTrigger>
             <SelectContent>
@@ -131,27 +135,27 @@ export function KanbanBoard() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="relative">
-            <AlertCircle className="w-4 h-4 mr-2" />
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-slate-200 shadow-sm">
+            <AlertCircle className="w-4 h-4 mr-2 text-primary" />
             Notificações
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
           </Button>
-          <Button size="sm">Novo Lead</Button>
+          <Button size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] shadow-md shadow-primary/20">Novo Lead</Button>
         </div>
       </div>
 
-      <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide">
+      <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4">
         {currentPipeline.columns.map((column) => (
-          <div key={column} className="min-w-[320px] flex-1 flex flex-col gap-4">
+          <div key={column} className="min-w-[340px] flex-1 flex flex-col gap-6">
             <div className="flex justify-between items-center px-2">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-700">{column}</span>
-                <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full border font-bold">
+              <div className="flex items-center gap-3">
+                <span className="font-black text-slate-800 uppercase tracking-widest text-[11px]">{column}</span>
+                <span className="bg-primary/10 text-primary text-[10px] px-2.5 py-0.5 rounded-full font-black border border-primary/20">
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100 rounded-lg">
                 <MoreVertical className="w-4 h-4 text-slate-400" />
               </Button>
             </div>
@@ -243,65 +247,74 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
     <div
       draggable
       onDragStart={onDragStart}
-      className={`bg-white p-4 rounded-xl border shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors group relative ${lead.isUrgent ? 'border-red-200' : 'border-slate-200'}`}
+      className={cn(
+        "bg-white p-5 rounded-2xl border-2 shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/40 hover:shadow-md transition-all duration-300 group relative",
+        lead.isUrgent ? 'border-red-100 bg-red-50/10' : 'border-slate-100'
+      )}
     >
       <AnimatePresence>
         {lead.isUrgent && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ 
-              opacity: [0.4, 1, 0.4],
-              scale: [1, 1.02, 1]
+              opacity: [0.3, 0.6, 0.3],
             }}
             transition={{ 
               duration: 2, 
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute inset-0 rounded-xl border-2 border-red-500 pointer-events-none"
+            className="absolute inset-0 rounded-2xl border-2 border-red-400 pointer-events-none"
           />
         )}
       </AnimatePresence>
 
       {lead.isUrgent && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-10">
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-red-200">
           URGENTE
         </div>
       )}
 
       
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{lead.name}</h4>
-          <span className="text-xs text-primary font-bold">R$ {lead.value.toLocaleString('pt-BR')}</span>
+      <div className="flex justify-between items-start mb-4">
+        <div className="space-y-1">
+          <h4 className="font-black text-[13px] text-slate-800 line-clamp-1 uppercase tracking-tight">{lead.name}</h4>
+          <div className="flex items-center gap-1.5">
+            <DollarSign className="w-3 h-3 text-primary opacity-60" />
+            <span className="text-[12px] text-primary font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
+          </div>
         </div>
-        <div className="bg-slate-50 p-1.5 rounded-lg border group-hover:bg-primary/5 transition-colors">
+        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
           {sourceIcons[lead.source]}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="Agenda">
-          <Calendar className="w-3.5 h-3.5" />
-        </button>
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="WhatsApp">
-          <MessageSquare className="w-3.5 h-3.5" />
-        </button>
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="Localização">
-          <MapPin className="w-3.5 h-3.5" />
-        </button>
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="Venda Fechada">
-          <DollarSign className="w-3.5 h-3.5" />
-        </button>
+      <div className="flex items-center gap-2 flex-wrap mb-1">
+        {[
+          { icon: Calendar, title: "Agenda" },
+          { icon: MessageSquare, title: "WhatsApp" },
+          { icon: MapPin, title: "Localização" },
+          { icon: DollarSign, title: "Venda Fechada" }
+        ].map((action, i) => (
+          <button 
+            key={i}
+            className="p-2.5 bg-slate-50 hover:bg-white hover:shadow-sm rounded-xl text-slate-400 hover:text-primary transition-all border border-slate-100 hover:border-primary/20" 
+            title={action.title}
+          >
+            <action.icon className="w-3.5 h-3.5" />
+          </button>
+        ))}
       </div>
 
       {lead.lossReason && (
-        <div className="mt-2 pt-2 border-t text-[10px] text-red-500 font-medium">
+        <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
           Perda: {lead.lossReason}
         </div>
       )}
       {lead.scheduledAt && (
-        <div className="mt-2 pt-2 border-t text-[10px] text-blue-500 font-medium">
+        <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
           Agendado: {new Date(lead.scheduledAt).toLocaleString('pt-BR')}
         </div>
       )}
