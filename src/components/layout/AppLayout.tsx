@@ -53,7 +53,7 @@ const AppLayout = () => {
         <div className="p-6 border-b border-[#23232B]">
           <div className="flex items-center gap-3 mb-4">
              <svg className="w-8 h-4 text-[#FFC400]" viewBox="0 0 60 28"><path d="M3 8 Q3 4 8 4 L24 4 Q28 4 28 9 L28 16 Q28 23 19 23 L11 23 Q3 23 3 14 Z M32 8 Q32 4 37 4 L53 4 Q57 4 57 9 L57 14 Q57 23 49 23 L41 23 Q32 23 32 16 Z M28 9 L32 9" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round"/></svg>
-             <h1 className="text-sm font-black text-white tracking-[0.04em] font-jakarta">ÓTICA CATELAN</h1>
+             <h1 className="text-sm font-black text-white tracking-[0.04em] font-jakarta leading-none pt-1">ÓTICA CATELAN</h1>
           </div>
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-70">
             {tenant?.name || "Unidade Gestão"}
