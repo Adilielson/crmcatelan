@@ -289,12 +289,12 @@ function SaaSAdmin() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatsCard title="Inquilinos Ativos" value={tenants.filter(t => t.status === 'active').length} trend="Total na base" icon={<Building2 className="w-4 h-4 text-primary" />} />
-        <StatsCard title="MRR Estimado" value={`R$ ${(tenants.reduce((acc, t) => acc + (t.plan === 'enterprise' ? 1200 : t.plan === 'pro' ? 499 : 199), 0)).toLocaleString()}`} trend="Baseado em planos" icon={<CreditCard className="w-4 h-4 text-green-600" />} />
-        <StatsCard title="IA Tokens Total" value={`${(tenants.reduce((acc, t) => acc + (t.ia_token_used || 0), 0) / 1000).toFixed(0)}k`} trend="Consumo do mês" icon={<Cpu className="w-4 h-4 text-purple-600" />} />
-        <StatsCard title="Usuários Ativos" value={tenants.reduce((acc, t) => acc + (t.profiles?.[0]?.count || 0), 0)} trend="Em toda a rede" icon={<Users className="w-4 h-4 text-blue-600" />} />
-        <StatsCard title="SLA Médio" value="99.9%" trend="Disponibilidade" icon={<Activity className="w-4 h-4 text-green-500" />} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <StatsCard title="Inquilinos Ativos" value={tenants.filter(t => t.status === 'active').length} trend="Total na base" icon={<Building2 className="w-5 h-5 text-primary shadow-[0_0_15px_rgba(255,196,0,0.3)]" />} />
+        <StatsCard title="MRR Estimado" value={`R$ ${(tenants.reduce((acc, t) => acc + (t.plan === 'enterprise' ? 1200 : t.plan === 'pro' ? 499 : 199), 0)).toLocaleString()}`} trend="Baseado em planos" icon={<CreditCard className="w-5 h-5 text-success shadow-[0_0_15px_rgba(31,164,99,0.3)]" />} />
+        <StatsCard title="IA Tokens Total" value={`${(tenants.reduce((acc, t) => acc + (t.ia_token_used || 0), 0) / 1000).toFixed(0)}k`} trend="Consumo do mês" icon={<Cpu className="w-5 h-5 text-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.3)]" />} />
+        <StatsCard title="Usuários Ativos" value={tenants.reduce((acc, t) => acc + (t.profiles?.[0]?.count || 0), 0)} trend="Em toda a rede" icon={<Users className="w-5 h-5 text-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.3)]" />} />
+        <StatsCard title="SLA Médio" value="99.9%" trend="Disponibilidade" icon={<Activity className="w-5 h-5 text-success shadow-[0_0_15px_rgba(31,164,99,0.3)]" />} />
       </div>
 
       <Tabs defaultValue="tenants" className="w-full">
