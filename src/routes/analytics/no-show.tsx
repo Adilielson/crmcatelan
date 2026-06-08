@@ -99,7 +99,7 @@ function NoShowAnalytics() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl border">
+      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl border border-border">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">Filtros:</span>
@@ -128,7 +128,7 @@ function NoShowAnalytics() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-ink">
         <MetricCard 
           title="Taxa de Presença" 
           value="77.5%" 
@@ -175,7 +175,7 @@ function NoShowAnalytics() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="bg-white border-border shadow-card">
           <CardHeader>
             <CardTitle>Tendência de Comparecimento</CardTitle>
             <CardDescription>Comparativo mensal entre comparecimentos e faltas.</CardDescription>
@@ -196,7 +196,7 @@ function NoShowAnalytics() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white border-border shadow-card">
           <CardHeader>
             <CardTitle>No-Show por Origem de Tráfego</CardTitle>
             <CardDescription>Identifique a qualidade dos leads por canal de aquisição.</CardDescription>
@@ -218,7 +218,7 @@ function NoShowAnalytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 bg-white border-border shadow-card text-ink">
           <CardHeader>
             <CardTitle>Motivos de No-Show</CardTitle>
             <CardDescription>Principais justificativas registradas.</CardDescription>
@@ -244,7 +244,7 @@ function NoShowAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 bg-white border-border shadow-card text-ink">
           <CardHeader>
             <CardTitle>Recuperação de No-Shows</CardTitle>
             <CardDescription>Leads que faltaram e precisam de reagendamento.</CardDescription>

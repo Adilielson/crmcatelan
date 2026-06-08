@@ -31,10 +31,10 @@ function IAMetrics() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 text-ink">
       <div className="flex justify-between items-center">
         <div>
-          <h1>Métricas de Inteligência Artificial</h1>
+          <h1 className="text-3xl font-black tracking-tight font-jakarta">Métricas de Inteligência Artificial</h1>
           <p className="text-sm text-gray-500">Acompanhamento de performance da IA SDR</p>
         </div>
         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 py-1 px-3">
@@ -67,7 +67,7 @@ function IAMetrics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border border-border shadow-card bg-card">
+        <Card className="lg:col-span-2 border border-border shadow-card bg-white">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" /> Funil de Conversão SDR
@@ -77,7 +77,7 @@ function IAMetrics() {
             {funnelData.map((item, i) => (
               <div key={i} className="space-y-2">
                 <div className="flex justify-between text-xs font-bold">
-                  <span className="text-gray-600">{item.label}</span>
+                  <span className="text-gray-700 font-bold">{item.label}</span>
                   <span className="text-gray-400">{item.count} leads ({item.percentage}%)</span>
                 </div>
                 <Progress value={item.percentage} className="h-2 bg-slate-100" />
@@ -86,7 +86,7 @@ function IAMetrics() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border shadow-card bg-card">
+        <Card className="border border-border shadow-card bg-white">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-500" /> Pontos de Abandono (Drop-off)
