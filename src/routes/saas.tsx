@@ -649,7 +649,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
         <div className="flex justify-between items-start">
           <Badge className={cn(
             "text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-xl border-none shadow-sm",
-            highlight ? "bg-primary text-primary-foreground" : "bg-black-3 text-gray-400"
+            highlight ? "bg-primary text-primary-foreground" : "bg-card text-gray-400"
           )}>{name}</Badge>
           <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{activeCount} ativos</span>
         </div>
@@ -680,7 +680,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
         </div>
         <Button className={cn(
           "w-full h-11 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95",
-          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-black-3 hover:bg-white/5 text-white border border-border"
+          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-card hover:bg-white/5 text-white border border-border"
         )}>
           EDITAR PLANO
         </Button>

@@ -84,7 +84,7 @@ function Chat() {
                 selectedSessionId === session.id ? "bg-primary/5 border-l-[4px] border-l-primary shadow-inner" : ""
               )}
             >
-              <div className="w-12 h-12 rounded-full bg-black-3 border border-border flex items-center justify-center relative flex-shrink-0 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-card border border-border flex items-center justify-center relative flex-shrink-0 shadow-sm">
                 <User className="w-6 h-6 text-gray-500" />
                 {session.status === 'online' && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -118,7 +118,7 @@ function Chat() {
           <>
             <div className="p-5 border-b border-border flex justify-between items-center bg-card z-10 shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-black-3 border border-border flex items-center justify-center shadow-inner">
+                <div className="w-12 h-12 rounded-full bg-card border border-border flex items-center justify-center shadow-inner">
                   <User className="w-6 h-6 text-gray-500" />
                 </div>
                 <div>
@@ -237,7 +237,7 @@ function Chat() {
                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Interesses Detectados</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {(currentLead.ia_interesses || ['Óculos de Grau', 'Exame']).map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="text-[10px] bg-black-3 text-primary border border-primary/20 font-black px-2 py-1 rounded-lg">
+                      <Badge key={i} variant="secondary" className="text-[10px] bg-card text-primary border border-primary/20 font-black px-2 py-1 rounded-lg">
                         {tag}
                       </Badge>
                     ))}

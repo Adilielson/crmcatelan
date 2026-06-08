@@ -215,7 +215,7 @@ function Agenda() {
                             "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight",
                             appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30 shadow-sm" :
                             appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30 shadow-sm" :
-                            "bg-black-3 text-gray-500 border-border shadow-sm"
+                            "bg-card text-gray-500 border-border shadow-sm"
                           )}
                         >
                           <Clock className="w-2.5 h-2.5" />
@@ -254,7 +254,7 @@ function Agenda() {
                   <div key={appt.id} className="bg-card border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 transition-all group relative overflow-hidden">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="bg-black-3 p-2.5 rounded-xl border border-border shadow-inner">
+                        <div className="bg-card p-2.5 rounded-xl border border-border shadow-inner">
                           <User className="w-5 h-5 text-gray-500" />
                         </div>
                         <div>

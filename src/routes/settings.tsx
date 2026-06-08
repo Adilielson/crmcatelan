@@ -80,9 +80,9 @@ function Settings() {
                     <div key={day} className="flex items-center justify-between p-4 bg-background border border-border rounded-[14px] shadow-inner mb-3">
                       <span className="text-xs font-black uppercase tracking-widest text-white">{day}</span>
                       <div className="flex gap-3 items-center">
-                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="09:00" />
+                        <Input className="w-24 h-10 text-xs bg-card border-border text-center font-black rounded-lg" defaultValue="09:00" />
                         <span className="text-gray-600 font-black text-[10px]">ÀS</span>
-                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="18:00" />
+                        <Input className="w-24 h-10 text-xs bg-card border-border text-center font-black rounded-lg" defaultValue="18:00" />
                       </div>
                     </div>
                   ))}
@@ -103,7 +103,7 @@ function Settings() {
                 <Button className="w-full h-11 bg-[#1a1500] hover:bg-black text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all" size="sm">PAUSAR ATENDIMENTO</Button>
               </div>
 
-              <div className="bg-black-2 shadow-card border border-border rounded-[14px] p-8 overflow-hidden relative">
+              <div className="bg-card shadow-card border border-border rounded-[14px] p-8 overflow-hidden relative">
                 <div className="absolute -bottom-4 -right-4 opacity-5 rotate-12">
                   <Zap className="w-32 h-32 text-primary" />
                 </div>
