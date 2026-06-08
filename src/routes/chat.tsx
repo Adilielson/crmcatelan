@@ -160,22 +160,22 @@ function Chat() {
                 key={session.id} 
                 onClick={() => setSelectedSession(session.id)}
                 className={cn(
-                  "p-4 border-b border-gray-50/50 cursor-pointer transition-all flex gap-3 relative hover:bg-white group",
-                  selectedSessionId === session.id ? "bg-white shadow-sm z-10" : ""
+                  "p-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
+                  selectedSessionId === session.id ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100"
                 )}
               >
                 {selectedSessionId === session.id && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
+                  <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-[#FFC400] rounded-r-full shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
                 )}
                 
                 <div className="relative flex-shrink-0">
-                  <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                    <AvatarFallback className="bg-gray-100 text-gray-500 font-bold uppercase">
+                  <Avatar className="h-14 w-14 border-2 border-white shadow-md rounded-[18px]">
+                    <AvatarFallback className="bg-gradient-to-br from-[#F6F7F9] to-[#E3E6EB] text-[#A7ADB8] font-black uppercase text-base">
                       {session.name.substring(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   {session.status === 'online' && (
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-success border-2 border-white rounded-full"></div>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#1FA463] border-[3px] border-white rounded-full"></div>
                   )}
                 </div>
 
