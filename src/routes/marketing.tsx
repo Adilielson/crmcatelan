@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { 
@@ -5,10 +6,11 @@ import {
   LineChart, Line, Legend, AreaChart, Area, PieChart, Pie
 } from 'recharts'
 import { Target, Users, TrendingUp, DollarSign, Brain, Filter, MousePointer2, Megaphone, Layout, MessageCircle } from 'lucide-react'
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/marketing')({
   component: MarketingPartnerDashboard,
@@ -91,13 +93,16 @@ function IntegrationsView() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-2 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-bold">Configurar Integração Ads</CardTitle>
-          <CardDescription>Configure o Pixel e a API de Conversão para rastreamento de ROAS</CardDescription>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <Card className="lg:col-span-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-[#E3E6EB] bg-white rounded-[24px] overflow-hidden">
+        <CardHeader className="pb-8 border-b border-[#E3E6EB] bg-[#F6F7F9]/50">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-8 h-0.5 bg-primary rounded-full" />
+            <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Configuração de Tráfego</CardTitle>
+          </div>
+          <CardDescription className="text-[14px] text-gray-500 font-medium">Configure o Pixel e a API de Conversão para rastreamento de ROAS em tempo real.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8 p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Plataforma</label>
@@ -155,14 +160,14 @@ function IntegrationsView() {
                 { label: 'Agendamento Confirmado', crmStatus: 'Agendado', defaultEvent: 'Schedule' },
                 { label: 'Check-in Realizado', crmStatus: 'Compareceu', defaultEvent: 'Purchase' },
               ].map((map, i) => (
-                <div key={i} className="flex items-center gap-4 bg-slate-50 p-3 rounded-lg border border-dashed">
+                <div key={i} className="flex items-center gap-4 bg-[#F6F7F9] p-4 rounded-[16px] border border-dashed border-[#E3E6EB] hover:border-primary/50 transition-all">
                   <div className="flex-1">
-                    <p className="text-xs font-bold text-slate-700">{map.label}</p>
-                    <p className="text-[10px] text-slate-400">Gatilho: Status {map.crmStatus}</p>
+                    <p className="text-[13px] font-black text-ink uppercase tracking-tight">{map.label}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Gatilho: Status {map.crmStatus}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400">Enviar como:</span>
-                    <input type="text" defaultValue={map.defaultEvent} className="border rounded px-2 py-1 text-xs w-32" />
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mapear para:</span>
+                    <Input defaultValue={map.defaultEvent} className="h-10 border-[#E3E6EB] rounded-xl px-4 text-xs font-bold w-40" />
                   </div>
                 </div>
               ))}
@@ -364,35 +369,39 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
         </Card>
 
         {/* Auditoria Comercial (Análise de Conversa) */}
-        <Card className="lg:col-span-2 shadow-sm bg-slate-900 text-white overflow-hidden">
-          <CardHeader className="bg-slate-800/50">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-emerald-400" /> Auditoria de Qualidade Comercial
-              </CardTitle>
-              <Badge className="bg-emerald-500 text-white border-none text-[10px]">Novos Insights</Badge>
+        <Card className="lg:col-span-2 shadow-[0_8px_30px_rgb(0,0,0,0.1)] bg-[#0E0E11] text-white overflow-hidden border-[#23232B] rounded-[24px]">
+          <CardHeader className="bg-[#17171B] border-b border-[#23232B] p-8">
+            <div className="flex justify-between items-center mb-1">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#1FA463]/20 rounded-xl border border-[#1FA463]/30">
+                  <MessageCircle className="w-5 h-5 text-[#1FA463]" />
+                </div>
+                <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-white">Auditoria de Qualidade</CardTitle>
+              </div>
+              <Badge className="bg-[#1FA463] text-white border-none text-[10px] font-black px-3 py-1 rounded-lg">NOVOS INSIGHTS</Badge>
             </div>
-            <CardDescription className="text-slate-400 text-xs">Visão da agência sobre a abordagem do time comercial</CardDescription>
+            <CardDescription className="text-slate-400 text-xs font-medium">Visão estratégica da agência sobre a performance do time comercial.</CardDescription>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="p-4 space-y-4">
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
                 { lead: 'Roberto Silva', status: 'Agendado', feedback: 'O vendedor demorou 15min para responder após a qualificação da IA. Risco de perda de timing.', time: '2h atrás' },
                 { lead: 'Ana Clara', status: 'Perdido', feedback: 'Lead questionou sobre parcelamento e não foi ofertado o plano especial da campanha.', time: '5h atrás' },
               ].map((audit, i) => (
-                <div key={i} className="bg-slate-800 p-3 rounded-xl border border-slate-700/50 group hover:border-emerald-500/50 transition-all cursor-pointer">
-                  <div className="flex justify-between items-start mb-2">
+                <div key={i} className="bg-[#17171B] p-6 rounded-[20px] border border-[#23232B] group hover:border-[#FFC400]/50 transition-all cursor-pointer relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFC400]/5 rounded-full -mr-12 -mt-12 blur-2xl group-hover:bg-[#FFC400]/10" />
+                  <div className="flex justify-between items-start mb-4 relative z-10">
                     <div>
-                      <p className="text-xs font-bold text-slate-200">{audit.lead}</p>
-                      <Badge variant="outline" className="text-[8px] text-slate-400 border-slate-600 h-4 mt-1">{audit.status}</Badge>
+                      <p className="text-sm font-black text-white uppercase tracking-tight">{audit.lead}</p>
+                      <Badge variant="outline" className="text-[9px] text-[#A7ADB8] border-[#23232B] h-5 mt-2 font-black uppercase tracking-widest">{audit.status}</Badge>
                     </div>
-                    <span className="text-[9px] text-slate-500">{audit.time}</span>
+                    <span className="text-[10px] font-bold text-slate-500">{audit.time}</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 italic leading-relaxed">
+                  <p className="text-[12px] text-slate-400 font-medium leading-relaxed mb-4 italic relative z-10">
                     "{audit.feedback}"
                   </p>
-                  <div className="mt-2 pt-2 border-t border-slate-700 flex justify-end">
-                    <Button variant="ghost" size="sm" className="h-6 text-[9px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10">Ver Histórico Conversa</Button>
+                  <div className="pt-4 border-t border-[#23232B] flex justify-end relative z-10">
+                    <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black text-[#FFC400] hover:text-[#FFC400] hover:bg-[#FFC400]/10 uppercase tracking-widest">Ver Histórico</Button>
                   </div>
                 </div>
               ))}
@@ -404,8 +413,8 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
   )
 }
 
-function MetricCard({ title, value, change, icon, color }: any) {
-  const colorMap: any = {
+function MetricCard({ title, value, change, icon, color }: { title: string; value: string; change: string; icon: React.ReactNode; color: string }) {
+  const colorMap: Record<string, string> = {
     blue: 'bg-blue-50 text-blue-600 border-blue-100',
     emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     orange: 'bg-orange-50 text-orange-600 border-orange-100',
@@ -413,22 +422,25 @@ function MetricCard({ title, value, change, icon, color }: any) {
   }
   
   return (
-    <Card className="shadow-sm border-none bg-white">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
+    <Card className="shadow-[0_8px_30px_rgb(0,0,0,0.03)] border-[#E3E6EB] bg-white rounded-[24px] hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group overflow-hidden relative">
+      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+         {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-24 h-24" })}
+      </div>
+      <CardContent className="p-8 relative z-10">
+        <div className="flex justify-between items-start mb-6">
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{title}</p>
-            <h3 className="text-2xl font-black text-slate-800">{value}</h3>
+            <p className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] font-jakarta">{title}</p>
+            <h3 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none">{value}</h3>
           </div>
-          <div className={`p-2 rounded-xl border ${colorMap[color]}`}>
+          <div className={cn("p-4 rounded-[18px] border transition-all group-hover:scale-110", colorMap[color])}>
             {icon}
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-2">
-          <Badge className={`text-[9px] font-bold border-none ${colorMap[color]} px-1.5 h-4`}>
+        <div className="flex items-center gap-3">
+          <Badge className={cn("text-[10px] font-black border-none px-2.5 py-1 rounded-lg", colorMap[color])}>
             {change}
           </Badge>
-          <span className="text-[9px] text-slate-400 font-medium">vs período anterior</span>
+          <span className="text-[10px] text-[#A7ADB8] font-bold uppercase tracking-widest">vs mês anterior</span>
         </div>
       </CardContent>
     </Card>

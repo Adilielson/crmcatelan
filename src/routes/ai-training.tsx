@@ -80,18 +80,20 @@ function AITrainingSettings() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 text-ink">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[14px] border border-border shadow-card relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-5">
-           <Brain className="w-24 h-24 text-primary" />
-        </div>
-        <div className="flex items-center gap-6 relative z-10">
-          <div className="p-4 bg-primary/10 rounded-2xl shadow-inner border border-primary/20">
-            <Brain className="w-10 h-10 text-primary shadow-[0_0_15px_rgba(255,196,0,0.3)]" />
+    <div className="space-y-10 animate-in fade-in duration-1000">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
+        <div className="relative z-10 flex items-center gap-8">
+          <div className="p-5 bg-[#FFC400]/10 rounded-[24px] border border-[#FFC400]/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
+            <Brain className="w-12 h-12 text-primary shadow-[0_0_20px_rgba(255,196,0,0.4)]" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-ink tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
-            <p className="text-gray-500 font-medium">Personalize a inteligência de atendimento da Ótica Catelan.</p>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-1 h-1 rounded-full bg-primary" />
+              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Inteligência SDR Ativa</span>
+            </div>
+            <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">Treinamento IA</h1>
+            <p className="text-gray-500 font-medium text-[15px] max-w-xl">Personalize o comportamento, tom de voz e base de conhecimento da inteligência de atendimento da Ótica Catelan.</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -103,8 +105,8 @@ function AITrainingSettings() {
               onCheckedChange={setTrainingMode} 
             />
           </div>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Salvando..." : "Salvar Alterações"}
+          <Button onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-14 px-10 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 uppercase tracking-widest border-none">
+            {isSaving ? "SALVANDO..." : "SALVAR ALTERAÇÕES"}
           </Button>
         </div>
       </div>
@@ -243,10 +245,13 @@ function AITrainingSettings() {
           </TabsContent>
 
           <TabsContent value="qualification" className="space-y-6">
-            <Card className="bg-white border-border shadow-card">
-              <CardHeader>
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Fluxo de Qualificação</CardTitle>
-                <CardDescription>Perguntas obrigatórias para filtrar leads qualificados.</CardDescription>
+            <Card className="bg-white border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.03)] rounded-[24px] overflow-hidden">
+              <CardHeader className="pb-8 border-b border-[#E3E6EB] bg-[#F6F7F9]/50">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-8 h-0.5 bg-primary rounded-full" />
+                  <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Fluxo de Qualificação</CardTitle>
+                </div>
+                <CardDescription className="text-[14px] text-gray-500 font-medium">Defina as perguntas obrigatórias para filtrar e pontuar leads qualificados.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
