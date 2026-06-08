@@ -150,7 +150,7 @@ export function KanbanBoard() {
           <div key={column} className="min-w-[340px] flex-1 flex flex-col gap-6">
             <div className="flex justify-between items-center px-2">
               <div className="flex items-center gap-3">
-                <span className="font-black text-slate-400 uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
+                <span className="font-black text-[#6C727C] uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
                 <span className="bg-[#FFC400]/10 text-[#FFC400] text-[10px] px-2.5 py-0.5 rounded-full font-black border border-[#FFC400]/20">
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>
