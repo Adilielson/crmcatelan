@@ -87,30 +87,30 @@ function Dashboard() {
   }, [leads, appointments])
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="space-y-8 animate-in fade-in duration-700 bg-[#0E0E11]">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-3xl font-black text-white tracking-tight font-jakarta">
             Painel de Gestão
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
+          <p className="text-[#6C727C] font-medium mt-1">
             Monitoramento em tempo real da unidade e performance IA.
           </p>
         </div>
         <div className="flex items-center gap-3">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[200px] bg-white border-slate-200/60 shadow-sm font-semibold text-xs h-10">
-               <Store className="w-3.5 h-3.5 mr-2 text-primary" />
+             <SelectTrigger className="w-[200px] bg-[#17171B] border-[#23232B] shadow-sm font-semibold text-xs h-10 text-white rounded-[14px]">
+               <Store className="w-3.5 h-3.5 mr-2 text-[#FFC400]" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
-             <SelectContent>
+             <SelectContent className="bg-[#17171B] border-[#23232B] text-white">
                <SelectItem value="all">Todas as Unidades</SelectItem>
                {pipelines.map(p => (
                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                ))}
              </SelectContent>
            </Select>
-           <Button variant="outline" className="bg-white border-slate-200/60 shadow-sm font-bold text-xs h-10 px-6">
+           <Button variant="outline" className="bg-[#FFC400] hover:bg-[#FFD60A] text-[#1a1500] border-none shadow-sm font-bold text-xs h-10 px-6 rounded-[14px]">
              Relatório Completo
            </Button>
         </div>
@@ -153,10 +153,10 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Funil de Vendas */}
-        <Card className="lg:col-span-2 shadow-sm border-none bg-white">
+        <Card className="lg:col-span-2 shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-slate-500">
-              <TrendingUp className="w-4 h-4" /> Funil de Conversão (Kanban)
+            <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-[#6C727C] font-jakarta">
+              <TrendingUp className="w-4 h-4 text-[#FFC400]" /> Funil de Conversão (Kanban)
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[320px]">
@@ -177,9 +177,9 @@ function Dashboard() {
         </Card>
 
         {/* Origem dos Leads */}
-        <Card className="shadow-sm border-none bg-white">
+        <Card className="shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500">Origem dos Leads</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-[#6C727C] font-jakarta">Origem dos Leads</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px] flex flex-col items-center">
             <ResponsiveContainer width="100%" height={200}>
@@ -215,11 +215,11 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Atividade da IA SDR */}
-        <Card className="shadow-sm border-none bg-white">
+        <Card className="shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <Brain className="w-5 h-5 text-purple-600" />
+              <div className="p-2 bg-[#FFC400]/10 rounded-lg">
+                <Brain className="w-5 h-5 text-[#FFC400]" />
               </div>
               <CardTitle className="text-sm font-bold">Atividade Recente IA SDR</CardTitle>
             </div>
@@ -230,7 +230,7 @@ function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {leads.filter(l => l.ia_status).slice(0, 3).map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                <div key={i} className="flex items-center justify-between p-3 border border-[#23232B] rounded-[14px] bg-[#0E0E11]/50">
                   <div className="flex items-center gap-3">
                     <Badge className={cn(
                       "text-[10px] uppercase font-bold",
@@ -239,8 +239,8 @@ function Dashboard() {
                       {lead.ia_status}
                     </Badge>
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{lead.name}</p>
-                      <p className="text-[10px] text-slate-500 truncate max-w-[200px]">{lead.ia_resumo}</p>
+                      <p className="text-sm font-bold text-white font-jakarta">{lead.name}</p>
+                      <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_resumo}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className="text-[10px] font-bold border-slate-200">
@@ -253,11 +253,11 @@ function Dashboard() {
         </Card>
 
         {/* Alertas de SLA e Estagnação */}
-        <Card className="shadow-sm border-none bg-white">
+        <Card className="shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-50 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+              <div className="p-2 bg-[#D64545]/10 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-[#D64545]" />
               </div>
               <CardTitle className="text-sm font-bold">Leads em Alerta (SLA)</CardTitle>
             </div>
@@ -271,14 +271,14 @@ function Dashboard() {
                 { name: 'Roberto Lima', stage: 'Leads Prontos', wait: '5h', priority: 'VIP' },
                 { name: 'Ana Souza', stage: 'Em Atendimento', wait: '26h', priority: 'Alta' },
               ].map((alert, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border border-red-50 rounded-xl bg-red-50/30">
+                <div key={i} className="flex items-center justify-between p-3 border border-[#D64545]/20 rounded-[14px] bg-[#D64545]/5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                       <Clock className="w-4 h-4 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{alert.name} <Badge className="ml-2 bg-red-100 text-red-700 text-[9px] border-none">{alert.priority}</Badge></p>
-                      <p className="text-[10px] text-slate-500">Parado em {alert.stage} há {alert.wait}</p>
+                      <p className="text-sm font-bold text-white font-jakarta">{alert.name} <Badge className="ml-2 bg-[#D64545]/20 text-[#D64545] text-[9px] border-none">{alert.priority}</Badge></p>
+                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.wait}</p>
                     </div>
                   </div>
                   <Link to="/chat">
@@ -297,25 +297,25 @@ function Dashboard() {
 function StatCard({ title, value, change, icon, color, link }: { title: string; value: string; change: string; icon: React.ReactNode; color?: string; link: string }) {
   return (
     <Link to={link}>
-      <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border-slate-200/60 shadow-sm bg-white group overflow-hidden relative">
+      <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border-[#23232B] shadow-sm bg-[#17171B] group overflow-hidden relative rounded-[14px]">
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16" })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
         </div>
         <CardContent className="p-6 relative z-10">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{title}</p>
+            <p className="text-[10px] font-black text-[#6C727C] uppercase tracking-[0.2em]">{title}</p>
             <div className={cn(
               "p-2 rounded-xl transition-colors",
-              color ? "bg-primary/5 text-primary" : "bg-slate-50 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary"
+              "bg-[#0E0E11] text-[#FFC400] border border-[#23232B] group-hover:bg-[#FFC400] group-hover:text-[#1a1500]"
             )}>
               {icon}
             </div>
           </div>
           <div className="space-y-1">
-            <h3 className={cn("text-3xl font-black text-slate-900 tracking-tight", color)}>{value}</h3>
+            <h3 className={cn("text-3xl font-black text-white tracking-tight font-jakarta")}>{value}</h3>
             <div className="flex items-center gap-1.5">
-              <div className="h-1 w-1 rounded-full bg-slate-300" />
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{change}</p>
+              <div className="h-1 w-1 rounded-full bg-[#FFC400]" />
+              <p className="text-[10px] font-bold text-[#6C727C] uppercase tracking-wider">{change}</p>
             </div>
           </div>
         </CardContent>

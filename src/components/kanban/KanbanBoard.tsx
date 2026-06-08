@@ -118,17 +118,17 @@ export function KanbanBoard() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-[#17171B] p-6 rounded-[14px] border border-[#23232B] shadow-sm gap-4">
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           <div className="flex flex-col">
-            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Fluxo de Vendas</h3>
-            <p className="text-xs font-bold text-slate-900 mt-1">Gerencie seus leads e pipeline</p>
+            <h3 className="text-sm font-black text-[#6C727C] uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
+            <p className="text-xs font-bold text-white mt-1">Gerencie seus leads e pipeline</p>
           </div>
           <Select value={currentPipelineId} onValueChange={setCurrentPipeline}>
-            <SelectTrigger className="w-full md:w-[300px] h-11 bg-slate-50 border-slate-200/60 font-bold text-xs uppercase tracking-wider">
+            <SelectTrigger className="w-full md:w-[300px] h-11 bg-[#0E0E11] border-[#23232B] font-bold text-xs uppercase tracking-wider text-white rounded-[14px]">
               <SelectValue placeholder="Selecionar Unidade" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-[#17171B] border-[#23232B] text-white">
               {pipelines.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
@@ -136,12 +136,12 @@ export function KanbanBoard() {
           </Select>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-slate-200 shadow-sm">
-            <AlertCircle className="w-4 h-4 mr-2 text-primary" />
+          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#23232B] bg-[#17171B] text-white shadow-sm rounded-[14px] hover:bg-[#23232B]">
+            <AlertCircle className="w-4 h-4 mr-2 text-[#FFC400]" />
             Notificações
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#D64545] rounded-full border-2 border-[#17171B] animate-pulse" />
           </Button>
-          <Button size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] shadow-md shadow-primary/20">Novo Lead</Button>
+          <Button size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">Novo Lead</Button>
         </div>
       </div>
 
@@ -150,8 +150,8 @@ export function KanbanBoard() {
           <div key={column} className="min-w-[340px] flex-1 flex flex-col gap-6">
             <div className="flex justify-between items-center px-2">
               <div className="flex items-center gap-3">
-                <span className="font-black text-slate-800 uppercase tracking-widest text-[11px]">{column}</span>
-                <span className="bg-primary/10 text-primary text-[10px] px-2.5 py-0.5 rounded-full font-black border border-primary/20">
+                <span className="font-black text-[#6C727C] uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
+                <span className="bg-[#FFC400]/10 text-[#FFC400] text-[10px] px-2.5 py-0.5 rounded-full font-black border border-[#FFC400]/20">
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>
               </div>
@@ -161,7 +161,7 @@ export function KanbanBoard() {
             </div>
             
             <div 
-              className="bg-slate-50/50 p-3 rounded-2xl border border-dashed border-slate-200 min-h-[600px] flex flex-col gap-3"
+              className="bg-[#17171B]/50 p-3 rounded-[14px] border border-dashed border-[#23232B] min-h-[600px] flex flex-col gap-3"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 const id = e.dataTransfer.getData('leadId')
@@ -248,8 +248,8 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       draggable
       onDragStart={onDragStart}
       className={cn(
-        "bg-white p-5 rounded-2xl border-2 shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/40 hover:shadow-md transition-all duration-300 group relative",
-        lead.isUrgent ? 'border-red-100 bg-red-50/10' : 'border-slate-100'
+        "bg-[#17171B] p-5 rounded-[14px] border border-[#23232B] shadow-sm cursor-grab active:cursor-grabbing hover:border-[#FFC400]/40 hover:shadow-md transition-all duration-300 group relative",
+        lead.isUrgent ? 'border-[#D64545]/30 bg-[#D64545]/5' : ''
       )}
     >
       <AnimatePresence>
@@ -264,13 +264,13 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute inset-0 rounded-2xl border-2 border-red-400 pointer-events-none"
+            className="absolute inset-0 rounded-[14px] border-2 border-[#D64545]/40 pointer-events-none"
           />
         )}
       </AnimatePresence>
 
       {lead.isUrgent && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-red-200">
+        <div className="absolute -top-2 -right-2 bg-[#D64545] text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-[#D64545]/20">
           URGENTE
         </div>
       )}
@@ -278,13 +278,13 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       
       <div className="flex justify-between items-start mb-4">
         <div className="space-y-1">
-          <h4 className="font-black text-[13px] text-slate-800 line-clamp-1 uppercase tracking-tight">{lead.name}</h4>
+          <h4 className="font-black text-[13px] text-white line-clamp-1 uppercase tracking-tight font-jakarta">{lead.name}</h4>
           <div className="flex items-center gap-1.5">
-            <DollarSign className="w-3 h-3 text-primary opacity-60" />
-            <span className="text-[12px] text-primary font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
+            <DollarSign className="w-3 h-3 text-[#FFC400] opacity-60" />
+            <span className="text-[12px] text-[#FFC400] font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
-        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+        <div className="bg-[#0E0E11] p-2 rounded-[14px] border border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20 transition-colors">
           {sourceIcons[lead.source]}
         </div>
       </div>
@@ -298,7 +298,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
         ].map((action, i) => (
           <button 
             key={i}
-            className="p-2.5 bg-slate-50 hover:bg-white hover:shadow-sm rounded-xl text-slate-400 hover:text-primary transition-all border border-slate-100 hover:border-primary/20" 
+            className="p-2.5 bg-[#0E0E11] hover:bg-[#17171B] hover:shadow-sm rounded-[14px] text-slate-500 hover:text-[#FFC400] transition-all border border-[#23232B] hover:border-[#FFC400]/20" 
             title={action.title}
           >
             <action.icon className="w-3.5 h-3.5" />

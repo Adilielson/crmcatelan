@@ -2,42 +2,52 @@
 @import "tw-animate-css";
 
 @theme {
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-default: 14px;
+  --radius-pill: 999px;
+
+  /* Fonts */
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Custom Palette */
+  --color-yellow: #FFC400;
+  --color-yellow-bright: #FFD60A;
+  --color-yellow-dark: #E0A500;
   
-  --color-background: oklch(0.99 0 0);
-  --color-foreground: oklch(0.15 0.02 264);
+  --color-black: #0E0E11;
+  --color-black-2: #17171B;
+  --color-black-3: #23232B;
   
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.15 0.02 264);
+  --color-ink: #15151A;
   
-  --color-primary: oklch(0.25 0.08 260);
-  --color-primary-foreground: oklch(0.98 0 0);
+  --color-gray-50: #F6F7F9;
+  --color-gray-200: #E3E6EB;
+  --color-gray-500: #6C727C;
   
-  --color-secondary: oklch(0.96 0.01 264);
-  --color-secondary-foreground: oklch(0.25 0.08 260);
+  --color-success: #1FA463;
+  --color-danger: #D64545;
+
+  /* Semantic Mapping - Forced Dark Mode by request */
+  --color-background: #0E0E11;
+  --color-foreground: #F6F7F9;
   
-  --color-muted: oklch(0.94 0.01 264);
-  --color-muted-foreground: oklch(0.45 0.03 264);
+  --color-card: #17171B;
+  --color-card-foreground: #F6F7F9;
   
-  --color-accent: oklch(0.94 0.02 260);
-  --color-accent-foreground: oklch(0.25 0.08 260);
+  --color-primary: #FFC400;
+  --color-primary-foreground: #1a1500;
   
-  --color-destructive: oklch(0.60 0.20 27);
-  --color-destructive-foreground: oklch(0.98 0 0);
-  
-  --color-border: oklch(0.88 0.02 264);
-  --color-input: oklch(0.88 0.02 264);
-  --color-ring: oklch(0.25 0.08 260);
+  --color-border: #23232B;
+  --color-input: #23232B;
+  --color-ring: #FFC400;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-[#0E0E11] text-[#F6F7F9] font-inter antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-jakarta font-bold;
   }
 }
