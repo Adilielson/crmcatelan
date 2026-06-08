@@ -303,7 +303,7 @@ function StatCard({ title, value, change, icon, color, link }: { title: string; 
         </div>
         <CardContent className="p-6 relative z-10">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{title}</p>
+            <p className="text-[10px] font-black text-[#6C727C] uppercase tracking-[0.2em]">{title}</p>
             <div className={cn(
               "p-2 rounded-xl transition-colors",
               "bg-[#0E0E11] text-[#FFC400] border border-[#23232B] group-hover:bg-[#FFC400] group-hover:text-[#1a1500]"
@@ -315,7 +315,7 @@ function StatCard({ title, value, change, icon, color, link }: { title: string; 
             <h3 className={cn("text-3xl font-black text-white tracking-tight font-jakarta")}>{value}</h3>
             <div className="flex items-center gap-1.5">
               <div className="h-1 w-1 rounded-full bg-[#FFC400]" />
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{change}</p>
+              <p className="text-[10px] font-bold text-[#6C727C] uppercase tracking-wider">{change}</p>
             </div>
           </div>
         </CardContent>
