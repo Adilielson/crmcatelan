@@ -253,11 +253,11 @@ function Dashboard() {
         </Card>
 
         {/* Alertas de SLA e Estagnação */}
-        <Card className="shadow-sm border-none bg-white">
+        <Card className="shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-50 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+              <div className="p-2 bg-[#D64545]/10 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-[#D64545]" />
               </div>
               <CardTitle className="text-sm font-bold">Leads em Alerta (SLA)</CardTitle>
             </div>
@@ -271,7 +271,7 @@ function Dashboard() {
                 { name: 'Roberto Lima', stage: 'Leads Prontos', wait: '5h', priority: 'VIP' },
                 { name: 'Ana Souza', stage: 'Em Atendimento', wait: '26h', priority: 'Alta' },
               ].map((alert, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border border-red-50 rounded-xl bg-red-50/30">
+                <div key={i} className="flex items-center justify-between p-3 border border-[#D64545]/20 rounded-[14px] bg-[#D64545]/5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
                       <Clock className="w-4 h-4 text-red-600" />
