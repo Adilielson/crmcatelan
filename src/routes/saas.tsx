@@ -609,16 +609,26 @@ function TenantRow({ tenant, onUpdate }: { tenant: any, onUpdate: () => void }) 
   )
 }
 
-function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" }: any) {
+function StatsCard({ title, value, trend, icon }: any) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="p-2 bg-muted/50 rounded-lg">{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className={`text-2xl font-bold ${statusColor}`}>{value}</div>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">{trend}</p>
+    <Card className="bg-card border-border hover:border-primary/40 transition-all duration-500 shadow-xl group hover:-translate-y-2 relative overflow-hidden rounded-[14px]">
+      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+        {icon}
+      </div>
+      <CardContent className="p-6 relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{title}</p>
+          <div className="p-2.5 bg-background border border-border rounded-xl shadow-inner group-hover:bg-primary/5 transition-colors">
+            {icon}
+          </div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-3xl font-black text-white tracking-tighter">{value}</h3>
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-600 mt-2 flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(31,164,99,0.5)]" />
+          {trend}
+        </p>
       </CardContent>
     </Card>
   )
