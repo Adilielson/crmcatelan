@@ -87,63 +87,72 @@ function Dashboard() {
   }, [leads, appointments])
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[14px] border border-border shadow-sm">
-        <div>
-          <h1 className="text-4xl font-black text-ink tracking-tight font-jakarta mb-2">
+    <div className="space-y-10 animate-in fade-in duration-1000">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-1 h-1 rounded-full bg-primary" />
+            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Relatório em Tempo Real</span>
+          </div>
+          <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">
             Dashboard Executivo
           </h1>
-          <p className="text-gray-500 font-medium">
-            Métricas estratégicas e performance da unidade em tempo real.
+          <p className="text-gray-500 font-medium text-[15px] max-w-xl">
+            Visão consolidada da performance comercial e operacional de suas unidades com inteligência preditiva.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4 relative z-10">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[220px] bg-white border-border shadow-sm font-semibold text-xs h-12 text-ink rounded-[14px] px-4">
-               <Store className="w-4 h-4 mr-2 text-primary" />
+             <SelectTrigger className="w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-14 text-ink rounded-[16px] px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+               <Store className="w-4 h-4 mr-3 text-primary" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
-             <SelectContent className="bg-white border-border text-ink">
-               <SelectItem value="all">Todas as Unidades</SelectItem>
+             <SelectContent className="bg-white border-[#E3E6EB] text-ink rounded-[16px]">
+               <SelectItem value="all" className="font-bold">Todas as Unidades</SelectItem>
                {pipelines.map(p => (
-                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                 <SelectItem key={p.id} value={p.id} className="font-bold">{p.name}</SelectItem>
                ))}
              </SelectContent>
            </Select>
-           <Button className="bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 font-black text-xs h-12 px-8 rounded-[14px] transition-all hover:scale-[1.02] active:scale-95">
+           <Button className="bg-primary hover:bg-yellow-bright text-[#1a1500] shadow-xl shadow-primary/20 font-black text-[11px] h-14 px-10 rounded-[16px] transition-all hover:scale-[1.05] active:scale-95 uppercase tracking-widest border-none">
              GERAR RELATÓRIO
            </Button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatCard 
           title="Total de Leads" 
           value={stats.totalLeads.toString()} 
-          change="+12% vs semana anterior" 
-          icon={<Users className="w-4 h-4" />}
+          change="+12.5%" 
+          changeDesc="vs semana anterior"
+          icon={<Users className="w-5 h-5" />}
           link="/kanban"
         />
         <StatCard 
           title="Valor em Pipeline" 
           value={stats.totalValue} 
-          change="Leads ativos no funil" 
-          icon={<DollarSign className="w-4 h-4" />}
+          change="R$ 12k" 
+          changeDesc="leads ativos no funil"
+          icon={<DollarSign className="w-5 h-5" />}
           link="/kanban"
         />
         <StatCard 
-          title="Consultas Confirmadas" 
+          title="Consultas Agendadas" 
           value={stats.confirmedAppts.toString()} 
-          change="Próximos 7 dias" 
-          icon={<Calendar className="w-4 h-4" />}
+          change="+8" 
+          changeDesc="próximos 7 dias"
+          icon={<Calendar className="w-5 h-5" />}
           link="/agenda"
         />
         <StatCard 
           title="Qualificação IA" 
           value={stats.qualRate} 
-          change="Performance SDR" 
-          icon={<Brain className="w-4 h-4" />}
+          change="92%" 
+          changeDesc="performance SDR"
+          icon={<Brain className="w-5 h-5" />}
           highlight
           link="/performance"
         />
