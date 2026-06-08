@@ -155,7 +155,7 @@ function Dashboard() {
         {/* Funil de Vendas */}
         <Card className="lg:col-span-2 shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-slate-500 font-jakarta">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-[#6C727C] font-jakarta">
               <TrendingUp className="w-4 h-4 text-[#FFC400]" /> Funil de Conversão (Kanban)
             </CardTitle>
           </CardHeader>
@@ -179,7 +179,7 @@ function Dashboard() {
         {/* Origem dos Leads */}
         <Card className="shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500 font-jakarta">Origem dos Leads</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-[#6C727C] font-jakarta">Origem dos Leads</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px] flex flex-col items-center">
             <ResponsiveContainer width="100%" height={200}>
