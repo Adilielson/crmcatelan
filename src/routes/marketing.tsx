@@ -37,9 +37,9 @@ function MarketingPartnerDashboard() {
   return (
     <div className="space-y-6">
       {/* Header com Filtros Globais */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-border shadow-card text-ink">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Painel de Marketing</h1>
+          <h1 className="text-2xl font-black text-ink tracking-tight font-jakarta">Painel de Marketing</h1>
           <p className="text-slate-500 text-sm">Dashboard de Parceiro - Agência Performance</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -49,7 +49,7 @@ function MarketingPartnerDashboard() {
               <TabsTrigger value="integrations" className="text-xs font-bold">Integrações {'&'} Pixel</TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border">
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-border">
             <Filter className="w-4 h-4 text-slate-400" />
             <select 
               className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer"
@@ -256,10 +256,10 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Gráfico Principal de Conversão */}
-        <Card className="lg:col-span-2 shadow-sm">
+        <Card className="lg:col-span-2 shadow-card border-border bg-white text-ink">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base font-bold text-slate-700">Fluxo de Conversão (Daily)</CardTitle>
+              <CardTitle className="text-base font-black text-ink uppercase tracking-wider">Fluxo de Conversão (Daily)</CardTitle>
               <CardDescription className="text-xs">Cliques vs Leads vs Vendas</CardDescription>
             </div>
             <Tabs defaultValue="leads">
@@ -292,9 +292,9 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
         </Card>
 
         {/* Performance de Criativos via UTM */}
-        <Card className="shadow-sm">
+        <Card className="shadow-card border-border bg-white text-ink">
           <CardHeader>
-            <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
+            <CardTitle className="text-base font-black text-ink flex items-center gap-2 uppercase tracking-wider">
               <Megaphone className="w-4 h-4" /> Criativos (UTM Content)
             </CardTitle>
           </CardHeader>
@@ -327,9 +327,9 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Atividade de Eventos (Pixel/CAPI) */}
-        <Card className="shadow-sm">
+        <Card className="shadow-card border-border bg-white text-ink">
           <CardHeader>
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <CardTitle className="text-sm font-black flex items-center gap-2 uppercase tracking-wider text-gray-500">
               <MousePointer2 className="w-4 h-4 text-blue-500" /> Eventos Tracking (CAPI)
             </CardTitle>
           </CardHeader>
@@ -343,7 +343,7 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
               ].map((ev, i) => (
                 <div key={i} className="flex items-center justify-between p-2 border-b last:border-0">
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-700">{ev.event}</span>
+                    <span className="text-xs font-bold text-ink">{ev.event}</span>
                     <span className="text-[9px] text-slate-400">{ev.count} eventos / 24h</span>
                   </div>
                   <div className="flex items-center gap-3">
