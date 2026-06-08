@@ -5,6 +5,11 @@
   --radius-default: 14px;
   --radius-pill: 999px;
 
+  /* Fonts */
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
   /* Custom Palette */
   --color-yellow: #FFC400;
   --color-yellow-bright: #FFD60A;
@@ -23,24 +28,24 @@
   --color-success: #1FA463;
   --color-danger: #D64545;
 
-  /* Semantic Mapping */
-  --color-background: var(--color-gray-50);
-  --color-foreground: var(--color-ink);
+  /* Semantic Mapping - Forced Dark Mode by request */
+  --color-background: #0E0E11;
+  --color-foreground: #F6F7F9;
   
-  --color-card: var(--color-black-2);
-  --color-card-foreground: var(--color-gray-50);
+  --color-card: #17171B;
+  --color-card-foreground: #F6F7F9;
   
-  --color-primary: var(--color-yellow);
+  --color-primary: #FFC400;
   --color-primary-foreground: #1a1500;
   
-  --color-border: var(--color-gray-200);
-  --color-input: var(--color-gray-200);
-  --color-ring: var(--color-yellow);
+  --color-border: #23232B;
+  --color-input: #23232B;
+  --color-ring: #FFC400;
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-[#0E0E11] text-[#F6F7F9] font-inter antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-jakarta font-bold;
