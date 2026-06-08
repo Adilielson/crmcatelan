@@ -91,13 +91,16 @@ function IntegrationsView() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-2 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-bold">Configurar Integração Ads</CardTitle>
-          <CardDescription>Configure o Pixel e a API de Conversão para rastreamento de ROAS</CardDescription>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <Card className="lg:col-span-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-[#E3E6EB] bg-white rounded-[24px] overflow-hidden">
+        <CardHeader className="pb-8 border-b border-[#E3E6EB] bg-[#F6F7F9]/50">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-8 h-0.5 bg-primary rounded-full" />
+            <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Configuração de Tráfego</CardTitle>
+          </div>
+          <CardDescription className="text-[14px] text-gray-500 font-medium">Configure o Pixel e a API de Conversão para rastreamento de ROAS em tempo real.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8 p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Plataforma</label>
@@ -155,14 +158,14 @@ function IntegrationsView() {
                 { label: 'Agendamento Confirmado', crmStatus: 'Agendado', defaultEvent: 'Schedule' },
                 { label: 'Check-in Realizado', crmStatus: 'Compareceu', defaultEvent: 'Purchase' },
               ].map((map, i) => (
-                <div key={i} className="flex items-center gap-4 bg-slate-50 p-3 rounded-lg border border-dashed">
+                <div key={i} className="flex items-center gap-4 bg-[#F6F7F9] p-4 rounded-[16px] border border-dashed border-[#E3E6EB] hover:border-primary/50 transition-all">
                   <div className="flex-1">
-                    <p className="text-xs font-bold text-slate-700">{map.label}</p>
-                    <p className="text-[10px] text-slate-400">Gatilho: Status {map.crmStatus}</p>
+                    <p className="text-[13px] font-black text-ink uppercase tracking-tight">{map.label}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Gatilho: Status {map.crmStatus}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400">Enviar como:</span>
-                    <input type="text" defaultValue={map.defaultEvent} className="border rounded px-2 py-1 text-xs w-32" />
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mapear para:</span>
+                    <Input defaultValue={map.defaultEvent} className="h-10 border-[#E3E6EB] rounded-xl px-4 text-xs font-bold w-40" />
                   </div>
                 </div>
               ))}
