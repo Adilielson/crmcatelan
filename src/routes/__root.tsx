@@ -1,10 +1,26 @@
-import { createRootRoute } from '@tanstack/react-router';
+import { createRootRoute, ScrollRestoration } from '@tanstack/react-router';
+import { HeadContent, Scripts } from '@tanstack/react-router';
 import AppLayout from '../components/layout/AppLayout';
-import styles from '../styles.css?url';
+import '../styles.css';
 
 export const Route = createRootRoute({
   head: () => ({
-    links: [{ rel: 'stylesheet', href: styles }],
+    meta: [
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { title: 'Ótica Catelan CRM' },
+    ],
   }),
-  component: AppLayout,
+  component: RootComponent,
 });
+
+function RootComponent() {
+  return (
+    <>
+      <HeadContent />
+      <AppLayout />
+      <ScrollRestoration />
+      <Scripts />
+    </>
+  );
+}
