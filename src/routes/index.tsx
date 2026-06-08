@@ -90,7 +90,7 @@ function Dashboard() {
     <div className="space-y-8 animate-in fade-in duration-700 bg-background min-h-screen">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-card p-8 rounded-[14px] border border-border shadow-sm">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-2">
+          <h1 className="text-4xl font-black text-card-foreground tracking-tight font-jakarta mb-2">
             Dashboard Executivo
           </h1>
           <p className="text-gray-500 font-medium">
@@ -152,7 +152,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Funil de Vendas */}
         <Card className="lg:col-span-2 shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="pb-4 border-b border-border/50 bg-black/20">
+          <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
             <CardTitle className="text-sm font-black flex items-center gap-3 uppercase tracking-[0.15em] text-gray-400 font-jakarta">
               <div className="p-1.5 bg-primary/10 rounded-lg">
                 <TrendingUp className="w-4 h-4 text-primary" />
@@ -179,7 +179,7 @@ function Dashboard() {
 
         {/* Origem dos Leads */}
         <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="pb-4 border-b border-border/50 bg-black/20">
+          <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
             <CardTitle className="text-sm font-black flex items-center gap-3 uppercase tracking-[0.15em] text-gray-400 font-jakarta">
               <div className="p-1.5 bg-primary/10 rounded-lg">
                 <Target className="w-4 h-4 text-primary" />
@@ -222,7 +222,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Atividade da IA SDR */}
         <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-black/20">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-xl">
                 <Brain className="w-5 h-5 text-primary" />
@@ -245,7 +245,7 @@ function Dashboard() {
                       {lead.ia_status}
                     </Badge>
                     <div>
-                      <p className="text-sm font-bold text-white font-jakarta">{lead.name}</p>
+                      <p className="text-sm font-bold text-card-foreground font-jakarta">{lead.name}</p>
                       <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_resumo}</p>
                     </div>
                   </div>
@@ -304,10 +304,10 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
   return (
     <Link to={link} className="block">
       <Card className={cn(
-        "hover:shadow-[0_20px_50px_rgba(255,196,0,0.15)] hover:-translate-y-2 transition-all duration-500 cursor-pointer border-border shadow-xl group overflow-hidden relative rounded-[14px]",
+        "hover:shadow-[0_20px_50px_rgba(255,196,0,0.15)] hover:-translate-y-2 transition-all duration-500 cursor-pointer border-border shadow-card group overflow-hidden relative rounded-[14px]",
         highlight
           ? "bg-gradient-to-br from-primary via-yellow-bright to-yellow-dark border-primary" 
-          : "bg-gradient-to-br from-card to-black-3 shadow-black/40"
+          : "bg-card shadow-sm"
       )}>
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
           {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
@@ -336,7 +336,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
               )} />
               <h3 className={cn(
                 "text-[46px] font-black tracking-tight font-jakarta leading-none",
-                highlight ? "text-[#1a1500]" : "text-white"
+                highlight ? "text-[#1a1500]" : "text-card-foreground"
               )}>{value}</h3>
             </div>
             <div className="flex items-center gap-2 mt-2">

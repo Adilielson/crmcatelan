@@ -623,7 +623,7 @@ function StatsCard({ title, value, trend, icon }: any) {
           </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-3xl font-black text-white tracking-tighter">{value}</h3>
+          <h3 className="text-3xl font-black text-card-foreground tracking-tighter">{value}</h3>
         </div>
         <p className="text-[10px] font-black uppercase tracking-widest text-gray-600 mt-2 flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(31,164,99,0.5)]" />
@@ -653,7 +653,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
           )}>{name}</Badge>
           <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{activeCount} ativos</span>
         </div>
-        <CardTitle className="text-3xl font-black text-white tracking-tighter pt-4 uppercase tracking-tighter">{price}</CardTitle>
+        <CardTitle className="text-3xl font-black text-card-foreground tracking-tighter pt-4 uppercase tracking-tighter">{price}</CardTitle>
       </CardHeader>
       <CardContent className="p-8 space-y-6">
         <div className="space-y-3">
@@ -664,7 +664,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
           ].map((limit) => (
             <div key={limit.label} className="flex justify-between items-center text-xs">
               <span className="text-gray-500 font-bold uppercase tracking-widest text-[9px]">{limit.label}:</span>
-              <span className="font-black text-white">{limit.value}</span>
+              <span className="font-black text-card-foreground">{limit.value}</span>
             </div>
           ))}
         </div>
