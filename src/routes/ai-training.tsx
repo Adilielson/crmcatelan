@@ -197,42 +197,42 @@ function AITrainingSettings() {
           </TabsContent>
 
           <TabsContent value="knowledge" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Documentos e FAQ</CardTitle>
-                <CardDescription>Fontes de informação que a IA consultará antes de responder.</CardDescription>
+            <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
+              <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Documentos {'&'} FAQ</CardTitle>
+                <CardDescription className="text-gray-500 font-medium">Fontes de informação estratégica para a base de conhecimento.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <Label>Upload de Documentos (PDF/Docx)</Label>
-                    <div className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Upload de Arquivos (PDF/Word)</Label>
+                    <div className="border-2 border-dashed border-border rounded-xl p-10 flex flex-col items-center justify-center text-center gap-4 hover:border-primary/50 hover:bg-white/5 transition-all cursor-pointer group shadow-inner">
                       <div className="p-3 bg-primary/10 rounded-full">
                         <Upload className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium">Clique ou arraste para enviar</p>
-                        <p className="text-xs text-muted-foreground mt-1">Manuais de serviço, tabelas de preços, manuais de conduta.</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-white mb-1">Upload de Conhecimento</p>
+                        <p className="text-[10px] text-gray-500 font-bold max-w-[200px] mx-auto leading-relaxed">Manuais de serviço, tabelas de preços e guias de conduta.</p>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Documentos Ativos</p>
-                      <div className="flex items-center justify-between p-3 bg-slate-50 border rounded-lg">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Documentos Ativos</p>
+                      <div className="flex items-center justify-between p-4 bg-background border border-border rounded-xl shadow-inner">
                         <div className="flex items-center gap-3">
-                          <FileText className="w-4 h-4 text-blue-500" />
-                          <span className="text-sm">Manual_Servicos_2024.pdf</span>
+                          <FileText className="w-5 h-5 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
+                          <span className="text-xs font-black text-white uppercase tracking-tight">Manual_Servicos_Catelan.pdf</span>
                         </div>
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Pronto
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/30 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-lg shadow-sm">
+                          PRONTO
                         </Badge>
                       </div>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <Label>Perguntas Frequentes (FAQ Estruturada)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">FAQ Estruturada (Knowledge Base)</Label>
                     <Textarea 
                       placeholder="1. Pergunta? R: Resposta..." 
-                      className="min-h-[250px] font-mono text-sm"
+                      className="min-h-[280px] font-mono text-[11px] bg-background border-border rounded-xl text-primary font-black p-4 focus:ring-1 focus:ring-primary shadow-inner leading-relaxed"
                       value={config.knowledge_base_faq}
                       onChange={(e) => setConfig({...config, knowledge_base_faq: e.target.value})}
                     />
