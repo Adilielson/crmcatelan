@@ -68,45 +68,51 @@ function Settings() {
                 </div>
               </section>
 
-              <section className="bg-white border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-primary" /> Horário de Funcionamento
+              <section className="bg-card border border-border rounded-[14px] p-8 shadow-xl">
+                <h3 className="text-sm font-black text-white mb-6 flex items-center gap-3 uppercase tracking-widest">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  Horário de Funcionamento
                 </h3>
                 <div className="space-y-3">
                   {['Segunda a Sexta', 'Sábado'].map((day) => (
-                    <div key={day} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="text-sm font-medium">{day}</span>
-                      <div className="flex gap-2">
-                        <Input className="w-24 h-8 text-xs" defaultValue="09:00" />
-                        <span className="text-slate-400">às</span>
-                        <Input className="w-24 h-8 text-xs" defaultValue="18:00" />
+                    <div key={day} className="flex items-center justify-between p-4 bg-background border border-border rounded-[14px] shadow-inner mb-3">
+                      <span className="text-xs font-black uppercase tracking-widest text-white">{day}</span>
+                      <div className="flex gap-3 items-center">
+                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="09:00" />
+                        <span className="text-gray-600 font-black text-[10px]">ÀS</span>
+                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="18:00" />
                       </div>
                     </div>
                   ))}
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm font-medium">Domingo</span>
-                    <Badge variant="outline" className="text-slate-400">Fechado</Badge>
+                  <div className="flex items-center justify-between p-4 bg-background border border-border rounded-[14px] shadow-inner opacity-60">
+                    <span className="text-xs font-black uppercase tracking-widest text-white">Domingo</span>
+                    <Badge variant="outline" className="text-gray-500 font-black text-[10px] uppercase border-border">Fechado</Badge>
                   </div>
                 </div>
               </section>
             </div>
 
             <div className="space-y-6">
-              <div className="bg-primary/5 border border-primary/10 rounded-xl p-6">
-                <h4 className="font-bold text-primary mb-2">Visibilidade da Unidade</h4>
-                <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+              <div className="bg-primary shadow-[0_15px_40px_rgba(255,196,0,0.15)] border border-primary/20 rounded-[14px] p-8">
+                <h4 className="font-black text-xs uppercase tracking-[0.15em] text-primary-foreground mb-3">Visibilidade da Unidade</h4>
+                <p className="text-[11px] text-primary-foreground/70 mb-6 leading-relaxed font-bold">
                   Esta unidade está ativa e recebendo leads via Google Ads e Instagram.
                 </p>
-                <Button className="w-full" size="sm">Pausar Atendimento</Button>
+                <Button className="w-full h-11 bg-[#1a1500] hover:bg-black text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all" size="sm">PAUSAR ATENDIMENTO</Button>
               </div>
 
-              <div className="bg-slate-900 text-white rounded-xl p-6">
-                <h4 className="font-bold mb-2">Plano Atual</h4>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-2xl font-bold">Premium</span>
-                  <span className="text-xs text-slate-400">/unidade</span>
+              <div className="bg-black-2 shadow-2xl border border-border rounded-[14px] p-8 overflow-hidden relative">
+                <div className="absolute -bottom-4 -right-4 opacity-5 rotate-12">
+                  <Zap className="w-32 h-32 text-primary" />
                 </div>
-                <Button variant="outline" className="w-full text-white border-white/20 hover:bg-white/10" size="sm">Ver Faturas</Button>
+                <h4 className="font-black text-xs uppercase tracking-[0.15em] text-gray-500 mb-4 relative z-10">Plano Atual</h4>
+                <div className="flex items-baseline gap-2 mb-6 relative z-10">
+                  <span className="text-4xl font-black text-white tracking-tighter">PREMIUM</span>
+                  <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">/unidade</span>
+                </div>
+                <Button variant="outline" className="w-full h-11 text-white border-border hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl relative z-10" size="sm">VER FATURAMENTO</Button>
               </div>
             </div>
           </div>
