@@ -258,7 +258,7 @@ function Agenda() {
                           <User className="w-5 h-5 text-gray-500" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-black text-white uppercase tracking-tight">{appt.leadName}</h4>
+                          <h4 className="text-xs font-black text-card-foreground uppercase tracking-tight">{appt.leadName}</h4>
                           <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{appt.examType}</span>
                         </div>
                       </div>
@@ -282,13 +282,13 @@ function Agenda() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="h-10 text-[10px] font-black uppercase tracking-widest bg-background border-border hover:bg-white/5 text-white transition-all rounded-xl"
+                         className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-card-foreground transition-all rounded-xl"
                         onClick={() => handleStatusChange(appt.id, 'confirmado')}
                         disabled={appt.status === 'confirmado'}
                       >
                         <CheckCircle className="w-4 h-4 mr-2 text-success shadow-[0_0_10px_rgba(31,164,99,0.3)]" /> CONFIRMAR
                       </Button>
-                      <Button variant="outline" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest bg-background border-border hover:bg-white/5 text-white transition-all rounded-xl">
+                      <Button variant="outline" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-card-foreground transition-all rounded-xl">
                         <MessageSquare className="w-4 h-4 mr-2 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" /> WHATSAPP
                       </Button>
                     </div>
