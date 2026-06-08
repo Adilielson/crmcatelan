@@ -251,7 +251,7 @@ function Agenda() {
                 </div>
               ) : (
                 dayAppointments.map(appt => (
-                  <div key={appt.id} className="bg-background border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 transition-all group relative overflow-hidden">
+                  <div key={appt.id} className="bg-card border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 transition-all group relative overflow-hidden">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div className="bg-black-3 p-2.5 rounded-xl border border-border shadow-inner">
