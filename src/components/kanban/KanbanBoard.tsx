@@ -150,8 +150,8 @@ export function KanbanBoard() {
           <div key={column} className="min-w-[340px] flex-1 flex flex-col gap-6">
             <div className="flex justify-between items-center px-2">
               <div className="flex items-center gap-3">
-                <span className="font-black text-slate-800 uppercase tracking-widest text-[11px]">{column}</span>
-                <span className="bg-primary/10 text-primary text-[10px] px-2.5 py-0.5 rounded-full font-black border border-primary/20">
+                <span className="font-black text-slate-400 uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
+                <span className="bg-[#FFC400]/10 text-[#FFC400] text-[10px] px-2.5 py-0.5 rounded-full font-black border border-[#FFC400]/20">
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>
               </div>
@@ -161,7 +161,7 @@ export function KanbanBoard() {
             </div>
             
             <div 
-              className="bg-slate-50/50 p-3 rounded-2xl border border-dashed border-slate-200 min-h-[600px] flex flex-col gap-3"
+              className="bg-[#17171B]/50 p-3 rounded-[14px] border border-dashed border-[#23232B] min-h-[600px] flex flex-col gap-3"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 const id = e.dataTransfer.getData('leadId')
