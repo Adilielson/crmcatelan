@@ -122,17 +122,17 @@ function Agenda() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-xl">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Agenda Mestre</h1>
-          <p className="text-sm text-slate-500">Consultas Oftalmológicas e Atendimento Unificado</p>
+          <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-2 uppercase tracking-[0.05em]">Agenda Mestre</h1>
+          <p className="text-gray-500 font-medium">Controle unificado de consultas e atendimentos premium.</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Novo Agendamento
+          <Button onClick={() => setIsModalOpen(true)} className="gap-3 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs h-12 px-8 rounded-[14px] shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
+            <Plus className="w-5 h-5" /> NOVO AGENDAMENTO
           </Button>
-          <Button variant="outline" className="gap-2">
-            <Settings className="w-4 h-4" /> Configurar Horários
+          <Button variant="outline" className="gap-3 bg-background border-border text-white hover:bg-white/5 font-black text-xs h-12 px-8 rounded-[14px] transition-all">
+            <Settings className="w-5 h-5" /> CONFIGURAÇÕES
           </Button>
         </div>
       </div>
@@ -140,36 +140,36 @@ function Agenda() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendário */}
         <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b flex items-center justify-between bg-slate-50/50">
+          <div className="bg-card border border-border rounded-[14px] shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border flex items-center justify-between bg-black/20">
               <div className="flex items-center gap-4">
-                <h3 className="font-bold text-slate-800 capitalize">
+                <h3 className="font-black text-xs uppercase tracking-[0.2em] text-gray-400">
                   {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
                 </h3>
-                <div className="flex border rounded-lg bg-white shadow-sm overflow-hidden">
-                  <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 hover:bg-slate-50 border-r"><ChevronLeft className="w-4 h-4" /></button>
-                  <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 hover:bg-slate-50"><ChevronRight className="w-4 h-4" /></button>
+                <div className="flex border border-border rounded-[14px] bg-background shadow-inner overflow-hidden">
+                  <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2.5 hover:bg-white/5 border-r border-border text-white transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                  <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2.5 hover:bg-white/5 text-white transition-colors"><ChevronRight className="w-4 h-4" /></button>
                 </div>
               </div>
-              <div className="flex bg-slate-100 p-1 rounded-lg">
+              <div className="flex bg-background p-1.5 rounded-[14px] border border-border shadow-inner">
                 <button 
                   onClick={() => setView('month')}
-                  className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all", view === 'month' ? "bg-white shadow-sm text-primary" : "text-slate-500")}
+                  className={cn("px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", view === 'month' ? "bg-primary shadow-lg text-primary-foreground" : "text-gray-500 hover:text-white")}
                 >
                   Mês
                 </button>
                 <button 
                    onClick={() => setView('day')}
-                  className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all", view === 'day' ? "bg-white shadow-sm text-primary" : "text-slate-500")}
+                  className={cn("px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", view === 'day' ? "bg-primary shadow-lg text-primary-foreground" : "text-gray-500 hover:text-white")}
                 >
                   Dia
                 </button>
               </div>
             </div>
             
-            <div className="grid grid-cols-7 border-b bg-slate-50/30">
+            <div className="grid grid-cols-7 border-b border-border bg-black/10">
               {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-                <div key={day} className="p-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                <div key={day} className="p-4 text-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-600">
                   {day}
                 </div>
               ))}
@@ -190,21 +190,21 @@ function Agenda() {
                       setFormData(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }))
                     }}
                     className={cn(
-                      "h-28 border-r border-b p-2 transition-all cursor-pointer group relative overflow-hidden",
-                      !isCurrentMonth ? "bg-slate-50/50" : "bg-white",
+                      "h-32 border-r border-b border-border p-3 transition-all cursor-pointer group relative overflow-hidden",
+                      !isCurrentMonth ? "bg-black/40 opacity-40" : "bg-card hover:bg-white/5",
                       isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5"
                     )}
                   >
                     <div className="flex justify-between items-start mb-1">
                       <span className={cn(
-                        "text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full",
-                        isToday ? "bg-primary text-white" : "text-slate-500",
+                        "text-[11px] font-black h-7 w-7 flex items-center justify-center rounded-lg transition-all",
+                        isToday ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "text-gray-400 group-hover:text-white",
                         !isCurrentMonth && "opacity-30"
                       )}>
                         {format(day, 'd')}
                       </span>
                       {dayAppts.length > 0 && (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1">{dayAppts.length}</Badge>
+                        <Badge className="text-[10px] h-5 px-1.5 bg-primary/20 text-primary border-none font-black">{dayAppts.length}</Badge>
                       )}
                     </div>
                     <div className="space-y-1">
@@ -212,10 +212,10 @@ function Agenda() {
                         <div 
                           key={appt.id} 
                           className={cn(
-                            "text-[9px] p-1 rounded border truncate font-bold flex items-center gap-1",
-                            appt.status === 'confirmado' ? "bg-green-50 text-green-700 border-green-200" :
-                            appt.status === 'pendente' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                            "bg-slate-100 text-slate-600 border-slate-200"
+                            "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight",
+                            appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30 shadow-sm" :
+                            appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30 shadow-sm" :
+                            "bg-black-3 text-gray-500 border-border shadow-sm"
                           )}
                         >
                           <Clock className="w-2.5 h-2.5" />
@@ -235,10 +235,10 @@ function Agenda() {
 
         {/* Detalhes do Dia Selecionado */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col h-full min-h-[600px]">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-slate-800 text-sm">
-                Compromissos - {format(selectedDay, "dd 'de' MMM", { locale: ptBR })}
+          <div className="bg-card border border-border rounded-[14px] shadow-2xl p-6 flex flex-col h-full min-h-[600px] relative overflow-hidden">
+            <div className="flex justify-between items-center mb-8 border-b border-border pb-4">
+              <h3 className="font-black text-xs uppercase tracking-[0.2em] text-gray-400">
+                Compromissos do Dia
               </h3>
               <Badge variant="outline">{dayAppointments.length}</Badge>
             </div>
@@ -251,18 +251,18 @@ function Agenda() {
                 </div>
               ) : (
                 dayAppointments.map(appt => (
-                  <div key={appt.id} className="bg-white border rounded-xl p-3 shadow-sm hover:border-primary/50 transition-all group">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-slate-100 p-1.5 rounded-lg">
-                          <User className="w-4 h-4 text-slate-500" />
+                  <div key={appt.id} className="bg-background border border-border rounded-[14px] p-5 shadow-xl hover:border-primary/50 transition-all group relative overflow-hidden">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-black-3 p-2.5 rounded-xl border border-border shadow-inner">
+                          <User className="w-5 h-5 text-gray-500" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-slate-800">{appt.leadName}</h4>
-                          <span className="text-[10px] text-slate-500">{appt.examType}</span>
+                          <h4 className="text-xs font-black text-white uppercase tracking-tight">{appt.leadName}</h4>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{appt.examType}</span>
                         </div>
                       </div>
-                      <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <div className="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 rounded-lg border border-primary/20 shadow-sm">
                         {appt.startTime}
                       </div>
                     </div>
@@ -278,18 +278,18 @@ function Agenda() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="h-7 text-[10px] font-bold"
+                        className="h-10 text-[10px] font-black uppercase tracking-widest bg-background border-border hover:bg-white/5 text-white transition-all rounded-xl"
                         onClick={() => handleStatusChange(appt.id, 'confirmado')}
                         disabled={appt.status === 'confirmado'}
                       >
-                        <CheckCircle className="w-3 h-3 mr-1 text-green-500" /> Confirmar
+                        <CheckCircle className="w-4 h-4 mr-2 text-success shadow-[0_0_10px_rgba(31,164,99,0.3)]" /> CONFIRMAR
                       </Button>
-                      <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold">
-                        <MessageSquare className="w-3 h-3 mr-1 text-blue-500" /> WhatsApp
+                      <Button variant="outline" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest bg-background border-border hover:bg-white/5 text-white transition-all rounded-xl">
+                        <MessageSquare className="w-4 h-4 mr-2 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" /> WHATSAPP
                       </Button>
                     </div>
                   </div>

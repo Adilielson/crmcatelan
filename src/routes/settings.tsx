@@ -18,89 +18,101 @@ export const Route = createFileRoute('/settings')({
 function Settings() {
   return (
     <div className="max-w-6xl">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-xl mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Configurações</h2>
-          <p className="text-sm text-slate-500">Gerencie sua unidade e preferências do sistema.</p>
+          <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-2 uppercase tracking-[0.05em]">Painel de Controle</h1>
+          <p className="text-gray-500 font-medium">Gestão estratégica de unidades, IA e automações.</p>
         </div>
       </div>
 
       <Tabs defaultValue="unit" className="w-full">
-        <TabsList className="bg-white border mb-6 w-full justify-start h-12 p-1">
-          <TabsTrigger value="unit" className="flex items-center gap-2 px-4"><Store className="w-4 h-4" /> Unidade</TabsTrigger>
-          <TabsTrigger value="ia" className="flex items-center gap-2 px-4"><Shield className="w-4 h-4" /> IA SDR</TabsTrigger>
-          <TabsTrigger value="automations" className="flex items-center gap-2 px-4"><Zap className="w-4 h-4" /> Automações & SLAs</TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2 px-4"><Bell className="w-4 h-4" /> Notificações</TabsTrigger>
-          <TabsTrigger value="chat" className="flex items-center gap-2 px-4"><MessageSquare className="w-4 h-4" /> Chat & WhatsApp</TabsTrigger>
+        <TabsList className="bg-card border border-border mb-8 w-full justify-start h-14 p-1.5 rounded-[14px] shadow-inner overflow-x-auto overflow-y-hidden scrollbar-hide">
+          <TabsTrigger value="unit" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-6 transition-all"><Store className="w-4 h-4" /> Unidade</TabsTrigger>
+          <TabsTrigger value="ia" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-6 transition-all"><Shield className="w-4 h-4" /> IA SDR</TabsTrigger>
+          <TabsTrigger value="automations" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-6 transition-all"><Zap className="w-4 h-4" /> Automações</TabsTrigger>
+          <TabsTrigger value="notifications" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-6 transition-all"><Bell className="w-4 h-4" /> Notificações</TabsTrigger>
+          <TabsTrigger value="chat" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-6 transition-all"><MessageSquare className="w-4 h-4" /> WhatsApp</TabsTrigger>
         </TabsList>
 
 
         <TabsContent value="unit">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-              <section className="bg-white border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <Store className="w-5 h-5 text-primary" /> Informações Gerais
+              <section className="bg-card border border-border rounded-[14px] p-8 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                  <Store className="w-24 h-24 text-primary" />
+                </div>
+                <h3 className="text-sm font-black text-white mb-6 flex items-center gap-3 uppercase tracking-widest">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <Store className="w-5 h-5 text-primary" />
+                  </div>
+                  Informações Gerais
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label>Nome da Unidade</Label>
-                    <Input defaultValue="Ótica Castelar Matriz" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Nome da Unidade</Label>
+                    <Input defaultValue="Ótica Catelan Matriz" className="bg-background border-border h-12 rounded-xl text-white font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
-                  <div className="space-y-1">
-                    <Label>CNPJ</Label>
-                    <Input defaultValue="12.345.678/0001-90" />
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">CNPJ</Label>
+                    <Input defaultValue="12.345.678/0001-90" className="bg-background border-border h-12 rounded-xl text-white font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
-                  <div className="space-y-1">
-                    <Label>WhatsApp Principal</Label>
-                    <Input placeholder="+55..." defaultValue="+55 11 98888-7777" />
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">WhatsApp Principal</Label>
+                    <Input placeholder="+55..." defaultValue="+55 11 98888-7777" className="bg-background border-border h-12 rounded-xl text-white font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
-                  <div className="space-y-1">
-                    <Label>Email de Contato</Label>
-                    <Input type="email" defaultValue="contato@oticacastelar.com" />
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Email de Contato</Label>
+                    <Input type="email" defaultValue="contato@oticacatelan.com" className="bg-background border-border h-12 rounded-xl text-white font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
                 </div>
               </section>
 
-              <section className="bg-white border rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-primary" /> Horário de Funcionamento
+              <section className="bg-card border border-border rounded-[14px] p-8 shadow-xl">
+                <h3 className="text-sm font-black text-white mb-6 flex items-center gap-3 uppercase tracking-widest">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  Horário de Funcionamento
                 </h3>
                 <div className="space-y-3">
                   {['Segunda a Sexta', 'Sábado'].map((day) => (
-                    <div key={day} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="text-sm font-medium">{day}</span>
-                      <div className="flex gap-2">
-                        <Input className="w-24 h-8 text-xs" defaultValue="09:00" />
-                        <span className="text-slate-400">às</span>
-                        <Input className="w-24 h-8 text-xs" defaultValue="18:00" />
+                    <div key={day} className="flex items-center justify-between p-4 bg-background border border-border rounded-[14px] shadow-inner mb-3">
+                      <span className="text-xs font-black uppercase tracking-widest text-white">{day}</span>
+                      <div className="flex gap-3 items-center">
+                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="09:00" />
+                        <span className="text-gray-600 font-black text-[10px]">ÀS</span>
+                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="18:00" />
                       </div>
                     </div>
                   ))}
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm font-medium">Domingo</span>
-                    <Badge variant="outline" className="text-slate-400">Fechado</Badge>
+                  <div className="flex items-center justify-between p-4 bg-background border border-border rounded-[14px] shadow-inner opacity-60">
+                    <span className="text-xs font-black uppercase tracking-widest text-white">Domingo</span>
+                    <Badge variant="outline" className="text-gray-500 font-black text-[10px] uppercase border-border">Fechado</Badge>
                   </div>
                 </div>
               </section>
             </div>
 
             <div className="space-y-6">
-              <div className="bg-primary/5 border border-primary/10 rounded-xl p-6">
-                <h4 className="font-bold text-primary mb-2">Visibilidade da Unidade</h4>
-                <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+              <div className="bg-primary shadow-[0_15px_40px_rgba(255,196,0,0.15)] border border-primary/20 rounded-[14px] p-8">
+                <h4 className="font-black text-xs uppercase tracking-[0.15em] text-primary-foreground mb-3">Visibilidade da Unidade</h4>
+                <p className="text-[11px] text-primary-foreground/70 mb-6 leading-relaxed font-bold">
                   Esta unidade está ativa e recebendo leads via Google Ads e Instagram.
                 </p>
-                <Button className="w-full" size="sm">Pausar Atendimento</Button>
+                <Button className="w-full h-11 bg-[#1a1500] hover:bg-black text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all" size="sm">PAUSAR ATENDIMENTO</Button>
               </div>
 
-              <div className="bg-slate-900 text-white rounded-xl p-6">
-                <h4 className="font-bold mb-2">Plano Atual</h4>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-2xl font-bold">Premium</span>
-                  <span className="text-xs text-slate-400">/unidade</span>
+              <div className="bg-black-2 shadow-2xl border border-border rounded-[14px] p-8 overflow-hidden relative">
+                <div className="absolute -bottom-4 -right-4 opacity-5 rotate-12">
+                  <Zap className="w-32 h-32 text-primary" />
                 </div>
-                <Button variant="outline" className="w-full text-white border-white/20 hover:bg-white/10" size="sm">Ver Faturas</Button>
+                <h4 className="font-black text-xs uppercase tracking-[0.15em] text-gray-500 mb-4 relative z-10">Plano Atual</h4>
+                <div className="flex items-baseline gap-2 mb-6 relative z-10">
+                  <span className="text-4xl font-black text-white tracking-tighter">PREMIUM</span>
+                  <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">/unidade</span>
+                </div>
+                <Button variant="outline" className="w-full h-11 text-white border-border hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl relative z-10" size="sm">VER FATURAMENTO</Button>
               </div>
             </div>
           </div>
@@ -123,7 +135,7 @@ function Settings() {
                 <Label>Instruções de Comportamento (System Prompt)</Label>
                 <textarea 
                   className="w-full bg-white border rounded-lg px-3 py-2 text-sm h-40 outline-none focus:ring-1 focus:ring-primary leading-relaxed"
-                  defaultValue="Você é a assistente virtual da Ótica Castelar. Seu objetivo é realizar o pré-atendimento de forma cordial, identificar a necessidade do cliente (óculos de grau, sol, lentes) e encaminhar para agendamento presencial na unidade..."
+                  defaultValue="Você é a assistente virtual da Ótica Catelan. Seu objetivo é realizar o pré-atendimento de forma cordial, identificar a necessidade do cliente (óculos de grau, sol, lentes) e encaminhar para agendamento presencial na unidade..."
                 />
               </div>
 
@@ -136,7 +148,7 @@ function Settings() {
               </div>
 
               <div className="flex justify-end pt-4 border-t">
-                <Button>Salvar Configurações IA</Button>
+                <Button className="bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs h-12 px-10 rounded-[14px] shadow-lg shadow-primary/20 transition-all active:scale-95">SALVAR CONFIGURAÇÕES IA</Button>
               </div>
             </div>
           </section>

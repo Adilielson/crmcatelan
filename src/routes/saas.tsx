@@ -206,36 +206,38 @@ function SaaSAdmin() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ShieldCheck className="w-8 h-8 text-primary" />
-            Painel Super Admin
-          </h1>
-          <p className="text-muted-foreground">Gestão global de inquilinos e infraestrutura.</p>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-xl">
+        <div className="flex items-center gap-6">
+          <div className="p-4 bg-primary/10 rounded-2xl shadow-inner">
+            <ShieldCheck className="w-10 h-10 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Super Admin Hub</h1>
+            <p className="text-gray-500 font-medium">Gestão global de infraestrutura e ecossistema SaaS.</p>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px] bg-white">
-              <Calendar className="w-4 h-4 mr-2" />
+            <SelectTrigger className="w-[200px] bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-inner">
+              <Calendar className="w-4 h-4 mr-2 text-primary" />
               <SelectValue placeholder="Período" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-card border-border text-white">
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
               <SelectItem value="ytd">Este Ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="gap-2">
-            <History className="w-4 h-4" /> Auditoria
+          <Button variant="outline" className="h-12 px-6 bg-background border-border text-white hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm">
+            <History className="w-4 h-4 mr-2" /> Auditoria
           </Button>
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" /> Nova Ótica
+              <Button className="h-12 px-8 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95">
+                <Plus className="w-5 h-5 mr-2" /> NOVA ÓTICA
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
@@ -287,21 +289,21 @@ function SaaSAdmin() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatsCard title="Inquilinos Ativos" value={tenants.filter(t => t.status === 'active').length} trend="Total na base" icon={<Building2 className="w-4 h-4 text-primary" />} />
-        <StatsCard title="MRR Estimado" value={`R$ ${(tenants.reduce((acc, t) => acc + (t.plan === 'enterprise' ? 1200 : t.plan === 'pro' ? 499 : 199), 0)).toLocaleString()}`} trend="Baseado em planos" icon={<CreditCard className="w-4 h-4 text-green-600" />} />
-        <StatsCard title="IA Tokens Total" value={`${(tenants.reduce((acc, t) => acc + (t.ia_token_used || 0), 0) / 1000).toFixed(0)}k`} trend="Consumo do mês" icon={<Cpu className="w-4 h-4 text-purple-600" />} />
-        <StatsCard title="Usuários Ativos" value={tenants.reduce((acc, t) => acc + (t.profiles?.[0]?.count || 0), 0)} trend="Em toda a rede" icon={<Users className="w-4 h-4 text-blue-600" />} />
-        <StatsCard title="SLA Médio" value="99.9%" trend="Disponibilidade" icon={<Activity className="w-4 h-4 text-green-500" />} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <StatsCard title="Inquilinos Ativos" value={tenants.filter(t => t.status === 'active').length} trend="Total na base" icon={<Building2 className="w-5 h-5 text-primary shadow-[0_0_15px_rgba(255,196,0,0.3)]" />} />
+        <StatsCard title="MRR Estimado" value={`R$ ${(tenants.reduce((acc, t) => acc + (t.plan === 'enterprise' ? 1200 : t.plan === 'pro' ? 499 : 199), 0)).toLocaleString()}`} trend="Baseado em planos" icon={<CreditCard className="w-5 h-5 text-success shadow-[0_0_15px_rgba(31,164,99,0.3)]" />} />
+        <StatsCard title="IA Tokens Total" value={`${(tenants.reduce((acc, t) => acc + (t.ia_token_used || 0), 0) / 1000).toFixed(0)}k`} trend="Consumo do mês" icon={<Cpu className="w-5 h-5 text-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.3)]" />} />
+        <StatsCard title="Usuários Ativos" value={tenants.reduce((acc, t) => acc + (t.profiles?.[0]?.count || 0), 0)} trend="Em toda a rede" icon={<Users className="w-5 h-5 text-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.3)]" />} />
+        <StatsCard title="SLA Médio" value="99.9%" trend="Disponibilidade" icon={<Activity className="w-5 h-5 text-success shadow-[0_0_15px_rgba(31,164,99,0.3)]" />} />
       </div>
 
       <Tabs defaultValue="tenants" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
-          <TabsTrigger value="dashboard">Visão Geral</TabsTrigger>
-          <TabsTrigger value="tenants">Lista de Óticas</TabsTrigger>
-          <TabsTrigger value="plans">Planos & Config</TabsTrigger>
-          <TabsTrigger value="ia">Performance IA</TabsTrigger>
-          <TabsTrigger value="security">Segurança</TabsTrigger>
+        <TabsList className="bg-card border border-border mb-8 w-full justify-start h-16 p-2 rounded-[14px] shadow-inner overflow-x-auto overflow-y-hidden scrollbar-hide">
+          <TabsTrigger value="dashboard" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Visão Geral</TabsTrigger>
+          <TabsTrigger value="tenants" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Lista de Óticas</TabsTrigger>
+          <TabsTrigger value="plans" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Planos {'&'} Config</TabsTrigger>
+          <TabsTrigger value="ia" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Performance IA</TabsTrigger>
+          <TabsTrigger value="security" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Segurança</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 pt-4">
@@ -423,14 +425,14 @@ function SaaSAdmin() {
         <TabsContent value="plans" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <PlanCard 
-              name="Basic" 
+              name="BASIC" 
               price="R$ 199/mês" 
               limits={{ users: 2, leads: 100, ia: '20k tokens' }}
               features={['Agenda', 'Kanban Básico']}
               activeCount={tenants.filter(t => t.plan === 'basic').length}
             />
             <PlanCard 
-              name="Pro" 
+              name="PRO" 
               price="R$ 499/mês" 
               limits={{ users: 10, leads: 1000, ia: '100k tokens' }}
               features={['Marketing', 'IA SDR Full', 'Kanban Avançado']}
@@ -438,7 +440,7 @@ function SaaSAdmin() {
               highlight
             />
             <PlanCard 
-              name="Enterprise" 
+              name="ENTERPRISE" 
               price="R$ 1.200/mês" 
               limits={{ users: 50, leads: 10000, ia: '500k tokens' }}
               features={['Relatórios Custom', 'Suporte VIP', 'API Access']}
@@ -607,16 +609,26 @@ function TenantRow({ tenant, onUpdate }: { tenant: any, onUpdate: () => void }) 
   )
 }
 
-function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" }: any) {
+function StatsCard({ title, value, trend, icon }: any) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="p-2 bg-muted/50 rounded-lg">{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className={`text-2xl font-bold ${statusColor}`}>{value}</div>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">{trend}</p>
+    <Card className="bg-card border-border hover:border-primary/40 transition-all duration-500 shadow-xl group hover:-translate-y-2 relative overflow-hidden rounded-[14px]">
+      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+        {icon}
+      </div>
+      <CardContent className="p-6 relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{title}</p>
+          <div className="p-2.5 bg-background border border-border rounded-xl shadow-inner group-hover:bg-primary/5 transition-colors">
+            {icon}
+          </div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-3xl font-black text-white tracking-tighter">{value}</h3>
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-600 mt-2 flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(31,164,99,0.5)]" />
+          {trend}
+        </p>
       </CardContent>
     </Card>
   )
@@ -624,38 +636,54 @@ function StatsCard({ title, value, trend, icon, statusColor = "text-foreground" 
 
 function PlanCard({ name, price, limits, features, activeCount, highlight }: any) {
   return (
-    <Card className={highlight ? 'border-primary ring-1 ring-primary' : ''}>
-      <CardHeader>
+    <Card className={cn(
+      "shadow-2xl border-border rounded-[14px] overflow-hidden transition-all duration-500 hover:-translate-y-2 relative",
+      highlight ? 'border-primary shadow-primary/20 bg-gradient-to-br from-card to-primary/5' : 'bg-card'
+    )}>
+      {highlight && (
+        <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12">
+          <Zap className="w-24 h-24 text-primary" />
+        </div>
+      )}
+      <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
         <div className="flex justify-between items-start">
-          <Badge variant={highlight ? 'default' : 'secondary'}>{name}</Badge>
-          <span className="text-xs text-muted-foreground">{activeCount} ativos</span>
+          <Badge className={cn(
+            "text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-xl border-none shadow-sm",
+            highlight ? "bg-primary text-primary-foreground" : "bg-black-3 text-gray-400"
+          )}>{name}</Badge>
+          <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{activeCount} ativos</span>
         </div>
-        <CardTitle className="text-2xl pt-2">{price}</CardTitle>
+        <CardTitle className="text-3xl font-black text-white tracking-tighter pt-4 uppercase tracking-tighter">{price}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Usuários:</span>
-            <span className="font-semibold">{limits.users}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Leads/mês:</span>
-            <span className="font-semibold">{limits.leads}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Suporte IA:</span>
-            <span className="font-semibold">{limits.ia}</span>
-          </div>
+      <CardContent className="p-8 space-y-6">
+        <div className="space-y-3">
+          {[
+            { label: 'Usuários', value: limits.users },
+            { label: 'Leads/mês', value: limits.leads },
+            { label: 'Suporte IA', value: limits.ia },
+          ].map((limit) => (
+            <div key={limit.label} className="flex justify-between items-center text-xs">
+              <span className="text-gray-500 font-bold uppercase tracking-widest text-[9px]">{limit.label}:</span>
+              <span className="font-black text-white">{limit.value}</span>
+            </div>
+          ))}
         </div>
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Features:</p>
-          <div className="flex flex-wrap gap-1">
+        <div className="space-y-2 pt-4 border-t border-border/50">
+          <p className="text-[9px] font-black uppercase text-gray-600 tracking-[0.2em]">Recursos Premium:</p>
+          <div className="flex flex-wrap gap-1.5">
             {features.map((f: string) => (
-              <Badge key={f} variant="outline" className="text-[9px] px-1 py-0">{f}</Badge>
+              <Badge key={f} variant="outline" className="text-[9px] px-2 py-0.5 font-black uppercase tracking-tighter border-border bg-background text-gray-400">
+                {f}
+              </Badge>
             ))}
           </div>
         </div>
-        <Button variant={highlight ? 'default' : 'outline'} className="w-full">Editar Plano</Button>
+        <Button className={cn(
+          "w-full h-11 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95",
+          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-black-3 hover:bg-white/5 text-white border border-border"
+        )}>
+          EDITAR PLANO
+        </Button>
       </CardContent>
     </Card>
   )
