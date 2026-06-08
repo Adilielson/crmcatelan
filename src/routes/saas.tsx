@@ -425,14 +425,14 @@ function SaaSAdmin() {
         <TabsContent value="plans" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <PlanCard 
-              name="Basic" 
+              name="BASIC" 
               price="R$ 199/mês" 
               limits={{ users: 2, leads: 100, ia: '20k tokens' }}
               features={['Agenda', 'Kanban Básico']}
               activeCount={tenants.filter(t => t.plan === 'basic').length}
             />
             <PlanCard 
-              name="Pro" 
+              name="PRO" 
               price="R$ 499/mês" 
               limits={{ users: 10, leads: 1000, ia: '100k tokens' }}
               features={['Marketing', 'IA SDR Full', 'Kanban Avançado']}
@@ -440,7 +440,7 @@ function SaaSAdmin() {
               highlight
             />
             <PlanCard 
-              name="Enterprise" 
+              name="ENTERPRISE" 
               price="R$ 1.200/mês" 
               limits={{ users: 50, leads: 10000, ia: '500k tokens' }}
               features={['Relatórios Custom', 'Suporte VIP', 'API Access']}
