@@ -636,39 +636,57 @@ function StatsCard({ title, value, trend, icon }: any) {
 
 function PlanCard({ name, price, limits, features, activeCount, highlight }: any) {
   return (
-    <Card className={highlight ? 'border-primary ring-1 ring-primary' : ''}>
-      <CardHeader>
+    <Card className={cn(
+      "shadow-2xl border-border rounded-[14px] overflow-hidden transition-all duration-500 hover:-translate-y-2 relative",
+      highlight ? 'border-primary shadow-primary/20 bg-gradient-to-br from-card to-primary/5' : 'bg-card'
+    )}>
+      {highlight && (
+        <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12">
+          <Zap className="w-24 h-24 text-primary" />
+        </div>
+      )}
+      <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
         <div className="flex justify-between items-start">
-          <Badge variant={highlight ? 'default' : 'secondary'}>{name}</Badge>
-          <span className="text-xs text-muted-foreground">{activeCount} ativos</span>
+          <Badge className={cn(
+            "text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-xl border-none shadow-sm",
+            highlight ? "bg-primary text-primary-foreground" : "bg-black-3 text-gray-400"
+          )}>{name}</Badge>
+          <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{activeCount} ativos</span>
         </div>
-        <CardTitle className="text-2xl pt-2">{price}</CardTitle>
+        <CardTitle className="text-3xl font-black text-white tracking-tighter pt-4 uppercase tracking-tighter">{price}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Usuários:</span>
-            <span className="font-semibold">{limits.users}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Leads/mês:</span>
-            <span className="font-semibold">{limits.leads}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Suporte IA:</span>
-            <span className="font-semibold">{limits.ia}</span>
-          </div>
+      <CardContent className="p-8 space-y-6">
+        <div className="space-y-3">
+          {[
+            { label: 'Usuários', value: limits.users },
+            { label: 'Leads/mês', value: limits.leads },
+            { label: 'Suporte IA', value: limits.ia },
+          ].map((limit) => (
+            <div key={limit.label} className="flex justify-between items-center text-xs">
+              <span className="text-gray-500 font-bold uppercase tracking-widest text-[9px]">{limit.label}:</span>
+              <span className="font-black text-white">{limit.value}</span>
+            </div>
+          ))}
         </div>
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Features:</p>
-          <div className="flex flex-wrap gap-1">
+        <div className="space-y-2 pt-4 border-t border-border/50">
+          <p className="text-[9px] font-black uppercase text-gray-600 tracking-[0.2em]">Recursos Premium:</p>
+          <div className="flex flex-wrap gap-1.5">
             {features.map((f: string) => (
-              <Badge key={f} variant="outline" className="text-[9px] px-1 py-0">{f}</Badge>
+              <Badge key={f} variant="outline" className="text-[9px] px-2 py-0.5 font-black uppercase tracking-tighter border-border bg-background text-gray-400">
+                {f}
+              </Badge>
             ))}
           </div>
         </div>
-        <Button variant={highlight ? 'default' : 'outline'} className="w-full">Editar Plano</Button>
+        <Button className={cn(
+          "w-full h-11 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95",
+          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-black-3 hover:bg-white/5 text-white border border-border"
+        )}>
+          EDITAR PLANO
+        </Button>
       </CardContent>
     </Card>
+  )
+}
   )
 }
