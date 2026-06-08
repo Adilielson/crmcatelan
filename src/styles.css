@@ -44,6 +44,7 @@
   /* Semantic Mapping - Dark Mode UI */
   --color-background: #0E0E11;
   --color-foreground: #15151A;
+  --color-navy: hsl(222 47% 11%);
   
   --color-card: #FFFFFF;
   --color-card-foreground: #15151A;

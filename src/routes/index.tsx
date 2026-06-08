@@ -307,7 +307,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
         "hover:shadow-[0_20px_50px_rgba(255,196,0,0.15)] hover:-translate-y-2 transition-all duration-500 cursor-pointer border-border shadow-card group overflow-hidden relative rounded-[14px]",
         highlight
           ? "bg-gradient-to-br from-primary via-yellow-bright to-yellow-dark border-primary" 
-          : "bg-card shadow-sm"
+          : "bg-navy border-slate-800"
       )}>
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
           {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
@@ -323,7 +323,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
               "p-2 rounded-xl transition-colors",
               highlight 
                 ? "bg-[#1a1500]/10 text-[#1a1500] group-hover:bg-[#1a1500]/20" 
-                : "bg-background text-primary border border-border group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary shadow-inner"
+                : "bg-black-3 text-primary border border-slate-700 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary shadow-inner"
             )}>
               {icon}
             </div>
