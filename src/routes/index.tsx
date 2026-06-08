@@ -292,28 +292,28 @@ function Dashboard() {
   )
 }
 
-function StatCard({ title, value, change, icon, color, link }: { title: string; value: string; change: string; icon: React.ReactNode; color?: string; link: string }) {
+function StatCard({ title, value, change, icon, highlight, link }: { title: string; value: string; change: string; icon: React.ReactNode; highlight?: boolean; link: string }) {
   return (
     <Link to={link}>
       <Card className={cn(
         "hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer border-[#23232B] shadow-sm group overflow-hidden relative rounded-[14px]",
-        color === "text-purple-600" 
+        highlight
           ? "bg-gradient-to-br from-[#FFC400] to-[#E0A500] border-[#FFC400]" 
           : "bg-gradient-to-br from-[#14141a] to-[#1c1c25]"
       )}>
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
           {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
         </div>
-        {color === "text-purple-600" && <div className="absolute right-[-10px] bottom-[-18px] text-[96px] opacity-[0.13]">🔥</div>}
+        {highlight && <div className="absolute right-[-10px] bottom-[-18px] text-[96px] opacity-[0.13]">🔥</div>}
         <CardContent className="p-6 relative z-10">
           <div className="flex items-center justify-between mb-4">
             <p className={cn(
               "text-[11px] font-black uppercase tracking-[0.12em] font-mono",
-              color === "text-purple-600" ? "text-[#5a4900]" : "text-[#86888f]"
+              highlight ? "text-[#5a4900]" : "text-[#86888f]"
             )}>{title}</p>
             <div className={cn(
               "p-2 rounded-xl transition-colors",
-              color === "text-purple-600" 
+              highlight 
                 ? "bg-[#1a1500]/10 text-[#1a1500]" 
                 : "bg-[#0E0E11] text-[#FFC400] border border-[#23232B] group-hover:bg-[#FFC400] group-hover:text-[#1a1500]"
             )}>
@@ -324,21 +324,21 @@ function StatCard({ title, value, change, icon, color, link }: { title: string; 
             <div className="flex items-baseline gap-3">
               <div className={cn(
                 "h-[38px] w-1 rounded-sm",
-                color === "text-purple-600" ? "bg-[#1a1500]" : "bg-[#6C727C]"
+                highlight ? "bg-[#1a1500]" : "bg-[#6C727C]"
               )} />
               <h3 className={cn(
                 "text-[46px] font-black tracking-tight font-jakarta leading-none",
-                color === "text-purple-600" ? "text-[#1a1500]" : "text-white"
+                highlight ? "text-[#1a1500]" : "text-white"
               )}>{value}</h3>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <div className={cn(
                 "w-1.5 h-1.5 rounded-full",
-                color === "text-purple-600" ? "bg-[#1a1500]" : "bg-[#1FA463]"
+                highlight ? "bg-[#1a1500]" : "bg-[#1FA463]"
               )} />
               <p className={cn(
                 "text-[12px] font-bold font-inter",
-                color === "text-purple-600" ? "text-[#5a4900]" : "text-[#7c7e85]"
+                highlight ? "text-[#5a4900]" : "text-[#7c7e85]"
               )}>{change}</p>
             </div>
           </div>
