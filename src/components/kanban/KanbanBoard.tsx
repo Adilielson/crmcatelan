@@ -118,17 +118,17 @@ export function KanbanBoard() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-[#17171B] p-6 rounded-[14px] border border-[#23232B] shadow-sm gap-4">
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           <div className="flex flex-col">
-            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Fluxo de Vendas</h3>
-            <p className="text-xs font-bold text-slate-900 mt-1">Gerencie seus leads e pipeline</p>
+            <h3 className="text-sm font-black text-slate-500 uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
+            <p className="text-xs font-bold text-white mt-1">Gerencie seus leads e pipeline</p>
           </div>
           <Select value={currentPipelineId} onValueChange={setCurrentPipeline}>
-            <SelectTrigger className="w-full md:w-[300px] h-11 bg-slate-50 border-slate-200/60 font-bold text-xs uppercase tracking-wider">
+            <SelectTrigger className="w-full md:w-[300px] h-11 bg-[#0E0E11] border-[#23232B] font-bold text-xs uppercase tracking-wider text-white rounded-[14px]">
               <SelectValue placeholder="Selecionar Unidade" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-[#17171B] border-[#23232B] text-white">
               {pipelines.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
@@ -136,12 +136,12 @@ export function KanbanBoard() {
           </Select>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-slate-200 shadow-sm">
-            <AlertCircle className="w-4 h-4 mr-2 text-primary" />
+          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#23232B] bg-[#17171B] text-white shadow-sm rounded-[14px] hover:bg-[#23232B]">
+            <AlertCircle className="w-4 h-4 mr-2 text-[#FFC400]" />
             Notificações
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#D64545] rounded-full border-2 border-[#17171B] animate-pulse" />
           </Button>
-          <Button size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] shadow-md shadow-primary/20">Novo Lead</Button>
+          <Button size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">Novo Lead</Button>
         </div>
       </div>
 
