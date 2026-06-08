@@ -1,5 +1,5 @@
+import React, { useState, useMemo } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useMemo } from 'react'
 import { 
   Card, 
   CardContent, 
@@ -299,7 +299,7 @@ function StatCard({ title, value, change, icon, color, link }: { title: string; 
     <Link to={link}>
       <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border-slate-200/60 shadow-sm bg-white group overflow-hidden relative">
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement, { className: "w-16 h-16" })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16" })}
         </div>
         <CardContent className="p-6 relative z-10">
           <div className="flex items-center justify-between mb-4">
