@@ -217,27 +217,27 @@ function SaaSAdmin() {
             <p className="text-gray-500 font-medium">Gestão global de infraestrutura e ecossistema SaaS.</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px] bg-white">
-              <Calendar className="w-4 h-4 mr-2" />
+            <SelectTrigger className="w-[200px] bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-inner">
+              <Calendar className="w-4 h-4 mr-2 text-primary" />
               <SelectValue placeholder="Período" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-card border-border text-white">
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
               <SelectItem value="ytd">Este Ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="gap-2">
-            <History className="w-4 h-4" /> Auditoria
+          <Button variant="outline" className="h-12 px-6 bg-background border-border text-white hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm">
+            <History className="w-4 h-4 mr-2" /> Auditoria
           </Button>
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" /> Nova Ótica
+              <Button className="h-12 px-8 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95">
+                <Plus className="w-5 h-5 mr-2" /> NOVA ÓTICA
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
