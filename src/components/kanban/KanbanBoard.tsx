@@ -264,13 +264,13 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute inset-0 rounded-2xl border-2 border-red-400 pointer-events-none"
+            className="absolute inset-0 rounded-[14px] border-2 border-[#D64545]/40 pointer-events-none"
           />
         )}
       </AnimatePresence>
 
       {lead.isUrgent && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-red-200">
+        <div className="absolute -top-2 -right-2 bg-[#D64545] text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-[#D64545]/20">
           URGENTE
         </div>
       )}
@@ -278,10 +278,10 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       
       <div className="flex justify-between items-start mb-4">
         <div className="space-y-1">
-          <h4 className="font-black text-[13px] text-slate-800 line-clamp-1 uppercase tracking-tight">{lead.name}</h4>
+          <h4 className="font-black text-[13px] text-white line-clamp-1 uppercase tracking-tight font-jakarta">{lead.name}</h4>
           <div className="flex items-center gap-1.5">
-            <DollarSign className="w-3 h-3 text-primary opacity-60" />
-            <span className="text-[12px] text-primary font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
+            <DollarSign className="w-3 h-3 text-[#FFC400] opacity-60" />
+            <span className="text-[12px] text-[#FFC400] font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
         <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
@@ -298,7 +298,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
         ].map((action, i) => (
           <button 
             key={i}
-            className="p-2.5 bg-slate-50 hover:bg-white hover:shadow-sm rounded-xl text-slate-400 hover:text-primary transition-all border border-slate-100 hover:border-primary/20" 
+            className="p-2.5 bg-[#0E0E11] hover:bg-[#17171B] hover:shadow-sm rounded-[14px] text-slate-500 hover:text-[#FFC400] transition-all border border-[#23232B] hover:border-[#FFC400]/20" 
             title={action.title}
           >
             <action.icon className="w-3.5 h-3.5" />
