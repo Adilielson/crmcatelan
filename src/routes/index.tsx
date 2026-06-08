@@ -130,7 +130,6 @@ function Dashboard() {
           value={stats.totalValue} 
           change="Leads ativos no funil" 
           icon={<DollarSign className="w-4 h-4" />}
-          color="text-blue-600"
           link="/kanban"
         />
         <StatCard 
@@ -138,7 +137,6 @@ function Dashboard() {
           value={stats.confirmedAppts.toString()} 
           change="Próximos 7 dias" 
           icon={<Calendar className="w-4 h-4" />}
-          color="text-green-600"
           link="/agenda"
         />
         <StatCard 
@@ -146,7 +144,7 @@ function Dashboard() {
           value={stats.qualRate} 
           change="Performance SDR" 
           icon={<Brain className="w-4 h-4" />}
-          color="text-purple-600"
+          highlight
           link="/performance"
         />
       </div>
