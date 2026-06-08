@@ -169,9 +169,7 @@ export function KanbanBoard() {
             </div>
             
             <div 
-              className="bg-white p-3 rounded-b-[14px] border border-[#E3E6EB] border-t-0 min-h-[600px] flex flex-col gap-3"
-
-
+              className="bg-transparent rounded-[20px] min-h-[500px] flex flex-col gap-4 overflow-y-auto scrollbar-hide pr-1"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 const id = e.dataTransfer.getData('leadId')
