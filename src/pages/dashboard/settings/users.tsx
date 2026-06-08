@@ -87,10 +87,10 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 text-ink">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Gestão de Usuários</h1>
+          <h1 className="text-3xl font-black tracking-tight font-jakarta">Gestão de Usuários</h1>
           <p className="text-muted-foreground">Gerencie acessos, permissões e horários da sua equipe.</p>
         </div>
         
@@ -156,7 +156,7 @@ const UserManagement = () => {
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4 bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-border shadow-card">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
@@ -172,10 +172,10 @@ const UserManagement = () => {
         </Button>
       </div>
 
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-border shadow-card overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="border-b border-border bg-gray-50/50">
               <TableHead>Usuário</TableHead>
               <TableHead>Perfil</TableHead>
               <TableHead>Unidade(s)</TableHead>
@@ -185,10 +185,10 @@ const UserManagement = () => {
           </TableHeader>
           <TableBody>
             {filteredUsers.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className="border-b border-border last:border-0 hover:bg-gray-50/50 transition-colors">
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-medium text-foreground">{user.full_name}</span>
+                    <span className="font-bold text-ink">{user.full_name}</span>
                     <span className="text-sm text-muted-foreground">{user.email}</span>
                   </div>
                 </TableCell>
