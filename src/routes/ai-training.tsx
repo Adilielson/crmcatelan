@@ -90,7 +90,7 @@ function AITrainingSettings() {
             <Brain className="w-10 h-10 text-primary shadow-[0_0_15px_rgba(255,196,0,0.3)]" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
+            <h1 className="text-4xl font-black text-card-foreground tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
             <p className="text-gray-500 font-medium">Personalize a inteligência de atendimento da Ótica Catelan.</p>
           </div>
         </div>
