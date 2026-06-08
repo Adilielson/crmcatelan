@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, Phone, Info, Layout, PlusCircle, Settings, ChevronRight, MessageSquare, Calendar, Brain, ShieldCheck, Zap, AlertCircle, FileText, RefreshCw, Upload, Search, Paperclip, MoreVertical, Smile } from 'lucide-react'
+import { CheckCircle2, User, Send, Phone, Info, Layout, PlusCircle, Settings, ChevronRight, MessageSquare, Calendar, Brain, ShieldCheck, Zap, AlertCircle, FileText, RefreshCw, Upload, Search, Paperclip, MoreVertical, Smile, Users, UserPlus } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useChatStore } from '@/hooks/use-chat'
 import { useKanban } from '@/hooks/use-kanban'
@@ -9,6 +9,8 @@ import { Progress } from '@/components/ui/progress'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -55,8 +57,82 @@ function Chat() {
     })
   }
 
+  const [isRoutingOpen, setIsRoutingOpen] = useState(false)
+
   return (
     <div className="bg-white border border-gray-200 rounded-2xl h-[calc(100vh-140px)] flex overflow-hidden shadow-sm">
+      <Dialog open={isRoutingOpen} onOpenChange={setIsRoutingOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Encaminhar Conversa
+            </DialogTitle>
+            <DialogDescription>
+              Selecione o destino ou aplique uma regra de roteamento automático.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Regras de Roteamento</h4>
+              <div className="grid grid-cols-1 gap-2">
+                <Button 
+                  variant="outline" 
+                  className="justify-start h-auto py-3 px-4 border-gray-100 hover:border-primary/30 hover:bg-primary/5 group"
+                  onClick={() => {
+                    toast.success("Regra 'Fila Circular' aplicada")
+                    setIsRoutingOpen(false)
+                  }}
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-ink group-hover:text-primary">Próximo Disponível (Fila)</p>
+                    <p className="text-[10px] text-gray-400 font-medium">Distribuição igualitária entre vendedores online.</p>
+                  </div>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="justify-start h-auto py-3 px-4 border-gray-100 hover:border-primary/30 hover:bg-primary/5 group"
+                  onClick={() => {
+                    toast.success("Encaminhado por Especialidade: Lentes")
+                    setIsRoutingOpen(false)
+                  }}
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-ink group-hover:text-primary">Especialista em Lentes</p>
+                    <p className="text-[10px] text-gray-400 font-medium">Encaminhar para equipe técnica de laboratório.</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Encaminhamento Direto</h4>
+              <div className="space-y-2">
+                <Select>
+                  <SelectTrigger className="w-full h-12 rounded-xl border-gray-100 font-bold text-xs">
+                    <SelectValue placeholder="Selecionar Atendente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vendedor-1">Carlos (Vendas Sul)</SelectItem>
+                    <SelectItem value="vendedor-2">Ana (Vendas Centro)</SelectItem>
+                    <SelectItem value="gerente">Roberto (Gerente)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  className="w-full h-12 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs rounded-xl shadow-lg shadow-primary/20"
+                  onClick={() => {
+                    toast.success("Conversa encaminhada com sucesso")
+                    setIsRoutingOpen(false)
+                  }}
+                >
+                  CONFIRMAR TRANSFERÊNCIA
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Coluna 1: Lista de Sessões */}
       <div className="w-80 border-r border-gray-100 flex flex-col bg-gray-50/30">
         <div className="p-6 border-b border-gray-100 bg-white flex justify-between items-center h-[73px]">
@@ -155,6 +231,15 @@ function Chat() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"
+                  onClick={() => setIsRoutingOpen(true)}
+                  title="Encaminhar para Equipe"
+                >
+                  <Users className="w-4 h-4" />
+                </Button>
                 <Button variant="ghost" size="icon" className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"><Phone className="w-4 h-4" /></Button>
                 <Button variant="ghost" size="icon" className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"><MoreVertical className="w-4 h-4" /></Button>
               </div>
