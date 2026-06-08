@@ -256,8 +256,8 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       draggable
       onDragStart={onDragStart}
       className={cn(
-        "bg-white p-5 rounded-[12px] border border-[#E3E6EB] shadow-sm cursor-grab active:cursor-grabbing hover:border-yellow/40 hover:shadow-md transition-all duration-300 group relative",
-        lead.isUrgent ? 'border-danger/30' : ''
+        "bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing hover:border-[#FFC400]/50 hover:shadow-[0_12px_24px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group relative",
+        lead.isUrgent ? 'border-danger/20' : ''
       )}
     >
       <AnimatePresence>
