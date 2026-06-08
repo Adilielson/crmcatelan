@@ -206,14 +206,16 @@ function SaaSAdmin() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ShieldCheck className="w-8 h-8 text-primary" />
-            Painel Super Admin
-          </h1>
-          <p className="text-muted-foreground">Gestão global de inquilinos e infraestrutura.</p>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-xl">
+        <div className="flex items-center gap-6">
+          <div className="p-4 bg-primary/10 rounded-2xl shadow-inner">
+            <ShieldCheck className="w-10 h-10 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Super Admin Hub</h1>
+            <p className="text-gray-500 font-medium">Gestão global de infraestrutura e ecossistema SaaS.</p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={period} onValueChange={setPeriod}>
@@ -296,12 +298,12 @@ function SaaSAdmin() {
       </div>
 
       <Tabs defaultValue="tenants" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
-          <TabsTrigger value="dashboard">Visão Geral</TabsTrigger>
-          <TabsTrigger value="tenants">Lista de Óticas</TabsTrigger>
-          <TabsTrigger value="plans">Planos & Config</TabsTrigger>
-          <TabsTrigger value="ia">Performance IA</TabsTrigger>
-          <TabsTrigger value="security">Segurança</TabsTrigger>
+        <TabsList className="bg-card border border-border mb-8 w-full justify-start h-16 p-2 rounded-[14px] shadow-inner overflow-x-auto overflow-y-hidden scrollbar-hide">
+          <TabsTrigger value="dashboard" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Visão Geral</TabsTrigger>
+          <TabsTrigger value="tenants" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Lista de Óticas</TabsTrigger>
+          <TabsTrigger value="plans" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Planos {'&'} Config</TabsTrigger>
+          <TabsTrigger value="ia" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Performance IA</TabsTrigger>
+          <TabsTrigger value="security" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Segurança</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 pt-4">
