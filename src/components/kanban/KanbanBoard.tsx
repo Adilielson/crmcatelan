@@ -284,7 +284,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
             <span className="text-[12px] text-[#FFC400] font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
-        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
+        <div className="bg-[#0E0E11] p-2 rounded-[14px] border border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20 transition-colors">
           {sourceIcons[lead.source]}
         </div>
       </div>
