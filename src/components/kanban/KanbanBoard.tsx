@@ -263,8 +263,8 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       draggable
       onDragStart={onDragStart}
       className={cn(
-        "bg-[#17171B] p-5 rounded-[14px] border border-[#23232B] shadow-sm cursor-grab active:cursor-grabbing hover:border-[#FFC400]/40 hover:shadow-md transition-all duration-300 group relative",
-        lead.isUrgent ? 'border-[#D64545]/30 bg-[#17171B]' : 'bg-[#F6F7F9] border-[#E3E6EB]'
+        "bg-white p-5 rounded-[12px] border border-[#E3E6EB] shadow-sm cursor-grab active:cursor-grabbing hover:border-yellow/40 hover:shadow-md transition-all duration-300 group relative",
+        lead.isUrgent ? 'border-danger/30' : ''
       )}
     >
       <AnimatePresence>
@@ -279,7 +279,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute inset-0 rounded-[14px] border-2 border-[#D64545]/40 pointer-events-none"
+            className="absolute inset-0 rounded-[12px] border-2 border-danger/40 pointer-events-none"
           />
         )}
       </AnimatePresence>
@@ -295,22 +295,22 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
         <div className="space-y-1">
           <h4 className={cn(
             "font-black text-[13px] line-clamp-1 uppercase tracking-tight font-jakarta",
-            lead.isUrgent ? "text-white" : "text-[#15151A]"
+            "text-ink"
           )}>{lead.name}</h4>
           <div className="flex items-center gap-1.5">
             <DollarSign className={cn(
               "w-3 h-3 opacity-60",
-              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+              "text-ink"
             )} />
             <span className={cn(
               "text-[12px] font-black",
-              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+              "text-ink"
             )}>R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
         <div className={cn(
-          "p-2 rounded-[14px] border transition-colors",
-          lead.isUrgent ? "bg-[#0E0E11] border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20" : "bg-white border-[#E3E6EB]"
+          "p-2 rounded-[12px] border transition-colors",
+          "bg-white border-[#E3E6EB]"
         )}>
           {sourceIcons[lead.source]}
         </div>
@@ -326,10 +326,8 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
           <button 
             key={i}
             className={cn(
-              "p-2.5 rounded-[14px] transition-all border",
-              lead.isUrgent 
-                ? "bg-[#0E0E11] text-slate-500 hover:text-[#FFC400] border-[#23232B] hover:border-[#FFC400]/20" 
-                : "bg-white text-[#6C727C] hover:text-[#15151A] border-[#E3E6EB] hover:border-[#A7ADB8]"
+              "p-2.5 rounded-[12px] transition-all border",
+              "bg-white text-gray-500 hover:text-ink border-[#E3E6EB] hover:border-gray-400"
             )} 
 
             title={action.title}
