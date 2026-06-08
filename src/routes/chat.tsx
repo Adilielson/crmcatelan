@@ -55,9 +55,9 @@ function Chat() {
 
 
   return (
-    <div className="bg-card border-border rounded-[14px] h-[calc(100vh-140px)] flex overflow-hidden shadow-2xl">
+    <div className="bg-card border-border rounded-[14px] h-[calc(100vh-140px)] flex overflow-hidden shadow-card">
       {/* Coluna 1: Lista de Sessões (Acesso Direto) */}
-      <div className="w-80 border-r border-border flex flex-col bg-black/20">
+      <div className="w-80 border-r border-border flex flex-col bg-gray-50/50">
         <div className="p-5 border-b border-border bg-card flex justify-between items-center">
           <h2 className="font-black text-xs uppercase tracking-[0.15em] text-gray-400">Conversas</h2>
           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
@@ -84,7 +84,7 @@ function Chat() {
                 selectedSessionId === session.id ? "bg-primary/5 border-l-[4px] border-l-primary shadow-inner" : ""
               )}
             >
-              <div className="w-12 h-12 rounded-full bg-black-3 border border-border flex items-center justify-center relative flex-shrink-0 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-card border border-border flex items-center justify-center relative flex-shrink-0 shadow-sm">
                 <User className="w-6 h-6 text-gray-500" />
                 {session.status === 'online' && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -118,7 +118,7 @@ function Chat() {
           <>
             <div className="p-5 border-b border-border flex justify-between items-center bg-card z-10 shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-black-3 border border-border flex items-center justify-center shadow-inner">
+                <div className="w-12 h-12 rounded-full bg-card border border-border flex items-center justify-center shadow-inner">
                   <User className="w-6 h-6 text-gray-500" />
                 </div>
                 <div>
@@ -140,7 +140,7 @@ function Chat() {
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://wweb.dev/assets/whatsapp-chat-bg.png')] bg-repeat invert" />
               
               <div className="flex justify-start relative z-10">
-                <div className="bg-card border border-border p-4 rounded-[14px] rounded-tl-none max-w-[75%] shadow-xl">
+                <div className="bg-card border border-border p-4 rounded-[14px] rounded-tl-none max-w-[75%] shadow-card">
                   <p className="text-xs text-white leading-relaxed font-medium">{selectedSession.lastMessage}</p>
                   <span className="text-[9px] font-black text-gray-500 mt-2 block text-right uppercase tracking-wider">10:30</span>
                 </div>
@@ -154,7 +154,7 @@ function Chat() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-border bg-card shadow-2xl relative z-10">
+            <div className="p-6 border-t border-border bg-card shadow-card relative z-10">
               <div className="flex gap-3 bg-background p-2.5 rounded-[14px] border border-border items-center shadow-inner focus-within:border-primary/50 transition-all">
                 <Button variant="ghost" size="icon" className="text-gray-500 h-10 w-10 hover:text-primary hover:bg-white/5 transition-all">
                   <PlusCircle className="w-5 h-5" />
@@ -185,7 +185,7 @@ function Chat() {
       </div>
 
       {/* Coluna 3: SDR Insights & Qualificação IA */}
-      <div className="w-80 border-l border-border bg-black/20 overflow-y-auto">
+      <div className="w-80 border-l border-border bg-gray-50/50 overflow-y-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start rounded-none border-b border-border bg-card h-14 px-2">
             <TabsTrigger value="ia" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-10 flex items-center gap-2 px-4 transition-all">
@@ -202,7 +202,7 @@ function Chat() {
           <TabsContent value="ia" className="p-4 m-0 space-y-5">
             {currentLead ? (
               <>
-                <div className="bg-card p-5 rounded-[14px] border border-border shadow-xl space-y-5">
+                <div className="bg-card p-5 rounded-[14px] border border-border shadow-card space-y-5">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.15em]">Qualificação</span>
                     <Badge className={cn(
@@ -237,7 +237,7 @@ function Chat() {
                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Interesses Detectados</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {(currentLead.ia_interesses || ['Óculos de Grau', 'Exame']).map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="text-[10px] bg-black-3 text-primary border border-primary/20 font-black px-2 py-1 rounded-lg">
+                      <Badge key={i} variant="secondary" className="text-[10px] bg-card text-primary border border-primary/20 font-black px-2 py-1 rounded-lg">
                         {tag}
                       </Badge>
                     ))}

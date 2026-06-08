@@ -160,7 +160,7 @@ export function KanbanBoard() {
                 <span className="font-black uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
                 <span className={cn(
                   "text-[11px] px-2 py-0.5 rounded-full font-mono font-bold",
-                  column === "Compareceu" ? "bg-[#1a1500]/10" : "bg-black/20"
+                  column === "Compareceu" ? "bg-[#1a1500]/10" : "bg-gray-50/50"
                 )}>
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>

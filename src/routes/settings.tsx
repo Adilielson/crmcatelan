@@ -18,7 +18,7 @@ export const Route = createFileRoute('/settings')({
 function Settings() {
   return (
     <div className="max-w-6xl">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-xl mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-card mb-8">
         <div>
           <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-2 uppercase tracking-[0.05em]">Painel de Controle</h1>
           <p className="text-gray-500 font-medium">Gestão estratégica de unidades, IA e automações.</p>
@@ -38,7 +38,7 @@ function Settings() {
         <TabsContent value="unit">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-              <section className="bg-card border border-border rounded-[14px] p-8 shadow-xl relative overflow-hidden">
+              <section className="bg-card border border-border rounded-[14px] p-8 shadow-card relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5">
                   <Store className="w-24 h-24 text-primary" />
                 </div>
@@ -68,7 +68,7 @@ function Settings() {
                 </div>
               </section>
 
-              <section className="bg-card border border-border rounded-[14px] p-8 shadow-xl">
+              <section className="bg-card border border-border rounded-[14px] p-8 shadow-card">
                 <h3 className="text-sm font-black text-white mb-6 flex items-center gap-3 uppercase tracking-widest">
                   <div className="p-2 bg-primary/10 rounded-xl">
                     <Clock className="w-5 h-5 text-primary" />
@@ -80,9 +80,9 @@ function Settings() {
                     <div key={day} className="flex items-center justify-between p-4 bg-background border border-border rounded-[14px] shadow-inner mb-3">
                       <span className="text-xs font-black uppercase tracking-widest text-white">{day}</span>
                       <div className="flex gap-3 items-center">
-                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="09:00" />
+                        <Input className="w-24 h-10 text-xs bg-card border-border text-center font-black rounded-lg" defaultValue="09:00" />
                         <span className="text-gray-600 font-black text-[10px]">ÀS</span>
-                        <Input className="w-24 h-10 text-xs bg-black-2 border-border text-center font-black rounded-lg" defaultValue="18:00" />
+                        <Input className="w-24 h-10 text-xs bg-card border-border text-center font-black rounded-lg" defaultValue="18:00" />
                       </div>
                     </div>
                   ))}
@@ -103,16 +103,16 @@ function Settings() {
                 <Button className="w-full h-11 bg-[#1a1500] hover:bg-black text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all" size="sm">PAUSAR ATENDIMENTO</Button>
               </div>
 
-              <div className="bg-black-2 shadow-2xl border border-border rounded-[14px] p-8 overflow-hidden relative">
+              <div className="bg-card shadow-card border border-border rounded-[14px] p-8 overflow-hidden relative">
                 <div className="absolute -bottom-4 -right-4 opacity-5 rotate-12">
                   <Zap className="w-32 h-32 text-primary" />
                 </div>
                 <h4 className="font-black text-xs uppercase tracking-[0.15em] text-gray-500 mb-4 relative z-10">Plano Atual</h4>
                 <div className="flex items-baseline gap-2 mb-6 relative z-10">
-                  <span className="text-4xl font-black text-white tracking-tighter">PREMIUM</span>
+                  <span className="text-4xl font-black text-card-foreground tracking-tighter">PREMIUM</span>
                   <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">/unidade</span>
                 </div>
-                <Button variant="outline" className="w-full h-11 text-white border-border hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl relative z-10" size="sm">VER FATURAMENTO</Button>
+                <Button variant="outline" className="w-full h-11 text-card-foreground border-border hover:bg-black/5 font-black text-[10px] uppercase tracking-widest rounded-xl relative z-10" size="sm">VER FATURAMENTO</Button>
               </div>
             </div>
           </div>

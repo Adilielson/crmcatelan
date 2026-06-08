@@ -151,8 +151,8 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Funil de Vendas */}
-        <Card className="lg:col-span-2 shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="pb-4 border-b border-border/50 bg-black/20">
+        <Card className="lg:col-span-2 shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+          <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
             <CardTitle className="text-sm font-black flex items-center gap-3 uppercase tracking-[0.15em] text-gray-400 font-jakarta">
               <div className="p-1.5 bg-primary/10 rounded-lg">
                 <TrendingUp className="w-4 h-4 text-primary" />
@@ -178,8 +178,8 @@ function Dashboard() {
         </Card>
 
         {/* Origem dos Leads */}
-        <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="pb-4 border-b border-border/50 bg-black/20">
+        <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+          <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
             <CardTitle className="text-sm font-black flex items-center gap-3 uppercase tracking-[0.15em] text-gray-400 font-jakarta">
               <div className="p-1.5 bg-primary/10 rounded-lg">
                 <Target className="w-4 h-4 text-primary" />
@@ -221,8 +221,8 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Atividade da IA SDR */}
-        <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-black/20">
+        <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-xl">
                 <Brain className="w-5 h-5 text-primary" />
@@ -259,8 +259,8 @@ function Dashboard() {
         </Card>
 
         {/* Alertas de SLA e Estagnação */}
-        <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-black/20">
+        <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-danger/10 rounded-xl">
                 <AlertTriangle className="w-5 h-5 text-danger" />
@@ -304,10 +304,10 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
   return (
     <Link to={link} className="block">
       <Card className={cn(
-        "hover:shadow-[0_20px_50px_rgba(255,196,0,0.15)] hover:-translate-y-2 transition-all duration-500 cursor-pointer border-border shadow-xl group overflow-hidden relative rounded-[14px]",
+        "hover:shadow-[0_20px_50px_rgba(255,196,0,0.15)] hover:-translate-y-2 transition-all duration-500 cursor-pointer border-border shadow-card group overflow-hidden relative rounded-[14px]",
         highlight
           ? "bg-gradient-to-br from-primary via-yellow-bright to-yellow-dark border-primary" 
-          : "bg-gradient-to-br from-card to-black-3 shadow-black/40"
+          : "bg-card shadow-sm"
       )}>
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
           {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}

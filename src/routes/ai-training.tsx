@@ -81,7 +81,7 @@ function AITrainingSettings() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-2xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-card relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-5">
            <Brain className="w-24 h-24 text-primary" />
         </div>
@@ -90,7 +90,7 @@ function AITrainingSettings() {
             <Brain className="w-10 h-10 text-primary shadow-[0_0_15px_rgba(255,196,0,0.3)]" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
+            <h1 className="text-4xl font-black text-card-foreground tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
             <p className="text-gray-500 font-medium">Personalize a inteligência de atendimento da Ótica Catelan.</p>
           </div>
         </div>
@@ -131,8 +131,8 @@ function AITrainingSettings() {
         <div className="mt-6 space-y-6">
           <TabsContent value="personality" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-                <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+              <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+                <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
                   <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Instruções de Abordagem</CardTitle>
                   <CardDescription className="text-gray-500 font-medium">Defina o tom de voz e o comportamento base da IA.</CardDescription>
                 </CardHeader>
@@ -178,8 +178,8 @@ function AITrainingSettings() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-                <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+              <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+                <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
                   <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Scripts de Exemplo</CardTitle>
                   <CardDescription className="text-gray-500 font-medium">Mimetize o estilo de atendimento real da Ótica Catelan.</CardDescription>
                 </CardHeader>
@@ -197,8 +197,8 @@ function AITrainingSettings() {
           </TabsContent>
 
           <TabsContent value="knowledge" className="space-y-6">
-            <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-              <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+            <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+              <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Documentos {'&'} FAQ</CardTitle>
                 <CardDescription className="text-gray-500 font-medium">Fontes de informação estratégica para a base de conhecimento.</CardDescription>
               </CardHeader>
