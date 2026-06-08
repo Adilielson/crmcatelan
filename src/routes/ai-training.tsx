@@ -80,13 +80,19 @@ function AITrainingSettings() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Brain className="w-8 h-8 text-primary" /> Treinamento da IA SDR
-          </h1>
-          <p className="text-muted-foreground">Personalize o comportamento, conhecimento e regras de qualificação da sua IA.</p>
+    <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5">
+           <Brain className="w-24 h-24 text-primary" />
+        </div>
+        <div className="flex items-center gap-6 relative z-10">
+          <div className="p-4 bg-primary/10 rounded-2xl shadow-inner border border-primary/20">
+            <Brain className="w-10 h-10 text-primary shadow-[0_0_15px_rgba(255,196,0,0.3)]" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
+            <p className="text-gray-500 font-medium">Personalize a inteligência de atendimento da Ótica Catelan.</p>
+          </div>
         </div>
         <div className="flex gap-3">
           <div className="flex items-center gap-2 mr-4">
@@ -104,20 +110,20 @@ function AITrainingSettings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 h-12 bg-white border">
-          <TabsTrigger value="personality" className="gap-2">
+        <TabsList className="bg-card border border-border mb-8 w-full justify-start h-16 p-2 rounded-[14px] shadow-inner overflow-x-auto overflow-y-hidden scrollbar-hide">
+          <TabsTrigger value="personality" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">
             <Zap className="w-4 h-4" /> Personalidade
           </TabsTrigger>
-          <TabsTrigger value="knowledge" className="gap-2">
-            <BookOpen className="w-4 h-4" /> Base de Conhecimento
+          <TabsTrigger value="knowledge" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">
+            <BookOpen className="w-4 h-4" /> Conhecimento
           </TabsTrigger>
-          <TabsTrigger value="qualification" className="gap-2">
+          <TabsTrigger value="qualification" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">
             <Target className="w-4 h-4" /> Qualificação
           </TabsTrigger>
-          <TabsTrigger value="simulation" className="gap-2">
+          <TabsTrigger value="simulation" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">
             <Play className="w-4 h-4" /> Simulação
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
+          <TabsTrigger value="history" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">
             <History className="w-4 h-4" /> Histórico
           </TabsTrigger>
         </TabsList>
@@ -125,26 +131,26 @@ function AITrainingSettings() {
         <div className="mt-6 space-y-6">
           <TabsContent value="personality" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Instruções de Abordagem</CardTitle>
-                  <CardDescription>Defina o tom de voz e o comportamento base da IA.</CardDescription>
+              <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
+                <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Instruções de Abordagem</CardTitle>
+                  <CardDescription className="text-gray-500 font-medium">Defina o tom de voz e o comportamento base da IA.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Prompt do Sistema (Personalidade)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Prompt do Sistema (Personalidade)</Label>
                     <Textarea 
-                      placeholder="Ex: Você é um atendente amigável..." 
-                      className="min-h-[200px]"
+                      placeholder="Ex: Você é um atendente amigável da Ótica Catelan..." 
+                      className="min-h-[220px] bg-background border-border rounded-xl text-white font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
                       value={config.prompt_system}
                       onChange={(e) => setConfig({...config, prompt_system: e.target.value})}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Tom de Voz</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Tom de Voz</Label>
                       <Select defaultValue="consultive">
-                        <SelectTrigger>
+                      <SelectTrigger className="bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest">
                           <SelectValue placeholder="Selecione o tom" />
                         </SelectTrigger>
                         <SelectContent>
@@ -156,9 +162,9 @@ function AITrainingSettings() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Objetivo da Conversa</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Objetivo da Conversa</Label>
                       <Select defaultValue={config.goal}>
-                        <SelectTrigger>
+                      <SelectTrigger className="bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest">
                           <SelectValue placeholder="Selecione o objetivo" />
                         </SelectTrigger>
                         <SelectContent>
@@ -172,17 +178,17 @@ function AITrainingSettings() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Scripts de Exemplo</CardTitle>
-                  <CardDescription>Mimetize o estilo de atendimento real da sua loja.</CardDescription>
+              <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
+                <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Scripts de Exemplo</CardTitle>
+                  <CardDescription className="text-gray-500 font-medium">Mimetize o estilo de atendimento real da Ótica Catelan.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Textarea 
                     placeholder="Insira diálogos reais de exemplo aqui..." 
-                    className="min-h-[300px]"
+                    className="min-h-[320px] bg-background border-border rounded-xl text-white font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
                   />
-                  <p className="text-xs text-muted-foreground italic">
+                  <p className="text-[11px] text-gray-500 font-bold italic leading-relaxed">
                     Fornecer bons exemplos ajuda a IA a entender nuances de linguagem e gírias regionais.
                   </p>
                 </CardContent>
