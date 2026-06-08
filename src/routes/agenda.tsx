@@ -251,18 +251,18 @@ function Agenda() {
                 </div>
               ) : (
                 dayAppointments.map(appt => (
-                  <div key={appt.id} className="bg-white border rounded-xl p-3 shadow-sm hover:border-primary/50 transition-all group">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-slate-100 p-1.5 rounded-lg">
-                          <User className="w-4 h-4 text-slate-500" />
+                  <div key={appt.id} className="bg-background border border-border rounded-[14px] p-5 shadow-xl hover:border-primary/50 transition-all group relative overflow-hidden">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-black-3 p-2.5 rounded-xl border border-border shadow-inner">
+                          <User className="w-5 h-5 text-gray-500" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-slate-800">{appt.leadName}</h4>
-                          <span className="text-[10px] text-slate-500">{appt.examType}</span>
+                          <h4 className="text-xs font-black text-white uppercase tracking-tight">{appt.leadName}</h4>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{appt.examType}</span>
                         </div>
                       </div>
-                      <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <div className="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 rounded-lg border border-primary/20 shadow-sm">
                         {appt.startTime}
                       </div>
                     </div>
