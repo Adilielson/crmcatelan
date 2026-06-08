@@ -87,30 +87,30 @@ function Dashboard() {
   }, [leads, appointments])
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="space-y-8 animate-in fade-in duration-700 bg-[#0E0E11]">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-3xl font-black text-white tracking-tight font-jakarta">
             Painel de Gestão
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
+          <p className="text-[#6C727C] font-medium mt-1">
             Monitoramento em tempo real da unidade e performance IA.
           </p>
         </div>
         <div className="flex items-center gap-3">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[200px] bg-white border-slate-200/60 shadow-sm font-semibold text-xs h-10">
-               <Store className="w-3.5 h-3.5 mr-2 text-primary" />
+             <SelectTrigger className="w-[200px] bg-[#17171B] border-[#23232B] shadow-sm font-semibold text-xs h-10 text-white rounded-[14px]">
+               <Store className="w-3.5 h-3.5 mr-2 text-[#FFC400]" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
-             <SelectContent>
+             <SelectContent className="bg-[#17171B] border-[#23232B] text-white">
                <SelectItem value="all">Todas as Unidades</SelectItem>
                {pipelines.map(p => (
                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                ))}
              </SelectContent>
            </Select>
-           <Button variant="outline" className="bg-white border-slate-200/60 shadow-sm font-bold text-xs h-10 px-6">
+           <Button variant="outline" className="bg-[#FFC400] hover:bg-[#FFD60A] text-[#1a1500] border-none shadow-sm font-bold text-xs h-10 px-6 rounded-[14px]">
              Relatório Completo
            </Button>
         </div>
