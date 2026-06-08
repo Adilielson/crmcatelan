@@ -99,11 +99,11 @@ function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[220px] bg-background border-border shadow-sm font-semibold text-xs h-12 text-white rounded-[14px] px-4">
+             <SelectTrigger className="w-[220px] bg-background border-border shadow-sm font-semibold text-xs h-12 text-card-foreground rounded-[14px] px-4">
                <Store className="w-4 h-4 mr-2 text-primary" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
-             <SelectContent className="bg-card border-border text-white">
+             <SelectContent className="bg-card border-border text-card-foreground">
                <SelectItem value="all">Todas as Unidades</SelectItem>
                {pipelines.map(p => (
                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -151,7 +151,7 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Funil de Vendas */}
-        <Card className="lg:col-span-2 shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
+        <Card className="lg:col-span-2 shadow-card border-border bg-card rounded-[14px] overflow-hidden">
           <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
             <CardTitle className="text-sm font-black flex items-center gap-3 uppercase tracking-[0.15em] text-gray-400 font-jakarta">
               <div className="p-1.5 bg-primary/10 rounded-lg">
@@ -178,7 +178,7 @@ function Dashboard() {
         </Card>
 
         {/* Origem dos Leads */}
-        <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
+        <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
           <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
             <CardTitle className="text-sm font-black flex items-center gap-3 uppercase tracking-[0.15em] text-gray-400 font-jakarta">
               <div className="p-1.5 bg-primary/10 rounded-lg">
@@ -221,7 +221,7 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Atividade da IA SDR */}
-        <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
+        <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-xl">
@@ -259,8 +259,8 @@ function Dashboard() {
         </Card>
 
         {/* Alertas de SLA e Estagnação */}
-        <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-black/20">
+        <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-danger/10 rounded-xl">
                 <AlertTriangle className="w-5 h-5 text-danger" />
@@ -283,7 +283,7 @@ function Dashboard() {
                       <Clock className="w-4 h-4 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-white font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
+                      <p className="text-sm font-black text-card-foreground font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
                       <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.wait}</p>
                     </div>
                   </div>
@@ -310,7 +310,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
           : "bg-card shadow-sm"
       )}>
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-card-foreground" })}
         </div>
         {highlight && <div className="absolute right-[-10px] bottom-[-18px] text-[96px] opacity-[0.13]">🔥</div>}
         <CardContent className="p-6 relative z-10">

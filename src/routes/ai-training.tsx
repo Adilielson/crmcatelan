@@ -81,7 +81,7 @@ function AITrainingSettings() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-2xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-card relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-5">
            <Brain className="w-24 h-24 text-primary" />
         </div>
@@ -90,7 +90,7 @@ function AITrainingSettings() {
             <Brain className="w-10 h-10 text-primary shadow-[0_0_15px_rgba(255,196,0,0.3)]" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
+            <h1 className="text-4xl font-black text-card-foreground tracking-tight font-jakarta mb-1 uppercase tracking-tight">Treinamento IA SDR</h1>
             <p className="text-gray-500 font-medium">Personalize a inteligência de atendimento da Ótica Catelan.</p>
           </div>
         </div>
@@ -131,8 +131,8 @@ function AITrainingSettings() {
         <div className="mt-6 space-y-6">
           <TabsContent value="personality" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-                <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+              <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+                <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
                   <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Instruções de Abordagem</CardTitle>
                   <CardDescription className="text-gray-500 font-medium">Defina o tom de voz e o comportamento base da IA.</CardDescription>
                 </CardHeader>
@@ -141,7 +141,7 @@ function AITrainingSettings() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Prompt do Sistema (Personalidade)</Label>
                     <Textarea 
                       placeholder="Ex: Você é um atendente amigável da Ótica Catelan..." 
-                      className="min-h-[220px] bg-background border-border rounded-xl text-white font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
+                      className="min-h-[220px] bg-background border-border rounded-xl text-card-foreground font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
                       value={config.prompt_system}
                       onChange={(e) => setConfig({...config, prompt_system: e.target.value})}
                     />
@@ -150,7 +150,7 @@ function AITrainingSettings() {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Tom de Voz</Label>
                       <Select defaultValue="consultive">
-                      <SelectTrigger className="bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest">
+                      <SelectTrigger className="bg-background border-border h-12 rounded-xl text-card-foreground font-black text-[10px] uppercase tracking-widest">
                           <SelectValue placeholder="Selecione o tom" />
                         </SelectTrigger>
                         <SelectContent>
@@ -164,7 +164,7 @@ function AITrainingSettings() {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Objetivo da Conversa</Label>
                       <Select defaultValue={config.goal}>
-                      <SelectTrigger className="bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest">
+                      <SelectTrigger className="bg-background border-border h-12 rounded-xl text-card-foreground font-black text-[10px] uppercase tracking-widest">
                           <SelectValue placeholder="Selecione o objetivo" />
                         </SelectTrigger>
                         <SelectContent>
@@ -178,15 +178,15 @@ function AITrainingSettings() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-                <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+              <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+                <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
                   <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Scripts de Exemplo</CardTitle>
                   <CardDescription className="text-gray-500 font-medium">Mimetize o estilo de atendimento real da Ótica Catelan.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Textarea 
                     placeholder="Insira diálogos reais de exemplo aqui..." 
-                    className="min-h-[320px] bg-background border-border rounded-xl text-white font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
+                    className="min-h-[320px] bg-background border-border rounded-xl text-card-foreground font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
                   />
                   <p className="text-[11px] text-gray-500 font-bold italic leading-relaxed">
                     Fornecer bons exemplos ajuda a IA a entender nuances de linguagem e gírias regionais.
@@ -197,8 +197,8 @@ function AITrainingSettings() {
           </TabsContent>
 
           <TabsContent value="knowledge" className="space-y-6">
-            <Card className="shadow-xl border-border bg-card rounded-[14px] overflow-hidden">
-              <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+            <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
+              <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Documentos {'&'} FAQ</CardTitle>
                 <CardDescription className="text-gray-500 font-medium">Fontes de informação estratégica para a base de conhecimento.</CardDescription>
               </CardHeader>
@@ -211,7 +211,7 @@ function AITrainingSettings() {
                         <Upload className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-white mb-1">Upload de Conhecimento</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-card-foreground mb-1">Upload de Conhecimento</p>
                         <p className="text-[10px] text-gray-500 font-bold max-w-[200px] mx-auto leading-relaxed">Manuais de serviço, tabelas de preços e guias de conduta.</p>
                       </div>
                     </div>
@@ -220,7 +220,7 @@ function AITrainingSettings() {
                       <div className="flex items-center justify-between p-4 bg-background border border-border rounded-xl shadow-inner">
                         <div className="flex items-center gap-3">
                           <FileText className="w-5 h-5 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
-                          <span className="text-xs font-black text-white uppercase tracking-tight">Manual_Servicos_Catelan.pdf</span>
+                          <span className="text-xs font-black text-card-foreground uppercase tracking-tight">Manual_Servicos_Catelan.pdf</span>
                         </div>
                         <Badge variant="outline" className="bg-success/10 text-success border-success/30 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-lg shadow-sm">
                           PRONTO
@@ -332,8 +332,8 @@ function AITrainingSettings() {
                         </div>
                       </div>
                       <div className="flex gap-3 max-w-[80%] items-start self-end flex-row-reverse">
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 text-white font-bold text-xs">AI</div>
-                        <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 text-card-foreground font-bold text-xs">AI</div>
+                        <div className="bg-primary text-card-foreground p-3 rounded-2xl rounded-tr-none text-sm">
                           Olá! Que bom que você entrou em contato conosco. 😊 O nosso exame de vista custa R$ 100,00, mas temos condições especiais para quem agenda pelo WhatsApp. Você possui algum convênio ou gostaria de agendar no particular?
                         </div>
                       </div>

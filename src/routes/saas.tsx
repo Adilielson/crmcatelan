@@ -207,30 +207,30 @@ function SaaSAdmin() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-card">
         <div className="flex items-center gap-6">
           <div className="p-4 bg-primary/10 rounded-2xl shadow-inner">
             <ShieldCheck className="w-10 h-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Super Admin Hub</h1>
+            <h1 className="text-4xl font-black text-card-foreground tracking-tight font-jakarta mb-1 uppercase tracking-tight">Super Admin Hub</h1>
             <p className="text-gray-500 font-medium">Gestão global de infraestrutura e ecossistema SaaS.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[200px] bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-inner">
+            <SelectTrigger className="w-[200px] bg-background border-border h-12 rounded-xl text-card-foreground font-black text-[10px] uppercase tracking-widest shadow-inner">
               <Calendar className="w-4 h-4 mr-2 text-primary" />
               <SelectValue placeholder="Período" />
             </SelectTrigger>
-            <SelectContent className="bg-card border-border text-white">
+            <SelectContent className="bg-card border-border text-card-foreground">
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
               <SelectItem value="ytd">Este Ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="h-12 px-6 bg-background border-border text-white hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm">
+          <Button variant="outline" className="h-12 px-6 bg-background border-border text-card-foreground hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm">
             <History className="w-4 h-4 mr-2" /> Auditoria
           </Button>
           
@@ -611,7 +611,7 @@ function TenantRow({ tenant, onUpdate }: { tenant: any, onUpdate: () => void }) 
 
 function StatsCard({ title, value, trend, icon }: any) {
   return (
-    <Card className="bg-card border-border hover:border-primary/40 transition-all duration-500 shadow-xl group hover:-translate-y-2 relative overflow-hidden rounded-[14px]">
+    <Card className="bg-card border-border hover:border-primary/40 transition-all duration-500 shadow-card group hover:-translate-y-2 relative overflow-hidden rounded-[14px]">
       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
         {icon}
       </div>
@@ -637,7 +637,7 @@ function StatsCard({ title, value, trend, icon }: any) {
 function PlanCard({ name, price, limits, features, activeCount, highlight }: any) {
   return (
     <Card className={cn(
-      "shadow-2xl border-border rounded-[14px] overflow-hidden transition-all duration-500 hover:-translate-y-2 relative",
+      "shadow-card border-border rounded-[14px] overflow-hidden transition-all duration-500 hover:-translate-y-2 relative",
       highlight ? 'border-primary shadow-primary/20 bg-gradient-to-br from-card to-primary/5' : 'bg-card'
     )}>
       {highlight && (
@@ -645,7 +645,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
           <Zap className="w-24 h-24 text-primary" />
         </div>
       )}
-      <CardHeader className="pb-6 border-b border-border/50 bg-black/20">
+      <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
         <div className="flex justify-between items-start">
           <Badge className={cn(
             "text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-xl border-none shadow-sm",
@@ -680,7 +680,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
         </div>
         <Button className={cn(
           "w-full h-11 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95",
-          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-black-3 hover:bg-white/5 text-white border border-border"
+          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-black-3 hover:bg-white/5 text-card-foreground border border-border"
         )}>
           EDITAR PLANO
         </Button>

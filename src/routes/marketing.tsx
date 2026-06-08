@@ -359,13 +359,13 @@ function PerformanceView({ performanceData, creativePerformance }: any) {
         </Card>
 
         {/* Auditoria Comercial (Análise de Conversa) */}
-        <Card className="lg:col-span-2 shadow-sm bg-slate-900 text-white overflow-hidden">
+        <Card className="lg:col-span-2 shadow-sm bg-slate-900 text-card-foreground overflow-hidden">
           <CardHeader className="bg-slate-800/50">
             <div className="flex justify-between items-center">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <MessageCircle className="w-4 h-4 text-emerald-400" /> Auditoria de Qualidade Comercial
               </CardTitle>
-              <Badge className="bg-emerald-500 text-white border-none text-[10px]">Novos Insights</Badge>
+              <Badge className="bg-emerald-500 text-card-foreground border-none text-[10px]">Novos Insights</Badge>
             </div>
             <CardDescription className="text-slate-400 text-xs">Visão da agência sobre a abordagem do time comercial</CardDescription>
           </CardHeader>
