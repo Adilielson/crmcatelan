@@ -45,15 +45,16 @@
   --color-background: #0E0E11;
   --color-foreground: #EDEDF0;
   
-  --color-card: #17171B;
-  --color-card-foreground: #EDEDF0;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #15151A;
   
   --color-primary: #FFC400;
   --color-primary-foreground: #1a1500;
   
-  --color-border: #23232B;
-  --color-input: #23232B;
+  --color-border: #E3E6EB;
+  --color-input: #E3E6EB;
   --color-ring: #FFC400;
+  --shadow-card: 0 4px 16px rgba(16,16,17,0.08);
 }
 
 @layer base {
