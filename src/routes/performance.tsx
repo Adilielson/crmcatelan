@@ -3,6 +3,7 @@ import { Brain, Users, TrendingUp, MessageCircle, AlertTriangle, Target, Clock, 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/performance')({
   component: IAMetrics,
@@ -125,6 +126,3 @@ function IAMetrics() {
   )
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ')
-}
