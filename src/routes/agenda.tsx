@@ -121,17 +121,22 @@ function Agenda() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[14px] border border-border shadow-card">
-        <div>
-          <h1 className="text-4xl font-black text-ink tracking-tight font-jakarta mb-2 uppercase tracking-[0.05em]">Agenda Mestre</h1>
-          <p className="text-gray-500 font-medium">Controle unificado de consultas e atendimentos premium.</p>
+    <div className="space-y-10 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-1 rounded-full bg-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Agenda Mestre Integrada</span>
+          </div>
+          <h1 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none mb-3">Gestão de Consultas</h1>
+          <p className="text-[15px] text-gray-500 font-medium">Controle centralizado de agendamentos com sincronização em tempo real via WhatsApp.</p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
-          <Button onClick={() => setIsModalOpen(true)} className="gap-3 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs h-12 px-8 rounded-[14px] shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
+        <div className="flex gap-4 relative z-10">
+          <Button onClick={() => setIsModalOpen(true)} className="gap-3 bg-primary hover:bg-yellow-bright text-[#1a1500] font-black text-[11px] h-14 px-8 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-[1.05] uppercase tracking-widest border-none">
             <Plus className="w-5 h-5" /> NOVO AGENDAMENTO
           </Button>
-          <Button variant="outline" className="gap-3 bg-white border-border text-ink hover:bg-gray-50 font-black text-xs h-12 px-8 rounded-[14px] transition-all">
+          <Button variant="outline" className="gap-3 bg-white border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] h-14 px-8 rounded-[16px] transition-all uppercase tracking-widest">
             <Settings className="w-5 h-5" /> CONFIGURAÇÕES
           </Button>
         </div>
