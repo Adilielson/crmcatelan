@@ -239,8 +239,8 @@ function Dashboard() {
                       {lead.ia_status}
                     </Badge>
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{lead.name}</p>
-                      <p className="text-[10px] text-slate-500 truncate max-w-[200px]">{lead.ia_resumo}</p>
+                      <p className="text-sm font-bold text-white font-jakarta">{lead.name}</p>
+                      <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_resumo}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className="text-[10px] font-bold border-slate-200">
@@ -277,8 +277,8 @@ function Dashboard() {
                       <Clock className="w-4 h-4 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{alert.name} <Badge className="ml-2 bg-red-100 text-red-700 text-[9px] border-none">{alert.priority}</Badge></p>
-                      <p className="text-[10px] text-slate-500">Parado em {alert.stage} há {alert.wait}</p>
+                      <p className="text-sm font-bold text-white font-jakarta">{alert.name} <Badge className="ml-2 bg-[#D64545]/20 text-[#D64545] text-[9px] border-none">{alert.priority}</Badge></p>
+                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.wait}</p>
                     </div>
                   </div>
                   <Link to="/chat">
