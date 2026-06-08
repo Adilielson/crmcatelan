@@ -116,12 +116,15 @@ export function KanbanBoard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl border shadow-sm">
-        <div className="flex items-center gap-4">
-          <h3 className="text-lg font-bold text-slate-800">Pipeline</h3>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-6">
+          <div className="flex flex-col">
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Fluxo de Vendas</h3>
+            <p className="text-xs font-bold text-slate-900 mt-1">Gerencie seus leads e pipeline</p>
+          </div>
           <Select value={currentPipelineId} onValueChange={setCurrentPipeline}>
-            <SelectTrigger className="w-[250px]">
+            <SelectTrigger className="w-full md:w-[300px] h-11 bg-slate-50 border-slate-200/60 font-bold text-xs uppercase tracking-wider">
               <SelectValue placeholder="Selecionar Unidade" />
             </SelectTrigger>
             <SelectContent>
@@ -131,27 +134,27 @@ export function KanbanBoard() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="relative">
-            <AlertCircle className="w-4 h-4 mr-2" />
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-slate-200 shadow-sm">
+            <AlertCircle className="w-4 h-4 mr-2 text-primary" />
             Notificações
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
           </Button>
-          <Button size="sm">Novo Lead</Button>
+          <Button size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] shadow-md shadow-primary/20">Novo Lead</Button>
         </div>
       </div>
 
-      <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide">
+      <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4">
         {currentPipeline.columns.map((column) => (
-          <div key={column} className="min-w-[320px] flex-1 flex flex-col gap-4">
+          <div key={column} className="min-w-[340px] flex-1 flex flex-col gap-6">
             <div className="flex justify-between items-center px-2">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-700">{column}</span>
-                <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full border font-bold">
+              <div className="flex items-center gap-3">
+                <span className="font-black text-slate-800 uppercase tracking-widest text-[11px]">{column}</span>
+                <span className="bg-primary/10 text-primary text-[10px] px-2.5 py-0.5 rounded-full font-black border border-primary/20">
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100 rounded-lg">
                 <MoreVertical className="w-4 h-4 text-slate-400" />
               </Button>
             </div>
