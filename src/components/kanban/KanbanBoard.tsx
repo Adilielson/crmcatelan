@@ -121,7 +121,7 @@ export function KanbanBoard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-[#17171B] p-6 rounded-[14px] border border-[#23232B] shadow-sm gap-4">
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           <div className="flex flex-col">
-            <h3 className="text-sm font-black text-slate-500 uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
+            <h3 className="text-sm font-black text-[#6C727C] uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
             <p className="text-xs font-bold text-white mt-1">Gerencie seus leads e pipeline</p>
           </div>
           <Select value={currentPipelineId} onValueChange={setCurrentPipeline}>
