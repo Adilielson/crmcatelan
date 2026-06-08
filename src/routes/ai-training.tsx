@@ -315,10 +315,10 @@ function AITrainingSettings() {
                 </CardFooter>
               </Card>
 
-              <Card className="lg:col-span-2">
-                <CardHeader className="border-b bg-slate-50/50">
+              <Card className="lg:col-span-2 bg-white border-border shadow-card">
+                <CardHeader className="border-b border-border bg-gray-50/50">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Chat de Simulação</CardTitle>
+                    <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Chat de Simulação</CardTitle>
                     <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Sandbox Ativo</Badge>
                   </div>
                 </CardHeader>
