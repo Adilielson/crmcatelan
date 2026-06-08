@@ -153,10 +153,10 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Funil de Vendas */}
-        <Card className="lg:col-span-2 shadow-sm border-none bg-white">
+        <Card className="lg:col-span-2 shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-slate-500">
-              <TrendingUp className="w-4 h-4" /> Funil de Conversão (Kanban)
+            <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-slate-500 font-jakarta">
+              <TrendingUp className="w-4 h-4 text-[#FFC400]" /> Funil de Conversão (Kanban)
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[320px]">
@@ -177,9 +177,9 @@ function Dashboard() {
         </Card>
 
         {/* Origem dos Leads */}
-        <Card className="shadow-sm border-none bg-white">
+        <Card className="shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader>
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500">Origem dos Leads</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500 font-jakarta">Origem dos Leads</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px] flex flex-col items-center">
             <ResponsiveContainer width="100%" height={200}>
@@ -215,11 +215,11 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Atividade da IA SDR */}
-        <Card className="shadow-sm border-none bg-white">
+        <Card className="shadow-sm border-[#23232B] bg-[#17171B] rounded-[14px]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <Brain className="w-5 h-5 text-purple-600" />
+              <div className="p-2 bg-[#FFC400]/10 rounded-lg">
+                <Brain className="w-5 h-5 text-[#FFC400]" />
               </div>
               <CardTitle className="text-sm font-bold">Atividade Recente IA SDR</CardTitle>
             </div>
@@ -230,7 +230,7 @@ function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {leads.filter(l => l.ia_status).slice(0, 3).map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-slate-50/50">
+                <div key={i} className="flex items-center justify-between p-3 border border-[#23232B] rounded-[14px] bg-[#0E0E11]/50">
                   <div className="flex items-center gap-3">
                     <Badge className={cn(
                       "text-[10px] uppercase font-bold",
