@@ -157,18 +157,25 @@ export function KanbanBoard() {
               "bg-[#FFC400] text-[#1a1500]"
             )}>
               <div className="flex items-center gap-3">
-                <span className="font-black text-[#A7ADB8] uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
-                <span className="bg-[#0000001f] text-[#EDEDF0] text-[11px] px-2 py-0.5 rounded-full font-mono font-bold">
+                <span className="font-black uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
+                <span className={cn(
+                  "text-[11px] px-2 py-0.5 rounded-full font-mono font-bold",
+                  column === "Compareceu" ? "bg-[#1a1500]/10" : "bg-black/20"
+                )}>
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-800 rounded-lg">
-                <MoreVertical className="w-4 h-4 text-slate-500" />
+              <Button variant="ghost" size="icon" className={cn(
+                "h-8 w-8 rounded-lg",
+                column === "Compareceu" ? "hover:bg-[#1a1500]/5 text-[#1a1500]" : "hover:bg-white/10 text-white"
+              )}>
+                <MoreVertical className="w-4 h-4" />
               </Button>
             </div>
             
             <div 
-              className="bg-[#17171B]/30 p-3 rounded-[14px] border border-[#23232B] min-h-[600px] flex flex-col gap-3"
+              className="bg-[#17171B]/30 p-3 rounded-b-[14px] border border-[#23232B] border-t-0 min-h-[600px] flex flex-col gap-3"
+
 
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
