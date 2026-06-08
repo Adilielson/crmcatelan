@@ -134,21 +134,21 @@ function Chat() {
       </Dialog>
 
       {/* Coluna 1: Lista de Sessões */}
-      <div className="w-80 border-r border-gray-100 flex flex-col bg-gray-50/30">
-        <div className="p-6 border-b border-gray-100 bg-white flex justify-between items-center h-[73px]">
-          <h2 className="font-jakarta font-bold text-lg text-ink">Conversas</h2>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full bg-gray-50 hover:bg-gray-100">
-            <PlusCircle className="w-5 h-5 text-gray-600" />
+      <div className="w-[360px] border-r border-[#E3E6EB] flex flex-col bg-gray-50/50">
+        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
+          <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
+          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-gray-50 hover:bg-[#FFC400]/10 hover:text-[#FFC400] transition-all">
+            <PlusCircle className="w-5 h-5" />
           </Button>
         </div>
         
-        <div className="p-4 bg-white/50">
+        <div className="p-5 bg-white">
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
             <input 
               type="text" 
-              placeholder="Pesquisar..." 
-              className="w-full bg-gray-100/50 border border-transparent rounded-xl pl-10 pr-4 py-2.5 text-sm focus:bg-white focus:border-primary/30 transition-all outline-none text-ink font-medium placeholder:text-gray-400"
+              placeholder="Pesquisar contatos..." 
+              className="w-full bg-[#F6F7F9] border border-transparent rounded-[16px] pl-12 pr-4 py-3.5 text-sm focus:bg-white focus:border-primary/30 transition-all outline-none text-ink font-bold placeholder:text-gray-400 shadow-inner"
             />
           </div>
         </div>
