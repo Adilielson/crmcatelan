@@ -308,7 +308,10 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
             )}>R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
-        <div className="bg-[#0E0E11] p-2 rounded-[14px] border border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20 transition-colors">
+        <div className={cn(
+          "p-2 rounded-[14px] border transition-colors",
+          lead.isUrgent ? "bg-[#0E0E11] border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20" : "bg-white border-[#E3E6EB]"
+        )}>
           {sourceIcons[lead.source]}
         </div>
       </div>
@@ -322,7 +325,13 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
         ].map((action, i) => (
           <button 
             key={i}
-            className="p-2.5 bg-[#0E0E11] hover:bg-[#17171B] hover:shadow-sm rounded-[14px] text-slate-500 hover:text-[#FFC400] transition-all border border-[#23232B] hover:border-[#FFC400]/20" 
+            className={cn(
+              "p-2.5 rounded-[14px] transition-all border",
+              lead.isUrgent 
+                ? "bg-[#0E0E11] text-slate-500 hover:text-[#FFC400] border-[#23232B] hover:border-[#FFC400]/20" 
+                : "bg-white text-[#6C727C] hover:text-[#15151A] border-[#E3E6EB] hover:border-[#A7ADB8]"
+            )} 
+
             title={action.title}
           >
             <action.icon className="w-3.5 h-3.5" />
