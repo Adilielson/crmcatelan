@@ -80,7 +80,7 @@ function AITrainingSettings() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
+    <div className="space-y-8 animate-in fade-in duration-700 text-ink">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[14px] border border-border shadow-card relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-5">
            <Brain className="w-24 h-24 text-primary" />
