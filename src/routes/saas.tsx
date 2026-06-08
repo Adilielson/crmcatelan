@@ -688,5 +688,3 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
     </Card>
   )
 }
-  )
-}
