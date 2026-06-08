@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { 
@@ -5,11 +6,11 @@ import {
   LineChart, Line, Legend, AreaChart, Area, PieChart, Pie
 } from 'recharts'
 import { Target, Users, TrendingUp, DollarSign, Brain, Filter, MousePointer2, Megaphone, Layout, MessageCircle } from 'lucide-react'
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/marketing')({
   component: MarketingPartnerDashboard,
