@@ -161,19 +161,19 @@ const UserManagement = () => {
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-border shadow-card">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-4 bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-sm">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#A7ADB8] transition-colors group-focus-within:text-primary" />
           <Input 
-            placeholder="Buscar por nome ou e-mail..." 
-            className="pl-10"
+            placeholder="Buscar por nome, e-mail ou unidade..." 
+            className="pl-12 h-14 bg-[#F6F7F9] border-none rounded-[14px] text-sm font-bold text-ink placeholder:text-[#A7ADB8] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-primary/20 transition-all shadow-inner"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filtros
+        <Button variant="outline" className="h-14 px-8 border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] uppercase tracking-widest rounded-[14px]">
+          <Filter className="mr-3 h-4 w-4" />
+          FILTROS AVANÇADOS
         </Button>
       </div>
 
