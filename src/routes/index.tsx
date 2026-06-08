@@ -297,24 +297,24 @@ function Dashboard() {
 function StatCard({ title, value, change, icon, color, link }: { title: string; value: string; change: string; icon: React.ReactNode; color?: string; link: string }) {
   return (
     <Link to={link}>
-      <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border-slate-200/60 shadow-sm bg-white group overflow-hidden relative">
+      <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border-[#23232B] shadow-sm bg-[#17171B] group overflow-hidden relative rounded-[14px]">
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16" })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
         </div>
         <CardContent className="p-6 relative z-10">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{title}</p>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{title}</p>
             <div className={cn(
               "p-2 rounded-xl transition-colors",
-              color ? "bg-primary/5 text-primary" : "bg-slate-50 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary"
+              "bg-[#0E0E11] text-[#FFC400] border border-[#23232B] group-hover:bg-[#FFC400] group-hover:text-[#1a1500]"
             )}>
               {icon}
             </div>
           </div>
           <div className="space-y-1">
-            <h3 className={cn("text-3xl font-black text-slate-900 tracking-tight", color)}>{value}</h3>
+            <h3 className={cn("text-3xl font-black text-white tracking-tight font-jakarta")}>{value}</h3>
             <div className="flex items-center gap-1.5">
-              <div className="h-1 w-1 rounded-full bg-slate-300" />
+              <div className="h-1 w-1 rounded-full bg-[#FFC400]" />
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{change}</p>
             </div>
           </div>
