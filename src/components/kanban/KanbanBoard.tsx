@@ -279,7 +279,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute inset-0 rounded-[14px] border-2 border-[#D64545]/40 pointer-events-none"
+            className="absolute inset-0 rounded-[12px] border-2 border-danger/40 pointer-events-none"
           />
         )}
       </AnimatePresence>
@@ -295,22 +295,22 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
         <div className="space-y-1">
           <h4 className={cn(
             "font-black text-[13px] line-clamp-1 uppercase tracking-tight font-jakarta",
-            lead.isUrgent ? "text-white" : "text-[#15151A]"
+            "text-ink"
           )}>{lead.name}</h4>
           <div className="flex items-center gap-1.5">
             <DollarSign className={cn(
               "w-3 h-3 opacity-60",
-              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+              "text-ink"
             )} />
             <span className={cn(
               "text-[12px] font-black",
-              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+              "text-ink"
             )}>R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
         <div className={cn(
-          "p-2 rounded-[14px] border transition-colors",
-          lead.isUrgent ? "bg-[#0E0E11] border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20" : "bg-white border-[#E3E6EB]"
+          "p-2 rounded-[12px] border transition-colors",
+          "bg-white border-[#E3E6EB]"
         )}>
           {sourceIcons[lead.source]}
         </div>
