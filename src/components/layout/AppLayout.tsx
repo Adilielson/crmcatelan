@@ -48,14 +48,19 @@ const AppLayout = () => {
   if (!user) return <Outlet />;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <aside className="w-64 bg-white border-r flex flex-col">
-        <div className="p-6 border-b">
-          <h1 className="text-xl font-bold text-primary">Castelar CRM</h1>
-          <p className="text-xs text-muted-foreground truncate">{tenant?.name}</p>
+    <div className="flex h-screen bg-slate-50/50">
+      <aside className="w-64 bg-white border-r border-slate-200/60 flex flex-col shadow-sm">
+        <div className="p-6 border-b border-slate-100">
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-primary" />
+            Castelar CRM
+          </h1>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-70">
+            {tenant?.name || "Unidade Gestão"}
+          </p>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -63,47 +68,53 @@ const AppLayout = () => {
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group",
                   isActive 
-                    ? "bg-primary text-primary-foreground font-medium" 
-                    : "text-muted-foreground hover:bg-gray-100"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20" 
+                    : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
                 )}
               >
-                <item.icon className="w-4 h-4" />
+                <item.icon className={cn(
+                  "w-4 h-4 transition-colors",
+                  isActive ? "text-primary-foreground" : "text-slate-400 group-hover:text-slate-900"
+                )} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t">
-          <div className="flex items-center gap-3 mb-4 px-3">
-            <div className="w-8 h-8 rounded-full bg-gray-200" />
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center gap-3 mb-4 px-3 py-2 bg-white rounded-xl border border-slate-200/60 shadow-sm">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+              {user.name.charAt(0)}
+            </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+              <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{user.role}</p>
             </div>
           </div>
           <button 
             onClick={logout}
-            className="flex items-center gap-3 px-3 py-2 w-full text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 w-full text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            Sair
+            ENCERRAR SESSÃO
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <header className="h-16 bg-white border-b flex items-center px-8 sticky top-0 z-10">
-          <h2 className="text-lg font-semibold">
+      <main className="flex-1 overflow-auto flex flex-col">
+        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center px-8 sticky top-0 z-10">
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest">
             {menuItems.find(i => i.href === location.pathname)?.label || 'Painel'}
           </h2>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            <div className="h-8 w-[1px] bg-slate-200 mx-2" />
             <NotificationCenter />
           </div>
         </header>
-        <div className="p-8">
+        <div className="p-8 max-w-7xl mx-auto w-full">
           <Outlet />
         </div>
       </main>
