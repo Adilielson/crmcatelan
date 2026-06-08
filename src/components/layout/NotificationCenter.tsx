@@ -38,7 +38,7 @@ export const NotificationCenter = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-ink hover:bg-gray-100">
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500">
@@ -47,9 +47,9 @@ export const NotificationCenter = () => {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h4 className="font-bold text-sm">Notificações</h4>
+      <PopoverContent className="w-80 p-0 bg-white border-border shadow-card" align="end">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h4 className="font-bold text-sm text-ink">Notificações</h4>
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
@@ -72,8 +72,8 @@ export const NotificationCenter = () => {
                 <div 
                   key={n.id}
                   className={cn(
-                    "p-4 border-b hover:bg-slate-50 transition-colors flex gap-3 cursor-pointer relative",
-                    !n.read_at && "bg-blue-50/30"
+                    "p-4 border-b border-border hover:bg-gray-50 transition-colors flex gap-3 cursor-pointer relative",
+                    !n.read_at && "bg-primary/5"
                   )}
                   onClick={() => markAsRead(n.id)}
                 >
