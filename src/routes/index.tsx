@@ -309,54 +309,58 @@ function Dashboard() {
   )
 }
 
-function StatCard({ title, value, change, icon, highlight, link }: { title: string; value: string; change: string; icon: React.ReactNode; highlight?: boolean; link: string }) {
+function StatCard({ title, value, change, changeDesc, icon, highlight, link }: { title: string; value: string; change: string; changeDesc: string; icon: React.ReactNode; highlight?: boolean; link: string }) {
   return (
-    <Link to={link} className="block">
+    <Link to={link} className="block group">
       <Card className={cn(
-        "hover:shadow-[0_20px_50px_rgba(255,196,0,0.15)] hover:-translate-y-2 transition-all duration-500 cursor-pointer border-border shadow-card group overflow-hidden relative rounded-[14px]",
+        "transition-all duration-500 cursor-pointer border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 group-active:scale-[0.98] overflow-hidden relative rounded-[24px]",
         highlight
-          ? "bg-gradient-to-br from-primary via-yellow-bright to-yellow-dark border-primary" 
-          : "bg-white border-border"
+          ? "bg-gradient-to-br from-[#FFC400] via-[#FFD60A] to-[#E0A500] border-none" 
+          : "bg-white"
       )}>
-        <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("w-16 h-16", highlight ? "text-[#1a1500]" : "text-ink") })}
+        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("w-20 h-20", highlight ? "text-[#1a1500]" : "text-ink") })}
         </div>
-        {highlight && <div className="absolute right-[-10px] bottom-[-18px] text-[96px] opacity-[0.13]">🔥</div>}
-        <CardContent className="p-6 relative z-10">
-          <div className="flex items-center justify-between mb-4">
+        
+        {highlight && (
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/20 rounded-full blur-2xl" />
+        )}
+
+        <CardContent className="p-8 relative z-10">
+          <div className="flex items-center justify-between mb-6">
             <p className={cn(
-              "text-[11px] font-black uppercase tracking-[0.12em] font-mono",
-              highlight ? "text-[#5a4900]" : "text-gray-500"
+              "text-[10px] font-black uppercase tracking-[0.2em] font-jakarta",
+              highlight ? "text-[#5a4900]/60" : "text-gray-400"
             )}>{title}</p>
             <div className={cn(
-              "p-2 rounded-xl transition-colors",
+              "p-3 rounded-[16px] transition-all duration-500",
               highlight 
-                ? "bg-[#1a1500]/10 text-[#1a1500] group-hover:bg-[#1a1500]/20" 
-                : "bg-gray-50 text-ink border border-border group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
+                ? "bg-white/20 text-[#1a1500] backdrop-blur-md" 
+                : "bg-gray-50 text-ink border border-[#E3E6EB] group-hover:bg-[#FFC400] group-hover:text-[#1a1500] group-hover:border-[#FFC400] group-hover:scale-110"
             )}>
               {icon}
             </div>
           </div>
+          
           <div className="space-y-1">
-            <div className="flex items-baseline gap-3">
+            <h3 className={cn(
+              "text-[48px] font-black tracking-tight font-jakarta leading-none",
+              highlight ? "text-[#1a1500]" : "text-ink"
+            )}>{value}</h3>
+            
+            <div className="flex items-center gap-2 mt-4">
               <div className={cn(
-                "h-[38px] w-1 rounded-sm",
-                highlight ? "bg-[#1a1500]" : "bg-primary shadow-[0_0_15px_rgba(255,196,0,0.35)]"
-              )} />
-              <h3 className={cn(
-                "text-[46px] font-black tracking-tight font-jakarta leading-none",
-                highlight ? "text-[#1a1500]" : "text-ink"
-              )}>{value}</h3>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <div className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                highlight ? "bg-[#1a1500]" : "bg-[#1FA463]"
-              )} />
+                "px-2 py-0.5 rounded-full text-[10px] font-black",
+                highlight 
+                  ? "bg-[#1a1500]/10 text-[#1a1500]" 
+                  : "bg-success-soft text-success"
+              )}>
+                {change}
+              </div>
               <p className={cn(
-                "text-[12px] font-bold font-inter",
-                highlight ? "text-[#5a4900]" : "text-gray-500"
-              )}>{change}</p>
+                "text-[11px] font-bold",
+                highlight ? "text-[#5a4900]/70" : "text-gray-400"
+              )}>{changeDesc}</p>
             </div>
           </div>
         </CardContent>
