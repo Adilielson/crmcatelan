@@ -77,8 +77,12 @@
     mask-image: radial-gradient(circle at 50% 0, #000, transparent 75%);
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-jakarta font-bold;
+  h1 {
+    @apply font-jakarta font-bold text-[28px] md:text-[32px] text-ink;
+  }
+  
+  h2, h3, h4, h5, h6 {
+    @apply font-jakarta font-bold text-ink;
   }
 }
 
