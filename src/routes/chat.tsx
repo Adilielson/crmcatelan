@@ -70,7 +70,7 @@ function Chat() {
             <input 
               type="text" 
               placeholder="Buscar por nome..." 
-              className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2 text-xs focus:ring-1 focus:ring-primary transition-all outline-none text-card-foreground font-medium"
+              className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2 text-xs focus:ring-1 focus:ring-primary transition-all outline-none text-white font-medium"
             />
           </div>
         </div>
@@ -92,18 +92,18 @@ function Chat() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
-                  <h4 className="font-black text-xs uppercase tracking-tight text-card-foreground group-hover:text-primary transition-colors">{session.name}</h4>
+                  <h4 className="font-black text-xs uppercase tracking-tight text-white group-hover:text-primary transition-colors">{session.name}</h4>
                   <span className="text-[10px] font-black text-gray-500 uppercase">{session.time}</span>
                 </div>
                 <p className={cn(
                   "text-[11px] truncate mt-0.5 font-medium",
-                  session.unread > 0 ? "text-card-foreground" : "text-gray-500"
+                  session.unread > 0 ? "text-white" : "text-gray-500"
                 )}>
                   {session.lastMessage}
                 </p>
               </div>
               {session.unread > 0 && (
-                <div className="absolute right-4 bottom-4 w-5 h-5 bg-primary text-card-foreground text-[10px] flex items-center justify-center rounded-full font-bold">
+                <div className="absolute right-4 bottom-4 w-5 h-5 bg-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold">
                   {session.unread}
                 </div>
               )}
@@ -122,7 +122,7 @@ function Chat() {
                   <User className="w-6 h-6 text-gray-500" />
                 </div>
                 <div>
-                  <span className="font-black text-xs uppercase tracking-widest block text-card-foreground">{selectedSession.name}</span>
+                  <span className="font-black text-xs uppercase tracking-widest block text-white">{selectedSession.name}</span>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                     <span className="text-[10px] text-success font-black uppercase tracking-wider">Online</span>
@@ -141,7 +141,7 @@ function Chat() {
               
               <div className="flex justify-start relative z-10">
                 <div className="bg-card border border-border p-4 rounded-[14px] rounded-tl-none max-w-[75%] shadow-card">
-                  <p className="text-xs text-card-foreground leading-relaxed font-medium">{selectedSession.lastMessage}</p>
+                  <p className="text-xs text-white leading-relaxed font-medium">{selectedSession.lastMessage}</p>
                   <span className="text-[9px] font-black text-gray-500 mt-2 block text-right uppercase tracking-wider">10:30</span>
                 </div>
               </div>
@@ -162,7 +162,7 @@ function Chat() {
                 <input 
                   type="text" 
                   placeholder="Envie uma mensagem (HSM para >24h)..." 
-                  className="flex-1 bg-transparent border-none focus:ring-0 text-xs py-2 text-card-foreground font-medium placeholder:text-gray-600 outline-none"
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-xs py-2 text-white font-medium placeholder:text-gray-600 outline-none"
                 />
                 <Button className="h-10 px-6 rounded-[14px] bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all">
                   ENVIAR <Send className="w-3.5 h-3.5 ml-2" />
@@ -207,7 +207,7 @@ function Chat() {
                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.15em]">Qualificação</span>
                     <Badge className={cn(
                       "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border-none shadow-sm",
-                      (currentLead.ia_score || 0) > 70 ? "bg-success text-card-foreground" : "bg-primary text-primary-foreground"
+                      (currentLead.ia_score || 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
                     )}>
                       {currentLead.ia_score || 0}/100
                     </Badge>
@@ -245,7 +245,7 @@ function Chat() {
                 </div>
 
                 <div className="pt-2 space-y-2">
-                   <Button onClick={handleSimulateOCR} disabled={isOcrProcessing} variant="outline" className="w-full h-11 text-[10px] font-black uppercase tracking-widest border border-border bg-card hover:bg-white/5 text-card-foreground transition-all shadow-lg rounded-[14px]">
+                   <Button onClick={handleSimulateOCR} disabled={isOcrProcessing} variant="outline" className="w-full h-11 text-[10px] font-black uppercase tracking-widest border border-border bg-card hover:bg-white/5 text-white transition-all shadow-lg rounded-[14px]">
                       {isOcrProcessing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" />}
                       {currentLead.ia_receita_grau ? "Recarregar Receita" : "Simular OCR Receita"}
                    </Button>

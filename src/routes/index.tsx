@@ -90,7 +90,7 @@ function Dashboard() {
     <div className="space-y-8 animate-in fade-in duration-700 bg-background min-h-screen">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-card p-8 rounded-[14px] border border-border shadow-sm">
         <div>
-          <h1 className="text-4xl font-black text-card-foreground tracking-tight font-jakarta mb-2">
+          <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-2">
             Dashboard Executivo
           </h1>
           <p className="text-gray-500 font-medium">
@@ -99,11 +99,11 @@ function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[220px] bg-background border-border shadow-sm font-semibold text-xs h-12 text-card-foreground rounded-[14px] px-4">
+             <SelectTrigger className="w-[220px] bg-background border-border shadow-sm font-semibold text-xs h-12 text-white rounded-[14px] px-4">
                <Store className="w-4 h-4 mr-2 text-primary" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
-             <SelectContent className="bg-card border-border text-card-foreground">
+             <SelectContent className="bg-card border-border text-white">
                <SelectItem value="all">Todas as Unidades</SelectItem>
                {pipelines.map(p => (
                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -245,7 +245,7 @@ function Dashboard() {
                       {lead.ia_status}
                     </Badge>
                     <div>
-                      <p className="text-sm font-bold text-card-foreground font-jakarta">{lead.name}</p>
+                      <p className="text-sm font-bold text-white font-jakarta">{lead.name}</p>
                       <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_resumo}</p>
                     </div>
                   </div>
@@ -283,7 +283,7 @@ function Dashboard() {
                       <Clock className="w-4 h-4 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-card-foreground font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
+                      <p className="text-sm font-black text-white font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
                       <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.wait}</p>
                     </div>
                   </div>
@@ -310,7 +310,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
           : "bg-card shadow-sm"
       )}>
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-card-foreground" })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
         </div>
         {highlight && <div className="absolute right-[-10px] bottom-[-18px] text-[96px] opacity-[0.13]">🔥</div>}
         <CardContent className="p-6 relative z-10">
@@ -336,7 +336,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
               )} />
               <h3 className={cn(
                 "text-[46px] font-black tracking-tight font-jakarta leading-none",
-                highlight ? "text-[#1a1500]" : "text-card-foreground"
+                highlight ? "text-[#1a1500]" : "text-white"
               )}>{value}</h3>
             </div>
             <div className="flex items-center gap-2 mt-2">

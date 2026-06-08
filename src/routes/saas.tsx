@@ -213,24 +213,24 @@ function SaaSAdmin() {
             <ShieldCheck className="w-10 h-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-card-foreground tracking-tight font-jakarta mb-1 uppercase tracking-tight">Super Admin Hub</h1>
+            <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-1 uppercase tracking-tight">Super Admin Hub</h1>
             <p className="text-gray-500 font-medium">Gestão global de infraestrutura e ecossistema SaaS.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[200px] bg-background border-border h-12 rounded-xl text-card-foreground font-black text-[10px] uppercase tracking-widest shadow-inner">
+            <SelectTrigger className="w-[200px] bg-background border-border h-12 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-inner">
               <Calendar className="w-4 h-4 mr-2 text-primary" />
               <SelectValue placeholder="Período" />
             </SelectTrigger>
-            <SelectContent className="bg-card border-border text-card-foreground">
+            <SelectContent className="bg-card border-border text-white">
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
               <SelectItem value="ytd">Este Ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="h-12 px-6 bg-background border-border text-card-foreground hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm">
+          <Button variant="outline" className="h-12 px-6 bg-background border-border text-white hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm">
             <History className="w-4 h-4 mr-2" /> Auditoria
           </Button>
           
@@ -623,7 +623,7 @@ function StatsCard({ title, value, trend, icon }: any) {
           </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-3xl font-black text-card-foreground tracking-tighter">{value}</h3>
+          <h3 className="text-3xl font-black text-white tracking-tighter">{value}</h3>
         </div>
         <p className="text-[10px] font-black uppercase tracking-widest text-gray-600 mt-2 flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(31,164,99,0.5)]" />
@@ -653,7 +653,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
           )}>{name}</Badge>
           <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{activeCount} ativos</span>
         </div>
-        <CardTitle className="text-3xl font-black text-card-foreground tracking-tighter pt-4 uppercase tracking-tighter">{price}</CardTitle>
+        <CardTitle className="text-3xl font-black text-white tracking-tighter pt-4 uppercase tracking-tighter">{price}</CardTitle>
       </CardHeader>
       <CardContent className="p-8 space-y-6">
         <div className="space-y-3">
@@ -664,7 +664,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
           ].map((limit) => (
             <div key={limit.label} className="flex justify-between items-center text-xs">
               <span className="text-gray-500 font-bold uppercase tracking-widest text-[9px]">{limit.label}:</span>
-              <span className="font-black text-card-foreground">{limit.value}</span>
+              <span className="font-black text-white">{limit.value}</span>
             </div>
           ))}
         </div>
@@ -680,7 +680,7 @@ function PlanCard({ name, price, limits, features, activeCount, highlight }: any
         </div>
         <Button className={cn(
           "w-full h-11 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95",
-          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-black-3 hover:bg-white/5 text-card-foreground border border-border"
+          highlight ? "bg-primary hover:bg-yellow-bright text-primary-foreground shadow-primary/20" : "bg-black-3 hover:bg-white/5 text-white border border-border"
         )}>
           EDITAR PLANO
         </Button>

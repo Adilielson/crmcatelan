@@ -122,13 +122,13 @@ export function KanbanBoard() {
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           <div className="flex flex-col">
             <h3 className="text-sm font-black text-[#6C727C] uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
-            <p className="text-xs font-bold text-card-foreground mt-1">Gerencie seus leads e pipeline</p>
+            <p className="text-xs font-bold text-white mt-1">Gerencie seus leads e pipeline</p>
           </div>
           <Select value={currentPipelineId} onValueChange={setCurrentPipeline}>
-            <SelectTrigger className="w-full md:w-[300px] h-11 bg-[#0E0E11] border-[#23232B] font-bold text-xs uppercase tracking-wider text-card-foreground rounded-[14px]">
+            <SelectTrigger className="w-full md:w-[300px] h-11 bg-[#0E0E11] border-[#23232B] font-bold text-xs uppercase tracking-wider text-white rounded-[14px]">
               <SelectValue placeholder="Selecionar Unidade" />
             </SelectTrigger>
-            <SelectContent className="bg-[#17171B] border-[#23232B] text-card-foreground">
+            <SelectContent className="bg-[#17171B] border-[#23232B] text-white">
               {pipelines.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
@@ -136,7 +136,7 @@ export function KanbanBoard() {
           </Select>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#23232B] bg-[#17171B] text-card-foreground shadow-sm rounded-[14px] hover:bg-[#23232B]">
+          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#23232B] bg-[#17171B] text-white shadow-sm rounded-[14px] hover:bg-[#23232B]">
             <AlertCircle className="w-4 h-4 mr-2 text-[#FFC400]" />
             Notificações
             <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#D64545] rounded-full border-2 border-[#17171B] animate-pulse" />
@@ -167,7 +167,7 @@ export function KanbanBoard() {
               </div>
               <Button variant="ghost" size="icon" className={cn(
                 "h-8 w-8 rounded-lg",
-                column === "Compareceu" ? "hover:bg-[#1a1500]/5 text-[#1a1500]" : "hover:bg-white/10 text-card-foreground"
+                column === "Compareceu" ? "hover:bg-[#1a1500]/5 text-[#1a1500]" : "hover:bg-white/10 text-white"
               )}>
                 <MoreVertical className="w-4 h-4" />
               </Button>
@@ -285,7 +285,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       </AnimatePresence>
 
       {lead.isUrgent && (
-        <div className="absolute -top-2 -right-2 bg-[#D64545] text-card-foreground text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-[#D64545]/20">
+        <div className="absolute -top-2 -right-2 bg-[#D64545] text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-[#D64545]/20">
           URGENTE
         </div>
       )}
@@ -295,7 +295,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
         <div className="space-y-1">
           <h4 className={cn(
             "font-black text-[13px] line-clamp-1 uppercase tracking-tight font-jakarta",
-            lead.isUrgent ? "text-card-foreground" : "text-[#15151A]"
+            lead.isUrgent ? "text-white" : "text-[#15151A]"
           )}>{lead.name}</h4>
           <div className="flex items-center gap-1.5">
             <DollarSign className={cn(
