@@ -2,7 +2,10 @@
 @import "tw-animate-css";
 
 @theme {
+  /* ===== TOKENS ===== */
+  --radius-sm: 8px;
   --radius-default: 14px;
+  --radius-lg: 20px;
   --radius-pill: 999px;
 
   /* Fonts */
@@ -14,26 +17,36 @@
   --color-yellow: #FFC400;
   --color-yellow-bright: #FFD60A;
   --color-yellow-dark: #E0A500;
-  
+  --color-yellow-soft: #FFF3C4;
+  --color-yellow-tint: #FFFAEB;
+
   --color-black: #0E0E11;
   --color-black-2: #17171B;
   --color-black-3: #23232B;
-  
-  --color-ink: #15151A;
-  
-  --color-gray-50: #F6F7F9;
-  --color-gray-200: #E3E6EB;
-  --color-gray-500: #6C727C;
-  
-  --color-success: #1FA463;
-  --color-danger: #D64545;
 
-  /* Semantic Mapping - Forced Dark Mode by request */
+  --color-white: #FFFFFF;
+
+  --color-gray-50: #F6F7F9;
+  --color-gray-100: #EEF0F3;
+  --color-gray-200: #E3E6EB;
+  --color-gray-300: #D2D6DD;
+  --color-gray-400: #A7ADB8;
+  --color-gray-500: #6C727C;
+  --color-gray-600: #474C55;
+  --color-ink: #15151A;
+
+  /* Semantics */
+  --color-success: #1FA463;
+  --color-success-soft: #E7F4EC;
+  --color-danger: #D64545;
+  --color-danger-soft: #FBEBEB;
+
+  /* Semantic Mapping - Dark Mode UI */
   --color-background: #0E0E11;
-  --color-foreground: #F6F7F9;
+  --color-foreground: #EDEDF0;
   
   --color-card: #17171B;
-  --color-card-foreground: #F6F7F9;
+  --color-card-foreground: #EDEDF0;
   
   --color-primary: #FFC400;
   --color-primary-foreground: #1a1500;
@@ -45,9 +58,35 @@
 
 @layer base {
   body {
-    @apply bg-[#0E0E11] text-[#F6F7F9] font-inter antialiased;
+    @apply bg-black text-[#EDEDF0] font-inter antialiased leading-[1.55];
+    position: relative;
   }
+
+  /* Grid texture */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,196,0,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,196,0,.035) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(circle at 50% 0, #000, transparent 75%);
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-jakarta font-bold;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  .btn-primary {
+    @apply bg-yellow text-[#1a1500] hover:bg-yellow-bright hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(255,196,0,0.35)];
   }
 }

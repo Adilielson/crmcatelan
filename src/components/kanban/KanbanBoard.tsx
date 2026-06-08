@@ -146,22 +146,37 @@ export function KanbanBoard() {
       </div>
 
       <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4">
-        {currentPipeline.columns.map((column) => (
+        {currentPipeline.columns.map((column, index) => (
           <div key={column} className="min-w-[340px] flex-1 flex flex-col gap-6">
-            <div className="flex justify-between items-center px-2">
+            <div className={cn(
+              "flex justify-between items-center px-4 py-3 rounded-t-[14px] border-b border-[#23232B]",
+              index === 0 ? "bg-[#0E0E11]" : 
+              index === 1 ? "bg-[#23232B]" :
+              index === 2 ? "bg-[#474C55]" :
+              index === 3 ? "bg-[#A7ADB8] text-[#1a1a1a]" :
+              "bg-[#FFC400] text-[#1a1500]"
+            )}>
               <div className="flex items-center gap-3">
-                <span className="font-black text-[#6C727C] uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
-                <span className="bg-[#FFC400]/10 text-[#FFC400] text-[10px] px-2.5 py-0.5 rounded-full font-black border border-[#FFC400]/20">
+                <span className="font-black uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
+                <span className={cn(
+                  "text-[11px] px-2 py-0.5 rounded-full font-mono font-bold",
+                  column === "Compareceu" ? "bg-[#1a1500]/10" : "bg-black/20"
+                )}>
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100 rounded-lg">
-                <MoreVertical className="w-4 h-4 text-slate-400" />
+              <Button variant="ghost" size="icon" className={cn(
+                "h-8 w-8 rounded-lg",
+                column === "Compareceu" ? "hover:bg-[#1a1500]/5 text-[#1a1500]" : "hover:bg-white/10 text-white"
+              )}>
+                <MoreVertical className="w-4 h-4" />
               </Button>
             </div>
             
             <div 
-              className="bg-[#17171B]/50 p-3 rounded-[14px] border border-dashed border-[#23232B] min-h-[600px] flex flex-col gap-3"
+              className="bg-[#17171B]/30 p-3 rounded-b-[14px] border border-[#23232B] border-t-0 min-h-[600px] flex flex-col gap-3"
+
+
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 const id = e.dataTransfer.getData('leadId')
@@ -249,7 +264,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       onDragStart={onDragStart}
       className={cn(
         "bg-[#17171B] p-5 rounded-[14px] border border-[#23232B] shadow-sm cursor-grab active:cursor-grabbing hover:border-[#FFC400]/40 hover:shadow-md transition-all duration-300 group relative",
-        lead.isUrgent ? 'border-[#D64545]/30 bg-[#D64545]/5' : ''
+        lead.isUrgent ? 'border-[#D64545]/30 bg-[#17171B]' : 'bg-[#F6F7F9] border-[#E3E6EB]'
       )}
     >
       <AnimatePresence>
@@ -278,13 +293,25 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       
       <div className="flex justify-between items-start mb-4">
         <div className="space-y-1">
-          <h4 className="font-black text-[13px] text-white line-clamp-1 uppercase tracking-tight font-jakarta">{lead.name}</h4>
+          <h4 className={cn(
+            "font-black text-[13px] line-clamp-1 uppercase tracking-tight font-jakarta",
+            lead.isUrgent ? "text-white" : "text-[#15151A]"
+          )}>{lead.name}</h4>
           <div className="flex items-center gap-1.5">
-            <DollarSign className="w-3 h-3 text-[#FFC400] opacity-60" />
-            <span className="text-[12px] text-[#FFC400] font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
+            <DollarSign className={cn(
+              "w-3 h-3 opacity-60",
+              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+            )} />
+            <span className={cn(
+              "text-[12px] font-black",
+              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+            )}>R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
-        <div className="bg-[#0E0E11] p-2 rounded-[14px] border border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20 transition-colors">
+        <div className={cn(
+          "p-2 rounded-[14px] border transition-colors",
+          lead.isUrgent ? "bg-[#0E0E11] border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20" : "bg-white border-[#E3E6EB]"
+        )}>
           {sourceIcons[lead.source]}
         </div>
       </div>
@@ -298,7 +325,13 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
         ].map((action, i) => (
           <button 
             key={i}
-            className="p-2.5 bg-[#0E0E11] hover:bg-[#17171B] hover:shadow-sm rounded-[14px] text-slate-500 hover:text-[#FFC400] transition-all border border-[#23232B] hover:border-[#FFC400]/20" 
+            className={cn(
+              "p-2.5 rounded-[14px] transition-all border",
+              lead.isUrgent 
+                ? "bg-[#0E0E11] text-slate-500 hover:text-[#FFC400] border-[#23232B] hover:border-[#FFC400]/20" 
+                : "bg-white text-[#6C727C] hover:text-[#15151A] border-[#E3E6EB] hover:border-[#A7ADB8]"
+            )} 
+
             title={action.title}
           >
             <action.icon className="w-3.5 h-3.5" />
