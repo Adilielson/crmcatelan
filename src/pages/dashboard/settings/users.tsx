@@ -87,18 +87,23 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="space-y-6 text-ink">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight font-jakarta">Gestão de Usuários</h1>
-          <p className="text-muted-foreground">Gerencie acessos, permissões e horários da sua equipe.</p>
+    <div className="space-y-10 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-1 rounded-full bg-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Gestão de Talentos</span>
+          </div>
+          <h1 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none mb-3">Controle de Usuários</h1>
+          <p className="text-[15px] text-gray-500 font-medium">Administre níveis de acesso, permissões e horários operacionais da sua equipe.</p>
         </div>
         
         <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#e0c200] hover:bg-[#c7a700] text-black font-semibold">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Convidar Novo Usuário
+            <Button className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black text-[11px] h-14 px-8 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-[1.05] uppercase tracking-widest border-none">
+              <UserPlus className="mr-3 h-5 w-5" />
+              CONVIDAR NOVO USUÁRIO
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
