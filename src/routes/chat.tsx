@@ -212,36 +212,37 @@ function Chat() {
       <div className="flex-1 flex flex-col bg-white relative">
         {selectedSession ? (
           <>
-            <div className="p-4 px-6 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-md z-20 h-[73px]">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 border border-gray-100">
-                  <AvatarFallback className="bg-gray-50 text-gray-400 font-bold">
+            <div className="p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px]">
+                  <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
                     {selectedSession.name.substring(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-jakarta font-bold text-sm text-ink">{selectedSession.name}</h3>
-                  <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-                    </span>
-                    <span className="text-[10px] text-success font-bold uppercase tracking-wider">Disponível</span>
+                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">{selectedSession.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex h-2 w-2">
+                      <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1FA463] opacity-40"></div>
+                      <div className="relative inline-flex rounded-full h-2 w-2 bg-[#1FA463]"></div>
+                    </div>
+                    <span className="text-[10px] text-[#1FA463] font-black uppercase tracking-[0.1em]">Cliente Ativo</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"
+                  className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"
                   onClick={() => setIsRoutingOpen(true)}
                   title="Encaminhar para Equipe"
                 >
-                  <Users className="w-4 h-4" />
+                  <Users className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"><Phone className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl"><MoreVertical className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"><Phone className="w-5 h-5" /></Button>
+                <div className="h-6 w-[1px] bg-[#E3E6EB] mx-1" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
               </div>
             </div>
             
