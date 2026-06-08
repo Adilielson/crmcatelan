@@ -67,7 +67,7 @@ function IAMetrics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border border-border shadow-card bg-card">
+        <Card className="lg:col-span-2 border border-border shadow-card bg-white">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" /> Funil de Conversão SDR
@@ -86,7 +86,7 @@ function IAMetrics() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border shadow-card bg-card">
+        <Card className="border border-border shadow-card bg-white">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-500" /> Pontos de Abandono (Drop-off)

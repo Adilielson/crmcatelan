@@ -48,8 +48,8 @@ const AppLayout = () => {
   if (!user) return <Outlet />;
 
   return (
-    <div className="flex h-screen bg-[#0E0E11] relative z-10">
-      <aside className="w-64 bg-[#0E0E11] border-r border-[#23232B] flex flex-col">
+    <div className="flex h-screen bg-white relative z-10 text-ink">
+      <aside className="w-64 bg-[#0E0E11] border-r border-[#23232B] flex flex-col shrink-0">
         <div className="p-6 border-b border-[#23232B]">
           <div className="flex items-center gap-3 mb-4">
              <svg className="w-8 h-4 text-[#FFC400]" viewBox="0 0 60 28"><path d="M3 8 Q3 4 8 4 L24 4 Q28 4 28 9 L28 16 Q28 23 19 23 L11 23 Q3 23 3 14 Z M32 8 Q32 4 37 4 L53 4 Q57 4 57 9 L57 14 Q57 23 49 23 L41 23 Q32 23 32 16 Z M28 9 L32 9" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round"/></svg>
@@ -105,21 +105,21 @@ const AppLayout = () => {
       </aside>
 
       <main className="flex-1 overflow-auto flex flex-col bg-[#F6F7F9]">
-        <header className="h-16 bg-[#0E0E11] border-b border-[#23232B] flex items-center px-8 sticky top-0 z-10">
-          <h2 className="text-[13px] font-bold text-slate-400 uppercase tracking-widest font-jakarta">
+        <header className="h-16 bg-white border-b border-[#E3E6EB] flex items-center px-8 sticky top-0 z-10">
+          <h2 className="text-[13px] font-black text-[#6C727C] uppercase tracking-[0.2em] font-jakarta">
             {menuItems.find(i => i.href === location.pathname)?.label || 'Painel'}
           </h2>
           <div className="ml-auto flex items-center gap-4">
-            <div className="nav-ai flex items-center gap-10 bg-[#1c1c24] border border-[#23232B] rounded-full px-4 py-2">
+            <div className="nav-ai flex items-center gap-10 bg-[#F6F7F9] border border-[#E3E6EB] rounded-full px-4 py-2">
               <div className="flex flex-col">
-                 <span className="text-[12px] font-bold text-white leading-tight">Pré-atendimento</span>
-                 <span className="text-[10px] font-bold text-[#FFC400] leading-tight">com IA</span>
+                 <span className="text-[12px] font-bold text-ink leading-tight">Pré-atendimento</span>
+                 <span className="text-[10px] font-bold text-primary leading-tight">com IA</span>
               </div>
               <div className="w-10 h-5 bg-[#FFC400] rounded-full relative cursor-pointer">
                  <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
               </div>
             </div>
-            <div className="h-8 w-[1px] bg-[#23232B] mx-2" />
+            <div className="h-8 w-[1px] bg-[#E3E6EB] mx-2" />
             <NotificationCenter />
           </div>
         </header>

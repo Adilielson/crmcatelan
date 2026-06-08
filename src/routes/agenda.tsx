@@ -122,16 +122,16 @@ function Agenda() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-[14px] border border-border shadow-card">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[14px] border border-border shadow-card">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-2 uppercase tracking-[0.05em]">Agenda Mestre</h1>
+          <h1 className="text-4xl font-black text-ink tracking-tight font-jakarta mb-2 uppercase tracking-[0.05em]">Agenda Mestre</h1>
           <p className="text-gray-500 font-medium">Controle unificado de consultas e atendimentos premium.</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           <Button onClick={() => setIsModalOpen(true)} className="gap-3 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs h-12 px-8 rounded-[14px] shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
             <Plus className="w-5 h-5" /> NOVO AGENDAMENTO
           </Button>
-          <Button variant="outline" className="gap-3 bg-background border-border text-white hover:bg-white/5 font-black text-xs h-12 px-8 rounded-[14px] transition-all">
+          <Button variant="outline" className="gap-3 bg-white border-border text-ink hover:bg-gray-50 font-black text-xs h-12 px-8 rounded-[14px] transition-all">
             <Settings className="w-5 h-5" /> CONFIGURAÇÕES
           </Button>
         </div>
@@ -140,27 +140,27 @@ function Agenda() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendário */}
         <div className="lg:col-span-3 space-y-6">
-          <div className="bg-card border border-border rounded-[14px] shadow-card overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between bg-gray-50/50">
+          <div className="bg-white border border-border rounded-[14px] shadow-card overflow-hidden">
+            <div className="p-6 border-b border-border flex items-center justify-between bg-white">
               <div className="flex items-center gap-4">
                 <h3 className="font-black text-xs uppercase tracking-[0.2em] text-gray-400">
                   {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
                 </h3>
-                <div className="flex border border-border rounded-[14px] bg-background shadow-inner overflow-hidden">
-                  <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2.5 hover:bg-white/5 border-r border-border text-white transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-                  <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2.5 hover:bg-white/5 text-white transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                <div className="flex border border-border rounded-[14px] bg-white shadow-inner overflow-hidden">
+                  <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2.5 hover:bg-gray-50 border-r border-border text-ink transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                  <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2.5 hover:bg-gray-50 text-ink transition-colors"><ChevronRight className="w-4 h-4" /></button>
                 </div>
               </div>
-              <div className="flex bg-background p-1.5 rounded-[14px] border border-border shadow-inner">
+              <div className="flex bg-gray-50 p-1.5 rounded-[14px] border border-border shadow-inner">
                 <button 
                   onClick={() => setView('month')}
-                  className={cn("px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", view === 'month' ? "bg-primary shadow-lg text-primary-foreground" : "text-gray-500 hover:text-white")}
+                  className={cn("px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", view === 'month' ? "bg-primary shadow-lg text-primary-foreground" : "text-gray-400 hover:text-ink")}
                 >
                   Mês
                 </button>
                 <button 
                    onClick={() => setView('day')}
-                  className={cn("px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", view === 'day' ? "bg-primary shadow-lg text-primary-foreground" : "text-gray-500 hover:text-white")}
+                  className={cn("px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all", view === 'day' ? "bg-primary shadow-lg text-primary-foreground" : "text-gray-400 hover:text-ink")}
                 >
                   Dia
                 </button>
@@ -191,14 +191,14 @@ function Agenda() {
                     }}
                     className={cn(
                       "h-32 border-r border-b border-border p-3 transition-all cursor-pointer group relative overflow-hidden",
-                      !isCurrentMonth ? "bg-black/40 opacity-40" : "bg-card hover:bg-white/5",
+                      !isCurrentMonth ? "bg-gray-50 opacity-40" : "bg-white hover:bg-gray-50/50",
                       isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5"
                     )}
                   >
                     <div className="flex justify-between items-start mb-1">
                       <span className={cn(
                         "text-[11px] font-black h-7 w-7 flex items-center justify-center rounded-lg transition-all",
-                        isToday ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "text-gray-400 group-hover:text-white",
+                        isToday ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "text-gray-400 group-hover:text-ink",
                         !isCurrentMonth && "opacity-30"
                       )}>
                         {format(day, 'd')}
@@ -215,7 +215,7 @@ function Agenda() {
                             "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight",
                             appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30 shadow-sm" :
                             appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30 shadow-sm" :
-                            "bg-card text-gray-500 border-border shadow-sm"
+                            "bg-white text-gray-500 border-border shadow-sm"
                           )}
                         >
                           <Clock className="w-2.5 h-2.5" />
@@ -235,7 +235,7 @@ function Agenda() {
 
         {/* Detalhes do Dia Selecionado */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-card border border-border rounded-[14px] shadow-card p-6 flex flex-col h-full min-h-[600px] relative overflow-hidden">
+          <div className="bg-white border border-border rounded-[14px] shadow-card p-6 flex flex-col h-full min-h-[600px] relative overflow-hidden">
             <div className="flex justify-between items-center mb-8 border-b border-border pb-4">
               <h3 className="font-black text-xs uppercase tracking-[0.2em] text-gray-400">
                 Compromissos do Dia
@@ -251,14 +251,14 @@ function Agenda() {
                 </div>
               ) : (
                 dayAppointments.map(appt => (
-                  <div key={appt.id} className="bg-card border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 transition-all group relative overflow-hidden">
+                  <div key={appt.id} className="bg-white border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 transition-all group relative overflow-hidden">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="bg-card p-2.5 rounded-xl border border-border shadow-inner">
+                        <div className="bg-gray-50 p-2.5 rounded-xl border border-border shadow-inner">
                           <User className="w-5 h-5 text-gray-500" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-black text-card-foreground uppercase tracking-tight">{appt.leadName}</h4>
+                          <h4 className="text-xs font-black text-ink uppercase tracking-tight">{appt.leadName}</h4>
                           <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{appt.examType}</span>
                         </div>
                       </div>
@@ -282,13 +282,13 @@ function Agenda() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                         className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-card-foreground transition-all rounded-xl"
+                         className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
                         onClick={() => handleStatusChange(appt.id, 'confirmado')}
                         disabled={appt.status === 'confirmado'}
                       >
                         <CheckCircle className="w-4 h-4 mr-2 text-success shadow-[0_0_10px_rgba(31,164,99,0.3)]" /> CONFIRMAR
                       </Button>
-                      <Button variant="outline" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-card-foreground transition-all rounded-xl">
+                      <Button variant="outline" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl">
                         <MessageSquare className="w-4 h-4 mr-2 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" /> WHATSAPP
                       </Button>
                     </div>
