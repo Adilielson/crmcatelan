@@ -246,65 +246,74 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
     <div
       draggable
       onDragStart={onDragStart}
-      className={`bg-white p-4 rounded-xl border shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors group relative ${lead.isUrgent ? 'border-red-200' : 'border-slate-200'}`}
+      className={cn(
+        "bg-white p-5 rounded-2xl border-2 shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/40 hover:shadow-md transition-all duration-300 group relative",
+        lead.isUrgent ? 'border-red-100 bg-red-50/10' : 'border-slate-100'
+      )}
     >
       <AnimatePresence>
         {lead.isUrgent && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ 
-              opacity: [0.4, 1, 0.4],
-              scale: [1, 1.02, 1]
+              opacity: [0.3, 0.6, 0.3],
             }}
             transition={{ 
               duration: 2, 
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute inset-0 rounded-xl border-2 border-red-500 pointer-events-none"
+            className="absolute inset-0 rounded-2xl border-2 border-red-400 pointer-events-none"
           />
         )}
       </AnimatePresence>
 
       {lead.isUrgent && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-10">
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-red-200">
           URGENTE
         </div>
       )}
 
       
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{lead.name}</h4>
-          <span className="text-xs text-primary font-bold">R$ {lead.value.toLocaleString('pt-BR')}</span>
+      <div className="flex justify-between items-start mb-4">
+        <div className="space-y-1">
+          <h4 className="font-black text-[13px] text-slate-800 line-clamp-1 uppercase tracking-tight">{lead.name}</h4>
+          <div className="flex items-center gap-1.5">
+            <DollarSign className="w-3 h-3 text-primary opacity-60" />
+            <span className="text-[12px] text-primary font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
+          </div>
         </div>
-        <div className="bg-slate-50 p-1.5 rounded-lg border group-hover:bg-primary/5 transition-colors">
+        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
           {sourceIcons[lead.source]}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="Agenda">
-          <Calendar className="w-3.5 h-3.5" />
-        </button>
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="WhatsApp">
-          <MessageSquare className="w-3.5 h-3.5" />
-        </button>
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="Localização">
-          <MapPin className="w-3.5 h-3.5" />
-        </button>
-        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-colors border border-transparent hover:border-slate-200" title="Venda Fechada">
-          <DollarSign className="w-3.5 h-3.5" />
-        </button>
+      <div className="flex items-center gap-2 flex-wrap mb-1">
+        {[
+          { icon: Calendar, title: "Agenda" },
+          { icon: MessageSquare, title: "WhatsApp" },
+          { icon: MapPin, title: "Localização" },
+          { icon: DollarSign, title: "Venda Fechada" }
+        ].map((action, i) => (
+          <button 
+            key={i}
+            className="p-2.5 bg-slate-50 hover:bg-white hover:shadow-sm rounded-xl text-slate-400 hover:text-primary transition-all border border-slate-100 hover:border-primary/20" 
+            title={action.title}
+          >
+            <action.icon className="w-3.5 h-3.5" />
+          </button>
+        ))}
       </div>
 
       {lead.lossReason && (
-        <div className="mt-2 pt-2 border-t text-[10px] text-red-500 font-medium">
+        <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
           Perda: {lead.lossReason}
         </div>
       )}
       {lead.scheduledAt && (
-        <div className="mt-2 pt-2 border-t text-[10px] text-blue-500 font-medium">
+        <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
           Agendado: {new Date(lead.scheduledAt).toLocaleString('pt-BR')}
         </div>
       )}
