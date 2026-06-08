@@ -145,30 +145,25 @@ export function KanbanBoard() {
         </div>
       </div>
 
-      <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4">
+      <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)]">
         {currentPipeline.columns.map((column, index) => (
-          <div key={column} className="min-w-[340px] flex-1 flex flex-col gap-6">
-            <div className={cn(
-              "flex justify-between items-center px-4 py-3 rounded-t-[14px] border-b border-[#23232B]",
-              index === 0 ? "bg-[#0E0E11]" : 
-              index === 1 ? "bg-[#23232B]" :
-              index === 2 ? "bg-[#474C55]" :
-              index === 3 ? "bg-[#A7ADB8] text-[#1a1a1a]" :
-              "bg-[#FFC400] text-[#1a1500]"
-            )}>
-              <div className="flex items-center gap-3">
-                <span className="font-black uppercase tracking-widest text-[11px] font-jakarta">{column}</span>
-                <span className={cn(
-                  "text-[11px] px-2 py-0.5 rounded-full font-mono font-bold",
-                  column === "Compareceu" ? "bg-[#1a1500]/10" : "bg-gray-50/50"
-                )}>
+          <div key={column} className="min-w-[360px] flex-1 flex flex-col gap-5">
+            <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden group">
+              <div className={cn(
+                "absolute left-0 top-0 bottom-0 w-1.5",
+                index === 0 ? "bg-[#A7ADB8]" : 
+                index === 1 ? "bg-[#474C55]" :
+                index === 2 ? "bg-[#FFC400]" :
+                index === 3 ? "bg-[#1FA463]" :
+                "bg-[#D64545]"
+              )} />
+              <div className="flex items-center gap-4">
+                <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{column}</span>
+                <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
                   {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
-                </span>
+                </div>
               </div>
-              <Button variant="ghost" size="icon" className={cn(
-                "h-8 w-8 rounded-lg",
-                column === "Compareceu" ? "hover:bg-[#1a1500]/5 text-[#1a1500]" : "hover:bg-white/10 text-white"
-              )}>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink transition-all">
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </div>
