@@ -243,9 +243,9 @@ function AITrainingSettings() {
           </TabsContent>
 
           <TabsContent value="qualification" className="space-y-6">
-            <Card>
+            <Card className="bg-white border-border shadow-card">
               <CardHeader>
-                <CardTitle>Fluxo de Qualificação</CardTitle>
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Fluxo de Qualificação</CardTitle>
                 <CardDescription>Perguntas obrigatórias para filtrar leads qualificados.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -286,9 +286,9 @@ function AITrainingSettings() {
 
           <TabsContent value="simulation" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-1">
+              <Card className="lg:col-span-1 bg-white border-border shadow-card">
                 <CardHeader>
-                  <CardTitle>Configuração do Teste</CardTitle>
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Configuração do Teste</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
