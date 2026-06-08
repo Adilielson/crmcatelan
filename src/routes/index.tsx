@@ -87,16 +87,20 @@ function Dashboard() {
   }, [leads, appointments])
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Painel de Gestão</h1>
-          <p className="text-muted-foreground">Monitoramento em tempo real da unidade e performance IA.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            Painel de Gestão
+          </h1>
+          <p className="text-slate-500 font-medium mt-1">
+            Monitoramento em tempo real da unidade e performance IA.
+          </p>
         </div>
         <div className="flex items-center gap-3">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[180px] bg-white">
-               <Store className="w-4 h-4 mr-2 text-slate-400" />
+             <SelectTrigger className="w-[200px] bg-white border-slate-200/60 shadow-sm font-semibold text-xs h-10">
+               <Store className="w-3.5 h-3.5 mr-2 text-primary" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
              <SelectContent>
@@ -106,7 +110,9 @@ function Dashboard() {
                ))}
              </SelectContent>
            </Select>
-           <Button variant="outline" className="bg-white">Relatório Completo</Button>
+           <Button variant="outline" className="bg-white border-slate-200/60 shadow-sm font-bold text-xs h-10 px-6">
+             Relatório Completo
+           </Button>
         </div>
       </div>
 
