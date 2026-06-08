@@ -87,10 +87,10 @@ function Dashboard() {
   }, [leads, appointments])
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 bg-background min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-card p-8 rounded-[14px] border border-border shadow-sm">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[14px] border border-border shadow-sm">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight font-jakarta mb-2">
+          <h1 className="text-4xl font-black text-ink tracking-tight font-jakarta mb-2">
             Dashboard Executivo
           </h1>
           <p className="text-gray-500 font-medium">
@@ -99,11 +99,11 @@ function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[220px] bg-background border-border shadow-sm font-semibold text-xs h-12 text-white rounded-[14px] px-4">
+             <SelectTrigger className="w-[220px] bg-white border-border shadow-sm font-semibold text-xs h-12 text-ink rounded-[14px] px-4">
                <Store className="w-4 h-4 mr-2 text-primary" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
-             <SelectContent className="bg-card border-border text-white">
+             <SelectContent className="bg-white border-border text-ink">
                <SelectItem value="all">Todas as Unidades</SelectItem>
                {pipelines.map(p => (
                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -245,7 +245,7 @@ function Dashboard() {
                       {lead.ia_status}
                     </Badge>
                     <div>
-                      <p className="text-sm font-bold text-white font-jakarta">{lead.name}</p>
+                      <p className="text-sm font-bold text-ink font-jakarta">{lead.name}</p>
                       <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_resumo}</p>
                     </div>
                   </div>
@@ -283,7 +283,7 @@ function Dashboard() {
                       <Clock className="w-4 h-4 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-white font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
+                      <p className="text-sm font-black text-ink font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
                       <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.wait}</p>
                     </div>
                   </div>
@@ -307,10 +307,10 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
         "hover:shadow-[0_20px_50px_rgba(255,196,0,0.15)] hover:-translate-y-2 transition-all duration-500 cursor-pointer border-border shadow-card group overflow-hidden relative rounded-[14px]",
         highlight
           ? "bg-gradient-to-br from-primary via-yellow-bright to-yellow-dark border-primary" 
-          : "bg-navy border-slate-800"
+          : "bg-white border-border"
       )}>
         <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-16 h-16 text-white" })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("w-16 h-16", highlight ? "text-[#1a1500]" : "text-ink") })}
         </div>
         {highlight && <div className="absolute right-[-10px] bottom-[-18px] text-[96px] opacity-[0.13]">🔥</div>}
         <CardContent className="p-6 relative z-10">
@@ -323,7 +323,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
               "p-2 rounded-xl transition-colors",
               highlight 
                 ? "bg-[#1a1500]/10 text-[#1a1500] group-hover:bg-[#1a1500]/20" 
-                : "bg-black-3 text-primary border border-slate-700 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary shadow-inner"
+                : "bg-gray-50 text-ink border border-border group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary"
             )}>
               {icon}
             </div>
@@ -332,11 +332,11 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
             <div className="flex items-baseline gap-3">
               <div className={cn(
                 "h-[38px] w-1 rounded-sm",
-                highlight ? "bg-[#1a1500]" : "bg-primary shadow-[0_0_15px_rgba(255,196,0,0.5)]"
+                highlight ? "bg-[#1a1500]" : "bg-primary shadow-[0_0_15px_rgba(255,196,0,0.35)]"
               )} />
               <h3 className={cn(
                 "text-[46px] font-black tracking-tight font-jakarta leading-none",
-                highlight ? "text-[#1a1500]" : "text-white"
+                highlight ? "text-[#1a1500]" : "text-ink"
               )}>{value}</h3>
             </div>
             <div className="flex items-center gap-2 mt-2">
@@ -346,7 +346,7 @@ function StatCard({ title, value, change, icon, highlight, link }: { title: stri
               )} />
               <p className={cn(
                 "text-[12px] font-bold font-inter",
-                highlight ? "text-[#5a4900]" : "text-gray-400"
+                highlight ? "text-[#5a4900]" : "text-gray-500"
               )}>{change}</p>
             </div>
           </div>

@@ -104,7 +104,7 @@ const AppLayout = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto flex flex-col bg-transparent">
+      <main className="flex-1 overflow-auto flex flex-col bg-[#F6F7F9]">
         <header className="h-16 bg-[#0E0E11] border-b border-[#23232B] flex items-center px-8 sticky top-0 z-10">
           <h2 className="text-[13px] font-bold text-slate-400 uppercase tracking-widest font-jakarta">
             {menuItems.find(i => i.href === location.pathname)?.label || 'Painel'}

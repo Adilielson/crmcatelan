@@ -44,13 +44,13 @@ function IAMetrics() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="border border-slate-800 shadow-card bg-navy">
+          <Card key={i} className="border border-border shadow-card bg-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-bold text-gray-500 uppercase tracking-widest">{stat.title}</CardTitle>
               <stat.icon className={cn("w-4 h-4", stat.color)} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{stat.value}</div>
+              <div className="text-2xl font-bold text-ink">{stat.value}</div>
               <p className="text-[10px] flex items-center gap-1 mt-1 font-bold">
                 {stat.change.startsWith('+') ? (
                   <ArrowUpRight className="w-3 h-3 text-green-500" />
