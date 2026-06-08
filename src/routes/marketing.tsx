@@ -35,24 +35,29 @@ function MarketingPartnerDashboard() {
   const [activeMainTab, setActiveMainTab] = useState('performance')
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 animate-in fade-in duration-700">
       {/* Header com Filtros Globais */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-border shadow-card text-ink">
-        <div>
-          <h1 className="text-2xl font-black text-ink tracking-tight font-jakarta">Painel de Marketing</h1>
-          <p className="text-slate-500 text-sm">Dashboard de Parceiro - Agência Performance</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-1 rounded-full bg-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Inteligência de Tráfego</span>
+          </div>
+          <h1 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none mb-3">Painel de Marketing</h1>
+          <p className="text-[15px] text-gray-500 font-medium italic">Visão estratégica para parceiros e gestores de performance.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mr-4">
-            <TabsList className="bg-slate-100">
-              <TabsTrigger value="performance" className="text-xs font-bold">Performance</TabsTrigger>
-              <TabsTrigger value="integrations" className="text-xs font-bold">Integrações {'&'} Pixel</TabsTrigger>
+        <div className="flex flex-wrap items-center gap-4 relative z-10">
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mr-2">
+            <TabsList className="bg-[#F6F7F9] p-1 rounded-[16px] border border-[#E3E6EB] h-14">
+              <TabsTrigger value="performance" className="px-6 h-11 text-[11px] font-black uppercase tracking-widest rounded-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Performance</TabsTrigger>
+              <TabsTrigger value="integrations" className="px-6 h-11 text-[11px] font-black uppercase tracking-widest rounded-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Pixels {'&'} CAPI</TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-border">
-            <Filter className="w-4 h-4 text-slate-400" />
+          <div className="flex items-center gap-3 bg-white px-6 h-14 rounded-[16px] border border-[#E3E6EB] shadow-sm hover:border-primary/50 transition-all cursor-pointer">
+            <Filter className="w-4 h-4 text-primary" />
             <select 
-              className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer"
+              className="bg-transparent border-none text-[11px] font-black uppercase tracking-widest focus:ring-0 cursor-pointer text-ink outline-none pr-8"
               value={selectedLoja}
               onChange={(e) => setSelectedLoja(e.target.value)}
             >
