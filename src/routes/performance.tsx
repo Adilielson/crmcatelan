@@ -34,8 +34,8 @@ function IAMetrics() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Métricas de Inteligência Artificial</h1>
-          <p className="text-sm text-slate-500">Acompanhamento de performance da IA SDR SDR</p>
+          <h1>Métricas de Inteligência Artificial</h1>
+          <p className="text-sm text-gray-500">Acompanhamento de performance da IA SDR</p>
         </div>
         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 py-1 px-3">
           IA Ativa 24/7
@@ -44,13 +44,13 @@ function IAMetrics() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="border-none shadow-sm bg-white">
+          <Card key={i} className="border border-border shadow-card bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest">{stat.title}</CardTitle>
+              <CardTitle className="text-xs font-bold text-gray-500 uppercase tracking-widest">{stat.title}</CardTitle>
               <stat.icon className={cn("w-4 h-4", stat.color)} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-800">{stat.value}</div>
+              <div className="text-2xl font-bold text-ink">{stat.value}</div>
               <p className="text-[10px] flex items-center gap-1 mt-1 font-bold">
                 {stat.change.startsWith('+') ? (
                   <ArrowUpRight className="w-3 h-3 text-green-500" />
@@ -67,7 +67,7 @@ function IAMetrics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-none shadow-sm bg-white">
+        <Card className="lg:col-span-2 border border-border shadow-card bg-card">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" /> Funil de Conversão SDR
@@ -77,8 +77,8 @@ function IAMetrics() {
             {funnelData.map((item, i) => (
               <div key={i} className="space-y-2">
                 <div className="flex justify-between text-xs font-bold">
-                  <span className="text-slate-600">{item.label}</span>
-                  <span className="text-slate-400">{item.count} leads ({item.percentage}%)</span>
+                  <span className="text-gray-600">{item.label}</span>
+                  <span className="text-gray-400">{item.count} leads ({item.percentage}%)</span>
                 </div>
                 <Progress value={item.percentage} className="h-2 bg-slate-100" />
               </div>
@@ -86,22 +86,22 @@ function IAMetrics() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white">
+        <Card className="border border-border shadow-card bg-card">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-500" /> Pontos de Abandono (Drop-off)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
+            <p className="text-[11px] text-gray-500 leading-relaxed mb-4">
               Análise de onde os leads param de responder durante a qualificação automática.
             </p>
             {dropOffReasons.map((item, i) => (
               <div key={i} className="flex items-center gap-4">
                 <div className={cn("w-1 h-8 rounded-full", item.color)} />
                 <div className="flex-1">
-                  <div className="text-xs font-bold text-slate-700">{item.question}</div>
-                  <div className="text-[10px] text-slate-400">{item.drop}% de desistência nesta etapa</div>
+                  <div className="text-xs font-bold text-gray-700">{item.question}</div>
+                  <div className="text-[10px] text-gray-400">{item.drop}% de desistência nesta etapa</div>
                 </div>
               </div>
             ))}
