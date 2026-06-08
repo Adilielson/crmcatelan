@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/marketing')({
   component: MarketingPartnerDashboard,
