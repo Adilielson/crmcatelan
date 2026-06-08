@@ -326,10 +326,8 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
           <button 
             key={i}
             className={cn(
-              "p-2.5 rounded-[14px] transition-all border",
-              lead.isUrgent 
-                ? "bg-[#0E0E11] text-slate-500 hover:text-[#FFC400] border-[#23232B] hover:border-[#FFC400]/20" 
-                : "bg-white text-[#6C727C] hover:text-[#15151A] border-[#E3E6EB] hover:border-[#A7ADB8]"
+              "p-2.5 rounded-[12px] transition-all border",
+              "bg-white text-gray-500 hover:text-ink border-[#E3E6EB] hover:border-gray-400"
             )} 
 
             title={action.title}
