@@ -60,7 +60,7 @@
 
 @layer base {
   body {
-    @apply bg-black text-[#EDEDF0] font-inter antialiased leading-[1.55];
+    @apply bg-gray-50 text-ink font-inter antialiased leading-[1.55];
     position: relative;
   }
 
