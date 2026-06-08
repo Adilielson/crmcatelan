@@ -109,10 +109,10 @@ function Settings() {
                 </div>
                 <h4 className="font-black text-xs uppercase tracking-[0.15em] text-gray-500 mb-4 relative z-10">Plano Atual</h4>
                 <div className="flex items-baseline gap-2 mb-6 relative z-10">
-                  <span className="text-4xl font-black text-white tracking-tighter">PREMIUM</span>
+                  <span className="text-4xl font-black text-card-foreground tracking-tighter">PREMIUM</span>
                   <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">/unidade</span>
                 </div>
-                <Button variant="outline" className="w-full h-11 text-white border-border hover:bg-white/5 font-black text-[10px] uppercase tracking-widest rounded-xl relative z-10" size="sm">VER FATURAMENTO</Button>
+                <Button variant="outline" className="w-full h-11 text-card-foreground border-border hover:bg-black/5 font-black text-[10px] uppercase tracking-widest rounded-xl relative z-10" size="sm">VER FATURAMENTO</Button>
               </div>
             </div>
           </div>
