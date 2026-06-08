@@ -264,7 +264,7 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       onDragStart={onDragStart}
       className={cn(
         "bg-[#17171B] p-5 rounded-[14px] border border-[#23232B] shadow-sm cursor-grab active:cursor-grabbing hover:border-[#FFC400]/40 hover:shadow-md transition-all duration-300 group relative",
-        lead.isUrgent ? 'border-[#D64545]/30 bg-[#D64545]/5' : ''
+        lead.isUrgent ? 'border-[#D64545]/30 bg-[#17171B]' : 'bg-[#F6F7F9] border-[#E3E6EB]'
       )}
     >
       <AnimatePresence>
@@ -293,10 +293,19 @@ function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.Dr
       
       <div className="flex justify-between items-start mb-4">
         <div className="space-y-1">
-          <h4 className="font-black text-[13px] text-white line-clamp-1 uppercase tracking-tight font-jakarta">{lead.name}</h4>
+          <h4 className={cn(
+            "font-black text-[13px] line-clamp-1 uppercase tracking-tight font-jakarta",
+            lead.isUrgent ? "text-white" : "text-[#15151A]"
+          )}>{lead.name}</h4>
           <div className="flex items-center gap-1.5">
-            <DollarSign className="w-3 h-3 text-[#FFC400] opacity-60" />
-            <span className="text-[12px] text-[#FFC400] font-black">R$ {lead.value.toLocaleString('pt-BR')}</span>
+            <DollarSign className={cn(
+              "w-3 h-3 opacity-60",
+              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+            )} />
+            <span className={cn(
+              "text-[12px] font-black",
+              lead.isUrgent ? "text-[#FFC400]" : "text-[#15151A]"
+            )}>R$ {lead.value.toLocaleString('pt-BR')}</span>
           </div>
         </div>
         <div className="bg-[#0E0E11] p-2 rounded-[14px] border border-[#23232B] group-hover:bg-[#FFC400]/10 group-hover:border-[#FFC400]/20 transition-colors">
