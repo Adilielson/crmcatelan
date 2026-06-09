@@ -100,6 +100,61 @@ export interface Database {
           updated_at?: string
         }
       }
+      whatsapp_config: {
+        Row: {
+          id: string
+          tenant_id: string
+          instance_token: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          instance_token: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          instance_token?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      whatsapp_message_logs: {
+        Row: {
+          id: string
+          tenant_id: string
+          recipient_phone: string
+          message_type: 'text' | 'image' | 'document'
+          status: 'sent' | 'failed' | 'pending'
+          error_message: string | null
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          recipient_phone: string
+          message_type: 'text' | 'image' | 'document'
+          status: 'sent' | 'failed' | 'pending'
+          error_message?: string | null
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          recipient_phone?: string
+          message_type?: 'text' | 'image' | 'document'
+          status?: 'sent' | 'failed' | 'pending'
+          error_message?: string | null
+          sent_at?: string
+        }
+      }
       leads: {
         Row: {
           id: string
