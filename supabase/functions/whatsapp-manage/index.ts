@@ -65,8 +65,8 @@ function normalizeInstanceInfo(payload: unknown) {
   const data = asObject(payload);
   const instance = asObject(data.instance);
   return {
-    phone: String(data.phone ?? data.number ?? instance.phone ?? instance.number ?? "") || null,
-    name: String(data.name ?? instance.name ?? "") || null,
+    phone: String(data.phone ?? data.number ?? instance.phone ?? instance.number ?? instance.owner ?? "") || null,
+    name: String(data.name ?? instance.name ?? instance.profileName ?? "") || null,
   };
 }
 
