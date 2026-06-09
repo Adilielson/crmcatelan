@@ -17,44 +17,40 @@ function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? value as Record<string, unknown> : {};
 }
 
-function boolish(value: unknown): boolean | null {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string") {
-    const normalized = value.toLowerCase();
-    if (["true", "connected", "open", "online", "logged", "logged_in", "authenticated"].includes(normalized)) return true;
-    if (["false", "disconnected", "close", "closed", "offline", "logout", "logged_out"].includes(normalized)) return false;
+function pickString(...vals: unknown[]): string | null {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim()) return v.trim();
+    if (typeof v === "number") return String(v);
   }
   return null;
 }
 
-function connectionState(payload: unknown): boolean | null {
-  const body = asObject(payload);
-  const data = asObject(body.data);
-  const instance = asObject(body.instance ?? data.instance);
-  return boolish(body.connected) ?? boolish(body.status) ?? boolish(body.state) ??
-    boolish(data.connected) ?? boolish(data.status) ?? boolish(data.state) ??
-    boolish(instance.connected) ?? boolish(instance.status) ?? boolish(instance.state);
+function extractText(msg: Record<string, unknown>): string | null {
+  // Uazapi pode mandar text em vários formatos
+  return pickString(
+    msg.text,
+    msg.body,
+    msg.content,
+    msg.caption,
+    (asObject(msg.message) as any).conversation,
+    (asObject(msg.message) as any).text,
+    (asObject(asObject(msg.message).extendedTextMessage) as any).text,
+  );
 }
 
-function messagePayload(payload: unknown) {
-  const body = asObject(payload);
-  const data = asObject(body.data);
-  const message = asObject(data.message ?? body.message ?? data);
-  return { body, data, message };
+function digitsOnly(s: string | null): string | null {
+  if (!s) return null;
+  const d = s.replace(/\D+/g, "");
+  return d || null;
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
-  // Aceita GET para health check
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method === "GET") {
     return new Response(JSON.stringify({ ok: true, service: "whatsapp-webhook" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -65,50 +61,61 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     let tenantId = url.searchParams.get("tenant_id") || "tenant-1";
-    let urlEvent: string | null = null;
-    // Se tenant_id veio como "tenant-1/messages" (addUrlEvents), separa
-    if (tenantId.includes("/")) {
-      const [tid, ev] = tenantId.split("/");
-      tenantId = tid;
-      urlEvent = ev || null;
-    }
+    if (tenantId.includes("/")) tenantId = tenantId.split("/")[0];
 
     const body = await req.json().catch(() => ({}));
-    const { body: bodyObject, data, message } = messagePayload(body);
-    const eventName = String(bodyObject.event ?? bodyObject.type ?? data.event ?? data.type ?? urlEvent ?? "").toLowerCase();
-    const connected = connectionState(body);
-    console.log(`[webhook] tenant=${tenantId} event=${eventName || "unknown"} connected=${connected} keys=${Object.keys(bodyObject).join(",")}`);
+    const b = asObject(body);
+    const eventType = String(b.EventType ?? b.event ?? b.type ?? "").toLowerCase();
+    const chat = asObject(b.chat);
+    const message = asObject(b.message);
+    const owner = pickString(b.owner);
 
-    // Atualiza status de conexão no banco
-    if (connected === true) {
-      await adminClient
-        .from("whatsapp_config")
-        .update({
-          is_connected: true,
-          connected_phone: String(bodyObject.phone ?? data.phone ?? message.from ?? "") || null,
-          connected_name: String(bodyObject.name ?? data.name ?? "") || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("tenant_id", tenantId);
-      console.log(`[webhook] ${tenantId} → connected`);
-    } else if (connected === false) {
-      await adminClient
-        .from("whatsapp_config")
-        .update({ is_connected: false, connected_phone: null, connected_name: null, updated_at: new Date().toISOString() })
-        .eq("tenant_id", tenantId);
-      console.log(`[webhook] ${tenantId} → disconnected`);
+    console.log(`[webhook] tenant=${tenantId} event=${eventType} keys=${Object.keys(b).join(",")}`);
+
+    // ── Connection events ──────────────────────────────────────────────────
+    if (eventType.includes("connect") || eventType === "status") {
+      const connected = String(b.status ?? b.state ?? "").toLowerCase();
+      const isConn = ["connected", "open", "online", "logged_in"].includes(connected);
+      const isDis = ["disconnected", "close", "closed", "offline", "logout"].includes(connected);
+      if (isConn || isDis) {
+        await adminClient
+          .from("whatsapp_config")
+          .update({ is_connected: isConn, updated_at: new Date().toISOString() })
+          .eq("tenant_id", tenantId);
+      }
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Log mensagens recebidas
-    if (["messages", "message", "message.received"].includes(eventName) || message.from || message.chatId) {
-      if (message.fromMe !== true && bodyObject.fromMe !== true && data.fromMe !== true) {
-        await adminClient.from("whatsapp_message_logs").insert({
+    // ── Message events ─────────────────────────────────────────────────────
+    if (eventType.includes("message") || message.id || chat.id) {
+      const fromMe = message.fromMe === true || b.fromMe === true;
+
+      // Identifica remetente
+      const senderRaw = pickString(
+        message.sender,
+        message.from,
+        message.author,
+        chat.id,
+        chat.wa_chatid,
+        b.sender,
+      );
+      const senderPhone = digitsOnly(senderRaw);
+      const senderName = pickString(message.senderName, chat.name, chat.wa_name, chat.pushName, b.senderName) || senderPhone || "Desconhecido";
+      const text = extractText(message) || extractText(b);
+      const msgType = pickString(message.type, message.messageType, b.messageType) || "text";
+
+      console.log(`[webhook] msg fromMe=${fromMe} from=${senderPhone} name=${senderName} type=${msgType} text=${(text || "").slice(0, 80)}`);
+
+      if (!fromMe && senderPhone) {
+        // Loga no whatsapp_message_logs (visível no CRM)
+        const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
           tenant_id: tenantId,
-          recipient_phone: String(message.from || message.chatId || data.from || data.chatId || "unknown"),
-          message_type: String(message.type || data.type || "text"),
+          recipient_phone: senderPhone,
+          message_type: msgType,
           status: "received",
-          error_message: null,
+          error_message: text ? text.slice(0, 500) : null,
         });
+        if (logErr) console.error("[webhook] log insert error:", logErr.message);
       }
     }
 
