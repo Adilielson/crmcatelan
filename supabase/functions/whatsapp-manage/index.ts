@@ -29,13 +29,23 @@ function asObject(value: unknown): Record<string, unknown> {
 function normalizeConnected(payload: unknown): boolean {
   const data = asObject(payload);
   const instance = asObject(data.instance);
-  const rawStatus = String(
-    data.status ?? data.state ?? data.connection ?? instance.status ?? instance.state ?? ""
-  ).toLowerCase();
+  const statusObj = asObject(data.status);
+  const instanceStatusObj = asObject(instance.status);
 
-  return data.connected === true ||
-    instance.connected === true ||
-    ["connected", "open", "online", "logged", "logged_in", "authenticated"].includes(rawStatus);
+  if (data.connected === true || instance.connected === true) return true;
+  if (statusObj.connected === true || statusObj.loggedIn === true) return true;
+  if (instanceStatusObj.connected === true || instanceStatusObj.loggedIn === true) return true;
+
+  const candidates = [
+    typeof data.status === "string" ? data.status : null,
+    typeof data.state === "string" ? data.state : null,
+    typeof data.connection === "string" ? data.connection : null,
+    typeof instance.status === "string" ? instance.status : null,
+    typeof instance.state === "string" ? instance.state : null,
+  ].filter((v): v is string => !!v).map((v) => v.toLowerCase());
+
+  const connectedStates = ["connected", "open", "online", "logged", "logged_in", "authenticated"];
+  return candidates.some((s) => connectedStates.includes(s));
 }
 
 function normalizeQRCode(payload: unknown): string | null {
@@ -55,8 +65,8 @@ function normalizeInstanceInfo(payload: unknown) {
   const data = asObject(payload);
   const instance = asObject(data.instance);
   return {
-    phone: String(data.phone ?? data.number ?? instance.phone ?? instance.number ?? "") || null,
-    name: String(data.name ?? instance.name ?? "") || null,
+    phone: String(data.phone ?? data.number ?? instance.phone ?? instance.number ?? instance.owner ?? "") || null,
+    name: String(data.name ?? instance.name ?? instance.profileName ?? "") || null,
   };
 }
 
