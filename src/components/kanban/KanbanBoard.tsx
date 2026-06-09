@@ -1,348 +1,329 @@
 /** @jsxImportSource react */
-import React, { useState } from 'react'
+import React, { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { DBLead, LeadStage, STAGES, useLeads, useSeedSampleLeads, useUpdateLead } from '@/hooks/use-leads';
+import { useAgenda } from '@/hooks/use-agenda';
+import { LeadFormDialog } from './LeadFormDialog';
+import { LeadDetailSheet } from './LeadDetailSheet';
+import { LeadValueDialog } from './LeadValueDialog';
+import { LeadLocationDialog } from './LeadLocationDialog';
 
-import { useKanban, Lead } from '@/hooks/use-kanban'
-import { useAgenda } from '@/hooks/use-agenda'
-import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { toast } from 'sonner'
-import { useNotificationStore } from '@/store/useNotificationStore'
-import { cn } from '@/lib/utils'
-
-
-// Manual Instagram icon to avoid import issues
 const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
     <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
   </svg>
-)
+);
+
+const sourceIcon = (s: string | null) => {
+  switch (s) {
+    case 'whatsapp': return <MessageCircle className="w-4 h-4 text-green-500" />;
+    case 'instagram': return <InstagramIcon className="text-pink-500" />;
+    case 'google': return <MessageSquare className="w-4 h-4 text-blue-500" />;
+    default: return <MessageSquare className="w-4 h-4 text-slate-500" />;
+  }
+};
 
 export function KanbanBoard() {
-  const { pipelines, currentPipelineId, setCurrentPipeline, leads, moveLead, updateLead } = useKanban()
-  const { addAppointment } = useAgenda()
-  const { addNotification } = useNotificationStore()
-  const currentPipeline = pipelines.find(p => p.id === currentPipelineId) || pipelines[0]
+  const navigate = useNavigate();
+  const { data: leads = [], isLoading } = useLeads();
+  const updateLead = useUpdateLead();
+  const seed = useSeedSampleLeads();
+  const { addAppointment } = useAgenda();
 
-  
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [modalType, setModalType] = useState<'schedule' | 'loss' | null>(null)
-  const [scheduleData, setScheduleData] = useState({ date: '', time: '' })
-  const [lossReason, setLossReason] = useState('')
+  const [newOpen, setNewOpen] = useState(false);
+  const [detailLead, setDetailLead] = useState<DBLead | null>(null);
+  const [valueLead, setValueLead] = useState<DBLead | null>(null);
+  const [locationLead, setLocationLead] = useState<DBLead | null>(null);
+  const [scheduleLead, setScheduleLead] = useState<DBLead | null>(null);
+  const [lossLead, setLossLead] = useState<DBLead | null>(null);
+  const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
+  const [lossReason, setLossReason] = useState('');
 
-  const handleMove = (leadId: string, newStatus: string) => {
-    const lead = leads.find(l => l.id === leadId)
-    if (!lead) return
+  const handleDrop = async (leadId: string, newStage: LeadStage) => {
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead || lead.status === newStage) return;
 
-    if (newStatus === 'Agendado') {
-      setSelectedLead(lead)
-      setModalType('schedule')
-    } else if (newStatus === 'Perdido') {
-      setSelectedLead(lead)
-      setModalType('loss')
-    } else {
-      moveLead(leadId, newStatus)
-      toast.success(`Lead movido para ${newStatus}`)
-      addNotification({
-        title: 'Movimentação de Lead',
-        message: `${lead.name} foi movido para ${newStatus}.`,
-        category: 'lead_alert'
-      })
+    if (newStage === 'scheduled') {
+      setScheduleLead(lead);
+      return;
     }
-  }
-
-
-  const confirmSchedule = () => {
-    if (selectedLead && scheduleData.date && scheduleData.time) {
-      // Calcular horário de fim (padrão 1h)
-      const [hours, minutes] = scheduleData.time.split(':')
-      const endHours = (parseInt(hours) + 1).toString().padStart(2, '0')
-      const endTime = `${endHours}:${minutes}`
-
-      const success = addAppointment({
-        leadId: selectedLead.id,
-        leadName: selectedLead.name,
-        date: scheduleData.date,
-        startTime: scheduleData.time,
-        endTime: endTime,
-        status: 'pendente',
-        examType: 'Consulta Oftalmológica',
-        reminderSent: false,
-        professionalId: 'dr-claudio',
-        unit: 'Loja Centro',
-        origin: 'manual',
-        value: 150,
-        propensityScore: 0.85,
-        notificationChannel: 'whatsapp',
-        rescheduleCount: 0,
-        needsTransport: false
-      })
-
-      if (success) {
-        setModalType(null)
-        setSelectedLead(null)
-        toast.success('Agendamento realizado e lead movido!')
-        console.log('API WhatsApp: Disparando template para', selectedLead.name)
-      } else {
-        toast.error('Conflito de horário na Agenda Mestre!')
-      }
+    if (newStage === 'lost') {
+      setLossLead(lead);
+      return;
     }
-  }
+    await updateLead.mutateAsync({ id: leadId, updates: { status: newStage } });
+    toast.success(`Lead movido para ${STAGES.find((s) => s.value === newStage)?.label}`);
+  };
 
-  const confirmLoss = () => {
-    if (selectedLead && lossReason) {
-      moveLead(selectedLead.id, 'Perdido')
-      updateLead(selectedLead.id, { lossReason })
-      setModalType(null)
-      setSelectedLead(null)
-      toast.error('Lead marcado como perdido')
+  const confirmSchedule = async () => {
+    if (!scheduleLead || !scheduleData.date || !scheduleData.time) return;
+    const [hh, mm] = scheduleData.time.split(':');
+    const endTime = `${String(parseInt(hh) + 1).padStart(2, '0')}:${mm}`;
+    const ok = addAppointment({
+      leadId: scheduleLead.id,
+      leadName: scheduleLead.full_name,
+      date: scheduleData.date,
+      startTime: scheduleData.time,
+      endTime,
+      status: 'pendente',
+      examType: 'Consulta Oftalmológica',
+      reminderSent: false,
+      professionalId: 'dr-claudio',
+      unit: 'Loja Centro',
+      origin: 'manual',
+      value: scheduleLead.sales_value ?? 150,
+      propensityScore: 0.85,
+      notificationChannel: 'whatsapp',
+      rescheduleCount: 0,
+      needsTransport: false,
+    });
+    if (!ok) {
+      toast.error('Conflito de horário na agenda');
+      return;
     }
-  }
+    await updateLead.mutateAsync({ id: scheduleLead.id, updates: { status: 'scheduled' } });
+    toast.success('Agendamento criado e lead movido!');
+    setScheduleLead(null);
+    setScheduleData({ date: '', time: '' });
+  };
+
+  const confirmLoss = async () => {
+    if (!lossLead || !lossReason) return;
+    await updateLead.mutateAsync({
+      id: lossLead.id,
+      updates: { status: 'lost', notes: `${lossLead.notes ?? ''}\n[Perdido: ${lossReason}]`.trim() },
+    });
+    toast.error('Lead marcado como perdido');
+    setLossLead(null);
+    setLossReason('');
+  };
+
+  const openChat = (lead: DBLead) => {
+    navigate({ to: '/chat', search: { phone: lead.phone ?? '' } as any });
+  };
+
+  const openAgenda = (lead: DBLead) => {
+    setScheduleLead(lead);
+    setScheduleData({ date: '', time: '' });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-[14px] border border-[#E3E6EB] shadow-sm gap-4">
-        <div className="flex flex-col md:flex-row md:items-center gap-6">
-          <div className="flex flex-col">
-            <h3 className="text-sm font-black text-[#6C727C] uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
-            <p className="text-xs font-bold text-ink mt-1">Gerencie seus leads e pipeline</p>
-          </div>
-          <Select value={currentPipelineId} onValueChange={setCurrentPipeline}>
-            <SelectTrigger className="w-full md:w-[300px] h-11 bg-white border-[#E3E6EB] font-bold text-xs uppercase tracking-wider text-ink rounded-[14px]">
-              <SelectValue placeholder="Selecionar Unidade" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-[#E3E6EB] text-ink">
-              {pipelines.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col">
+          <h3 className="text-sm font-black text-[#6C727C] uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
+          <p className="text-xs font-bold text-ink mt-1">{leads.length} lead(s) — Ótica Catelan Matriz</p>
         </div>
         <div className="flex gap-3">
+          {leads.length === 0 && !isLoading && (
+            <Button variant="outline" size="sm" onClick={() => seed.mutate()} disabled={seed.isPending} className="h-11 px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px]">
+              <Database className="w-4 h-4 mr-2" /> Importar exemplos
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] bg-white text-ink shadow-sm rounded-[14px] hover:bg-[#F6F7F9]">
             <AlertCircle className="w-4 h-4 mr-2 text-[#FFC400]" />
             Notificações
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#D64545] rounded-full border-2 border-white animate-pulse" />
           </Button>
-          <Button size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">Novo Lead</Button>
+          <Button onClick={() => setNewOpen(true)} size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">
+            <PlusCircle className="w-4 h-4 mr-2" /> Novo Lead
+          </Button>
         </div>
       </div>
 
-      <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)]">
-        {currentPipeline.columns.map((column, index) => (
-          <div key={column} className="min-w-[360px] flex-1 flex flex-col gap-5">
-            <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden group">
-              <div className={cn(
-                "absolute left-0 top-0 bottom-0 w-1.5",
-                index === 0 ? "bg-[#A7ADB8]" : 
-                index === 1 ? "bg-[#474C55]" :
-                index === 2 ? "bg-[#FFC400]" :
-                index === 3 ? "bg-[#1FA463]" :
-                "bg-[#D64545]"
-              )} />
-              <div className="flex items-center gap-4">
-                <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{column}</span>
-                <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
-                  {leads.filter(l => l.status === column && l.pipelineId === currentPipelineId).length}
+      {isLoading ? (
+        <div className="text-center py-20 text-gray-400 font-bold">Carregando leads...</div>
+      ) : (
+        <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)]">
+          {STAGES.map((col, index) => {
+            const colLeads = leads.filter((l) => l.status === col.value);
+            return (
+              <div key={col.value} className="min-w-[320px] flex-1 flex flex-col gap-5">
+                <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+                  <div className={cn(
+                    'absolute left-0 top-0 bottom-0 w-1.5',
+                    index === 0 ? 'bg-[#A7ADB8]' :
+                    index === 1 ? 'bg-[#474C55]' :
+                    index === 2 ? 'bg-[#FFC400]' :
+                    index === 3 ? 'bg-[#D64545]' : 'bg-[#1FA463]'
+                  )} />
+                  <div className="flex items-center gap-4">
+                    <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.label}</span>
+                    <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
+                      {colLeads.length}
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink"><MoreVertical className="w-4 h-4" /></Button>
+                </div>
+
+                <div
+                  className="bg-transparent rounded-[20px] min-h-[400px] flex flex-col gap-4 overflow-y-auto scrollbar-hide pr-1"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    const id = e.dataTransfer.getData('leadId');
+                    if (id) handleDrop(id, col.value);
+                  }}
+                >
+                  {colLeads.length === 0 ? (
+                    <div className="text-center py-8 text-[10px] uppercase tracking-widest text-gray-300 font-bold">Vazio</div>
+                  ) : colLeads.map((lead) => (
+                    <LeadCard
+                      key={lead.id}
+                      lead={lead}
+                      onClick={() => setDetailLead(lead)}
+                      onCalendar={() => openAgenda(lead)}
+                      onChat={() => openChat(lead)}
+                      onLocation={() => setLocationLead(lead)}
+                      onValue={() => setValueLead(lead)}
+                    />
+                  ))}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink transition-all">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            <div 
-              className="bg-transparent rounded-[20px] min-h-[500px] flex flex-col gap-4 overflow-y-auto scrollbar-hide pr-1"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                const id = e.dataTransfer.getData('leadId')
-                handleMove(id, column)
-              }}
-            >
-              {leads
-                .filter(l => l.status === column && l.pipelineId === currentPipelineId)
-                .map(lead => (
-                  <LeadCard key={lead.id} lead={lead} onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)} />
-                ))}
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Modal de Agendamento */}
-      <Dialog open={modalType === 'schedule'} onOpenChange={() => setModalType(null)}>
+      <LeadFormDialog open={newOpen} onOpenChange={setNewOpen} />
+      <LeadDetailSheet lead={detailLead} open={!!detailLead} onOpenChange={(v) => !v && setDetailLead(null)} />
+      <LeadValueDialog lead={valueLead} open={!!valueLead} onOpenChange={(v) => !v && setValueLead(null)} />
+      <LeadLocationDialog lead={locationLead} open={!!locationLead} onOpenChange={(v) => !v && setLocationLead(null)} />
+
+      {/* Agenda dialog */}
+      <Dialog open={!!scheduleLead} onOpenChange={(v) => !v && setScheduleLead(null)}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Agendar Atendimento - {selectedLead?.name}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Agendar — {scheduleLead?.full_name}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="date">Data</Label>
-              <Input id="date" type="date" value={scheduleData.date} onChange={e => setScheduleData(prev => ({ ...prev, date: e.target.value }))} />
+              <Label>Data</Label>
+              <Input type="date" value={scheduleData.date} onChange={(e) => setScheduleData((p) => ({ ...p, date: e.target.value }))} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="time">Hora</Label>
-              <Input id="time" type="time" value={scheduleData.time} onChange={e => setScheduleData(prev => ({ ...prev, time: e.target.value }))} />
+              <Label>Hora</Label>
+              <Input type="time" value={scheduleData.time} onChange={(e) => setScheduleData((p) => ({ ...p, time: e.target.value }))} />
             </div>
+            {scheduleLead?.phone && <p className="text-xs text-gray-500">📱 {scheduleLead.phone}</p>}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setModalType(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setScheduleLead(null)}>Cancelar</Button>
             <Button onClick={confirmSchedule}>Confirmar Agendamento</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Perda */}
-      <Dialog open={modalType === 'loss'} onOpenChange={() => setModalType(null)}>
+      {/* Loss dialog */}
+      <Dialog open={!!lossLead} onOpenChange={(v) => !v && setLossLead(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Motivo da Perda - {selectedLead?.name}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Motivo da Perda — {lossLead?.full_name}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Selecione o motivo principal</Label>
+              <Label>Selecione o motivo</Label>
               <Select value={lossReason} onValueChange={setLossReason}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um motivo..." />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="price">Preço alto</SelectItem>
-                  <SelectItem value="competition">Fechou com concorrente</SelectItem>
-                  <SelectItem value="no_response">Não responde mais</SelectItem>
-                  <SelectItem value="bad_quality">Lead sem perfil (Qualidade)</SelectItem>
-                  <SelectItem value="other">Outros</SelectItem>
+                  <SelectItem value="Preço alto">Preço alto</SelectItem>
+                  <SelectItem value="Fechou com concorrente">Fechou com concorrente</SelectItem>
+                  <SelectItem value="Não responde mais">Não responde mais</SelectItem>
+                  <SelectItem value="Sem perfil">Sem perfil</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setModalType(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmLoss}>Confirmar Perda</Button>
+            <Button variant="outline" onClick={() => setLossLead(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmLoss} disabled={!lossReason}>Confirmar Perda</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
 
-function LeadCard({ lead, onDragStart }: { lead: Lead, onDragStart: (e: React.DragEvent) => void }) {
-  const sourceIcons = {
-    whatsapp: <MessageCircle className="w-4 h-4 text-green-500" />,
-    instagram: <InstagramIcon className="text-pink-500" />,
+function LeadCard({
+  lead,
+  onClick,
+  onCalendar,
+  onChat,
+  onLocation,
+  onValue,
+}: {
+  lead: DBLead;
+  onClick: () => void;
+  onCalendar: () => void;
+  onChat: () => void;
+  onLocation: () => void;
+  onValue: () => void;
+}) {
+  const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 
-    google: <MessageSquare className="w-4 h-4 text-blue-500" />,
-    direct: <MessageSquare className="w-4 h-4 text-slate-500" />,
-  }
+  const actions = [
+    { icon: Calendar, title: 'Agendar', onClick: onCalendar },
+    { icon: MessageSquare, title: 'Abrir conversa', onClick: onChat },
+    { icon: MapPin, title: 'Unidade', onClick: onLocation },
+    { icon: DollarSign, title: 'Editar valor', onClick: onValue },
+  ];
 
   return (
     <div
       draggable
-      onDragStart={onDragStart}
-      className={cn(
-        "bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing hover:border-[#FFC400]/50 hover:shadow-[0_12px_24px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group relative",
-        lead.isUrgent ? 'border-danger/20' : ''
-      )}
+      onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)}
+      onClick={onClick}
+      className="bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer active:cursor-grabbing hover:border-[#FFC400]/50 hover:shadow-[0_12px_24px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group relative"
     >
       <AnimatePresence>
-        {lead.isUrgent && (
-          <motion.div 
+        {(lead.score_ia ?? 0) >= 80 && (
+          <motion.div
             initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute inset-0 rounded-[12px] border-2 border-danger/40 pointer-events-none"
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute inset-0 rounded-[12px] border-2 border-[#FFC400]/40 pointer-events-none"
           />
         )}
       </AnimatePresence>
 
-      {lead.isUrgent && (
-        <div className="absolute -top-2 -right-2 bg-[#D64545] text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm shadow-[#D64545]/20">
-          URGENTE
+      {(lead.score_ia ?? 0) >= 80 && (
+        <div className="absolute -top-2 -right-2 bg-[#FFC400] text-[#1a1500] text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm">
+          IA {lead.score_ia}
         </div>
       )}
 
-      
       <div className="flex justify-between items-start mb-4">
-        <div className="space-y-1">
-          <h4 className={cn(
-            "font-black text-[13px] line-clamp-1 uppercase tracking-tight font-jakarta",
-            "text-ink"
-          )}>{lead.name}</h4>
+        <div className="space-y-1 min-w-0 flex-1">
+          <h4 className="font-black text-[13px] line-clamp-1 uppercase tracking-tight font-jakarta text-ink group-hover:text-primary transition-colors">{lead.full_name}</h4>
           <div className="flex items-center gap-1.5">
-            <DollarSign className={cn(
-              "w-3 h-3 opacity-60",
-              "text-ink"
-            )} />
-            <span className={cn(
-              "text-[12px] font-black",
-              "text-ink"
-            )}>R$ {lead.value.toLocaleString('pt-BR')}</span>
+            <DollarSign className="w-3 h-3 opacity-60 text-ink" />
+            <span className="text-[12px] font-black text-ink">R$ {(lead.sales_value ?? 0).toLocaleString('pt-BR')}</span>
           </div>
+          {lead.phone && <p className="text-[10px] text-gray-400 font-medium truncate">{lead.phone}</p>}
         </div>
-        <div className={cn(
-          "p-2 rounded-[12px] border transition-colors",
-          "bg-white border-[#E3E6EB]"
-        )}>
-          {sourceIcons[lead.source]}
+        <div className="p-2 rounded-[12px] border bg-white border-[#E3E6EB]">
+          {sourceIcon(lead.source)}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap mb-1">
-        {[
-          { icon: Calendar, title: "Agenda" },
-          { icon: MessageSquare, title: "WhatsApp" },
-          { icon: MapPin, title: "Localização" },
-          { icon: DollarSign, title: "Venda Fechada" }
-        ].map((action, i) => (
-          <button 
-            key={i}
-            className={cn(
-              "p-2.5 rounded-[12px] transition-all border",
-              "bg-white text-gray-500 hover:text-ink border-[#E3E6EB] hover:border-gray-400"
-            )} 
-
+      <div className="flex items-center gap-2 flex-wrap">
+        {actions.map((action) => (
+          <button
+            key={action.title}
+            onClick={stop(action.onClick)}
             title={action.title}
+            className="p-2.5 rounded-[12px] transition-all border bg-white text-gray-500 hover:text-[#FFC400] hover:border-[#FFC400]/30 border-[#E3E6EB]"
           >
             <action.icon className="w-3.5 h-3.5" />
           </button>
         ))}
       </div>
-
-      {lead.lossReason && (
-        <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-red-500 font-bold uppercase tracking-wider flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-          Perda: {lead.lossReason}
-        </div>
-      )}
-      {lead.scheduledAt && (
-        <div className="mt-4 pt-3 border-t border-slate-100 text-[10px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-          Agendado: {new Date(lead.scheduledAt).toLocaleString('pt-BR')}
-        </div>
-      )}
     </div>
-  )
+  );
 }
-

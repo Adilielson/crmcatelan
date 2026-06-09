@@ -524,10 +524,12 @@ export type Database = {
           ia_urgency: string | null
           id: string
           next_contact_at: string | null
+          notes: string | null
           phone: string | null
           priority: string | null
           sales_value: number | null
           score_ia: number | null
+          source: string | null
           source_id: string | null
           status: Database["public"]["Enums"]["lead_status"] | null
           tags: string[] | null
@@ -547,10 +549,12 @@ export type Database = {
           ia_urgency?: string | null
           id?: string
           next_contact_at?: string | null
+          notes?: string | null
           phone?: string | null
           priority?: string | null
           sales_value?: number | null
           score_ia?: number | null
+          source?: string | null
           source_id?: string | null
           status?: Database["public"]["Enums"]["lead_status"] | null
           tags?: string[] | null
@@ -570,10 +574,12 @@ export type Database = {
           ia_urgency?: string | null
           id?: string
           next_contact_at?: string | null
+          notes?: string | null
           phone?: string | null
           priority?: string | null
           sales_value?: number | null
           score_ia?: number | null
+          source?: string | null
           source_id?: string | null
           status?: Database["public"]["Enums"]["lead_status"] | null
           tags?: string[] | null
