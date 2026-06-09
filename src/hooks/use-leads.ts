@@ -86,7 +86,7 @@ export function useCreateLead() {
 export function useUpdateLead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<DBLead> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => {
       const { data, error } = await supabase
         .from('leads')
         .update(updates as any)
@@ -100,7 +100,7 @@ export function useUpdateLead() {
       await qc.cancelQueries({ queryKey: LEADS_KEY });
       const previous = qc.getQueryData<DBLead[]>(LEADS_KEY);
       qc.setQueryData<DBLead[]>(LEADS_KEY, (old) =>
-        (old ?? []).map((l) => (l.id === id ? { ...l, ...updates } : l)),
+        (old ?? []).map((l) => (l.id === id ? ({ ...l, ...updates } as DBLead) : l)),
       );
       return { previous };
     },
@@ -127,16 +127,18 @@ export function useDeleteLead() {
   });
 }
 
+export interface UnitRow { id: string; name: string; address: string | null }
+
 export function useUnits() {
   return useQuery({
     queryKey: ['units', DEV_TENANT_ID],
-    queryFn: async () => {
+    queryFn: async (): Promise<UnitRow[]> => {
       const { data, error } = await supabase
         .from('units')
         .select('id, name, address')
         .eq('tenant_id', DEV_TENANT_ID);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as UnitRow[];
     },
   });
 }
