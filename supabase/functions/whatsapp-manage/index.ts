@@ -194,8 +194,11 @@ Deno.serve(async (req) => {
       try {
         await uazapiPost("/webhook", token, {
           url: webhookUrl,
+          enabled: true,
           addUrlEvents: true,
+          addUrlTypesMessages: false,
           events: ["connection", "messages", "qrcode"],
+          excludeMessages: [],
         });
         await adminClient
           .from("whatsapp_config")
