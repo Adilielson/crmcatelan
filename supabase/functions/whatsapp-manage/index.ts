@@ -78,23 +78,9 @@ Deno.serve(async (req) => {
 
     const token = await getToken(tenant_id);
 
-    // ── Verificar status da instância ──────────────────────────────────────
-    if (action === "check-status") {
-      const data = await uazapiGet("/instance/info", token);
-      const connected =
-        data.connected === true ||
-        data.instance?.status === "connected" ||
-        data.status === "connected";
-      await adminClient
-        .from("whatsapp_config")
-        .update({ is_connected: connected, updated_at: new Date().toISOString() })
-        .eq("tenant_id", tenant_id);
-      return json({ connected, phone: data.phone ?? null, name: data.name ?? null });
-    }
-
-    // ── Obter QR Code ──────────────────────────────────────────────────────
-    if (action === "qrcode") {
-      // Tenta /instance/connect (retorna QR OU connected:true)
+    // ── Verificar status + QR Code (mesmo endpoint /instance/connect) ──────
+    // check-status e qrcode usam o mesmo endpoint uazapi
+    if (action === "check-status" || action === "qrcode") {
       const res = await fetch(`${UAZAPI_BASE_URL}/instance/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "token": token },
@@ -104,21 +90,19 @@ Deno.serve(async (req) => {
       const connected =
         data.connected === true || data.instance?.status === "connected";
       const qrcode = data.instance?.qrcode || data.qrcode || null;
-      if (connected) {
-        await adminClient
-          .from("whatsapp_config")
-          .update({ is_connected: true, updated_at: new Date().toISOString() })
-          .eq("tenant_id", tenant_id);
-      }
-      return json({ connected, qrcode });
+      await adminClient
+        .from("whatsapp_config")
+        .update({ is_connected: connected, updated_at: new Date().toISOString() })
+        .eq("tenant_id", tenant_id);
+      return json({ connected, qrcode: action === "qrcode" ? qrcode : undefined });
     }
 
     // ── Desconectar ────────────────────────────────────────────────────────
     if (action === "disconnect") {
       try {
-        await uazapiDelete("/instance/logout", token);
+        await uazapiPost("/instance/disconnect", token, {});
       } catch (e) {
-        console.warn("logout API ignorado:", e);
+        console.warn("disconnect API ignorado:", e);
       }
       await adminClient
         .from("whatsapp_config")
@@ -156,7 +140,7 @@ Deno.serve(async (req) => {
     if (action === "send-text") {
       const { phone, message } = body;
       if (!phone || !message) return json({ error: "phone e message são obrigatórios" }, 400);
-      const data = await uazapiPost("/message/sendText", token, {
+      const data = await uazapiPost("/send/text", token, {
         number: phone,
         text: message,
       });
@@ -167,10 +151,11 @@ Deno.serve(async (req) => {
     if (action === "send-image") {
       const { phone, imageUrl, caption } = body;
       if (!phone || !imageUrl) return json({ error: "phone e imageUrl são obrigatórios" }, 400);
-      const data = await uazapiPost("/message/sendImage", token, {
+      const data = await uazapiPost("/send/media", token, {
         number: phone,
-        imageUrl,
+        url: imageUrl,
         caption: caption ?? "",
+        mediatype: "image",
       });
       return json(data);
     }

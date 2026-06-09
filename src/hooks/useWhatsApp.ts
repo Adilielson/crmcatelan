@@ -4,6 +4,11 @@ import { useAuthStore } from './use-auth';
 
 const TOKEN_MASK = '••••••••••••••••';
 
+// Cast necessário: supabase-js v2 + TS 5.9 não infere corretamente tabelas
+// adicionadas manualmente ao types.ts — resulta em tipo 'never'.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
 // Todas as chamadas ao uazapi passam pela Edge Function (evita CORS)
 async function callManage(
   action: string,
@@ -41,11 +46,11 @@ export function useWhatsApp() {
     if (!tenant?.id || initDone.current) return;
     initDone.current = true;
     (async () => {
-      const { data } = await supabase
+      const { data } = await db
         .from('whatsapp_config')
         .select('instance_token, is_connected')
         .eq('tenant_id', tenant.id)
-        .maybeSingle();
+        .maybeSingle() as { data: { instance_token: string; is_connected: boolean } | null };
       if (data?.instance_token) {
         setHasToken(true);
         setIsConnected(!!data.is_connected);
@@ -58,7 +63,7 @@ export function useWhatsApp() {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
       setIsLoading(true);
       try {
-        const { error } = await supabase.from('whatsapp_config').upsert(
+        const { error } = await db.from('whatsapp_config').upsert(
           {
             tenant_id: tenant.id,
             instance_token: rawToken,
@@ -68,7 +73,7 @@ export function useWhatsApp() {
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'tenant_id' }
-        );
+        ) as { error: { message: string; code: string } | null };
         if (error) throw new Error(`Supabase: ${error.message} (${error.code})`);
         setHasToken(true);
 
@@ -136,7 +141,7 @@ export function useWhatsApp() {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
       try {
         await callManage('send-text', tenant.id, { phone, message: text });
-        await supabase.from('whatsapp_message_logs').insert({
+        await db.from('whatsapp_message_logs').insert({
           tenant_id: tenant.id,
           recipient_phone: phone,
           message_type: 'text',
@@ -144,7 +149,7 @@ export function useWhatsApp() {
           error_message: null,
         });
       } catch (err) {
-        await supabase.from('whatsapp_message_logs').insert({
+        await db.from('whatsapp_message_logs').insert({
           tenant_id: tenant.id,
           recipient_phone: phone,
           message_type: 'text',
@@ -162,7 +167,7 @@ export function useWhatsApp() {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
       try {
         await callManage('send-image', tenant.id, { phone, imageUrl, caption });
-        await supabase.from('whatsapp_message_logs').insert({
+        await db.from('whatsapp_message_logs').insert({
           tenant_id: tenant.id,
           recipient_phone: phone,
           message_type: 'image',
@@ -170,7 +175,7 @@ export function useWhatsApp() {
           error_message: null,
         });
       } catch (err) {
-        await supabase.from('whatsapp_message_logs').insert({
+        await db.from('whatsapp_message_logs').insert({
           tenant_id: tenant.id,
           recipient_phone: phone,
           message_type: 'image',
