@@ -87,9 +87,9 @@ export function useUpdateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('leads')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
