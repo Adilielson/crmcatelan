@@ -22,6 +22,44 @@ function json(data: unknown, status = 200) {
   });
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? value as Record<string, unknown> : {};
+}
+
+function normalizeConnected(payload: unknown): boolean {
+  const data = asObject(payload);
+  const instance = asObject(data.instance);
+  const rawStatus = String(
+    data.status ?? data.state ?? data.connection ?? instance.status ?? instance.state ?? ""
+  ).toLowerCase();
+
+  return data.connected === true ||
+    instance.connected === true ||
+    ["connected", "open", "online", "logged", "logged_in", "authenticated"].includes(rawStatus);
+}
+
+function normalizeQRCode(payload: unknown): string | null {
+  const data = asObject(payload);
+  const instance = asObject(data.instance);
+  const qrcode = data.qrcode ?? data.qrCode ?? data.qr ?? data.base64 ?? instance.qrcode ?? instance.qrCode ?? instance.qr;
+
+  if (!qrcode) return null;
+  if (typeof qrcode === "string") return qrcode;
+
+  const qrObject = asObject(qrcode);
+  const base64 = qrObject.base64 ?? qrObject.code ?? qrObject.data;
+  return typeof base64 === "string" ? base64 : null;
+}
+
+function normalizeInstanceInfo(payload: unknown) {
+  const data = asObject(payload);
+  const instance = asObject(data.instance);
+  return {
+    phone: String(data.phone ?? data.number ?? instance.phone ?? instance.number ?? "") || null,
+    name: String(data.name ?? instance.name ?? "") || null,
+  };
+}
+
 async function getToken(tenantId: string): Promise<string> {
   const { data, error } = await adminClient
     .from("whatsapp_config")
@@ -33,14 +71,31 @@ async function getToken(tenantId: string): Promise<string> {
   return data.instance_token;
 }
 
+async function parseUazapiResponse(path: string, res: Response) {
+  const text = await res.text();
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
+  }
+
+  if (!res.ok) {
+    const body = typeof data === "object" && data ? JSON.stringify(data) : text;
+    throw new Error(`uazapi${path}: HTTP ${res.status} — ${body.slice(0, 500)}`);
+  }
+
+  return data ?? {};
+}
+
 async function uazapiGet(path: string, token: string) {
   const res = await fetch(`${UAZAPI_BASE_URL}${path}`, {
     method: "GET",
     headers: { "Content-Type": "application/json", "token": token },
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`uazapi${path}: HTTP ${res.status} — ${text.slice(0, 200)}`);
-  return JSON.parse(text);
+  return parseUazapiResponse(path, res);
 }
 
 async function uazapiPost(path: string, token: string, body?: unknown) {
@@ -49,9 +104,7 @@ async function uazapiPost(path: string, token: string, body?: unknown) {
     headers: { "Content-Type": "application/json", "token": token },
     body: body != null ? JSON.stringify(body) : undefined,
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`uazapi${path}: HTTP ${res.status} — ${text.slice(0, 200)}`);
-  return JSON.parse(text);
+  return parseUazapiResponse(path, res);
 }
 
 async function uazapiDelete(path: string, token: string) {
@@ -59,9 +112,7 @@ async function uazapiDelete(path: string, token: string) {
     method: "DELETE",
     headers: { "Content-Type": "application/json", "token": token },
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`uazapi${path}: HTTP ${res.status} — ${text.slice(0, 200)}`);
-  return JSON.parse(text);
+  return parseUazapiResponse(path, res);
 }
 
 Deno.serve(async (req) => {
@@ -78,23 +129,39 @@ Deno.serve(async (req) => {
 
     const token = await getToken(tenant_id);
 
-    // ── Verificar status + QR Code (mesmo endpoint /instance/connect) ──────
-    // check-status e qrcode usam o mesmo endpoint uazapi
-    if (action === "check-status" || action === "qrcode") {
-      const res = await fetch(`${UAZAPI_BASE_URL}/instance/connect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "token": token },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      const connected =
-        data.connected === true || data.instance?.status === "connected";
-      const qrcode = data.instance?.qrcode || data.qrcode || null;
+    // ── Verificar status ───────────────────────────────────────────────────
+    if (action === "check-status") {
+      const data = await uazapiGet("/instance/status", token);
+      const connected = normalizeConnected(data);
+      const info = normalizeInstanceInfo(data);
       await adminClient
         .from("whatsapp_config")
-        .update({ is_connected: connected, updated_at: new Date().toISOString() })
+        .update({
+          is_connected: connected,
+          connected_phone: connected ? info.phone : null,
+          connected_name: connected ? info.name : null,
+          updated_at: new Date().toISOString(),
+        })
         .eq("tenant_id", tenant_id);
-      return json({ connected, qrcode: action === "qrcode" ? qrcode : undefined });
+      return json({ connected, ...info, raw_status: data });
+    }
+
+    // ── Conectar / QR Code ─────────────────────────────────────────────────
+    if (action === "qrcode") {
+      const data = await uazapiPost("/instance/connect", token);
+      const connected = normalizeConnected(data);
+      const qrcode = connected ? null : normalizeQRCode(data);
+      const info = normalizeInstanceInfo(data);
+      await adminClient
+        .from("whatsapp_config")
+        .update({
+          is_connected: connected,
+          connected_phone: connected ? info.phone : null,
+          connected_name: connected ? info.name : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("tenant_id", tenant_id);
+      return json({ connected, qrcode, ...info });
     }
 
     // ── Desconectar ────────────────────────────────────────────────────────
@@ -117,13 +184,8 @@ Deno.serve(async (req) => {
       try {
         await uazapiPost("/webhook", token, {
           url: webhookUrl,
-          enabled: true,
-          active: true,
-          byApi: true,
           addUrlEvents: true,
-          addUrlTypesMessages: true,
-          excludeMessages: ["wasSentByApi", "isGroupYes"],
-          events: ["connection", "messages", "messages_update", "presence"],
+          events: ["connection", "messages", "qrcode"],
         });
         await adminClient
           .from("whatsapp_config")
@@ -153,9 +215,9 @@ Deno.serve(async (req) => {
       if (!phone || !imageUrl) return json({ error: "phone e imageUrl são obrigatórios" }, 400);
       const data = await uazapiPost("/send/media", token, {
         number: phone,
-        url: imageUrl,
-        caption: caption ?? "",
-        mediatype: "image",
+        type: "image",
+        file: imageUrl,
+        text: caption ?? "",
       });
       return json(data);
     }
