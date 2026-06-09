@@ -48,8 +48,8 @@ export function WhatsAppConfig() {
       setTokenInput('');
       setShowInput(false);
       toast.success('Token salvo com segurança no servidor.');
-    } catch {
-      toast.error('Erro ao salvar o token.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar o token.');
     }
   };
 

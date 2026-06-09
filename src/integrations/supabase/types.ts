@@ -1297,6 +1297,63 @@ export type Database = {
           },
         ]
       }
+      whatsapp_config: {
+        Row: {
+          id: string
+          tenant_id: string
+          instance_token: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          instance_token: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          instance_token?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_message_logs: {
+        Row: {
+          id: string
+          tenant_id: string
+          recipient_phone: string
+          message_type: string
+          status: string
+          error_message: string | null
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          recipient_phone: string
+          message_type: string
+          status: string
+          error_message?: string | null
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          recipient_phone?: string
+          message_type?: string
+          status?: string
+          error_message?: string | null
+          sent_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       saas_churn_ltv_stats: {
