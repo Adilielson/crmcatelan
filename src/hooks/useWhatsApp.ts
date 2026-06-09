@@ -73,7 +73,7 @@ export function useWhatsApp() {
           },
           { onConflict: 'tenant_id' }
         );
-        if (error) throw error;
+        if (error) throw new Error(`Supabase: ${error.message}`);
         setHasToken(true);
       } finally {
         setIsLoading(false);
