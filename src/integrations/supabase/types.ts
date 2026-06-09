@@ -1299,70 +1299,70 @@ export type Database = {
       }
       whatsapp_config: {
         Row: {
+          connected_name: string | null
+          connected_phone: string | null
+          created_at: string
           id: string
-          tenant_id: string
           instance_token: string
           is_active: boolean
           is_connected: boolean
-          webhook_registered: boolean
-          connected_phone: string | null
-          connected_name: string | null
-          created_at: string
+          tenant_id: string
           updated_at: string
+          webhook_registered: boolean
         }
         Insert: {
+          connected_name?: string | null
+          connected_phone?: string | null
+          created_at?: string
           id?: string
-          tenant_id: string
           instance_token: string
           is_active?: boolean
           is_connected?: boolean
-          webhook_registered?: boolean
-          connected_phone?: string | null
-          connected_name?: string | null
-          created_at?: string
+          tenant_id: string
           updated_at?: string
+          webhook_registered?: boolean
         }
         Update: {
+          connected_name?: string | null
+          connected_phone?: string | null
+          created_at?: string
           id?: string
-          tenant_id?: string
           instance_token?: string
           is_active?: boolean
           is_connected?: boolean
-          webhook_registered?: boolean
-          connected_phone?: string | null
-          connected_name?: string | null
-          created_at?: string
+          tenant_id?: string
           updated_at?: string
+          webhook_registered?: boolean
         }
         Relationships: []
       }
       whatsapp_message_logs: {
         Row: {
-          id: string
-          tenant_id: string
-          recipient_phone: string
-          message_type: string
-          status: string
           error_message: string | null
+          id: string
+          message_type: string
+          recipient_phone: string
           sent_at: string
+          status: string
+          tenant_id: string
         }
         Insert: {
-          id?: string
-          tenant_id: string
-          recipient_phone: string
-          message_type: string
-          status: string
           error_message?: string | null
+          id?: string
+          message_type: string
+          recipient_phone: string
           sent_at?: string
+          status: string
+          tenant_id: string
         }
         Update: {
-          id?: string
-          tenant_id?: string
-          recipient_phone?: string
-          message_type?: string
-          status?: string
           error_message?: string | null
+          id?: string
+          message_type?: string
+          recipient_phone?: string
           sent_at?: string
+          status?: string
+          tenant_id?: string
         }
         Relationships: []
       }
