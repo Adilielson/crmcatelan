@@ -16,6 +16,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export const Route = createFileRoute('/chat')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    phone: typeof search.phone === 'string' ? search.phone : undefined,
+  }),
   component: Chat,
 })
 
