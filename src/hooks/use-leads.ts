@@ -63,13 +63,13 @@ export function useCreateLead() {
       notes?: string;
       status?: LeadStage;
     }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('leads')
         .insert({
           tenant_id: DEV_TENANT_ID,
           status: payload.status ?? 'open',
           ...payload,
-        } as any)
+        })
         .select()
         .single();
       if (error) throw error;
