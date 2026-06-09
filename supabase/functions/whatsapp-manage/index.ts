@@ -22,6 +22,44 @@ function json(data: unknown, status = 200) {
   });
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? value as Record<string, unknown> : {};
+}
+
+function normalizeConnected(payload: unknown): boolean {
+  const data = asObject(payload);
+  const instance = asObject(data.instance);
+  const rawStatus = String(
+    data.status ?? data.state ?? data.connection ?? instance.status ?? instance.state ?? ""
+  ).toLowerCase();
+
+  return data.connected === true ||
+    instance.connected === true ||
+    ["connected", "open", "online", "logged", "logged_in", "authenticated"].includes(rawStatus);
+}
+
+function normalizeQRCode(payload: unknown): string | null {
+  const data = asObject(payload);
+  const instance = asObject(data.instance);
+  const qrcode = data.qrcode ?? data.qrCode ?? data.qr ?? data.base64 ?? instance.qrcode ?? instance.qrCode ?? instance.qr;
+
+  if (!qrcode) return null;
+  if (typeof qrcode === "string") return qrcode;
+
+  const qrObject = asObject(qrcode);
+  const base64 = qrObject.base64 ?? qrObject.code ?? qrObject.data;
+  return typeof base64 === "string" ? base64 : null;
+}
+
+function normalizeInstanceInfo(payload: unknown) {
+  const data = asObject(payload);
+  const instance = asObject(data.instance);
+  return {
+    phone: String(data.phone ?? data.number ?? instance.phone ?? instance.number ?? "") || null,
+    name: String(data.name ?? instance.name ?? "") || null,
+  };
+}
+
 async function getToken(tenantId: string): Promise<string> {
   const { data, error } = await adminClient
     .from("whatsapp_config")
@@ -33,14 +71,31 @@ async function getToken(tenantId: string): Promise<string> {
   return data.instance_token;
 }
 
+async function parseUazapiResponse(path: string, res: Response) {
+  const text = await res.text();
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
+  }
+
+  if (!res.ok) {
+    const body = typeof data === "object" && data ? JSON.stringify(data) : text;
+    throw new Error(`uazapi${path}: HTTP ${res.status} — ${body.slice(0, 500)}`);
+  }
+
+  return data ?? {};
+}
+
 async function uazapiGet(path: string, token: string) {
   const res = await fetch(`${UAZAPI_BASE_URL}${path}`, {
     method: "GET",
     headers: { "Content-Type": "application/json", "token": token },
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`uazapi${path}: HTTP ${res.status} — ${text.slice(0, 200)}`);
-  return JSON.parse(text);
+  return parseUazapiResponse(path, res);
 }
 
 async function uazapiPost(path: string, token: string, body?: unknown) {
@@ -49,9 +104,7 @@ async function uazapiPost(path: string, token: string, body?: unknown) {
     headers: { "Content-Type": "application/json", "token": token },
     body: body != null ? JSON.stringify(body) : undefined,
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`uazapi${path}: HTTP ${res.status} — ${text.slice(0, 200)}`);
-  return JSON.parse(text);
+  return parseUazapiResponse(path, res);
 }
 
 async function uazapiDelete(path: string, token: string) {
