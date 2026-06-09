@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
@@ -21,6 +22,11 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 
+const WhatsappRoute = WhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/saas'
     | '/settings'
     | '/users'
+    | '/whatsapp'
     | '/analytics/no-show'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/saas'
     | '/settings'
     | '/users'
+    | '/whatsapp'
     | '/analytics/no-show'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/saas'
     | '/settings'
     | '/users'
+    | '/whatsapp'
     | '/analytics/no-show'
   fileRoutesById: FileRoutesById
 }
@@ -170,11 +182,19 @@ export interface RootRouteChildren {
   SaasRoute: typeof SaasRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
+  WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/whatsapp': {
+      id: '/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/whatsapp'
+      preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/users': {
       id: '/users'
       path: '/users'
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   SaasRoute: SaasRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
+  WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
 }
 export const routeTree = rootRouteImport

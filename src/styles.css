@@ -41,21 +41,36 @@
   --color-danger: #D64545;
   --color-danger-soft: #FBEBEB;
 
-  /* Semantic Mapping - Dark Mode UI */
-  --color-background: #0E0E11;
-  --color-foreground: #15151A;
+  /* Semantic Mapping - Light Mode UI */
+  --color-background: #FFFFFF;
+  --color-foreground: #1A1A1A;
   --color-navy: hsl(222 47% 11%);
-  
+
   --color-card: #FFFFFF;
-  --color-card-foreground: #15151A;
-  
+  --color-card-foreground: #1A1A1A;
+
   --color-primary: #FFC400;
   --color-primary-foreground: #1a1500;
-  
-  --color-border: #E3E6EB;
-  --color-input: #E3E6EB;
+
+  --color-secondary: #F6F7F9;
+  --color-secondary-foreground: #1A1A1A;
+
+  --color-muted: #F6F7F9;
+  --color-muted-foreground: #6B7280;
+
+  --color-accent: #F6F7F9;
+  --color-accent-foreground: #1A1A1A;
+
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1A1A1A;
+
+  --color-destructive: #D64545;
+  --color-destructive-foreground: #FFFFFF;
+
+  --color-border: #E5E7EB;
+  --color-input: #E5E7EB;
   --color-ring: #FFC400;
-  --shadow-card: 0 4px 16px rgba(16,16,17,0.08);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
 }
 
 @layer base {
