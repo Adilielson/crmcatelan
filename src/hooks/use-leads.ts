@@ -152,9 +152,9 @@ export function useSeedSampleLeads() {
         { full_name: 'Ana Beatriz', phone: '5527999990011', email: 'ana@example.com', sales_value: 3200, source: 'whatsapp', status: 'in_progress' as const },
         { full_name: 'Roberto Lima', phone: '5527999990012', email: 'roberto@example.com', sales_value: 950, source: 'direct', status: 'open' as const },
       ];
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('leads')
-        .insert(samples.map((s) => ({ ...s, tenant_id: DEV_TENANT_ID })) as any);
+        .insert(samples.map((s) => ({ ...s, tenant_id: DEV_TENANT_ID })));
       if (error) throw error;
     },
     onSuccess: () => {
