@@ -112,9 +112,7 @@ async function uazapiDelete(path: string, token: string) {
     method: "DELETE",
     headers: { "Content-Type": "application/json", "token": token },
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`uazapi${path}: HTTP ${res.status} — ${text.slice(0, 200)}`);
-  return JSON.parse(text);
+  return parseUazapiResponse(path, res);
 }
 
 Deno.serve(async (req) => {
@@ -131,23 +129,39 @@ Deno.serve(async (req) => {
 
     const token = await getToken(tenant_id);
 
-    // ── Verificar status + QR Code (mesmo endpoint /instance/connect) ──────
-    // check-status e qrcode usam o mesmo endpoint uazapi
-    if (action === "check-status" || action === "qrcode") {
-      const res = await fetch(`${UAZAPI_BASE_URL}/instance/connect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "token": token },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      const connected =
-        data.connected === true || data.instance?.status === "connected";
-      const qrcode = data.instance?.qrcode || data.qrcode || null;
+    // ── Verificar status ───────────────────────────────────────────────────
+    if (action === "check-status") {
+      const data = await uazapiGet("/instance/status", token);
+      const connected = normalizeConnected(data);
+      const info = normalizeInstanceInfo(data);
       await adminClient
         .from("whatsapp_config")
-        .update({ is_connected: connected, updated_at: new Date().toISOString() })
+        .update({
+          is_connected: connected,
+          connected_phone: connected ? info.phone : null,
+          connected_name: connected ? info.name : null,
+          updated_at: new Date().toISOString(),
+        })
         .eq("tenant_id", tenant_id);
-      return json({ connected, qrcode: action === "qrcode" ? qrcode : undefined });
+      return json({ connected, ...info, raw_status: data });
+    }
+
+    // ── Conectar / QR Code ─────────────────────────────────────────────────
+    if (action === "qrcode") {
+      const data = await uazapiPost("/instance/connect", token);
+      const connected = normalizeConnected(data);
+      const qrcode = connected ? null : normalizeQRCode(data);
+      const info = normalizeInstanceInfo(data);
+      await adminClient
+        .from("whatsapp_config")
+        .update({
+          is_connected: connected,
+          connected_phone: connected ? info.phone : null,
+          connected_name: connected ? info.name : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("tenant_id", tenant_id);
+      return json({ connected, qrcode, ...info });
     }
 
     // ── Desconectar ────────────────────────────────────────────────────────
@@ -170,13 +184,8 @@ Deno.serve(async (req) => {
       try {
         await uazapiPost("/webhook", token, {
           url: webhookUrl,
-          enabled: true,
-          active: true,
-          byApi: true,
           addUrlEvents: true,
-          addUrlTypesMessages: true,
-          excludeMessages: ["wasSentByApi", "isGroupYes"],
-          events: ["connection", "messages", "messages_update", "presence"],
+          events: ["connection", "messages", "qrcode"],
         });
         await adminClient
           .from("whatsapp_config")
@@ -206,9 +215,9 @@ Deno.serve(async (req) => {
       if (!phone || !imageUrl) return json({ error: "phone e imageUrl são obrigatórios" }, 400);
       const data = await uazapiPost("/send/media", token, {
         number: phone,
-        url: imageUrl,
-        caption: caption ?? "",
-        mediatype: "image",
+        type: "image",
+        file: imageUrl,
+        text: caption ?? "",
       });
       return json(data);
     }
