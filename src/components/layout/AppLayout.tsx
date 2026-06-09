@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Brain,
   TrendingDown,
-  Smartphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
@@ -31,7 +30,6 @@ const AppLayout = () => {
     { label: 'Chat', icon: MessageSquare, href: '/chat' },
     { label: 'Agenda', icon: Calendar, href: '/agenda' },
     { label: 'Marketing', icon: Target, href: '/marketing' },
-    { label: 'WhatsApp', icon: Smartphone, href: '/whatsapp' },
     { label: 'Usuários', icon: Users, href: '/users' },
     { label: 'Configurações', icon: Settings, href: '/settings' },
   ];
@@ -85,8 +83,6 @@ const AppLayout = () => {
                   "w-[18px] h-[18px] transition-transform duration-300",
                   isActive
                     ? "text-[#1a1500]"
-                    : item.href === '/whatsapp'
-                    ? "text-green-400 group-hover:text-green-300 group-hover:scale-110"
                     : "text-slate-500 group-hover:text-white group-hover:scale-110"
                 )} />
                 {item.label}

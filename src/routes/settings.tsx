@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Settings as SettingsIcon, Store, Shield, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus } from 'lucide-react'
+import { WhatsAppConfig } from '@/pages/WhatsAppConfig'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -245,28 +246,7 @@ function Settings() {
         </TabsContent>
 
         <TabsContent value="chat">
-
-          <section className="bg-white border rounded-xl p-6 shadow-sm max-w-4xl">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Configurações de Chat</h3>
-            <div className="space-y-6">
-              <div className="p-4 border rounded-lg space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold">Templates HSM (WhatsApp)</p>
-                    <p className="text-xs text-slate-500">Gerencie mensagens aprovadas pela Meta para iniciar conversas.</p>
-                  </div>
-                  <Button variant="outline" size="sm">Gerenciar</Button>
-                </div>
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold">Arquivo Automático</p>
-                    <p className="text-xs text-slate-500">Arquivar conversas de leads marcados como 'Perdido' no Kanban.</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </div>
-            </div>
-          </section>
+          <WhatsAppConfig />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from './use-auth';
 import * as uazapi from '@/services/uazapi/uazapiService';
@@ -37,6 +37,14 @@ export function useWhatsApp() {
   const [isConnected, setIsConnected] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState(false);
+
+  // Carrega estado do token ao montar — garante persistência entre navegações
+  useEffect(() => {
+    if (!tenant?.id) return;
+    loadTokenFromSupabase(tenant.id).then(token => {
+      if (token) setHasToken(true);
+    });
+  }, [tenant?.id]);
 
   const saveInstanceToken = useCallback(
     async (rawToken: string): Promise<void> => {

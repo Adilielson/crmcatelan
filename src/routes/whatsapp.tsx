@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { WhatsAppConfig } from '@/pages/WhatsAppConfig';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/whatsapp')({
-  component: WhatsAppConfig,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings' });
+  },
 });
