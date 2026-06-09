@@ -3,6 +3,11 @@
 .env.local
 .env.*.local
 
+# Package manager lock files gerados localmente (projeto usa bun.lock)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Logs
 logs
 *.log

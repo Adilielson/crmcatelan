@@ -6,12 +6,24 @@ import * as uazapi from '@/services/uazapi/uazapiService';
 // Valor fixo exibido ao caller — o token real nunca sai do Supabase para o estado da UI.
 const TOKEN_MASK = '••••••••••••••••';
 
+type WhatsAppConfigRow = { instance_token: string };
+type WhatsAppLogInsert = {
+  tenant_id: string;
+  recipient_phone: string;
+  message_type: 'text' | 'image' | 'document';
+  status: 'sent' | 'failed' | 'pending';
+  error_message: string | null;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
 async function loadTokenFromSupabase(tenantId: string): Promise<string | null> {
-  const { data } = await supabase
+  const { data } = await db
     .from('whatsapp_config')
     .select('instance_token')
     .eq('tenant_id', tenantId)
-    .single();
+    .single() as { data: WhatsAppConfigRow | null };
   return data?.instance_token ?? null;
 }
 
@@ -22,13 +34,14 @@ async function logMessage(
   status: 'sent' | 'failed' | 'pending',
   errorMessage?: string
 ) {
-  await supabase.from('whatsapp_message_logs').insert({
+  const payload: WhatsAppLogInsert = {
     tenant_id: tenantId,
     recipient_phone: phone,
     message_type: type,
     status,
     error_message: errorMessage ?? null,
-  });
+  };
+  await db.from('whatsapp_message_logs').insert(payload);
 }
 
 export function useWhatsApp() {
@@ -51,7 +64,7 @@ export function useWhatsApp() {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
       setIsLoading(true);
       try {
-        const { error } = await supabase.from('whatsapp_config').upsert(
+        const { error } = await db.from('whatsapp_config').upsert(
           {
             tenant_id: tenant.id,
             instance_token: rawToken,

@@ -117,7 +117,7 @@ function SaaSAdmin() {
   useEffect(() => {
     if (user && user.role !== 'super_admin') {
       toast.error("Acesso negado. Apenas Super Admins podem acessar esta área.")
-      navigate({ to: '/dashboard' })
+      navigate({ to: '/' })
     }
   }, [user, navigate])
 

@@ -251,6 +251,23 @@ export interface Database {
         }
       }
     }
+    Views: {
+      [_ in never]: never
+    }
+    Enums: {
+      user_role: 'super_admin' | 'admin' | 'manager' | 'seller' | 'marketing_partner'
+      lead_status: 'open' | 'in_progress' | 'scheduled' | 'showed_up' | 'no_show' | 'lost'
+      appointment_status: 'pending' | 'confirmed' | 'completed' | 'no_show' | 'cancelled'
+      conversation_status: 'open' | 'waiting_seller' | 'finished' | 'automated_ia'
+      message_direction: 'inbound' | 'outbound'
+      marketing_platform: 'facebook_ads' | 'google_ads' | 'tiktok_ads'
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
   }
 }
 
