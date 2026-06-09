@@ -64,13 +64,20 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const tenantId = url.searchParams.get("tenant_id") || "tenant-1";
+    let tenantId = url.searchParams.get("tenant_id") || "tenant-1";
+    let urlEvent: string | null = null;
+    // Se tenant_id veio como "tenant-1/messages" (addUrlEvents), separa
+    if (tenantId.includes("/")) {
+      const [tid, ev] = tenantId.split("/");
+      tenantId = tid;
+      urlEvent = ev || null;
+    }
 
     const body = await req.json().catch(() => ({}));
     const { body: bodyObject, data, message } = messagePayload(body);
-    const eventName = String(bodyObject.event ?? bodyObject.type ?? data.event ?? data.type ?? "").toLowerCase();
+    const eventName = String(bodyObject.event ?? bodyObject.type ?? data.event ?? data.type ?? urlEvent ?? "").toLowerCase();
     const connected = connectionState(body);
-    console.log(`[webhook] tenant=${tenantId} event=${eventName || "unknown"} connected=${connected}`);
+    console.log(`[webhook] tenant=${tenantId} event=${eventName || "unknown"} connected=${connected} keys=${Object.keys(bodyObject).join(",")}`);
 
     // Atualiza status de conexão no banco
     if (connected === true) {

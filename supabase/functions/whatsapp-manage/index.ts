@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
         await uazapiPost("/webhook", token, {
           url: webhookUrl,
           enabled: true,
-          addUrlEvents: true,
+          addUrlEvents: false,
           addUrlTypesMessages: false,
           events: ["connection", "messages", "qrcode"],
           excludeMessages: [],
