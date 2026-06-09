@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,8 +35,29 @@ export function WhatsAppConfig() {
   } = useWhatsApp();
 
   const [tokenInput, setTokenInput] = useState('');
-  const [showInput, setShowInput] = useState(false);
+  const [showTokenText, setShowTokenText] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [showQR, setShowQR] = useState(false);
+
+  // Quando QR é exibido, faz polling a cada 10s para detectar conexão
+  useEffect(() => {
+    if (!showQR || isConnected) return;
+    const interval = setInterval(async () => {
+      try {
+        const connected = await checkStatus();
+        if (connected) {
+          setShowQR(false);
+          toast.success('WhatsApp conectado!');
+        }
+      } catch { /* silencioso */ }
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [showQR, isConnected, checkStatus]);
+
+  // Fecha QR quando conectar
+  useEffect(() => {
+    if (isConnected) setShowQR(false);
+  }, [isConnected]);
 
   const handleSaveToken = async () => {
     if (!tokenInput.trim()) {
@@ -46,8 +67,8 @@ export function WhatsAppConfig() {
     try {
       await saveInstanceToken(tokenInput.trim());
       setTokenInput('');
-      setShowInput(false);
-      toast.success('Token salvo com segurança no servidor.');
+      setEditMode(false);
+      toast.success('Token salvo. Webhook registrado automaticamente.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao salvar o token.');
     }
@@ -55,10 +76,10 @@ export function WhatsAppConfig() {
 
   const handleCheckStatus = async () => {
     try {
-      await checkStatus();
-      toast.success(isConnected ? 'Instância conectada.' : 'Instância desconectada.');
+      const connected = await checkStatus();
+      toast.success(connected ? 'Instância conectada.' : 'Instância desconectada.');
     } catch (err) {
-      toast.error(String(err));
+      toast.error(err instanceof Error ? err.message : 'Erro ao verificar status.');
     }
   };
 
@@ -67,7 +88,7 @@ export function WhatsAppConfig() {
       await fetchQRCode();
       setShowQR(true);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(err instanceof Error ? err.message : 'Erro ao obter QR Code.');
     }
   };
 
@@ -76,9 +97,11 @@ export function WhatsAppConfig() {
       await disconnect();
       toast.success('Instância desconectada.');
     } catch (err) {
-      toast.error(String(err));
+      toast.error(err instanceof Error ? err.message : 'Erro ao desconectar.');
     }
   };
+
+  const showInputForm = !hasToken || editMode;
 
   return (
     <div className="max-w-3xl space-y-6 animate-in fade-in duration-500">
@@ -90,7 +113,7 @@ export function WhatsAppConfig() {
         <div>
           <h1 className="text-2xl font-black text-[#1A1A1A] tracking-tight">WhatsApp — Uazapi</h1>
           <p className="text-sm text-[#6B7280] font-medium mt-0.5">
-            Conecte sua instância WhatsApp para envio de mensagens via CRM.
+            Conecte sua instância WhatsApp para envio e recebimento de mensagens via CRM.
           </p>
         </div>
         <div className="ml-auto">
@@ -112,8 +135,8 @@ export function WhatsAppConfig() {
         <div>
           <p className="text-sm font-bold text-amber-800">Armazenamento seguro</p>
           <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-            O token é salvo exclusivamente no banco de dados com RLS ativo. Nunca é armazenado no
-            navegador, localStorage ou exposto ao frontend.
+            O token é salvo exclusivamente no banco de dados. Todas as chamadas à API uazapi
+            passam pela Edge Function do servidor — nunca pelo navegador.
           </p>
         </div>
       </div>
@@ -148,7 +171,7 @@ export function WhatsAppConfig() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
-          {hasToken && !showInput ? (
+          {!showInputForm ? (
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
                 Token atual
@@ -163,7 +186,7 @@ export function WhatsAppConfig() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowInput(true)}
+                  onClick={() => setEditMode(true)}
                   className="shrink-0"
                 >
                   Alterar
@@ -180,19 +203,20 @@ export function WhatsAppConfig() {
               </Label>
               <div className="relative">
                 <Input
-                  type={showInput ? 'text' : 'password'}
+                  type={showTokenText ? 'text' : 'password'}
                   placeholder="Cole o token da instância Uazapi aqui"
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   className="pr-10"
                   autoComplete="off"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveToken()}
                 />
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
-                  onClick={() => setShowInput((v) => !v)}
+                  onClick={() => setShowTokenText((v) => !v)}
                 >
-                  {showInput ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showTokenText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               <div className="flex gap-2">
@@ -201,13 +225,17 @@ export function WhatsAppConfig() {
                   disabled={isLoading || !tokenInput.trim()}
                   className="bg-[#FFC400] text-[#1a1500] font-black text-xs hover:bg-[#FFD60A]"
                 >
-                  {isLoading ? 'Salvando...' : 'Salvar Token'}
+                  {isLoading ? (
+                    <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Salvando...</>
+                  ) : (
+                    'Salvar Token'
+                  )}
                 </Button>
                 {hasToken && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setShowInput(false); setTokenInput(''); }}
+                    onClick={() => { setEditMode(false); setTokenInput(''); }}
                   >
                     Cancelar
                   </Button>
@@ -218,7 +246,7 @@ export function WhatsAppConfig() {
         </CardContent>
       </Card>
 
-      {/* Ações */}
+      {/* Controle da instância */}
       <Card className="border-[#E5E7EB] shadow-sm rounded-[14px]">
         <CardHeader className="pb-3 border-b border-[#F3F4F6]">
           <CardTitle className="text-xs font-black uppercase tracking-widest text-[#6B7280] flex items-center gap-2">
@@ -244,7 +272,7 @@ export function WhatsAppConfig() {
               className="gap-2"
             >
               <QrCode className="w-4 h-4" />
-              Gerar QR Code
+              {isConnected ? 'Ver QR Code' : 'Conectar / QR Code'}
             </Button>
 
             <Button
@@ -263,11 +291,16 @@ export function WhatsAppConfig() {
               Configure o token da instância acima para habilitar as ações.
             </p>
           )}
+          {hasToken && !isConnected && (
+            <p className="text-xs text-amber-600 mt-3 font-medium">
+              Clique em "Conectar / QR Code" para escanear o QR Code com o WhatsApp e conectar.
+            </p>
+          )}
         </CardContent>
       </Card>
 
       {/* QR Code */}
-      {showQR && qrCode && (
+      {showQR && (
         <Card className="border-[#E5E7EB] shadow-sm rounded-[14px]">
           <CardHeader className="pb-3 border-b border-[#F3F4F6]">
             <CardTitle className="text-xs font-black uppercase tracking-widest text-[#6B7280] flex items-center gap-2">
@@ -275,20 +308,51 @@ export function WhatsAppConfig() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6 flex flex-col items-center gap-4">
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded-[12px] shadow-sm">
-              <img
-                src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
-                alt="QR Code WhatsApp"
-                className="w-48 h-48"
-              />
-            </div>
-            <p className="text-xs text-[#6B7280] text-center max-w-xs">
-              Abra o WhatsApp no celular → Dispositivos conectados → Conectar dispositivo → Escaneie
-              este QR Code.
-            </p>
-            <Button variant="outline" size="sm" onClick={() => setShowQR(false)}>
-              Fechar
-            </Button>
+            {isConnected ? (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Wifi className="w-8 h-8 text-green-600" />
+                </div>
+                <p className="text-sm font-bold text-green-700">WhatsApp Conectado!</p>
+              </div>
+            ) : qrCode ? (
+              <>
+                <div className="p-4 bg-white border border-[#E5E7EB] rounded-[12px] shadow-sm">
+                  <img
+                    src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
+                    alt="QR Code WhatsApp"
+                    className="w-52 h-52"
+                  />
+                </div>
+                <div className="text-center max-w-xs space-y-1">
+                  <p className="text-xs font-bold text-[#1A1A1A]">Como escanear:</p>
+                  <p className="text-xs text-[#6B7280]">
+                    WhatsApp → Menu (⋮) → Dispositivos conectados → Conectar dispositivo
+                  </p>
+                  <p className="text-xs text-amber-600 font-medium mt-2 flex items-center justify-center gap-1">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Verificando conexão automaticamente...
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleFetchQR} disabled={isLoading}>
+                    <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Atualizar QR
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowQR(false)}>
+                    Fechar
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-[#6B7280]">
+                  A instância já está conectada ou o QR Code não está disponível.
+                </p>
+                <Button variant="outline" size="sm" onClick={handleFetchQR} disabled={isLoading} className="mt-3">
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Tentar novamente
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

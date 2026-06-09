@@ -1303,6 +1303,10 @@ export type Database = {
           tenant_id: string
           instance_token: string
           is_active: boolean
+          is_connected: boolean
+          webhook_registered: boolean
+          connected_phone: string | null
+          connected_name: string | null
           created_at: string
           updated_at: string
         }
@@ -1311,6 +1315,10 @@ export type Database = {
           tenant_id: string
           instance_token: string
           is_active?: boolean
+          is_connected?: boolean
+          webhook_registered?: boolean
+          connected_phone?: string | null
+          connected_name?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1319,6 +1327,10 @@ export type Database = {
           tenant_id?: string
           instance_token?: string
           is_active?: boolean
+          is_connected?: boolean
+          webhook_registered?: boolean
+          connected_phone?: string | null
+          connected_name?: string | null
           created_at?: string
           updated_at?: string
         }

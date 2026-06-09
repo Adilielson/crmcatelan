@@ -1,34 +1,31 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from './use-auth';
-import * as uazapi from '@/services/uazapi/uazapiService';
 
 const TOKEN_MASK = '••••••••••••••••';
 
-async function loadTokenFromSupabase(tenantId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('whatsapp_config')
-    .select('instance_token')
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  if (error) console.warn('[whatsapp] loadToken error:', error.message);
-  return data?.instance_token ?? null;
-}
-
-async function logMessage(
+// Todas as chamadas ao uazapi passam pela Edge Function (evita CORS)
+async function callManage(
+  action: string,
   tenantId: string,
-  phone: string,
-  type: string,
-  status: string,
-  errorMessage?: string
-) {
-  await supabase.from('whatsapp_message_logs').insert({
-    tenant_id: tenantId,
-    recipient_phone: phone,
-    message_type: type,
-    status,
-    error_message: errorMessage ?? null,
+  extra?: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const { data, error } = await supabase.functions.invoke('whatsapp-manage', {
+    body: { action, tenant_id: tenantId, ...extra },
   });
+  if (error) {
+    let msg = error.message || `Erro na função: ${action}`;
+    try {
+      const ctx =
+        typeof error.context === 'string'
+          ? JSON.parse(error.context)
+          : error.context;
+      if (ctx?.error) msg = ctx.error;
+    } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  if (data?.error) throw new Error(String(data.error));
+  return data as Record<string, unknown>;
 }
 
 export function useWhatsApp() {
@@ -37,12 +34,23 @@ export function useWhatsApp() {
   const [isConnected, setIsConnected] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState(false);
+  const initDone = useRef(false);
 
+  // Carrega token e status persistido ao montar
   useEffect(() => {
-    if (!tenant?.id) return;
-    loadTokenFromSupabase(tenant.id).then(token => {
-      if (token) setHasToken(true);
-    });
+    if (!tenant?.id || initDone.current) return;
+    initDone.current = true;
+    (async () => {
+      const { data } = await supabase
+        .from('whatsapp_config')
+        .select('instance_token, is_connected')
+        .eq('tenant_id', tenant.id)
+        .maybeSingle();
+      if (data?.instance_token) {
+        setHasToken(true);
+        setIsConnected(!!data.is_connected);
+      }
+    })();
   }, [tenant?.id]);
 
   const saveInstanceToken = useCallback(
@@ -55,12 +63,29 @@ export function useWhatsApp() {
             tenant_id: tenant.id,
             instance_token: rawToken,
             is_active: true,
+            is_connected: false,
+            webhook_registered: false,
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'tenant_id' }
         );
         if (error) throw new Error(`Supabase: ${error.message} (${error.code})`);
         setHasToken(true);
+
+        // Registra webhook automaticamente após salvar
+        try {
+          await callManage('register-webhook', tenant.id);
+        } catch (e) {
+          console.warn('[whatsapp] webhook registration:', e);
+        }
+
+        // Verifica status automaticamente
+        try {
+          const result = await callManage('check-status', tenant.id);
+          setIsConnected(!!result.connected);
+        } catch (e) {
+          console.warn('[whatsapp] auto check-status:', e);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -68,15 +93,14 @@ export function useWhatsApp() {
     [tenant?.id]
   );
 
-  const checkStatus = useCallback(async (): Promise<void> => {
-    if (!tenant?.id) return;
+  const checkStatus = useCallback(async (): Promise<boolean> => {
+    if (!tenant?.id) return false;
     setIsLoading(true);
     try {
-      const token = await loadTokenFromSupabase(tenant.id);
-      if (!token) throw new Error('Token não configurado.');
-      setHasToken(true);
-      const status = await uazapi.checkInstanceStatus(token);
-      setIsConnected(!!status.connected);
+      const result = await callManage('check-status', tenant.id);
+      const connected = !!result.connected;
+      setIsConnected(connected);
+      return connected;
     } finally {
       setIsLoading(false);
     }
@@ -86,10 +110,10 @@ export function useWhatsApp() {
     if (!tenant?.id) return;
     setIsLoading(true);
     try {
-      const token = await loadTokenFromSupabase(tenant.id);
-      if (!token) throw new Error('Token não configurado.');
-      const result = await uazapi.getQRCode(token);
-      setQrCode(result.base64 ?? result.qrcode ?? null);
+      const result = await callManage('qrcode', tenant.id);
+      const connected = !!result.connected;
+      setIsConnected(connected);
+      setQrCode(connected ? null : (result.qrcode as string | null) ?? null);
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +123,9 @@ export function useWhatsApp() {
     if (!tenant?.id) return;
     setIsLoading(true);
     try {
-      const token = await loadTokenFromSupabase(tenant.id);
-      if (!token) throw new Error('Token não configurado.');
-      await uazapi.disconnectInstance(token);
+      await callManage('disconnect', tenant.id);
       setIsConnected(false);
+      setQrCode(null);
     } finally {
       setIsLoading(false);
     }
@@ -111,13 +134,23 @@ export function useWhatsApp() {
   const sendText = useCallback(
     async (phone: string, text: string): Promise<void> => {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
-      const token = await loadTokenFromSupabase(tenant.id);
-      if (!token) throw new Error('Token não configurado.');
       try {
-        await uazapi.sendTextMessage(token, phone, text);
-        await logMessage(tenant.id, phone, 'text', 'sent');
+        await callManage('send-text', tenant.id, { phone, message: text });
+        await supabase.from('whatsapp_message_logs').insert({
+          tenant_id: tenant.id,
+          recipient_phone: phone,
+          message_type: 'text',
+          status: 'sent',
+          error_message: null,
+        });
       } catch (err) {
-        await logMessage(tenant.id, phone, 'text', 'failed', String(err));
+        await supabase.from('whatsapp_message_logs').insert({
+          tenant_id: tenant.id,
+          recipient_phone: phone,
+          message_type: 'text',
+          status: 'failed',
+          error_message: String(err),
+        });
         throw err;
       }
     },
@@ -127,13 +160,23 @@ export function useWhatsApp() {
   const sendImage = useCallback(
     async (phone: string, imageUrl: string, caption?: string): Promise<void> => {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
-      const token = await loadTokenFromSupabase(tenant.id);
-      if (!token) throw new Error('Token não configurado.');
       try {
-        await uazapi.sendImageMessage(token, phone, imageUrl, caption);
-        await logMessage(tenant.id, phone, 'image', 'sent');
+        await callManage('send-image', tenant.id, { phone, imageUrl, caption });
+        await supabase.from('whatsapp_message_logs').insert({
+          tenant_id: tenant.id,
+          recipient_phone: phone,
+          message_type: 'image',
+          status: 'sent',
+          error_message: null,
+        });
       } catch (err) {
-        await logMessage(tenant.id, phone, 'image', 'failed', String(err));
+        await supabase.from('whatsapp_message_logs').insert({
+          tenant_id: tenant.id,
+          recipient_phone: phone,
+          message_type: 'image',
+          status: 'failed',
+          error_message: String(err),
+        });
         throw err;
       }
     },
