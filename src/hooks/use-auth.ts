@@ -9,23 +9,25 @@ interface AuthState {
   logout: () => void;
 }
 
+export const DEV_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: {
     id: '1',
     email: 'agencia@marketing.com',
     name: 'Agência Performance',
     role: 'marketing_partner',
-    tenant_id: 'tenant-1'
+    tenant_id: DEV_TENANT_ID,
   },
   tenant: {
-    id: 'tenant-1',
-    name: 'Ótica Castelar Matriz',
-    slug: 'castelar-matriz',
+    id: DEV_TENANT_ID,
+    name: 'Ótica Catelan Matriz',
+    slug: 'catelan-matriz',
     status: 'active',
     plan: 'pro',
     settings: {},
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   },
   setUser: (user: User | null) => set({ user }),
   setTenant: (tenant: Tenant | null) => set({ tenant }),
