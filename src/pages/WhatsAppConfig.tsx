@@ -148,6 +148,27 @@ export function WhatsAppConfig() {
         </div>
       </div>
 
+      {/* Número conectado */}
+      {isConnected && connectedPhone && (
+        <div className="flex items-center gap-4 bg-gradient-to-br from-green-50 to-emerald-50/40 border border-green-200 rounded-[16px] p-5">
+          <div className="p-3 bg-white rounded-[12px] shadow-sm border border-green-100">
+            <Phone className="w-5 h-5 text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-widest text-green-700/70">Número conectado</p>
+            <p className="text-lg font-black text-[#1A1A1A] tracking-tight font-mono">{phoneFormatted}</p>
+            {connectedName && (
+              <p className="text-xs text-[#6B7280] font-medium truncate">{connectedName}</p>
+            )}
+          </div>
+          {last4 && (
+            <Badge className="bg-green-600 text-white border-0 font-black text-xs px-3 py-1.5 tabular-nums">
+              ••• {last4}
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* Alerta de segurança */}
       <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-[12px]">
         <ShieldCheck className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
