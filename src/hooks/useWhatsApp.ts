@@ -106,9 +106,13 @@ export function useWhatsApp() {
     if (!tenant?.id) return false;
     setIsLoading(true);
     try {
-      const result = await callManage('check-status', tenant.id);
+      const result = await callManage('check-status', tenant.id) as { connected?: boolean; phone?: string | null; name?: string | null };
       const connected = !!result.connected;
       setIsConnected(connected);
+      if (connected) {
+        if (result.phone) setConnectedPhone(result.phone);
+        if (result.name) setConnectedName(result.name);
+      }
       return connected;
     } finally {
       setIsLoading(false);
