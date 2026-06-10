@@ -325,19 +325,51 @@ function Agenda() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                         className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                        onClick={() => handleStatusChange(appt.id, 'confirmado')}
-                        disabled={appt.status === 'confirmado'}
+                      {appt.status === 'pendente' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                          onClick={() => handleConfirm(appt)}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2 text-success" /> CONFIRMAR
+                        </Button>
+                      )}
+                      {appt.status === 'confirmado' && !appt.checkinAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                          onClick={() => handleCheckin(appt)}
+                        >
+                          <LogIn className="w-4 h-4 mr-2 text-primary" /> CHECK-IN
+                        </Button>
+                      )}
+                      {appt.status === 'confirmado' && appt.checkinAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                          onClick={() => handleCheckout(appt)}
+                        >
+                          <LogOut className="w-4 h-4 mr-2 text-success" /> CHECK-OUT
+                        </Button>
+                      )}
+                      {appt.status === 'realizado' && (
+                        <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-success/10 border-success/30 text-success rounded-xl">
+                          <CheckCircle className="w-4 h-4 mr-2" /> CONCLUÍDO
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenChat(appt)}
+                        className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
                       >
-                        <CheckCircle className="w-4 h-4 mr-2 text-success shadow-[0_0_10px_rgba(31,164,99,0.3)]" /> CONFIRMAR
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl">
-                        <MessageSquare className="w-4 h-4 mr-2 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" /> WHATSAPP
+                        <MessageSquare className="w-4 h-4 mr-2 text-primary" /> WHATSAPP
                       </Button>
                     </div>
+
                   </div>
                 ))
               )}
