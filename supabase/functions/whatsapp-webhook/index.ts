@@ -44,8 +44,10 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
 
 // ── Helpers de IA + envio ────────────────────────────────────────────────
 async function generateSdrReply(
+  systemPrompt: string,
   history: { role: "user" | "assistant"; content: string }[],
-  contextNote?: string,
+  contextNote: string | undefined,
+  temperature: number,
 ): Promise<string | null> {
   if (!LOVABLE_API_KEY) {
     console.error("[sdr] LOVABLE_API_KEY ausente");
@@ -53,7 +55,7 @@ async function generateSdrReply(
   }
   try {
     const systemMessages: { role: "system"; content: string }[] = [
-      { role: "system", content: SDR_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
     ];
     if (contextNote) systemMessages.push({ role: "system", content: contextNote });
 
