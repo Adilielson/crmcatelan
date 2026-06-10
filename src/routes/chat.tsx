@@ -55,7 +55,7 @@ function Chat() {
     )
   }, [conversations, search])
 
-  const currentLead = leads.find((l) => l.phone && selectedConv && l.phone.replace(/\D+/g, '').endsWith(selectedConv.phone.replace(/\D+/g, '').slice(-8)))
+  const currentLead = leads[0]
 
   // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
   useEffect(() => {
