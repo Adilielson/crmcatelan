@@ -14,7 +14,10 @@ interface AuthState {
   initialize: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+let _initialized = false;
+let _loadingUserId: string | null = null;
+
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   tenant: null,
   loading: true,
@@ -22,114 +25,76 @@ export const useAuthStore = create<AuthState>((set) => ({
   setTenant: (tenant) => set({ tenant }),
 
   logout: async () => {
-    console.log('[auth] 🔻 logout() chamado');
     await supabase.auth.signOut();
+    _loadingUserId = null;
     set({ user: null, tenant: null });
   },
 
   initialize: () => {
-    console.log('[auth] 🟡 initialize() — chamando getSession()');
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('[auth] 🟢 getSession resolvido', {
-        hasSession: !!session,
-        userId: session?.user?.id ?? null,
-        email: session?.user?.email ?? null,
-        error: error?.message ?? null,
-      });
+    if (_initialized) return;
+    _initialized = true;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        loadProfile(session.user.id, set);
+        loadProfile(session.user.id, session.user.email ?? '', set, get);
       } else {
-        console.log('[auth] ⚪ sem sessão → loading=false');
         set({ loading: false });
       }
     });
 
     supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[auth] 🔔 onAuthStateChange', {
-        event,
-        hasSession: !!session,
-        userId: session?.user?.id ?? null,
-        email: session?.user?.email ?? null,
-      });
-      if (session?.user) {
-        loadProfile(session.user.id, set);
-      } else {
+      if (!session?.user) {
+        _loadingUserId = null;
         set({ user: null, tenant: null, loading: false });
+        return;
       }
+      // Dedup: se já carregamos esse user, ignora (TOKEN_REFRESHED, INITIAL_SESSION etc.)
+      const currentId = get().user?.id;
+      if (currentId === session.user.id || _loadingUserId === session.user.id) return;
+      loadProfile(session.user.id, session.user.email ?? '', set, get);
     });
   },
 }));
 
-async function loadProfile(userId: string, set: (partial: Partial<AuthState>) => void) {
-  console.log('[auth] ▶️ loadProfile início', { userId });
+async function loadProfile(
+  userId: string,
+  email: string,
+  set: (partial: Partial<AuthState>) => void,
+  get: () => AuthState,
+) {
+  _loadingUserId = userId;
   try {
-    const [profileRes, authRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', userId).single(),
-      supabase.auth.getUser(),
-    ]);
+    // 1 round-trip: profile + tenant via join
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, tenant_id, full_name, role, status, tenants(*)')
+      .eq('id', userId)
+      .single();
 
-    console.log('[auth] 📄 query profiles', {
-      hasData: !!profileRes.data,
-      error: profileRes.error?.message ?? null,
-      errorCode: profileRes.error?.code ?? null,
-      errorDetails: profileRes.error?.details ?? null,
-      errorHint: profileRes.error?.hint ?? null,
-    });
-    console.log('[auth] 👤 auth.getUser', {
-      hasUser: !!authRes.data.user,
-      email: authRes.data.user?.email ?? null,
-      error: authRes.error?.message ?? null,
-    });
-
-    const profile = profileRes.data as {
-      id: string; tenant_id: string; full_name: string | null;
-      role: User['role']; status: string;
-    } | null;
-    const authUser = authRes.data.user;
-
-    if (!profile || !authUser) {
-      console.warn('[auth] ⛔ loadProfile ABORTOU — profile ou authUser ausente', {
-        hasProfile: !!profile,
-        hasAuthUser: !!authUser,
-        profileError: profileRes.error?.message ?? null,
-      });
+    if (error || !data) {
+      console.warn('[auth] loadProfile sem profile', error?.message);
       set({ loading: false });
       return;
     }
 
+    const profile = data as any;
     const user: User = {
       id: profile.id,
-      email: authUser.email || '',
-      name: profile.full_name || authUser.email || '',
+      email,
+      name: profile.full_name || email,
       role: profile.role,
       tenant_id: profile.tenant_id,
     };
-    console.log('[auth] ✅ user montado', user);
 
-    if (profile.role === 'super_admin') {
-      console.log('[auth] 👑 super_admin — set sem tenant');
-      set({ user, tenant: null, loading: false });
-      return;
-    }
+    const tenant = profile.role === 'super_admin'
+      ? null
+      : ((profile.tenants as Tenant | null) ?? null);
 
-    console.log('[auth] 🏢 buscando tenant', { tenant_id: profile.tenant_id });
-    const { data: tenantData, error: tenantErr } = await supabase
-      .from('tenants')
-      .select('*')
-      .eq('id', profile.tenant_id)
-      .single();
-
-    console.log('[auth] 🏢 tenant resultado', {
-      hasTenant: !!tenantData,
-      tenantName: (tenantData as Tenant | null)?.name ?? null,
-      error: tenantErr?.message ?? null,
-      errorCode: tenantErr?.code ?? null,
-    });
-
-    set({ user, tenant: (tenantData as Tenant | null) ?? null, loading: false });
-    console.log('[auth] 🎉 loadProfile FINALIZADO com sucesso');
+    set({ user, tenant, loading: false });
   } catch (e) {
-    console.error('[auth] 💥 loadProfile EXCEÇÃO', e);
+    console.error('[auth] loadProfile EXCEÇÃO', e);
     set({ loading: false });
+  } finally {
+    _loadingUserId = null;
   }
 }
