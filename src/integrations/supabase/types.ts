@@ -1305,6 +1305,7 @@ export type Database = {
       }
       whatsapp_config: {
         Row: {
+          business_hours: Json
           connected_name: string | null
           connected_phone: string | null
           created_at: string
@@ -1313,10 +1314,12 @@ export type Database = {
           is_active: boolean
           is_connected: boolean
           tenant_id: string
+          timezone: string
           updated_at: string
           webhook_registered: boolean
         }
         Insert: {
+          business_hours?: Json
           connected_name?: string | null
           connected_phone?: string | null
           created_at?: string
@@ -1325,10 +1328,12 @@ export type Database = {
           is_active?: boolean
           is_connected?: boolean
           tenant_id: string
+          timezone?: string
           updated_at?: string
           webhook_registered?: boolean
         }
         Update: {
+          business_hours?: Json
           connected_name?: string | null
           connected_phone?: string | null
           created_at?: string
@@ -1337,6 +1342,7 @@ export type Database = {
           is_active?: boolean
           is_connected?: boolean
           tenant_id?: string
+          timezone?: string
           updated_at?: string
           webhook_registered?: boolean
         }

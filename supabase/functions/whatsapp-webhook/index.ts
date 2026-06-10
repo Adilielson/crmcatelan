@@ -35,12 +35,20 @@ const corsHeaders = {
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // ── Helpers de IA + envio ────────────────────────────────────────────────
-async function generateSdrReply(history: { role: "user" | "assistant"; content: string }[]): Promise<string | null> {
+async function generateSdrReply(
+  history: { role: "user" | "assistant"; content: string }[],
+  contextNote?: string,
+): Promise<string | null> {
   if (!LOVABLE_API_KEY) {
     console.error("[sdr] LOVABLE_API_KEY ausente");
     return null;
   }
   try {
+    const systemMessages: { role: "system"; content: string }[] = [
+      { role: "system", content: SDR_SYSTEM_PROMPT },
+    ];
+    if (contextNote) systemMessages.push({ role: "system", content: contextNote });
+
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -50,12 +58,10 @@ async function generateSdrReply(history: { role: "user" | "assistant"; content: 
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SDR_SYSTEM_PROMPT },
-          ...history,
-        ],
+        messages: [...systemMessages, ...history],
       }),
     });
+
     if (!res.ok) {
       const txt = await res.text();
       console.error(`[sdr] gateway ${res.status}: ${txt.slice(0, 300)}`);
@@ -87,6 +93,60 @@ async function sendWhatsAppText(token: string, phone: string, text: string): Pro
     console.error("[sdr] erro enviando whatsapp:", e instanceof Error ? e.message : String(e));
     return false;
   }
+}
+
+// ── Horário de expediente ─────────────────────────────────────────────────
+type BusinessHours = Record<string, [string, string] | null>;
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const DAY_LABEL_PT: Record<string, string> = {
+  sun: "domingo", mon: "segunda", tue: "terça", wed: "quarta",
+  thu: "quinta", fri: "sexta", sat: "sábado",
+};
+
+function getLocalDayAndMinutes(date: Date, timezone: string): { dayKey: string; minutes: number } {
+  try {
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const parts = fmt.formatToParts(date);
+    const wk = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
+    const hh = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
+    const mm = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
+    const map: Record<string, string> = { Sun: "sun", Mon: "mon", Tue: "tue", Wed: "wed", Thu: "thu", Fri: "fri", Sat: "sat" };
+    return { dayKey: map[wk] ?? "mon", minutes: hh * 60 + mm };
+  } catch {
+    const d = date.getUTCDay();
+    return { dayKey: DAY_KEYS[d], minutes: date.getUTCHours() * 60 + date.getUTCMinutes() };
+  }
+}
+
+function toMin(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map((n) => parseInt(n, 10));
+  return (h || 0) * 60 + (m || 0);
+}
+
+function buildHoursContext(hours: BusinessHours | null, timezone: string): string {
+  if (!hours) return "";
+  const now = new Date();
+  const { dayKey, minutes } = getLocalDayAndMinutes(now, timezone);
+  const today = hours[dayKey];
+  const isOpen = !!today && minutes >= toMin(today[0]) && minutes < toMin(today[1]);
+
+  let nextLabel = "em breve";
+  for (let i = 0; i < 7; i++) {
+    const idx = (DAY_KEYS.indexOf(dayKey) + i) % 7;
+    const k = DAY_KEYS[idx];
+    const slot = hours[k];
+    if (!slot) continue;
+    if (i === 0 && minutes < toMin(slot[0])) { nextLabel = `hoje às ${slot[0]}`; break; }
+    if (i > 0) { nextLabel = `${DAY_LABEL_PT[k]} às ${slot[0]}`; break; }
+  }
+
+  const todayStr = today ? `${today[0]}–${today[1]}` : "fechado";
+  if (isOpen) {
+    return `CONTEXTO DE HORÁRIO (fuso ${timezone}): estamos DENTRO do expediente. Horário de hoje: ${todayStr}. Você PODE oferecer transferir para um atendente humano.`;
+  }
+  return `CONTEXTO DE HORÁRIO (fuso ${timezone}): estamos FORA do expediente. Horário de hoje: ${todayStr}. Próxima abertura: ${nextLabel}. NÃO ofereça transferir para atendente humano agora. Em vez disso, ofereça agendar uma consulta oftalmológica ou diga que a equipe responderá no próximo horário útil.`;
 }
 
 
@@ -224,7 +284,7 @@ Deno.serve(async (req) => {
             // 1) Busca token da instância
             const { data: cfg } = await adminClient
               .from("whatsapp_config")
-              .select("instance_token, is_connected")
+              .select("instance_token, is_connected, business_hours, timezone")
               .eq("tenant_id", tenantId)
               .maybeSingle();
 
@@ -249,7 +309,11 @@ Deno.serve(async (req) => {
                 }));
 
               // 3) Chama Lovable AI Gateway
-              const reply = await generateSdrReply(history);
+              const hoursCtx = buildHoursContext(
+                (cfg as any).business_hours as BusinessHours | null,
+                ((cfg as any).timezone as string) || "America/Sao_Paulo",
+              );
+              const reply = await generateSdrReply(history, hoursCtx || undefined);
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
