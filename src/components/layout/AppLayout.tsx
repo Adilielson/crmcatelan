@@ -22,10 +22,20 @@ const AppLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => { initialize(); }, []);
+  useEffect(() => {
+    console.log('[layout] 🚀 mount → initialize()');
+    initialize();
+  }, []);
 
   useEffect(() => {
+    console.log('[layout] 🔍 guard check', {
+      loading,
+      hasUser: !!user,
+      pathname: location.pathname,
+      willRedirect: !loading && !user && location.pathname !== '/login',
+    });
     if (!loading && !user && location.pathname !== '/login') {
+      console.log('[layout] ➡️ redirecionando para /login');
       navigate({ to: '/login' });
     }
   }, [loading, user, location.pathname]);

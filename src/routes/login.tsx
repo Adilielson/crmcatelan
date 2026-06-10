@@ -19,13 +19,24 @@ function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('[login] 📨 submit', { email })
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      console.log('[login] ⏳ chamando signInWithPassword...')
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      console.log('[login] 📬 resposta signInWithPassword', {
+        hasUser: !!data?.user,
+        userId: data?.user?.id ?? null,
+        hasSession: !!data?.session,
+        error: error?.message ?? null,
+        errorStatus: (error as { status?: number } | null)?.status ?? null,
+      })
       if (error) throw error
+      console.log('[login] ✅ login OK → navigate("/")')
       navigate({ to: '/' })
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Erro ao fazer login'
+      console.error('[login] ❌ erro', error)
       toast.error(msg)
     } finally {
       setLoading(false)
