@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    let tenantId = url.searchParams.get("tenant_id") || "tenant-1";
+    let tenantId = url.searchParams.get("tenant_id") || DEFAULT_TENANT_ID;
     if (tenantId.includes("/")) tenantId = tenantId.split("/")[0];
 
     const body = await req.json().catch(() => ({}));
