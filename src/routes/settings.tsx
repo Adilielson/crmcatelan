@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings as SettingsIcon, Store, Shield, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus } from 'lucide-react'
+import { Settings as SettingsIcon, Store, Shield, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2 } from 'lucide-react'
 import { WhatsAppConfig } from '@/pages/WhatsAppConfig'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,10 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { useAutomations } from '@/hooks/use-automations'
 import { toast } from 'sonner'
+import { useEffect, useState } from 'react'
+import { useServerFn } from '@tanstack/react-start'
+import { getBusinessHours, updateBusinessHours, type BusinessHours, type DayKey } from '@/lib/business-hours.functions'
+
 
 
 
