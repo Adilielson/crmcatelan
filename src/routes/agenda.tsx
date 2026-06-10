@@ -338,7 +338,7 @@ function Agenda() {
                   </SelectTrigger>
                   <SelectContent>
                     {leads.map(lead => (
-                      <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>
+                      <SelectItem key={lead.id} value={lead.id}>{lead.full_name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
