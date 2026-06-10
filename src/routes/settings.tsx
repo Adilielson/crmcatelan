@@ -20,6 +20,109 @@ export const Route = createFileRoute('/settings')({
   component: Settings,
 })
 
+const DAY_LIST: { key: DayKey; label: string }[] = [
+  { key: 'mon', label: 'Segunda' },
+  { key: 'tue', label: 'Terça' },
+  { key: 'wed', label: 'Quarta' },
+  { key: 'thu', label: 'Quinta' },
+  { key: 'fri', label: 'Sexta' },
+  { key: 'sat', label: 'Sábado' },
+  { key: 'sun', label: 'Domingo' },
+]
+
+const DEFAULT_HOURS: BusinessHours = {
+  mon: ['09:00', '18:00'], tue: ['09:00', '18:00'], wed: ['09:00', '18:00'],
+  thu: ['09:00', '18:00'], fri: ['09:00', '18:00'], sat: ['09:00', '13:00'], sun: null,
+}
+
+function BusinessHoursSection() {
+  const fetchHours = useServerFn(getBusinessHours)
+  const saveHours = useServerFn(updateBusinessHours)
+  const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS)
+  const [tz, setTz] = useState('America/Sao_Paulo')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetchHours()
+      .then((r) => {
+        if (r.business_hours) setHours(r.business_hours)
+        if (r.timezone) setTz(r.timezone)
+      })
+      .catch((e) => toast.error('Erro ao carregar horário: ' + (e instanceof Error ? e.message : String(e))))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggleDay = (k: DayKey) => {
+    setHours((h) => ({ ...h, [k]: h[k] ? null : ['09:00', '18:00'] }))
+  }
+  const setTime = (k: DayKey, idx: 0 | 1, val: string) => {
+    setHours((h) => {
+      const cur = h[k] ?? ['09:00', '18:00']
+      const next: [string, string] = idx === 0 ? [val, cur[1]] : [cur[0], val]
+      return { ...h, [k]: next }
+    })
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await saveHours({ data: { business_hours: hours, timezone: tz } })
+      toast.success('Horário de expediente salvo. A IA SDR vai respeitar a partir de agora.')
+    } catch (e) {
+      toast.error('Erro ao salvar: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="bg-white border border-border rounded-[14px] p-8 shadow-card">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-sm font-black text-ink flex items-center gap-3 uppercase tracking-widest">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <Clock className="w-5 h-5 text-primary" />
+          </div>
+          Horário de Funcionamento
+        </h3>
+        <Button onClick={save} disabled={saving || loading} size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest">
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar'}
+        </Button>
+      </div>
+      <p className="text-[11px] text-gray-500 mb-4">
+        Fora deste horário, a IA SDR <strong>não oferece atendente humano</strong> — apenas agendamento de consulta.
+      </p>
+      <div className="space-y-2">
+        {DAY_LIST.map(({ key, label }) => {
+          const slot = hours[key]
+          return (
+            <div key={key} className="flex items-center justify-between p-3 bg-white border border-border rounded-[14px] shadow-inner">
+              <div className="flex items-center gap-3 min-w-[140px]">
+                <Switch checked={!!slot} onCheckedChange={() => toggleDay(key)} disabled={loading} />
+                <span className="text-xs font-black uppercase tracking-widest text-ink">{label}</span>
+              </div>
+              {slot ? (
+                <div className="flex gap-3 items-center">
+                  <Input type="time" value={slot[0]} onChange={(e) => setTime(key, 0, e.target.value)} className="w-28 h-10 text-xs bg-white border-border text-center font-black rounded-lg text-ink" />
+                  <span className="text-gray-600 font-black text-[10px]">ÀS</span>
+                  <Input type="time" value={slot[1]} onChange={(e) => setTime(key, 1, e.target.value)} className="w-28 h-10 text-xs bg-white border-border text-center font-black rounded-lg text-ink" />
+                </div>
+              ) : (
+                <Badge variant="outline" className="text-gray-500 font-black text-[10px] uppercase border-border">Fechado</Badge>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-4">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Fuso Horário</Label>
+        <Input value={tz} onChange={(e) => setTz(e.target.value)} className="mt-2 h-10 bg-white border-border text-ink" />
+      </div>
+    </section>
+  )
+}
+
+
 function Settings() {
   return (
     <div className="max-w-6xl text-ink">
