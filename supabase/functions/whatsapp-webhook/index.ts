@@ -6,12 +6,89 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
+const UAZAPI_BASE_URL = "https://ipazua.uazapi.com";
+
+const SDR_SYSTEM_PROMPT = `Você é a IA SDR de uma ótica brasileira. Seu papel é qualificar leads do WhatsApp de forma rápida, calorosa e profissional.
+
+OBJETIVOS:
+1. Cumprimentar e identificar o nome do cliente.
+2. Descobrir a necessidade: óculos de grau, solar, lentes de contato, ajuste, conserto, ou exame de vista.
+3. Se for grau/lentes, perguntar se tem receita recente (até 1 ano).
+4. Sugerir agendar uma visita à loja ou consulta com optometrista.
+5. Capturar telefone alternativo / e-mail só se o cliente oferecer.
+
+ESTILO:
+- Mensagens curtas (1 a 3 linhas no máximo).
+- Tom humano, simpático, sem emojis exagerados (no máximo 1 por mensagem).
+- Sempre em português do Brasil.
+- Uma pergunta por vez.
+- Nunca invente preços nem promessas. Se o cliente insistir em valor, diga que vai confirmar com a equipe.
+
+Se a conversa já indicou que o cliente quer agendar, confirme dia/turno preferido e diga que um atendente humano dará sequência.`;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+// ── Helpers de IA + envio ────────────────────────────────────────────────
+async function generateSdrReply(history: { role: "user" | "assistant"; content: string }[]): Promise<string | null> {
+  if (!LOVABLE_API_KEY) {
+    console.error("[sdr] LOVABLE_API_KEY ausente");
+    return null;
+  }
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": LOVABLE_API_KEY,
+        "X-Lovable-AIG-SDK": "edge-function",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: SDR_SYSTEM_PROMPT },
+          ...history,
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error(`[sdr] gateway ${res.status}: ${txt.slice(0, 300)}`);
+      return null;
+    }
+    const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content;
+    return typeof reply === "string" && reply.trim() ? reply.trim() : null;
+  } catch (e) {
+    console.error("[sdr] erro chamando gateway:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
+async function sendWhatsAppText(token: string, phone: string, text: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${UAZAPI_BASE_URL}/send/text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token },
+      body: JSON.stringify({ number: phone, text }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[sdr] uazapi send ${res.status}: ${body.slice(0, 300)}`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[sdr] erro enviando whatsapp:", e instanceof Error ? e.message : String(e));
+    return false;
+  }
+}
+
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? value as Record<string, unknown> : {};
