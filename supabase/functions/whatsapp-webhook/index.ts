@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
             // 1) Busca token da instância
             const { data: cfg } = await adminClient
               .from("whatsapp_config")
-              .select("instance_token, is_connected")
+              .select("instance_token, is_connected, business_hours, timezone")
               .eq("tenant_id", tenantId)
               .maybeSingle();
 
