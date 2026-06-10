@@ -70,7 +70,7 @@ export function KanbanBoard() {
     if (!scheduleLead || !scheduleData.date || !scheduleData.time) return;
     const [hh, mm] = scheduleData.time.split(':');
     const endTime = `${String(parseInt(hh) + 1).padStart(2, '0')}:${mm}`;
-    const ok = addAppointment({
+    const ok = await addAppointment({
       leadId: scheduleLead.id,
       leadName: scheduleLead.full_name,
       date: scheduleData.date,
