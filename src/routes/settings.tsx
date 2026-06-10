@@ -176,30 +176,8 @@ function Settings() {
                 </div>
               </section>
 
-              <section className="bg-white border border-border rounded-[14px] p-8 shadow-card">
-                <h3 className="text-sm font-black text-ink mb-6 flex items-center gap-3 uppercase tracking-widest">
-                  <div className="p-2 bg-primary/10 rounded-xl">
-                    <Clock className="w-5 h-5 text-primary" />
-                  </div>
-                  Horário de Funcionamento
-                </h3>
-                <div className="space-y-3">
-                  {['Segunda a Sexta', 'Sábado'].map((day) => (
-                    <div key={day} className="flex items-center justify-between p-4 bg-white border border-border rounded-[14px] shadow-inner mb-3">
-                      <span className="text-xs font-black uppercase tracking-widest text-ink">{day}</span>
-                      <div className="flex gap-3 items-center">
-                        <Input className="w-24 h-10 text-xs bg-white border-border text-center font-black rounded-lg text-ink" defaultValue="09:00" />
-                        <span className="text-gray-600 font-black text-[10px]">ÀS</span>
-                        <Input className="w-24 h-10 text-xs bg-white border-border text-center font-black rounded-lg text-ink" defaultValue="18:00" />
-                      </div>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 border border-border rounded-[14px] shadow-inner opacity-60">
-                    <span className="text-xs font-black uppercase tracking-widest text-ink">Domingo</span>
-                    <Badge variant="outline" className="text-gray-500 font-black text-[10px] uppercase border-border">Fechado</Badge>
-                  </div>
-                </div>
-              </section>
+              <BusinessHoursSection />
+
             </div>
 
             <div className="space-y-6">
