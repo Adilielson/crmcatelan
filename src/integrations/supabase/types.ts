@@ -1507,6 +1507,11 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      get_current_user_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_current_user_tenant: { Args: never; Returns: string }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       is_super_admin:
         | { Args: never; Returns: boolean }
