@@ -31,6 +31,7 @@ export interface DBLead {
   score_ia: number | null;
   ia_summary: string | null;
   assigned_user_id: string | null;
+  custom_column_id: string | null;
   created_at: string;
   updated_at: string;
 }
