@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { useAgenda, Appointment } from '@/hooks/use-agenda'
-import { useKanban } from '@/hooks/use-kanban'
+import { useLeads } from '@/hooks/use-leads'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -39,7 +39,8 @@ export const Route = createFileRoute('/agenda')({
 
 function Agenda() {
   const { appointments, addAppointment, updateAppointment, workingHours } = useAgenda()
-  const { leads } = useKanban()
+  const { data: leads = [] } = useLeads()
+
   
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'day'>('month')
