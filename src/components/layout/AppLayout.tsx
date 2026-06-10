@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuthStore } from '@/hooks/use-auth';
 import {
   LayoutDashboard,
@@ -14,12 +14,21 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link, Outlet, useLocation } from '@tanstack/react-router';
+import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { NotificationCenter } from './NotificationCenter';
 
 const AppLayout = () => {
-  const { user, tenant, logout } = useAuthStore();
+  const { user, loading, tenant, logout, initialize } = useAuthStore();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => { initialize(); }, []);
+
+  useEffect(() => {
+    if (!loading && !user && location.pathname !== '/login') {
+      navigate({ to: '/login' });
+    }
+  }, [loading, user, location.pathname]);
 
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -44,6 +53,12 @@ const AppLayout = () => {
   if (user?.role === 'super_admin') {
     menuItems.push({ label: 'Admin SaaS', icon: ShieldCheck, href: '/saas' });
   }
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#0E0E11] flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-[#FFC400] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   if (!user) return <Outlet />;
 

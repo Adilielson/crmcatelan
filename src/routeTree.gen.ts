@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -22,6 +23,11 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
   path: '/whatsapp',
@@ -84,6 +90,7 @@ const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
@@ -113,6 +121,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
@@ -129,6 +138,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/login'
     | '/'
     | '/agenda'
     | '/ai-training'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/analytics/no-show'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/login'
     | '/'
     | '/agenda'
     | '/ai-training'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/analytics/no-show'
   id:
     | '__root__'
+    | '/login'
     | '/'
     | '/agenda'
     | '/ai-training'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  LoginRoute: typeof LoginRoute
   IndexRoute: typeof IndexRoute
   AgendaRoute: typeof AgendaRoute
   AiTrainingRoute: typeof AiTrainingRoute
@@ -272,10 +285,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsNoShowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  LoginRoute: LoginRoute,
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
   AiTrainingRoute: AiTrainingRoute,
