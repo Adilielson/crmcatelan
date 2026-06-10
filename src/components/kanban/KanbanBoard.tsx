@@ -171,6 +171,16 @@ export function KanbanBoard() {
               <Database className="w-4 h-4 mr-2" /> Importar exemplos
             </Button>
           )}
+          {canManageColumns && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setEditingColumn(null); setColumnDialogOpen(true); }}
+              className="h-11 px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px]"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Nova Coluna
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] bg-white text-ink shadow-sm rounded-[14px] hover:bg-[#F6F7F9]">
             <AlertCircle className="w-4 h-4 mr-2 text-[#FFC400]" />
             Notificações
@@ -185,25 +195,51 @@ export function KanbanBoard() {
         <div className="text-center py-20 text-gray-400 font-bold">Carregando leads...</div>
       ) : (
         <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)]">
-          {STAGES.map((col, index) => {
-            const colLeads = leads.filter((l) => l.status === col.value);
+          {columns.map((col) => {
+            const colLeads = leadsForColumn(col);
+            const isCheckedIn = col.system_key === 'checked_in';
             return (
-              <div key={col.value} className="min-w-[320px] flex-1 flex flex-col gap-5">
+              <div key={col.id} className="min-w-[320px] flex-1 flex flex-col gap-5">
                 <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden">
-                  <div className={cn(
-                    'absolute left-0 top-0 bottom-0 w-1.5',
-                    index === 0 ? 'bg-[#A7ADB8]' :
-                    index === 1 ? 'bg-[#474C55]' :
-                    index === 2 ? 'bg-[#FFC400]' :
-                    index === 3 ? 'bg-[#D64545]' : 'bg-[#1FA463]'
-                  )} />
-                  <div className="flex items-center gap-4">
-                    <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.label}</span>
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1.5"
+                    style={{ backgroundColor: col.color }}
+                  />
+                  <div className="flex items-center gap-3">
+                    <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.name}</span>
+                    {isCheckedIn && (
+                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                        Qualificado
+                      </span>
+                    )}
                     <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
                       {colLeads.length}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink"><MoreVertical className="w-4 h-4" /></Button>
+                  {canManageColumns ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setEditingColumn(col); setColumnDialogOpen(true); }}>
+                          <Pencil className="w-4 h-4 mr-2" /> {col.is_system ? 'Mudar cor' : 'Editar'}
+                        </DropdownMenuItem>
+                        {!col.is_system && (
+                          <DropdownMenuItem
+                            onClick={() => setDeletingColumn(col)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink"><MoreVertical className="w-4 h-4" /></Button>
+                  )}
                 </div>
 
                 <div
@@ -211,7 +247,7 @@ export function KanbanBoard() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     const id = e.dataTransfer.getData('leadId');
-                    if (id) handleDrop(id, col.value);
+                    if (id) handleDrop(id, col);
                   }}
                 >
                   {colLeads.length === 0 ? (
