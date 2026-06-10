@@ -118,14 +118,45 @@ function Agenda() {
   }
 
 
-  const handleStatusChange = (id: string, status: Appointment['status']) => {
-    updateAppointment(id, { status })
-    toast.info(`Status alterado para ${status}`)
-    
-    if (status === 'confirmado') {
-      console.log('API WhatsApp: Enviando confirmação de agendamento manual.')
+  const handleConfirm = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { status: 'confirmado', reminderSent: true })
+    toast.success(`${appt.leadName} confirmado!`)
+    const lead = leads.find(l => l.id === appt.leadId)
+    const phone = lead?.phone
+    if (phone && waConnected) {
+      try {
+        const dateBr = format(new Date(appt.date + 'T00:00:00'), "dd/MM/yyyy")
+        await sendText(
+          phone,
+          `Olá ${appt.leadName}! Seu agendamento de ${appt.examType} está *confirmado* para ${dateBr} às ${appt.startTime}. Aguardamos você!`
+        )
+        toast.info('Confirmação enviada via WhatsApp')
+      } catch {
+        toast.warning('Confirmado, mas falha ao enviar WhatsApp')
+      }
     }
   }
+
+  const handleCheckin = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { checkinAt: new Date().toISOString() } as never)
+    toast.success(`Check-in registrado para ${appt.leadName}`)
+  }
+
+  const handleCheckout = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { status: 'realizado', checkoutAt: new Date().toISOString() } as never)
+    toast.success(`Atendimento concluído`)
+  }
+
+  const handleOpenChat = (appt: Appointment) => {
+    const lead = leads.find(l => l.id === appt.leadId)
+    const phone = lead?.phone
+    if (!phone) {
+      toast.error('Lead sem telefone cadastrado')
+      return
+    }
+    navigate({ to: '/chat', search: { phone } })
+  }
+
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
