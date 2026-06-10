@@ -1,4 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useWhatsApp } from '@/hooks/useWhatsApp'
+import { LogIn, LogOut } from 'lucide-react'
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
