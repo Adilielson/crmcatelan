@@ -139,7 +139,17 @@ function Agenda() {
 
   const handleCheckin = async (appt: Appointment) => {
     await updateAppointment(appt.id, { checkinAt: new Date().toISOString() })
-    toast.success(`Check-in registrado para ${appt.leadName}`)
+    // Move o lead pra coluna "Check-IN OK" no Kanban
+    try {
+      await (supabase as any)
+        .from('leads')
+        .update({ status: 'checked_in', custom_column_id: null })
+        .eq('id', appt.leadId)
+      qc.invalidateQueries({ queryKey: ['leads'] })
+    } catch (e) {
+      // não bloqueia o check-in se a atualização do lead falhar
+    }
+    toast.success(`Check-in registrado para ${appt.leadName} — lead qualificado!`)
   }
 
   const handleCheckout = async (appt: Appointment) => {
