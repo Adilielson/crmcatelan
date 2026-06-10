@@ -309,7 +309,11 @@ Deno.serve(async (req) => {
                 }));
 
               // 3) Chama Lovable AI Gateway
-              const reply = await generateSdrReply(history);
+              const hoursCtx = buildHoursContext(
+                (cfg as any).business_hours as BusinessHours | null,
+                ((cfg as any).timezone as string) || "America/Sao_Paulo",
+              );
+              const reply = await generateSdrReply(history, hoursCtx || undefined);
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
