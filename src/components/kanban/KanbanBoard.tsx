@@ -322,6 +322,32 @@ export function KanbanBoard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Column create/edit dialog */}
+      <KanbanColumnDialog
+        open={columnDialogOpen}
+        onOpenChange={(v) => { setColumnDialogOpen(v); if (!v) setEditingColumn(null); }}
+        editing={editingColumn}
+        nextPosition={nextPosition}
+      />
+
+      {/* Delete column confirmation */}
+      <Dialog open={!!deletingColumn} onOpenChange={(v) => !v && setDeletingColumn(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir coluna "{deletingColumn?.name}"?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Os leads que estão nesta coluna voltarão para <strong>Leads Prontos</strong>. Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingColumn(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDeleteColumn} disabled={deleteColumn.isPending}>
+              Excluir coluna
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
