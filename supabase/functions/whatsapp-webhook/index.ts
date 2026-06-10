@@ -35,12 +35,20 @@ const corsHeaders = {
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // ── Helpers de IA + envio ────────────────────────────────────────────────
-async function generateSdrReply(history: { role: "user" | "assistant"; content: string }[]): Promise<string | null> {
+async function generateSdrReply(
+  history: { role: "user" | "assistant"; content: string }[],
+  contextNote?: string,
+): Promise<string | null> {
   if (!LOVABLE_API_KEY) {
     console.error("[sdr] LOVABLE_API_KEY ausente");
     return null;
   }
   try {
+    const systemMessages: { role: "system"; content: string }[] = [
+      { role: "system", content: SDR_SYSTEM_PROMPT },
+    ];
+    if (contextNote) systemMessages.push({ role: "system", content: contextNote });
+
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -50,12 +58,10 @@ async function generateSdrReply(history: { role: "user" | "assistant"; content: 
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SDR_SYSTEM_PROMPT },
-          ...history,
-        ],
+        messages: [...systemMessages, ...history],
       }),
     });
+
     if (!res.ok) {
       const txt = await res.text();
       console.error(`[sdr] gateway ${res.status}: ${txt.slice(0, 300)}`);
