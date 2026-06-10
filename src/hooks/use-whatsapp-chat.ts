@@ -13,24 +13,32 @@ export interface WhatsAppMessage {
   status: string; // 'received' | 'sent' | 'failed'
   at: string;
   fromMe: boolean;
+  senderName: string | null;
+  senderAvatarUrl: string | null;
 }
 
 export interface WhatsAppConversation {
   phone: string;
+  name: string | null;
+  avatarUrl: string | null;
   lastText: string;
   lastAt: string;
   unread: number;
   messages: WhatsAppMessage[];
 }
 
-function mapRow(row: {
+interface LogRow {
   id: string;
   recipient_phone: string;
   message_type: string;
   status: string;
   error_message: string | null;
   sent_at: string;
-}): WhatsAppMessage {
+  sender_name: string | null;
+  sender_avatar_url: string | null;
+}
+
+function mapRow(row: LogRow): WhatsAppMessage {
   return {
     id: row.id,
     phone: row.recipient_phone,
@@ -39,6 +47,8 @@ function mapRow(row: {
     status: row.status,
     at: row.sent_at,
     fromMe: row.status === 'sent',
+    senderName: row.sender_name,
+    senderAvatarUrl: row.sender_avatar_url,
   };
 }
 
@@ -58,20 +68,28 @@ export function formatPhoneLast4(phone: string) {
 
 export function formatPhoneDisplay(phone: string) {
   const d = phone.replace(/\D+/g, '');
-  if (d.length >= 12) {
-    const cc = d.slice(0, d.length - 11);
-    const ddd = d.slice(-11, -9);
-    const p1 = d.slice(-9, -4);
-    const p2 = d.slice(-4);
-    return `+${cc} (${ddd}) ${p1}-${p2}`;
+  // Brasil: 55 + DDD(2) + 9 dígitos = 13
+  if (d.length === 13 && d.startsWith('55')) {
+    return `+55 (${d.slice(2, 4)}) ${d.slice(4, 9)}-${d.slice(9)}`;
   }
-  if (d.length >= 10) {
-    const ddd = d.slice(0, 2);
-    const p1 = d.slice(2, d.length - 4);
-    const p2 = d.slice(-4);
-    return `(${ddd}) ${p1}-${p2}`;
+  // Brasil sem 9: 55 + DDD(2) + 8 = 12
+  if (d.length === 12 && d.startsWith('55')) {
+    return `+55 (${d.slice(2, 4)}) ${d.slice(4, 8)}-${d.slice(8)}`;
   }
+  // Local com DDD: 11 dígitos
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return phone;
+}
+
+export function getContactInitials(name: string | null, phone: string) {
+  if (name && name.trim()) {
+    const parts = name.trim().split(/\s+/);
+    const a = parts[0]?.[0] ?? '';
+    const b = parts.length > 1 ? parts[parts.length - 1][0] : (parts[0]?.[1] ?? '');
+    return (a + b).toUpperCase();
+  }
+  return formatPhoneLast4(phone).slice(0, 2);
 }
 
 export function useWhatsAppChat() {
@@ -84,19 +102,19 @@ export function useWhatsAppChat() {
     setLoading(true);
     const { data, error } = await db
       .from('whatsapp_message_logs')
-      .select('id, recipient_phone, message_type, status, error_message, sent_at')
+      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url')
       .eq('tenant_id', tenant.id)
       .order('sent_at', { ascending: true })
       .limit(500);
     if (!error && data) {
-      setMessages((data as Parameters<typeof mapRow>[0][]).map(mapRow));
+      setMessages((data as LogRow[]).map(mapRow));
     }
     setLoading(false);
   }, [tenant?.id]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Realtime: novas mensagens recebidas/enviadas
+  // Realtime: novas mensagens
   useEffect(() => {
     if (!tenant?.id) return;
     const channel = supabase
@@ -110,7 +128,7 @@ export function useWhatsAppChat() {
           filter: `tenant_id=eq.${tenant.id}`,
         },
         (payload) => {
-          const row = payload.new as Parameters<typeof mapRow>[0];
+          const row = payload.new as LogRow;
           setMessages((prev) =>
             prev.some((m) => m.id === row.id) ? prev : [...prev, mapRow(row)]
           );
@@ -120,18 +138,22 @@ export function useWhatsAppChat() {
     return () => { supabase.removeChannel(channel); };
   }, [tenant?.id]);
 
-  // Agrupa por número
+  // Agrupa por número, escolhendo o nome/avatar mais recente disponível
   const conversations: WhatsAppConversation[] = (() => {
     const map = new Map<string, WhatsAppConversation>();
     for (const m of messages) {
       const c = map.get(m.phone) ?? {
         phone: m.phone,
+        name: null,
+        avatarUrl: null,
         lastText: '',
         lastAt: m.at,
         unread: 0,
         messages: [],
       };
       c.messages.push(m);
+      if (m.senderName) c.name = m.senderName;
+      if (m.senderAvatarUrl) c.avatarUrl = m.senderAvatarUrl;
       if (m.at >= c.lastAt) {
         c.lastAt = m.at;
         c.lastText = m.text || `[${m.type}]`;
