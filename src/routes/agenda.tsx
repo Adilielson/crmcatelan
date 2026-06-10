@@ -42,6 +42,10 @@ export const Route = createFileRoute('/agenda')({
 function Agenda() {
   const { appointments, addAppointment, updateAppointment, workingHours } = useAgenda()
   const { data: leads = [] } = useLeads()
+  const { sendText, isConnected: waConnected } = useWhatsApp()
+  const navigate = useNavigate()
+
+
 
   
   const [currentDate, setCurrentDate] = useState(new Date())
