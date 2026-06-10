@@ -1,4 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useWhatsApp } from '@/hooks/useWhatsApp'
+import { LogIn, LogOut } from 'lucide-react'
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -40,6 +42,10 @@ export const Route = createFileRoute('/agenda')({
 function Agenda() {
   const { appointments, addAppointment, updateAppointment, workingHours } = useAgenda()
   const { data: leads = [] } = useLeads()
+  const { sendText, isConnected: waConnected } = useWhatsApp()
+  const navigate = useNavigate()
+
+
 
   
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -112,14 +118,45 @@ function Agenda() {
   }
 
 
-  const handleStatusChange = (id: string, status: Appointment['status']) => {
-    updateAppointment(id, { status })
-    toast.info(`Status alterado para ${status}`)
-    
-    if (status === 'confirmado') {
-      console.log('API WhatsApp: Enviando confirmação de agendamento manual.')
+  const handleConfirm = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { status: 'confirmado', reminderSent: true })
+    toast.success(`${appt.leadName} confirmado!`)
+    const lead = leads.find(l => l.id === appt.leadId)
+    const phone = lead?.phone
+    if (phone && waConnected) {
+      try {
+        const dateBr = format(new Date(appt.date + 'T00:00:00'), "dd/MM/yyyy")
+        await sendText(
+          phone,
+          `Olá ${appt.leadName}! Seu agendamento de ${appt.examType} está *confirmado* para ${dateBr} às ${appt.startTime}. Aguardamos você!`
+        )
+        toast.info('Confirmação enviada via WhatsApp')
+      } catch {
+        toast.warning('Confirmado, mas falha ao enviar WhatsApp')
+      }
     }
   }
+
+  const handleCheckin = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { checkinAt: new Date().toISOString() })
+    toast.success(`Check-in registrado para ${appt.leadName}`)
+  }
+
+  const handleCheckout = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { status: 'realizado', checkoutAt: new Date().toISOString() })
+    toast.success(`Atendimento concluído`)
+  }
+
+  const handleOpenChat = (appt: Appointment) => {
+    const lead = leads.find(l => l.id === appt.leadId)
+    const phone = lead?.phone
+    if (!phone) {
+      toast.error('Lead sem telefone cadastrado')
+      return
+    }
+    navigate({ to: '/chat', search: { phone } })
+  }
+
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -288,19 +325,51 @@ function Agenda() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                         className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                        onClick={() => handleStatusChange(appt.id, 'confirmado')}
-                        disabled={appt.status === 'confirmado'}
+                      {appt.status === 'pendente' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                          onClick={() => handleConfirm(appt)}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2 text-success" /> CONFIRMAR
+                        </Button>
+                      )}
+                      {appt.status === 'confirmado' && !appt.checkinAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                          onClick={() => handleCheckin(appt)}
+                        >
+                          <LogIn className="w-4 h-4 mr-2 text-primary" /> CHECK-IN
+                        </Button>
+                      )}
+                      {appt.status === 'confirmado' && appt.checkinAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                          onClick={() => handleCheckout(appt)}
+                        >
+                          <LogOut className="w-4 h-4 mr-2 text-success" /> CHECK-OUT
+                        </Button>
+                      )}
+                      {appt.status === 'realizado' && (
+                        <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-success/10 border-success/30 text-success rounded-xl">
+                          <CheckCircle className="w-4 h-4 mr-2" /> CONCLUÍDO
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenChat(appt)}
+                        className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
                       >
-                        <CheckCircle className="w-4 h-4 mr-2 text-success shadow-[0_0_10px_rgba(31,164,99,0.3)]" /> CONFIRMAR
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl">
-                        <MessageSquare className="w-4 h-4 mr-2 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" /> WHATSAPP
+                        <MessageSquare className="w-4 h-4 mr-2 text-primary" /> WHATSAPP
                       </Button>
                     </div>
+
                   </div>
                 ))
               )}

@@ -166,6 +166,8 @@ export function useAgenda() {
       if (updates.needsTransport !== undefined) patch.needs_transport = updates.needsTransport;
       if (updates.cancellationReason !== undefined) patch.cancellation_reason = updates.cancellationReason;
       if (updates.unit !== undefined) patch.unit_name = updates.unit;
+      if (updates.checkinAt !== undefined) patch.checkin_at = updates.checkinAt;
+      if (updates.checkoutAt !== undefined) patch.checkout_at = updates.checkoutAt;
       if (Object.keys(patch).length === 0) return;
       const { error } = await (supabase as any).from('appointments').update(patch).eq('id', id);
       if (error) throw error;
