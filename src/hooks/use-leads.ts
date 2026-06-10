@@ -3,12 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
-export type LeadStage = 'open' | 'in_progress' | 'scheduled' | 'showed_up' | 'no_show' | 'lost';
+export type LeadStage = 'open' | 'in_progress' | 'scheduled' | 'checked_in' | 'showed_up' | 'no_show' | 'lost';
 
 export const STAGES: { value: LeadStage; label: string }[] = [
   { value: 'open', label: 'Leads Prontos' },
   { value: 'in_progress', label: 'Em Atendimento' },
   { value: 'scheduled', label: 'Agendado' },
+  { value: 'checked_in', label: 'Check-IN OK' },
   { value: 'lost', label: 'Perdido' },
   { value: 'showed_up', label: 'Fechado' },
 ];
@@ -30,6 +31,7 @@ export interface DBLead {
   score_ia: number | null;
   ia_summary: string | null;
   assigned_user_id: string | null;
+  custom_column_id: string | null;
   created_at: string;
   updated_at: string;
 }

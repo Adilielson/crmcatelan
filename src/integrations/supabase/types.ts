@@ -499,6 +499,53 @@ export type Database = {
           },
         ]
       }
+      kanban_columns: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_system: boolean
+          name: string
+          position: number
+          system_key: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          position?: number
+          system_key?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          position?: number
+          system_key?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_columns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_pipeline_history: {
         Row: {
           changed_by: string | null
@@ -548,6 +595,7 @@ export type Database = {
         Row: {
           assigned_user_id: string | null
           created_at: string | null
+          custom_column_id: string | null
           email: string | null
           full_name: string
           ia_disqualified_reason: string | null
@@ -573,6 +621,7 @@ export type Database = {
         Insert: {
           assigned_user_id?: string | null
           created_at?: string | null
+          custom_column_id?: string | null
           email?: string | null
           full_name: string
           ia_disqualified_reason?: string | null
@@ -598,6 +647,7 @@ export type Database = {
         Update: {
           assigned_user_id?: string | null
           created_at?: string | null
+          custom_column_id?: string | null
           email?: string | null
           full_name?: string
           ia_disqualified_reason?: string | null
@@ -626,6 +676,13 @@ export type Database = {
             columns: ["assigned_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_custom_column_id_fkey"
+            columns: ["custom_column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
             referencedColumns: ["id"]
           },
           {
@@ -1564,6 +1621,7 @@ export type Database = {
         | "open"
         | "in_progress"
         | "scheduled"
+        | "checked_in"
         | "showed_up"
         | "no_show"
         | "lost"
@@ -1726,6 +1784,7 @@ export const Constants = {
         "open",
         "in_progress",
         "scheduled",
+        "checked_in",
         "showed_up",
         "no_show",
         "lost",

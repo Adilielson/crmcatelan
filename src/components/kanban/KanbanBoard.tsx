@@ -1,21 +1,25 @@
 /** @jsxImportSource react */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database } from 'lucide-react';
+import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { DBLead, LeadStage, STAGES, useLeads, useSeedSampleLeads, useUpdateLead } from '@/hooks/use-leads';
+import { DBLead, LeadStage, useLeads, useSeedSampleLeads, useUpdateLead } from '@/hooks/use-leads';
 import { useAgenda } from '@/hooks/use-agenda';
+import { useAuthStore } from '@/hooks/use-auth';
+import { useKanbanColumns, useDeleteKanbanColumn, KanbanColumn } from '@/hooks/use-kanban-columns';
 import { LeadFormDialog } from './LeadFormDialog';
 import { LeadDetailSheet } from './LeadDetailSheet';
 import { LeadValueDialog } from './LeadValueDialog';
 import { LeadLocationDialog } from './LeadLocationDialog';
+import { KanbanColumnDialog } from './KanbanColumnDialog';
 
 const InstagramIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -37,9 +41,13 @@ const sourceIcon = (s: string | null) => {
 export function KanbanBoard() {
   const navigate = useNavigate();
   const { data: leads = [], isLoading } = useLeads();
+  const { data: columns = [] } = useKanbanColumns();
   const updateLead = useUpdateLead();
+  const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
   const { addAppointment } = useAgenda();
+  const userRole = useAuthStore((s) => s.user?.role ?? null);
+  const canManageColumns = userRole === 'admin' || userRole === 'super_admin' || userRole === 'manager';
 
   const [newOpen, setNewOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<DBLead | null>(null);
@@ -49,10 +57,31 @@ export function KanbanBoard() {
   const [lossLead, setLossLead] = useState<DBLead | null>(null);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
   const [lossReason, setLossReason] = useState('');
+  const [columnDialogOpen, setColumnDialogOpen] = useState(false);
+  const [editingColumn, setEditingColumn] = useState<KanbanColumn | null>(null);
+  const [deletingColumn, setDeletingColumn] = useState<KanbanColumn | null>(null);
 
-  const handleDrop = async (leadId: string, newStage: LeadStage) => {
+  const leadsForColumn = (col: KanbanColumn): DBLead[] => {
+    if (col.is_system && col.system_key) {
+      return leads.filter((l) => l.custom_column_id == null && l.status === col.system_key);
+    }
+    return leads.filter((l) => l.custom_column_id === col.id);
+  };
+
+  const handleDrop = async (leadId: string, col: KanbanColumn) => {
     const lead = leads.find((l) => l.id === leadId);
-    if (!lead || lead.status === newStage) return;
+    if (!lead) return;
+
+    // Custom column: just set custom_column_id
+    if (!col.is_system) {
+      if (lead.custom_column_id === col.id) return;
+      await updateLead.mutateAsync({ id: leadId, updates: { custom_column_id: col.id } });
+      toast.success(`Lead movido para ${col.name}`);
+      return;
+    }
+
+    const newStage = col.system_key as LeadStage;
+    if (lead.custom_column_id == null && lead.status === newStage) return;
 
     if (newStage === 'scheduled') {
       setScheduleLead(lead);
@@ -62,9 +91,20 @@ export function KanbanBoard() {
       setLossLead(lead);
       return;
     }
-    await updateLead.mutateAsync({ id: leadId, updates: { status: newStage } });
-    toast.success(`Lead movido para ${STAGES.find((s) => s.value === newStage)?.label}`);
+    await updateLead.mutateAsync({ id: leadId, updates: { status: newStage, custom_column_id: null } });
+    toast.success(`Lead movido para ${col.name}`);
   };
+
+  const handleDeleteColumn = async () => {
+    if (!deletingColumn) return;
+    await deleteColumn.mutateAsync(deletingColumn.id);
+    setDeletingColumn(null);
+  };
+
+  const nextPosition = useMemo(() => {
+    const max = columns.reduce((m, c) => Math.max(m, c.position), 0);
+    return max + 10;
+  }, [columns]);
 
   const confirmSchedule = async () => {
     if (!scheduleLead || !scheduleData.date || !scheduleData.time) return;
@@ -131,6 +171,16 @@ export function KanbanBoard() {
               <Database className="w-4 h-4 mr-2" /> Importar exemplos
             </Button>
           )}
+          {canManageColumns && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setEditingColumn(null); setColumnDialogOpen(true); }}
+              className="h-11 px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px]"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Nova Coluna
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] bg-white text-ink shadow-sm rounded-[14px] hover:bg-[#F6F7F9]">
             <AlertCircle className="w-4 h-4 mr-2 text-[#FFC400]" />
             Notificações
@@ -145,25 +195,51 @@ export function KanbanBoard() {
         <div className="text-center py-20 text-gray-400 font-bold">Carregando leads...</div>
       ) : (
         <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)]">
-          {STAGES.map((col, index) => {
-            const colLeads = leads.filter((l) => l.status === col.value);
+          {columns.map((col) => {
+            const colLeads = leadsForColumn(col);
+            const isCheckedIn = col.system_key === 'checked_in';
             return (
-              <div key={col.value} className="min-w-[320px] flex-1 flex flex-col gap-5">
+              <div key={col.id} className="min-w-[320px] flex-1 flex flex-col gap-5">
                 <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden">
-                  <div className={cn(
-                    'absolute left-0 top-0 bottom-0 w-1.5',
-                    index === 0 ? 'bg-[#A7ADB8]' :
-                    index === 1 ? 'bg-[#474C55]' :
-                    index === 2 ? 'bg-[#FFC400]' :
-                    index === 3 ? 'bg-[#D64545]' : 'bg-[#1FA463]'
-                  )} />
-                  <div className="flex items-center gap-4">
-                    <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.label}</span>
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1.5"
+                    style={{ backgroundColor: col.color }}
+                  />
+                  <div className="flex items-center gap-3">
+                    <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.name}</span>
+                    {isCheckedIn && (
+                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                        Qualificado
+                      </span>
+                    )}
                     <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
                       {colLeads.length}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink"><MoreVertical className="w-4 h-4" /></Button>
+                  {canManageColumns ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setEditingColumn(col); setColumnDialogOpen(true); }}>
+                          <Pencil className="w-4 h-4 mr-2" /> {col.is_system ? 'Mudar cor' : 'Editar'}
+                        </DropdownMenuItem>
+                        {!col.is_system && (
+                          <DropdownMenuItem
+                            onClick={() => setDeletingColumn(col)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink"><MoreVertical className="w-4 h-4" /></Button>
+                  )}
                 </div>
 
                 <div
@@ -171,7 +247,7 @@ export function KanbanBoard() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     const id = e.dataTransfer.getData('leadId');
-                    if (id) handleDrop(id, col.value);
+                    if (id) handleDrop(id, col);
                   }}
                 >
                   {colLeads.length === 0 ? (
@@ -243,6 +319,32 @@ export function KanbanBoard() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setLossLead(null)}>Cancelar</Button>
             <Button variant="destructive" onClick={confirmLoss} disabled={!lossReason}>Confirmar Perda</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Column create/edit dialog */}
+      <KanbanColumnDialog
+        open={columnDialogOpen}
+        onOpenChange={(v) => { setColumnDialogOpen(v); if (!v) setEditingColumn(null); }}
+        editing={editingColumn}
+        nextPosition={nextPosition}
+      />
+
+      {/* Delete column confirmation */}
+      <Dialog open={!!deletingColumn} onOpenChange={(v) => !v && setDeletingColumn(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir coluna "{deletingColumn?.name}"?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Os leads que estão nesta coluna voltarão para <strong>Leads Prontos</strong>. Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingColumn(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDeleteColumn} disabled={deleteColumn.isPending}>
+              Excluir coluna
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
