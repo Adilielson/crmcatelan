@@ -39,6 +39,8 @@ export function useWhatsApp() {
   const [isConnected, setIsConnected] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState(false);
+  const [connectedPhone, setConnectedPhone] = useState<string | null>(null);
+  const [connectedName, setConnectedName] = useState<string | null>(null);
   const initDone = useRef(false);
 
   // Carrega token e status persistido ao montar
@@ -48,12 +50,14 @@ export function useWhatsApp() {
     (async () => {
       const { data } = await db
         .from('whatsapp_config')
-        .select('instance_token, is_connected')
+        .select('instance_token, is_connected, connected_phone, connected_name')
         .eq('tenant_id', tenant.id)
-        .maybeSingle() as { data: { instance_token: string; is_connected: boolean } | null };
+        .maybeSingle() as { data: { instance_token: string; is_connected: boolean; connected_phone: string | null; connected_name: string | null } | null };
       if (data?.instance_token) {
         setHasToken(true);
         setIsConnected(!!data.is_connected);
+        setConnectedPhone(data.connected_phone ?? null);
+        setConnectedName(data.connected_name ?? null);
       }
     })();
   }, [tenant?.id]);
@@ -102,9 +106,13 @@ export function useWhatsApp() {
     if (!tenant?.id) return false;
     setIsLoading(true);
     try {
-      const result = await callManage('check-status', tenant.id);
+      const result = await callManage('check-status', tenant.id) as { connected?: boolean; phone?: string | null; name?: string | null };
       const connected = !!result.connected;
       setIsConnected(connected);
+      if (connected) {
+        if (result.phone) setConnectedPhone(result.phone);
+        if (result.name) setConnectedName(result.name);
+      }
       return connected;
     } finally {
       setIsLoading(false);
@@ -194,6 +202,8 @@ export function useWhatsApp() {
     qrCode,
     hasToken,
     tokenDisplay: hasToken ? TOKEN_MASK : '',
+    connectedPhone,
+    connectedName,
     saveInstanceToken,
     checkStatus,
     fetchQRCode,

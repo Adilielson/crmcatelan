@@ -1,19 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, Phone, Info, Layout, PlusCircle, Settings, ChevronRight, MessageSquare, Calendar, Brain, ShieldCheck, Zap, AlertCircle, FileText, RefreshCw, Upload, Search, Paperclip, MoreVertical, Smile, Users, UserPlus } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import { useChatStore } from '@/hooks/use-chat'
+import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, FileText, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useKanban } from '@/hooks/use-kanban'
+import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, formatPhoneLast4 } from '@/hooks/use-whatsapp-chat'
+import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -23,20 +24,50 @@ export const Route = createFileRoute('/chat')({
 })
 
 function Chat() {
-  const { sessions, selectedSessionId, setSelectedSession } = useChatStore()
+  const { phone: phoneFromUrl } = Route.useSearch()
+  const { conversations, loading } = useWhatsAppChat()
+  const { sendText, isConnected: waConnected } = useWhatsApp()
   const { leads, updateLead } = useKanban()
   const [activeTab, setActiveTab] = useState('ia')
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  
-  const selectedSession = sessions.find(s => s.id === selectedSessionId)
-  const currentLead = leads.find(l => l.name === selectedSession?.name)
+
+  // Auto-seleciona a primeira conversa ou a que vier pela URL
+  useEffect(() => {
+    if (selectedPhone) return
+    if (phoneFromUrl) { setSelectedPhone(phoneFromUrl); return }
+    if (conversations.length > 0) setSelectedPhone(conversations[0].phone)
+  }, [conversations, phoneFromUrl, selectedPhone])
+
+  const selectedConv = useMemo(
+    () => conversations.find((c) => c.phone === selectedPhone) ?? null,
+    [conversations, selectedPhone]
+  )
+
+  const filteredConvs = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return conversations
+    return conversations.filter((c) =>
+      c.phone.toLowerCase().includes(q) || c.lastText.toLowerCase().includes(q)
+    )
+  }, [conversations, search])
+
+  const currentLead = leads[0]
+
+  // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [selectedConv?.messages.length, selectedPhone])
 
   const [isOcrProcessing, setIsOcrProcessing] = useState(false)
 
   const handleSimulateOCR = () => {
     setIsOcrProcessing(true)
     toast.loading("Processando receita via OCR...")
-    
     setTimeout(() => {
       if (currentLead) {
         updateLead(currentLead.id, {
@@ -58,6 +89,21 @@ function Chat() {
       success: 'IA Recalibrada! Interpretação ajustada.',
       error: 'Erro na recalibração.'
     })
+  }
+
+  const handleSend = async () => {
+    if (!draft.trim() || !selectedPhone) return
+    if (!waConnected) { toast.error('WhatsApp não está conectado.'); return }
+    setSending(true)
+    try {
+      await sendText(selectedPhone, draft.trim())
+      setDraft('')
+      toast.success('Mensagem enviada')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao enviar')
+    } finally {
+      setSending(false)
+    }
   }
 
   const [isRoutingOpen, setIsRoutingOpen] = useState(false)
@@ -148,9 +194,11 @@ function Chat() {
         <div className="p-5 bg-white">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
-            <input 
-              type="text" 
-              placeholder="Pesquisar contatos..." 
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar contatos..."
               className="w-full bg-[#F6F7F9] border border-transparent rounded-[16px] pl-12 pr-4 py-3.5 text-sm focus:bg-white focus:border-primary/30 transition-all outline-none text-ink font-bold placeholder:text-gray-400 shadow-inner"
             />
           </div>
@@ -158,85 +206,101 @@ function Chat() {
 
         <ScrollArea className="flex-1">
           <div className="flex flex-col">
-            {sessions.map(session => (
-              <div 
-                key={session.id} 
-                onClick={() => setSelectedSession(session.id)}
-                className={cn(
-                  "p-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
-                  selectedSessionId === session.id ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100"
-                )}
-              >
-                {selectedSessionId === session.id && (
-                  <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-[#FFC400] rounded-r-full shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
-                )}
-                
-                <div className="relative flex-shrink-0">
-                  <Avatar className="h-14 w-14 border-2 border-white shadow-md rounded-[18px]">
-                    <AvatarFallback className="bg-gradient-to-br from-[#F6F7F9] to-[#E3E6EB] text-[#A7ADB8] font-black uppercase text-base">
-                      {session.name.substring(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {session.status === 'online' && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#1FA463] border-[3px] border-white rounded-full"></div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0 py-0.5">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <h4 className="font-jakarta font-bold text-sm text-ink truncate group-hover:text-primary transition-colors">
-                      {session.name}
-                    </h4>
-                    <span className="text-[10px] font-semibold text-gray-400 tabular-nums">
-                      {session.time}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center gap-2">
-                    <p className={cn(
-                      "text-xs truncate font-medium flex-1",
-                      session.unread > 0 ? "text-ink" : "text-gray-500"
-                    )}>
-                      {session.lastMessage}
-                    </p>
-                    {session.unread > 0 && (
-                      <span className="flex-shrink-0 bg-primary text-primary-foreground text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full font-bold shadow-sm shadow-primary/20">
-                        {session.unread}
-                      </span>
-                    )}
-                  </div>
-                </div>
+            {loading && (
+              <div className="p-8 text-center text-xs text-gray-400 font-bold">Carregando conversas...</div>
+            )}
+            {!loading && filteredConvs.length === 0 && (
+              <div className="p-8 text-center text-xs text-gray-400 font-medium">
+                {waConnected
+                  ? 'Nenhuma mensagem recebida ainda. Aguardando WhatsApp...'
+                  : 'WhatsApp desconectado. Conecte em Configurações.'}
               </div>
-            ))}
+            )}
+            {filteredConvs.map((conv) => {
+              const initials = formatPhoneLast4(conv.phone).slice(0, 2)
+              const isActive = selectedPhone === conv.phone
+              return (
+                <div
+                  key={conv.phone}
+                  onClick={() => setSelectedPhone(conv.phone)}
+                  className={cn(
+                    "p-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
+                    isActive ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100"
+                  )}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-[#FFC400] rounded-r-full shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
+                  )}
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="h-14 w-14 border-2 border-white shadow-md rounded-[18px]">
+                      <AvatarFallback className="bg-gradient-to-br from-[#F6F7F9] to-[#E3E6EB] text-[#A7ADB8] font-black uppercase text-base">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#1FA463] border-[3px] border-white rounded-full"></div>
+                  </div>
+                  <div className="flex-1 min-w-0 py-0.5">
+                    <div className="flex justify-between items-center mb-0.5">
+                      <h4 className="font-jakarta font-bold text-sm text-ink truncate group-hover:text-primary transition-colors">
+                        {formatPhoneDisplay(conv.phone)}
+                      </h4>
+                      <span className="text-[10px] font-semibold text-gray-400 tabular-nums">
+                        {formatChatTime(conv.lastAt)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                      <p className={cn(
+                        "text-xs truncate font-medium flex-1",
+                        conv.unread > 0 ? "text-ink" : "text-gray-500"
+                      )}>
+                        {conv.lastText}
+                      </p>
+                      {conv.unread > 0 && (
+                        <span className="flex-shrink-0 bg-primary text-primary-foreground text-[10px] h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full font-bold shadow-sm shadow-primary/20">
+                          {conv.unread}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </ScrollArea>
       </div>
 
       {/* Coluna 2: Chat principal */}
       <div className="flex-1 flex flex-col bg-white relative">
-        {selectedSession ? (
+        {selectedConv ? (
           <>
             <div className="p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20">
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px]">
                   <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
-                    {selectedSession.name.substring(0, 2)}
+                    {formatPhoneLast4(selectedConv.phone).slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">{selectedSession.name}</h3>
+                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">{formatPhoneDisplay(selectedConv.phone)}</h3>
                   <div className="flex items-center gap-2">
-                    <div className="relative flex h-2 w-2">
-                      <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1FA463] opacity-40"></div>
-                      <div className="relative inline-flex rounded-full h-2 w-2 bg-[#1FA463]"></div>
-                    </div>
-                    <span className="text-[10px] text-[#1FA463] font-black uppercase tracking-[0.1em]">Cliente Ativo</span>
+                    {waConnected ? (
+                      <>
+                        <div className="relative flex h-2 w-2">
+                          <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1FA463] opacity-40"></div>
+                          <div className="relative inline-flex rounded-full h-2 w-2 bg-[#1FA463]"></div>
+                        </div>
+                        <span className="text-[10px] text-[#1FA463] font-black uppercase tracking-[0.1em] flex items-center gap-1"><Wifi className="w-3 h-3" /> WhatsApp Conectado</span>
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-red-500 font-black uppercase tracking-[0.1em] flex items-center gap-1"><WifiOff className="w-3 h-3" /> Desconectado</span>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"
                   onClick={() => setIsRoutingOpen(true)}
                   title="Encaminhar para Equipe"
@@ -248,36 +312,41 @@ function Chat() {
                 <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
               </div>
             </div>
-            
-            <ScrollArea className="flex-1 bg-gray-50/50">
-              <div className="p-8 space-y-8 min-h-full">
-                {/* Wallpaper opcional discreto */}
-                <div className="flex justify-start">
-                  <div className="max-w-[70%]">
-                    <div className="bg-white border border-gray-100 p-4 rounded-2xl rounded-tl-none shadow-sm mb-1.5">
-                      <p className="text-sm text-ink leading-relaxed font-medium">
-                        {selectedSession.lastMessage}
-                      </p>
+
+            <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50">
+              <div className="p-8 space-y-4 min-h-full">
+                {selectedConv.messages.map((m) => (
+                  <div key={m.id} className={cn("flex", m.fromMe ? "justify-end" : "justify-start")}>
+                    <div className="max-w-[70%]">
+                      <div className={cn(
+                        "p-4 rounded-2xl shadow-sm",
+                        m.fromMe
+                          ? "bg-primary text-primary-foreground rounded-tr-none shadow-primary/10"
+                          : "bg-white border border-gray-100 rounded-tl-none"
+                      )}>
+                        <p className={cn(
+                          "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words",
+                          m.fromMe ? "text-primary-foreground font-bold" : "text-ink"
+                        )}>
+                          {m.text || <span className="italic opacity-60">[{m.type}]</span>}
+                        </p>
+                      </div>
+                      <div className={cn(
+                        "mt-1.5 flex items-center gap-1.5",
+                        m.fromMe ? "justify-end mr-1" : "ml-1"
+                      )}>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{formatChatTime(m.at)}</span>
+                        {m.fromMe && (
+                          m.status === 'failed'
+                            ? <span className="text-[10px] text-red-500 font-bold">FALHOU</span>
+                            : <CheckCircle2 className="w-3 h-3 text-success" />
+                        )}
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight ml-1">10:30</span>
                   </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <div className="max-w-[70%] text-right">
-                    <div className="bg-primary p-4 rounded-2xl rounded-tr-none shadow-lg shadow-primary/10 inline-block text-left">
-                      <p className="text-sm text-primary-foreground leading-relaxed font-bold">
-                        Olá! Sou a assistente IA da Ótica Catelan. Como posso ajudar com sua consulta hoje? 😊
-                      </p>
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-end gap-1.5 mr-1">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">10:32</span>
-                      <CheckCircle2 className="w-3 h-3 text-success" />
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="p-4 border-t border-gray-100 bg-white">
               <div className="flex gap-2 items-center">
@@ -288,14 +357,22 @@ function Chat() {
                   <Button variant="ghost" size="icon" className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl">
                     <Paperclip className="w-5 h-5" />
                   </Button>
-                  <input 
-                    type="text" 
-                    placeholder="Digite sua mensagem..." 
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none"
+                  <input
+                    type="text"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                    placeholder={waConnected ? 'Digite sua mensagem...' : 'WhatsApp desconectado'}
+                    disabled={!waConnected || sending}
+                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none disabled:opacity-50"
                   />
                 </div>
-                <Button className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0">
-                  <Send className="w-5 h-5" />
+                <Button
+                  onClick={handleSend}
+                  disabled={!draft.trim() || sending || !waConnected}
+                  className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
+                >
+                  {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                 </Button>
               </div>
             </div>

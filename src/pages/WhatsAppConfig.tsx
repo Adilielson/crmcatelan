@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Phone,
 } from 'lucide-react';
 
 const UAZAPI_BASE_URL = 'https://ipazua.uazapi.com';
@@ -28,11 +29,30 @@ export function WhatsAppConfig() {
     qrCode,
     hasToken,
     tokenDisplay,
+    connectedPhone,
+    connectedName,
     saveInstanceToken,
     checkStatus,
     fetchQRCode,
     disconnect,
   } = useWhatsApp();
+
+  // Formata exibição do número (ex: +55 27 99617-1689) ou retorna apenas os 4 finais
+  const formatPhone = (p: string | null) => {
+    if (!p) return null;
+    const d = p.replace(/\D+/g, '');
+    if (d.length < 4) return p;
+    const last4 = d.slice(-4);
+    if (d.length >= 12) {
+      const cc = d.slice(0, d.length - 11);
+      const ddd = d.slice(-11, -9);
+      const part1 = d.slice(-9, -4);
+      return `+${cc} (${ddd}) ${part1}-${last4}`;
+    }
+    return `••• •••• ${last4}`;
+  };
+  const phoneFormatted = formatPhone(connectedPhone);
+  const last4 = connectedPhone ? connectedPhone.replace(/\D+/g, '').slice(-4) : null;
 
   const [tokenInput, setTokenInput] = useState('');
   const [showTokenText, setShowTokenText] = useState(false);
@@ -128,6 +148,27 @@ export function WhatsAppConfig() {
           )}
         </div>
       </div>
+
+      {/* Número conectado */}
+      {isConnected && connectedPhone && (
+        <div className="flex items-center gap-4 bg-gradient-to-br from-green-50 to-emerald-50/40 border border-green-200 rounded-[16px] p-5">
+          <div className="p-3 bg-white rounded-[12px] shadow-sm border border-green-100">
+            <Phone className="w-5 h-5 text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-widest text-green-700/70">Número conectado</p>
+            <p className="text-lg font-black text-[#1A1A1A] tracking-tight font-mono">{phoneFormatted}</p>
+            {connectedName && (
+              <p className="text-xs text-[#6B7280] font-medium truncate">{connectedName}</p>
+            )}
+          </div>
+          {last4 && (
+            <Badge className="bg-green-600 text-white border-0 font-black text-xs px-3 py-1.5 tabular-nums">
+              ••• {last4}
+            </Badge>
+          )}
+        </div>
+      )}
 
       {/* Alerta de segurança */}
       <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-[12px]">
