@@ -28,11 +28,30 @@ export function WhatsAppConfig() {
     qrCode,
     hasToken,
     tokenDisplay,
+    connectedPhone,
+    connectedName,
     saveInstanceToken,
     checkStatus,
     fetchQRCode,
     disconnect,
   } = useWhatsApp();
+
+  // Formata exibição do número (ex: +55 27 99617-1689) ou retorna apenas os 4 finais
+  const formatPhone = (p: string | null) => {
+    if (!p) return null;
+    const d = p.replace(/\D+/g, '');
+    if (d.length < 4) return p;
+    const last4 = d.slice(-4);
+    if (d.length >= 12) {
+      const cc = d.slice(0, d.length - 11);
+      const ddd = d.slice(-11, -9);
+      const part1 = d.slice(-9, -4);
+      return `+${cc} (${ddd}) ${part1}-${last4}`;
+    }
+    return `••• •••• ${last4}`;
+  };
+  const phoneFormatted = formatPhone(connectedPhone);
+  const last4 = connectedPhone ? connectedPhone.replace(/\D+/g, '').slice(-4) : null;
 
   const [tokenInput, setTokenInput] = useState('');
   const [showTokenText, setShowTokenText] = useState(false);
