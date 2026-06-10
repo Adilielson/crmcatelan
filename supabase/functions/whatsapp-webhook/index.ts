@@ -217,6 +217,58 @@ Deno.serve(async (req) => {
           sender_avatar_url: senderAvatarUrl,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
+
+        // ── IA SDR: gera e envia resposta automaticamente ────────────────
+        if (text && text.trim()) {
+          try {
+            // 1) Busca token da instância
+            const { data: cfg } = await adminClient
+              .from("whatsapp_config")
+              .select("instance_token, is_connected")
+              .eq("tenant_id", tenantId)
+              .maybeSingle();
+
+            if (!cfg?.instance_token || !cfg.is_connected) {
+              console.log("[sdr] pulado: whatsapp não conectado ou sem token");
+            } else {
+              // 2) Carrega últimas 10 mensagens dessa conversa pra contexto
+              const { data: hist } = await adminClient
+                .from("whatsapp_message_logs")
+                .select("status, error_message, sent_at")
+                .eq("tenant_id", tenantId)
+                .eq("recipient_phone", senderPhone)
+                .order("sent_at", { ascending: false })
+                .limit(10);
+
+              const history = (hist ?? [])
+                .reverse()
+                .filter((m) => m.error_message && m.error_message.trim())
+                .map((m) => ({
+                  role: m.status === "sent" ? ("assistant" as const) : ("user" as const),
+                  content: m.error_message as string,
+                }));
+
+              // 3) Chama Lovable AI Gateway
+              const reply = await generateSdrReply(history);
+              if (reply) {
+                // 4) Envia pelo WhatsApp
+                const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
+                // 5) Loga a resposta da IA
+                await adminClient.from("whatsapp_message_logs").insert({
+                  tenant_id: tenantId,
+                  recipient_phone: senderPhone,
+                  message_type: "text",
+                  status: sent ? "sent" : "failed",
+                  error_message: reply.slice(0, 500),
+                  sender_name: "IA SDR",
+                });
+                console.log(`[sdr] resposta ${sent ? "enviada" : "falhou"} para ${senderPhone}`);
+              }
+            }
+          } catch (e) {
+            console.error("[sdr] erro:", e instanceof Error ? e.message : String(e));
+          }
+        }
       }
     }
 
