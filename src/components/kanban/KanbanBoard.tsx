@@ -47,7 +47,7 @@ export function KanbanBoard() {
   const seed = useSeedSampleLeads();
   const { addAppointment } = useAgenda();
   const userRole = useAuthStore((s) => s.user?.role ?? null);
-  const canManageColumns = userRole === 'admin' || userRole === 'super_admin';
+  const canManageColumns = userRole === 'admin' || userRole === 'super_admin' || userRole === 'manager';
 
   const [newOpen, setNewOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<DBLead | null>(null);
