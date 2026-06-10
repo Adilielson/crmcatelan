@@ -228,51 +228,78 @@ export type Database = {
           checkin_at: string | null
           checkout_at: string | null
           created_at: string | null
+          end_at: string | null
           id: string
           lead_id: string | null
+          lead_name: string | null
+          needs_transport: boolean | null
           notes: string | null
+          notification_channel: string | null
+          origin: string | null
           professional_id: string | null
           propensity_score: number | null
+          reminder_sent: boolean | null
+          reschedule_count: number | null
           scheduled_at: string
           status: Database["public"]["Enums"]["appointment_status"] | null
           tenant_id: string | null
           type_exam: string | null
           unit_id: string | null
+          unit_name: string | null
           updated_at: string | null
+          value: number | null
         }
         Insert: {
           cancellation_reason?: string | null
           checkin_at?: string | null
           checkout_at?: string | null
           created_at?: string | null
+          end_at?: string | null
           id?: string
           lead_id?: string | null
+          lead_name?: string | null
+          needs_transport?: boolean | null
           notes?: string | null
+          notification_channel?: string | null
+          origin?: string | null
           professional_id?: string | null
           propensity_score?: number | null
+          reminder_sent?: boolean | null
+          reschedule_count?: number | null
           scheduled_at: string
           status?: Database["public"]["Enums"]["appointment_status"] | null
           tenant_id?: string | null
           type_exam?: string | null
           unit_id?: string | null
+          unit_name?: string | null
           updated_at?: string | null
+          value?: number | null
         }
         Update: {
           cancellation_reason?: string | null
           checkin_at?: string | null
           checkout_at?: string | null
           created_at?: string | null
+          end_at?: string | null
           id?: string
           lead_id?: string | null
+          lead_name?: string | null
+          needs_transport?: boolean | null
           notes?: string | null
+          notification_channel?: string | null
+          origin?: string | null
           professional_id?: string | null
           propensity_score?: number | null
+          reminder_sent?: boolean | null
+          reschedule_count?: number | null
           scheduled_at?: string
           status?: Database["public"]["Enums"]["appointment_status"] | null
           tenant_id?: string | null
           type_exam?: string | null
           unit_id?: string | null
+          unit_name?: string | null
           updated_at?: string | null
+          value?: number | null
         }
         Relationships: [
           {

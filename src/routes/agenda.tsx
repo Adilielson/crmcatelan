@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { useAgenda, Appointment } from '@/hooks/use-agenda'
-import { useKanban } from '@/hooks/use-kanban'
+import { useLeads } from '@/hooks/use-leads'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -39,7 +39,8 @@ export const Route = createFileRoute('/agenda')({
 
 function Agenda() {
   const { appointments, addAppointment, updateAppointment, workingHours } = useAgenda()
-  const { leads } = useKanban()
+  const { data: leads = [] } = useLeads()
+
   
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'day'>('month')
@@ -73,16 +74,16 @@ function Agenda() {
       .sort((a, b) => a.startTime.localeCompare(b.startTime))
   }, [appointments, selectedDay])
 
-  const handleAddAppointment = () => {
+  const handleAddAppointment = async () => {
     const lead = leads.find(l => l.id === formData.leadId)
     if (!lead) {
       toast.error('Selecione um lead válido')
       return
     }
 
-    const success = addAppointment({
+    const success = await addAppointment({
       leadId: lead.id,
-      leadName: lead.name,
+      leadName: lead.full_name,
       date: formData.date,
       startTime: formData.startTime,
       endTime: formData.endTime,
@@ -104,12 +105,12 @@ function Agenda() {
     if (success) {
       toast.success('Agendamento realizado com sucesso!')
       setIsModalOpen(false)
-      // Simular disparo via API
-      console.log('API WhatsApp: Disparando template de confirmação para', lead.name)
+      console.log('API WhatsApp: Disparando template de confirmação para', lead.full_name)
     } else {
       toast.error('Conflito de horário detectado!')
     }
   }
+
 
   const handleStatusChange = (id: string, status: Appointment['status']) => {
     updateAppointment(id, { status })
@@ -337,7 +338,7 @@ function Agenda() {
                   </SelectTrigger>
                   <SelectContent>
                     {leads.map(lead => (
-                      <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>
+                      <SelectItem key={lead.id} value={lead.id}>{lead.full_name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
