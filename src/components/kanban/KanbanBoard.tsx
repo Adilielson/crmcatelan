@@ -41,9 +41,13 @@ const sourceIcon = (s: string | null) => {
 export function KanbanBoard() {
   const navigate = useNavigate();
   const { data: leads = [], isLoading } = useLeads();
+  const { data: columns = [] } = useKanbanColumns();
   const updateLead = useUpdateLead();
+  const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
   const { addAppointment } = useAgenda();
+  const userRole = useAuthStore((s) => s.user?.role ?? null);
+  const canManageColumns = userRole === 'admin' || userRole === 'super_admin';
 
   const [newOpen, setNewOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<DBLead | null>(null);
@@ -53,10 +57,31 @@ export function KanbanBoard() {
   const [lossLead, setLossLead] = useState<DBLead | null>(null);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
   const [lossReason, setLossReason] = useState('');
+  const [columnDialogOpen, setColumnDialogOpen] = useState(false);
+  const [editingColumn, setEditingColumn] = useState<KanbanColumn | null>(null);
+  const [deletingColumn, setDeletingColumn] = useState<KanbanColumn | null>(null);
 
-  const handleDrop = async (leadId: string, newStage: LeadStage) => {
+  const leadsForColumn = (col: KanbanColumn): DBLead[] => {
+    if (col.is_system && col.system_key) {
+      return leads.filter((l) => l.custom_column_id == null && l.status === col.system_key);
+    }
+    return leads.filter((l) => l.custom_column_id === col.id);
+  };
+
+  const handleDrop = async (leadId: string, col: KanbanColumn) => {
     const lead = leads.find((l) => l.id === leadId);
-    if (!lead || lead.status === newStage) return;
+    if (!lead) return;
+
+    // Custom column: just set custom_column_id
+    if (!col.is_system) {
+      if (lead.custom_column_id === col.id) return;
+      await updateLead.mutateAsync({ id: leadId, updates: { custom_column_id: col.id } });
+      toast.success(`Lead movido para ${col.name}`);
+      return;
+    }
+
+    const newStage = col.system_key as LeadStage;
+    if (lead.custom_column_id == null && lead.status === newStage) return;
 
     if (newStage === 'scheduled') {
       setScheduleLead(lead);
@@ -66,9 +91,20 @@ export function KanbanBoard() {
       setLossLead(lead);
       return;
     }
-    await updateLead.mutateAsync({ id: leadId, updates: { status: newStage } });
-    toast.success(`Lead movido para ${STAGES.find((s) => s.value === newStage)?.label}`);
+    await updateLead.mutateAsync({ id: leadId, updates: { status: newStage, custom_column_id: null } });
+    toast.success(`Lead movido para ${col.name}`);
   };
+
+  const handleDeleteColumn = async () => {
+    if (!deletingColumn) return;
+    await deleteColumn.mutateAsync(deletingColumn.id);
+    setDeletingColumn(null);
+  };
+
+  const nextPosition = useMemo(() => {
+    const max = columns.reduce((m, c) => Math.max(m, c.position), 0);
+    return max + 10;
+  }, [columns]);
 
   const confirmSchedule = async () => {
     if (!scheduleLead || !scheduleData.date || !scheduleData.time) return;
