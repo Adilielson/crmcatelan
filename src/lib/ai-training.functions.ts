@@ -65,7 +65,7 @@ export const updateAiConfig = createServerFn({ method: "POST" })
 
     const { error } = await context.supabase
       .from("ai_configs")
-      .update(payload)
+      .update(payload as any)
       .eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
     return { ok: true };
