@@ -1348,6 +1348,8 @@ export type Database = {
           id: string
           message_type: string
           recipient_phone: string
+          sender_avatar_url: string | null
+          sender_name: string | null
           sent_at: string
           status: string
           tenant_id: string
@@ -1357,6 +1359,8 @@ export type Database = {
           id?: string
           message_type: string
           recipient_phone: string
+          sender_avatar_url?: string | null
+          sender_name?: string | null
           sent_at?: string
           status: string
           tenant_id: string
@@ -1366,6 +1370,8 @@ export type Database = {
           id?: string
           message_type?: string
           recipient_phone?: string
+          sender_avatar_url?: string | null
+          sender_name?: string | null
           sent_at?: string
           status?: string
           tenant_id?: string

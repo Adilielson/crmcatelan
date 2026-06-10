@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, FileText, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useKanban } from '@/hooks/use-kanban'
-import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, formatPhoneLast4 } from '@/hooks/use-whatsapp-chat'
+import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -51,7 +51,9 @@ function Chat() {
     const q = search.trim().toLowerCase()
     if (!q) return conversations
     return conversations.filter((c) =>
-      c.phone.toLowerCase().includes(q) || c.lastText.toLowerCase().includes(q)
+      c.phone.toLowerCase().includes(q) ||
+      (c.name ?? '').toLowerCase().includes(q) ||
+      c.lastText.toLowerCase().includes(q)
     )
   }, [conversations, search])
 
@@ -217,8 +219,9 @@ function Chat() {
               </div>
             )}
             {filteredConvs.map((conv) => {
-              const initials = formatPhoneLast4(conv.phone).slice(0, 2)
+              const initials = getContactInitials(conv.name, conv.phone)
               const isActive = selectedPhone === conv.phone
+              const displayName = conv.name || formatPhoneDisplay(conv.phone)
               return (
                 <div
                   key={conv.phone}
@@ -233,6 +236,7 @@ function Chat() {
                   )}
                   <div className="relative flex-shrink-0">
                     <Avatar className="h-14 w-14 border-2 border-white shadow-md rounded-[18px]">
+                      {conv.avatarUrl && <AvatarImage src={conv.avatarUrl} alt={displayName} />}
                       <AvatarFallback className="bg-gradient-to-br from-[#F6F7F9] to-[#E3E6EB] text-[#A7ADB8] font-black uppercase text-base">
                         {initials}
                       </AvatarFallback>
@@ -242,12 +246,17 @@ function Chat() {
                   <div className="flex-1 min-w-0 py-0.5">
                     <div className="flex justify-between items-center mb-0.5">
                       <h4 className="font-jakarta font-bold text-sm text-ink truncate group-hover:text-primary transition-colors">
-                        {formatPhoneDisplay(conv.phone)}
+                        {displayName}
                       </h4>
                       <span className="text-[10px] font-semibold text-gray-400 tabular-nums">
                         {formatChatTime(conv.lastAt)}
                       </span>
                     </div>
+                    {conv.name && (
+                      <p className="text-[10px] font-semibold text-gray-400 truncate mb-0.5">
+                        {formatPhoneDisplay(conv.phone)}
+                      </p>
+                    )}
                     <div className="flex justify-between items-center gap-2">
                       <p className={cn(
                         "text-xs truncate font-medium flex-1",
@@ -276,12 +285,18 @@ function Chat() {
             <div className="p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20">
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px]">
+                  {selectedConv.avatarUrl && <AvatarImage src={selectedConv.avatarUrl} alt={selectedConv.name ?? selectedConv.phone} />}
                   <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
-                    {formatPhoneLast4(selectedConv.phone).slice(0, 2)}
+                    {getContactInitials(selectedConv.name, selectedConv.phone)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">{formatPhoneDisplay(selectedConv.phone)}</h3>
+                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">
+                    {selectedConv.name || formatPhoneDisplay(selectedConv.phone)}
+                  </h3>
+                  {selectedConv.name && (
+                    <p className="text-[11px] text-gray-400 font-semibold">{formatPhoneDisplay(selectedConv.phone)}</p>
+                  )}
                   <div className="flex items-center gap-2">
                     {waConnected ? (
                       <>

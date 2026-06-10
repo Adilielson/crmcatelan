@@ -26,7 +26,6 @@ function pickString(...vals: unknown[]): string | null {
 }
 
 function extractText(msg: Record<string, unknown>): string | null {
-  // Uazapi pode mandar text em vários formatos
   return pickString(
     msg.text,
     msg.body,
@@ -38,10 +37,17 @@ function extractText(msg: Record<string, unknown>): string | null {
   );
 }
 
-function digitsOnly(s: string | null): string | null {
-  if (!s) return null;
-  const d = s.replace(/\D+/g, "");
-  return d || null;
+// Limpa um identificador de WhatsApp (JID ou telefone) e devolve apenas o número.
+// Retorna null se não for um telefone individual válido (10-13 dígitos).
+function cleanPhone(raw: string | null): string | null {
+  if (!raw) return null;
+  // Descarta grupos (@g.us) e broadcast
+  if (raw.includes("@g.us") || raw.includes("broadcast") || raw.includes("status@")) return null;
+  // Remove sufixos JID e device-id: "5527...@s.whatsapp.net", "5527...:1@..."
+  const noSuffix = raw.split("@")[0].split(":")[0];
+  const d = noSuffix.replace(/\D+/g, "");
+  if (d.length < 10 || d.length > 13) return null;
+  return d;
 }
 
 Deno.serve(async (req) => {
@@ -68,7 +74,7 @@ Deno.serve(async (req) => {
     const eventType = String(b.EventType ?? b.event ?? b.type ?? "").toLowerCase();
     const chat = asObject(b.chat);
     const message = asObject(b.message);
-    const owner = pickString(b.owner);
+    const sender = asObject(b.sender);
 
     console.log(`[webhook] tenant=${tenantId} event=${eventType} keys=${Object.keys(b).join(",")}`);
 
@@ -88,32 +94,50 @@ Deno.serve(async (req) => {
 
     // ── Message events ─────────────────────────────────────────────────────
     if (eventType.includes("message") || message.id || chat.id) {
-      const fromMe = message.fromMe === true || b.fromMe === true;
+      const fromMe = message.fromMe === true || b.fromMe === true || chat.fromMe === true;
 
-      // Identifica remetente
-      const senderRaw = pickString(
-        message.sender,
-        message.from,
-        message.author,
-        chat.id,
-        chat.wa_chatid,
-        b.sender,
+      // Tenta vários campos onde o telefone do contato pode estar.
+      // Prioriza chat.id (que normalmente é o JID do contato real).
+      const candidates = [
+        chat.id, chat.wa_chatid, chat.jid, chat.remoteJid, chat.phone, chat.wa_id,
+        sender.id, sender.jid, sender.phone, sender.wa_id,
+        message.chatId, message.remoteJid, message.from, message.sender, message.author,
+        b.sender, b.from, b.phone, b.chatId, b.remoteJid,
+      ];
+      let senderPhone: string | null = null;
+      for (const c of candidates) {
+        const cleaned = cleanPhone(pickString(c));
+        if (cleaned) { senderPhone = cleaned; break; }
+      }
+
+      const senderName = pickString(
+        chat.name, chat.wa_name, chat.pushName, chat.notifyName, chat.verifiedName,
+        sender.name, sender.pushName, sender.notifyName,
+        message.senderName, message.pushName, message.notifyName,
+        b.senderName, b.pushName,
       );
-      const senderPhone = digitsOnly(senderRaw);
-      const senderName = pickString(message.senderName, chat.name, chat.wa_name, chat.pushName, b.senderName) || senderPhone || "Desconhecido";
+
+      const senderAvatarUrl = pickString(
+        chat.image, chat.imageUrl, chat.imgUrl, chat.profilePicUrl, chat.profilePicture,
+        chat.picture, chat.avatar, chat.photo,
+        sender.image, sender.imageUrl, sender.profilePicUrl, sender.avatar, sender.photo,
+        b.image, b.profilePicUrl, b.avatar,
+      );
+
       const text = extractText(message) || extractText(b);
       const msgType = pickString(message.type, message.messageType, b.messageType) || "text";
 
-      console.log(`[webhook] msg fromMe=${fromMe} from=${senderPhone} name=${senderName} type=${msgType} text=${(text || "").slice(0, 80)}`);
+      console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} avatar=${senderAvatarUrl ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
 
       if (!fromMe && senderPhone) {
-        // Loga no whatsapp_message_logs (visível no CRM)
         const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
           tenant_id: tenantId,
           recipient_phone: senderPhone,
           message_type: msgType,
           status: "received",
           error_message: text ? text.slice(0, 500) : null,
+          sender_name: senderName,
+          sender_avatar_url: senderAvatarUrl,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
       }
