@@ -1,6 +1,6 @@
 // Edge Function: whatsapp-webhook
 // Recebe eventos push da API uazapi (status de conexão, mensagens)
-// URL: {SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=tenant-1
+// URL: {SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=00000000-0000-0000-0000-000000000001
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -8,24 +8,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 const UAZAPI_BASE_URL = "https://ipazua.uazapi.com";
+const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
 
-const SDR_SYSTEM_PROMPT = `Você é a IA SDR de uma ótica brasileira. Seu papel é qualificar leads do WhatsApp de forma rápida, calorosa e profissional.
-
-OBJETIVOS:
-1. Cumprimentar e identificar o nome do cliente.
-2. Descobrir a necessidade: óculos de grau, solar, lentes de contato, ajuste, conserto, ou exame de vista.
-3. Se for grau/lentes, perguntar se tem receita recente (até 1 ano).
-4. Sugerir agendar uma visita à loja ou consulta com optometrista.
-5. Capturar telefone alternativo / e-mail só se o cliente oferecer.
-
-ESTILO:
-- Mensagens curtas (1 a 3 linhas no máximo).
-- Tom humano, simpático, sem emojis exagerados (no máximo 1 por mensagem).
-- Sempre em português do Brasil.
-- Uma pergunta por vez.
-- Nunca invente preços nem promessas. Se o cliente insistir em valor, diga que vai confirmar com a equipe.
-
-Se a conversa já indicou que o cliente quer agendar, confirme dia/turno preferido e diga que um atendente humano dará sequência.`;
+const FALLBACK_SYSTEM_PROMPT = `Você é a IA SDR de uma ótica brasileira. Seja breve, humano, em português do BR. Uma pergunta por vez. Nunca invente preços.`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,10 +19,35 @@ const corsHeaders = {
 
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+// ── Monta o system prompt a partir do ai_configs ────────────────────────
+function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
+  const parts: string[] = [cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT];
+  if (cfg?.goal) {
+    const goalMap: Record<string, string> = {
+      appointment: "agendar uma consulta oftalmológica",
+      qualification: "qualificar o lead",
+      support: "dar suporte",
+    };
+    parts.push(`Objetivo principal: ${goalMap[cfg.goal] ?? cfg.goal}.`);
+  }
+  if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
+  if (cfg?.knowledge_base_faq?.trim()) parts.push(`FAQ:\n${cfg.knowledge_base_faq}`);
+  if (knowledgeTexts.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeTexts.join("\n---\n").slice(0, 6000)}`);
+  if (cfg?.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO:\n${cfg.sample_scripts}`);
+  const qs = Array.isArray(cfg?.qualification_questions) ? cfg.qualification_questions : [];
+  if (qs.length) parts.push(`PERGUNTAS DE QUALIFICAÇÃO (faça uma por vez, na ordem):\n${qs.map((q: string, i: number) => `${i + 1}. ${q}`).join("\n")}`);
+  if (cfg?.rejection_instructions?.trim()) parts.push(`O QUE NÃO FAZER:\n${cfg.rejection_instructions}`);
+  const r = Array.isArray(cfg?.response_restrictions) ? cfg.response_restrictions : [];
+  if (r.length) parts.push(`Restrições: ${r.join(", ")}`);
+  return parts.join("\n\n");
+}
+
 // ── Helpers de IA + envio ────────────────────────────────────────────────
 async function generateSdrReply(
+  systemPrompt: string,
   history: { role: "user" | "assistant"; content: string }[],
-  contextNote?: string,
+  contextNote: string | undefined,
+  temperature: number,
 ): Promise<string | null> {
   if (!LOVABLE_API_KEY) {
     console.error("[sdr] LOVABLE_API_KEY ausente");
@@ -45,7 +55,7 @@ async function generateSdrReply(
   }
   try {
     const systemMessages: { role: "system"; content: string }[] = [
-      { role: "system", content: SDR_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
     ];
     if (contextNote) systemMessages.push({ role: "system", content: contextNote });
 
@@ -59,6 +69,7 @@ async function generateSdrReply(
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [...systemMessages, ...history],
+        temperature,
       }),
     });
 
@@ -203,7 +214,7 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    let tenantId = url.searchParams.get("tenant_id") || "tenant-1";
+    let tenantId = url.searchParams.get("tenant_id") || DEFAULT_TENANT_ID;
     if (tenantId.includes("/")) tenantId = tenantId.split("/")[0];
 
     const body = await req.json().catch(() => ({}));
@@ -308,12 +319,29 @@ Deno.serve(async (req) => {
                   content: m.error_message as string,
                 }));
 
-              // 3) Chama Lovable AI Gateway
+              // 3) Carrega ai_configs + documentos
+              const { data: aiCfg } = await adminClient
+                .from("ai_configs")
+                .select("*")
+                .eq("tenant_id", tenantId)
+                .maybeSingle();
+              const { data: docs } = await adminClient
+                .from("ai_knowledge_documents")
+                .select("name, content")
+                .eq("tenant_id", tenantId)
+                .eq("status", "ready");
+              const knowledgeTexts = (docs ?? [])
+                .filter((d: any) => d.content && d.content.trim())
+                .map((d: any) => `[${d.name}]\n${(d.content as string).slice(0, 3000)}`);
+              const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts);
+              const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
+
+              // 4) Chama Lovable AI Gateway
               const hoursCtx = buildHoursContext(
                 (cfg as any).business_hours as BusinessHours | null,
                 ((cfg as any).timezone as string) || "America/Sao_Paulo",
               );
-              const reply = await generateSdrReply(history, hoursCtx || undefined);
+              const reply = await generateSdrReply(systemPrompt, history, hoursCtx || undefined, temperature);
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
