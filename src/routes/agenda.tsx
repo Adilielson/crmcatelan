@@ -138,12 +138,12 @@ function Agenda() {
   }
 
   const handleCheckin = async (appt: Appointment) => {
-    await updateAppointment(appt.id, { checkinAt: new Date().toISOString() } as never)
+    await updateAppointment(appt.id, { checkinAt: new Date().toISOString() })
     toast.success(`Check-in registrado para ${appt.leadName}`)
   }
 
   const handleCheckout = async (appt: Appointment) => {
-    await updateAppointment(appt.id, { status: 'realizado', checkoutAt: new Date().toISOString() } as never)
+    await updateAppointment(appt.id, { status: 'realizado', checkoutAt: new Date().toISOString() })
     toast.success(`Atendimento concluído`)
   }
 
