@@ -39,6 +39,8 @@ export function useWhatsApp() {
   const [isConnected, setIsConnected] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState(false);
+  const [connectedPhone, setConnectedPhone] = useState<string | null>(null);
+  const [connectedName, setConnectedName] = useState<string | null>(null);
   const initDone = useRef(false);
 
   // Carrega token e status persistido ao montar
@@ -48,12 +50,14 @@ export function useWhatsApp() {
     (async () => {
       const { data } = await db
         .from('whatsapp_config')
-        .select('instance_token, is_connected')
+        .select('instance_token, is_connected, connected_phone, connected_name')
         .eq('tenant_id', tenant.id)
-        .maybeSingle() as { data: { instance_token: string; is_connected: boolean } | null };
+        .maybeSingle() as { data: { instance_token: string; is_connected: boolean; connected_phone: string | null; connected_name: string | null } | null };
       if (data?.instance_token) {
         setHasToken(true);
         setIsConnected(!!data.is_connected);
+        setConnectedPhone(data.connected_phone ?? null);
+        setConnectedName(data.connected_name ?? null);
       }
     })();
   }, [tenant?.id]);
