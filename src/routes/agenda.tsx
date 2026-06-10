@@ -21,6 +21,8 @@ import {
   History
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/integrations/supabase/client'
 import { useAgenda, Appointment } from '@/hooks/use-agenda'
 import { useLeads } from '@/hooks/use-leads'
 import { Button } from '@/components/ui/button'
