@@ -9,13 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MarketingRouteImport } from './routes/marketing'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
@@ -23,11 +23,6 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
   path: '/whatsapp',
@@ -56,6 +51,11 @@ const PerformanceRoute = PerformanceRouteImport.update({
 const MarketingRoute = MarketingRouteImport.update({
   id: '/marketing',
   path: '/marketing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KanbanRoute = KanbanRouteImport.update({
@@ -90,12 +90,12 @@ const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
+  '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -105,12 +105,12 @@ export interface FileRoutesByFullPath {
   '/analytics/no-show': typeof AnalyticsNoShowRoute
 }
 export interface FileRoutesByTo {
-  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
+  '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -121,12 +121,12 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/login': typeof LoginRoute
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
   '/kanban': typeof KanbanRoute
+  '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -138,12 +138,12 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/login'
     | '/'
     | '/agenda'
     | '/ai-training'
     | '/chat'
     | '/kanban'
+    | '/login'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -153,12 +153,12 @@ export interface FileRouteTypes {
     | '/analytics/no-show'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/login'
     | '/'
     | '/agenda'
     | '/ai-training'
     | '/chat'
     | '/kanban'
+    | '/login'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -168,12 +168,12 @@ export interface FileRouteTypes {
     | '/analytics/no-show'
   id:
     | '__root__'
-    | '/login'
     | '/'
     | '/agenda'
     | '/ai-training'
     | '/chat'
     | '/kanban'
+    | '/login'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -184,12 +184,12 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  LoginRoute: typeof LoginRoute
   IndexRoute: typeof IndexRoute
   AgendaRoute: typeof AgendaRoute
   AiTrainingRoute: typeof AiTrainingRoute
   ChatRoute: typeof ChatRoute
   KanbanRoute: typeof KanbanRoute
+  LoginRoute: typeof LoginRoute
   MarketingRoute: typeof MarketingRoute
   PerformanceRoute: typeof PerformanceRoute
   SaasRoute: typeof SaasRoute
@@ -243,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kanban': {
       id: '/kanban'
       path: '/kanban'
@@ -285,23 +292,16 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsNoShowRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  LoginRoute: LoginRoute,
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
   AiTrainingRoute: AiTrainingRoute,
   ChatRoute: ChatRoute,
   KanbanRoute: KanbanRoute,
+  LoginRoute: LoginRoute,
   MarketingRoute: MarketingRoute,
   PerformanceRoute: PerformanceRoute,
   SaasRoute: SaasRoute,
