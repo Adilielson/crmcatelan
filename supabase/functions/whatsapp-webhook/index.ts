@@ -319,12 +319,29 @@ Deno.serve(async (req) => {
                   content: m.error_message as string,
                 }));
 
-              // 3) Chama Lovable AI Gateway
+              // 3) Carrega ai_configs + documentos
+              const { data: aiCfg } = await adminClient
+                .from("ai_configs")
+                .select("*")
+                .eq("tenant_id", tenantId)
+                .maybeSingle();
+              const { data: docs } = await adminClient
+                .from("ai_knowledge_documents")
+                .select("name, content")
+                .eq("tenant_id", tenantId)
+                .eq("status", "ready");
+              const knowledgeTexts = (docs ?? [])
+                .filter((d: any) => d.content && d.content.trim())
+                .map((d: any) => `[${d.name}]\n${(d.content as string).slice(0, 3000)}`);
+              const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts);
+              const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
+
+              // 4) Chama Lovable AI Gateway
               const hoursCtx = buildHoursContext(
                 (cfg as any).business_hours as BusinessHours | null,
                 ((cfg as any).timezone as string) || "America/Sao_Paulo",
               );
-              const reply = await generateSdrReply(history, hoursCtx || undefined);
+              const reply = await generateSdrReply(systemPrompt, history, hoursCtx || undefined, temperature);
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
