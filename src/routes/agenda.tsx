@@ -74,16 +74,16 @@ function Agenda() {
       .sort((a, b) => a.startTime.localeCompare(b.startTime))
   }, [appointments, selectedDay])
 
-  const handleAddAppointment = () => {
+  const handleAddAppointment = async () => {
     const lead = leads.find(l => l.id === formData.leadId)
     if (!lead) {
       toast.error('Selecione um lead válido')
       return
     }
 
-    const success = addAppointment({
+    const success = await addAppointment({
       leadId: lead.id,
-      leadName: lead.name,
+      leadName: lead.full_name,
       date: formData.date,
       startTime: formData.startTime,
       endTime: formData.endTime,
@@ -105,12 +105,12 @@ function Agenda() {
     if (success) {
       toast.success('Agendamento realizado com sucesso!')
       setIsModalOpen(false)
-      // Simular disparo via API
-      console.log('API WhatsApp: Disparando template de confirmação para', lead.name)
+      console.log('API WhatsApp: Disparando template de confirmação para', lead.full_name)
     } else {
       toast.error('Conflito de horário detectado!')
     }
   }
+
 
   const handleStatusChange = (id: string, status: Appointment['status']) => {
     updateAppointment(id, { status })
