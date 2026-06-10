@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { DEV_TENANT_ID, getDevSupabase } from "./dev-tenant.server";
+
+// TODO(auth): trocar DEV_TENANT_ID/supabaseAdmin por requireSupabaseAuth
+// + tenant_id real do profile quando Supabase Auth for implementado.
 
 export type QualificationQuestion = string;
 
@@ -21,40 +24,26 @@ export type AiConfig = {
   updated_at: string;
 };
 
-async function getTenantIdFromProfile(supabase: any, userId: string): Promise<string> {
+export const getAiConfig = createServerFn({ method: "GET" }).handler(async () => {
+  const supabase = await getDevSupabase();
   const { data, error } = await supabase
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", userId)
+    .from("ai_configs")
+    .select("*")
+    .eq("tenant_id", DEV_TENANT_ID)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data?.tenant_id) throw new Error("Usuário sem tenant associado");
-  return data.tenant_id as string;
-}
-
-export const getAiConfig = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const tenantId = await getTenantIdFromProfile(context.supabase, context.userId);
-    const { data, error } = await context.supabase
-      .from("ai_configs")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!data) throw new Error("Configuração de IA não encontrada para este tenant");
-    return data as AiConfig;
-  });
+  if (!data) throw new Error("Configuração de IA não encontrada para este tenant");
+  return data as AiConfig;
+});
 
 export const updateAiConfig = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
     const i = input as Partial<AiConfig>;
     if (!i || typeof i !== "object") throw new Error("Payload inválido");
     return i;
   })
-  .handler(async ({ data, context }) => {
-    const tenantId = await getTenantIdFromProfile(context.supabase, context.userId);
+  .handler(async ({ data }) => {
+    const supabase = await getDevSupabase();
     const allowed: (keyof AiConfig)[] = [
       "prompt_system", "knowledge_base", "knowledge_base_faq", "sample_scripts",
       "qualification_questions", "response_delay", "scheduling_link", "goal",
@@ -63,41 +52,38 @@ export const updateAiConfig = createServerFn({ method: "POST" })
     const payload: Record<string, unknown> = {};
     for (const k of allowed) if (k in data) payload[k] = (data as any)[k];
 
-    const { error } = await context.supabase
+    const { error } = await supabase
       .from("ai_configs")
       .update(payload as any)
-      .eq("tenant_id", tenantId);
+      .eq("tenant_id", DEV_TENANT_ID);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-export const listAiVersions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const tenantId = await getTenantIdFromProfile(context.supabase, context.userId);
-    const { data: cfg } = await context.supabase
-      .from("ai_configs").select("id").eq("tenant_id", tenantId).maybeSingle();
-    if (!cfg?.id) return [];
-    const { data, error } = await context.supabase
-      .from("ai_config_versions")
-      .select("id, created_at, created_by, config_snapshot")
-      .eq("ai_config_id", cfg.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (error) throw new Error(error.message);
-    return data ?? [];
-  });
+export const listAiVersions = createServerFn({ method: "GET" }).handler(async () => {
+  const supabase = await getDevSupabase();
+  const { data: cfg } = await supabase
+    .from("ai_configs").select("id").eq("tenant_id", DEV_TENANT_ID).maybeSingle();
+  if (!cfg?.id) return [];
+  const { data, error } = await supabase
+    .from("ai_config_versions")
+    .select("id, created_at, created_by, config_snapshot")
+    .eq("ai_config_id", cfg.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+});
 
 export const restoreAiVersion = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
     const i = input as { version_id: string };
     if (!i?.version_id) throw new Error("version_id obrigatório");
     return i;
   })
-  .handler(async ({ data, context }) => {
-    const tenantId = await getTenantIdFromProfile(context.supabase, context.userId);
-    const { data: version, error: vErr } = await context.supabase
+  .handler(async ({ data }) => {
+    const supabase = await getDevSupabase();
+    const { data: version, error: vErr } = await supabase
       .from("ai_config_versions")
       .select("config_snapshot")
       .eq("id", data.version_id)
@@ -118,8 +104,8 @@ export const restoreAiVersion = createServerFn({ method: "POST" })
       rejection_instructions: snap.rejection_instructions,
       response_restrictions: snap.response_restrictions,
     };
-    const { error } = await context.supabase
-      .from("ai_configs").update(payload).eq("tenant_id", tenantId);
+    const { error } = await supabase
+      .from("ai_configs").update(payload).eq("tenant_id", DEV_TENANT_ID);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -142,23 +128,22 @@ function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[]): string {
 }
 
 export const simulateChat = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
     const i = input as { messages: { role: "user" | "assistant"; content: string }[] };
     if (!Array.isArray(i?.messages)) throw new Error("messages obrigatório");
     return i;
   })
-  .handler(async ({ data, context }) => {
-    const tenantId = await getTenantIdFromProfile(context.supabase, context.userId);
-    const { data: cfg, error } = await context.supabase
-      .from("ai_configs").select("*").eq("tenant_id", tenantId).maybeSingle();
+  .handler(async ({ data }) => {
+    const supabase = await getDevSupabase();
+    const { data: cfg, error } = await supabase
+      .from("ai_configs").select("*").eq("tenant_id", DEV_TENANT_ID).maybeSingle();
     if (error) throw new Error(error.message);
     if (!cfg) throw new Error("Sem configuração de IA");
 
-    const { data: docs } = await context.supabase
+    const { data: docs } = await supabase
       .from("ai_knowledge_documents")
       .select("name, content")
-      .eq("tenant_id", tenantId)
+      .eq("tenant_id", DEV_TENANT_ID)
       .eq("status", "ready");
     const knowledgeTexts = (docs ?? [])
       .filter((d: any) => d.content?.trim())
