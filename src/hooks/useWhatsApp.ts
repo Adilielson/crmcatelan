@@ -202,6 +202,8 @@ export function useWhatsApp() {
     qrCode,
     hasToken,
     tokenDisplay: hasToken ? TOKEN_MASK : '',
+    connectedPhone,
+    connectedName,
     saveInstanceToken,
     checkStatus,
     fetchQRCode,
