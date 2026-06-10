@@ -181,10 +181,6 @@ export function KanbanBoard() {
               <Plus className="w-4 h-4 mr-2" /> Nova Coluna
             </Button>
           )}
-          <Button variant="outline" size="sm" className="relative h-11 px-6 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] bg-white text-ink shadow-sm rounded-[14px] hover:bg-[#F6F7F9]">
-            <AlertCircle className="w-4 h-4 mr-2 text-[#FFC400]" />
-            Notificações
-          </Button>
           <Button onClick={() => setNewOpen(true)} size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">
             <PlusCircle className="w-4 h-4 mr-2" /> Novo Lead
           </Button>
