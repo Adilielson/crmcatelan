@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DEV_TENANT_ID } from '@/hooks/use-auth';
+import { useAuthStore } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
 export type LeadStage = 'open' | 'in_progress' | 'scheduled' | 'showed_up' | 'no_show' | 'lost';
@@ -34,16 +34,20 @@ export interface DBLead {
   updated_at: string;
 }
 
-const LEADS_KEY = ['leads', DEV_TENANT_ID] as const;
+function useTenantId() {
+  return useAuthStore((s) => s.tenant?.id ?? null);
+}
 
 export function useLeads() {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: LEADS_KEY,
+    queryKey: ['leads', tenantId],
+    enabled: !!tenantId,
     queryFn: async (): Promise<DBLead[]> => {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('tenant_id', DEV_TENANT_ID)
+        .eq('tenant_id', tenantId!)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as DBLead[];
@@ -53,6 +57,8 @@ export function useLeads() {
 
 export function useCreateLead() {
   const qc = useQueryClient();
+  const tenantId = useTenantId();
+  const userId = useAuthStore((s) => s.user?.id ?? null);
   return useMutation({
     mutationFn: async (payload: {
       full_name: string;
@@ -63,11 +69,13 @@ export function useCreateLead() {
       notes?: string;
       status?: LeadStage;
     }) => {
+      if (!tenantId) throw new Error('Tenant não identificado');
       const { data, error } = await (supabase as any)
         .from('leads')
         .insert({
-          tenant_id: DEV_TENANT_ID,
+          tenant_id: tenantId,
           status: payload.status ?? 'open',
+          assigned_user_id: userId,
           ...payload,
         })
         .select()
@@ -76,7 +84,7 @@ export function useCreateLead() {
       return data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: LEADS_KEY });
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] });
       toast.success('Lead criado com sucesso');
     },
     onError: (e: any) => toast.error(`Erro ao criar lead: ${e.message}`),
@@ -85,6 +93,8 @@ export function useCreateLead() {
 
 export function useUpdateLead() {
   const qc = useQueryClient();
+  const tenantId = useTenantId();
+  const key = ['leads', tenantId] as const;
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => {
       const { data, error } = await (supabase as any)
@@ -97,30 +107,31 @@ export function useUpdateLead() {
       return data;
     },
     onMutate: async ({ id, updates }) => {
-      await qc.cancelQueries({ queryKey: LEADS_KEY });
-      const previous = qc.getQueryData<DBLead[]>(LEADS_KEY);
-      qc.setQueryData<DBLead[]>(LEADS_KEY, (old) =>
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<DBLead[]>(key);
+      qc.setQueryData<DBLead[]>(key, (old) =>
         (old ?? []).map((l) => (l.id === id ? ({ ...l, ...updates } as DBLead) : l)),
       );
       return { previous };
     },
     onError: (e: any, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(LEADS_KEY, ctx.previous);
+      if (ctx?.previous) qc.setQueryData(key, ctx.previous);
       toast.error(`Erro ao atualizar: ${e.message}`);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: LEADS_KEY }),
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 }
 
 export function useDeleteLead() {
   const qc = useQueryClient();
+  const tenantId = useTenantId();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('leads').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: LEADS_KEY });
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] });
       toast.success('Lead excluído');
     },
     onError: (e: any) => toast.error(`Erro ao excluir: ${e.message}`),
@@ -130,13 +141,15 @@ export function useDeleteLead() {
 export interface UnitRow { id: string; name: string; address: string | null }
 
 export function useUnits() {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: ['units', DEV_TENANT_ID],
+    queryKey: ['units', tenantId],
+    enabled: !!tenantId,
     queryFn: async (): Promise<UnitRow[]> => {
       const { data, error } = await supabase
         .from('units')
         .select('id, name, address')
-        .eq('tenant_id', DEV_TENANT_ID);
+        .eq('tenant_id', tenantId!);
       if (error) throw error;
       return (data ?? []) as unknown as UnitRow[];
     },
@@ -145,8 +158,11 @@ export function useUnits() {
 
 export function useSeedSampleLeads() {
   const qc = useQueryClient();
+  const tenantId = useTenantId();
+  const userId = useAuthStore((s) => s.user?.id ?? null);
   return useMutation({
     mutationFn: async () => {
+      if (!tenantId) throw new Error('Tenant não identificado');
       const samples = [
         { full_name: 'Carlos Pereira', phone: '5527999990010', email: 'carlos@example.com', sales_value: 1800, source: 'google', status: 'open' as const },
         { full_name: 'Ana Beatriz', phone: '5527999990011', email: 'ana@example.com', sales_value: 3200, source: 'whatsapp', status: 'in_progress' as const },
@@ -154,11 +170,11 @@ export function useSeedSampleLeads() {
       ];
       const { error } = await (supabase as any)
         .from('leads')
-        .insert(samples.map((s) => ({ ...s, tenant_id: DEV_TENANT_ID })));
+        .insert(samples.map((s) => ({ ...s, tenant_id: tenantId, assigned_user_id: userId })));
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: LEADS_KEY });
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] });
       toast.success('3 leads de exemplo importados');
     },
     onError: (e: any) => toast.error(`Erro: ${e.message}`),
