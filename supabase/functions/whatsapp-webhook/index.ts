@@ -69,6 +69,7 @@ async function generateSdrReply(
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [...systemMessages, ...history],
+        temperature,
       }),
     });
 
