@@ -1,401 +1,632 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription,
-  CardFooter
-} from "@/components/ui/card"
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs"
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useServerFn } from '@tanstack/react-start'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter,
+} from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { 
-  Brain, 
-  MessageSquare, 
-  BookOpen, 
-  Target, 
-  History, 
-  Play, 
-  Upload, 
-  Save, 
-  Plus, 
-  X,
-  AlertCircle,
-  FileText,
-  Clock,
-  Zap,
-  CheckCircle2
+import {
+  Brain, BookOpen, Target, History, Play, Upload, Plus, X,
+  AlertCircle, FileText, Zap, Send, Loader2, RotateCcw,
 } from 'lucide-react'
-import { toast } from "sonner"
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  getAiConfig, updateAiConfig, simulateChat,
+  listAiVersions, restoreAiVersion,
+} from '@/lib/ai-training.functions'
+import {
+  listKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc,
+} from '@/lib/ai-knowledge.functions'
 
 export const Route = createFileRoute('/ai-training')({
   component: AITrainingSettings,
 })
 
+type FormState = {
+  prompt_system: string
+  sample_scripts: string
+  knowledge_base_faq: string
+  qualification_questions: string[]
+  response_delay: number
+  scheduling_link: string
+  goal: string
+  model_temperature: number
+  training_mode: boolean
+  rejection_instructions: string
+}
+
 function AITrainingSettings() {
-  const [isSaving, setIsSaving] = useState(false)
+  const qc = useQueryClient()
+  const getCfg = useServerFn(getAiConfig)
+  const saveCfg = useServerFn(updateAiConfig)
+
+  const cfgQuery = useQuery({
+    queryKey: ['ai-config'],
+    queryFn: () => getCfg(),
+  })
+
+  const [form, setForm] = useState<FormState | null>(null)
   const [activeTab, setActiveTab] = useState('personality')
-  const [trainingMode, setTrainingMode] = useState(false)
-  
-  // Mock State
-  const [config, setConfig] = useState({
-    prompt_system: "Você é um assistente virtual da Ótica Castelar. Seu tom de voz deve ser amigável, consultivo e focado em resolver as dúvidas do cliente sobre saúde visual e agendar consultas.",
-    tone: "consultive",
-    knowledge_base_faq: "1. Qual o valor da consulta? R: O valor é R$ 100,00.\n2. Vocês aceitam convênio? R: Sim, aceitamos Unimed e Bradesco Saúde.",
-    scheduling_link: "https://calendar.google.com/booking/castelar",
-    response_delay: 5,
-    goal: "appointment"
+
+  useEffect(() => {
+    if (cfgQuery.data && !form) {
+      const c = cfgQuery.data
+      setForm({
+        prompt_system: c.prompt_system ?? '',
+        sample_scripts: c.sample_scripts ?? '',
+        knowledge_base_faq: c.knowledge_base_faq ?? '',
+        qualification_questions: Array.isArray(c.qualification_questions) ? (c.qualification_questions as string[]) : [],
+        response_delay: c.response_delay ?? 5,
+        scheduling_link: c.scheduling_link ?? '',
+        goal: c.goal ?? 'appointment',
+        model_temperature: Number(c.model_temperature ?? 0.7),
+        training_mode: !!c.training_mode,
+        rejection_instructions: c.rejection_instructions ?? '',
+      })
+    }
+  }, [cfgQuery.data, form])
+
+  const saveMut = useMutation({
+    mutationFn: (payload: FormState) => saveCfg({ data: payload as any }),
+    onSuccess: () => {
+      toast.success('Configurações salvas')
+      qc.invalidateQueries({ queryKey: ['ai-config'] })
+      qc.invalidateQueries({ queryKey: ['ai-versions'] })
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro ao salvar'),
   })
 
   const handleSave = () => {
-    if (!config.prompt_system.trim()) {
-      toast.error("Defina como a IA deve se comportar antes de salvar")
+    if (!form) return
+    if (!form.prompt_system.trim()) {
+      toast.error('Defina o Prompt do Sistema antes de salvar')
       return
     }
-    
-    setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
-      toast.success("Configurações de treinamento atualizadas com sucesso!")
-    }, 1500)
+    saveMut.mutate(form)
   }
 
+  if (cfgQuery.isLoading || !form) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+  if (cfgQuery.isError) {
+    return (
+      <div className="p-8 text-red-600">
+        Erro carregando configuração: {(cfgQuery.error as any)?.message}
+      </div>
+    )
+  }
+
+  const setField = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => f ? { ...f, [k]: v } : f)
+
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000">
+    <div className="space-y-10 animate-in fade-in duration-500">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
         <div className="relative z-10 flex items-center gap-8">
-          <div className="p-5 bg-[#FFC400]/10 rounded-[24px] border border-[#FFC400]/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
-            <Brain className="w-12 h-12 text-primary shadow-[0_0_20px_rgba(255,196,0,0.4)]" />
+          <div className="p-5 bg-[#FFC400]/10 rounded-[24px] border border-[#FFC400]/20 shadow-inner">
+            <Brain className="w-12 h-12 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-1 h-1 rounded-full bg-primary" />
+              <div className="w-10 h-1 rounded-full bg-primary" />
               <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Inteligência SDR Ativa</span>
             </div>
             <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">Treinamento IA</h1>
             <p className="text-gray-500 font-medium text-[15px] max-w-xl">Personalize o comportamento, tom de voz e base de conhecimento da inteligência de atendimento da Ótica Catelan.</p>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <div className="flex items-center gap-2 mr-4">
             <Label htmlFor="training-mode" className="text-sm">Modo de Aprendizado</Label>
-            <Switch 
-              id="training-mode" 
-              checked={trainingMode} 
-              onCheckedChange={setTrainingMode} 
-            />
+            <Switch id="training-mode" checked={form.training_mode} onCheckedChange={(v) => setField('training_mode', v)} />
           </div>
-          <Button onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-14 px-10 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 uppercase tracking-widest border-none">
-            {isSaving ? "SALVANDO..." : "SALVAR ALTERAÇÕES"}
+          <Button onClick={handleSave} disabled={saveMut.isPending} className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-14 px-10 rounded-[16px] shadow-xl shadow-primary/20 uppercase tracking-widest border-none">
+            {saveMut.isPending ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-white border border-border mb-8 w-full justify-start h-16 p-2 rounded-[14px] shadow-inner overflow-x-auto overflow-y-hidden scrollbar-hide">
-          <TabsTrigger value="personality" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 transition-all text-ink">
+        <TabsList className="bg-white border border-border mb-8 w-full justify-start h-16 p-2 rounded-[14px] shadow-inner overflow-x-auto">
+          <TabsTrigger value="personality" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <Zap className="w-4 h-4" /> Personalidade
           </TabsTrigger>
-          <TabsTrigger value="knowledge" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 transition-all text-ink">
+          <TabsTrigger value="knowledge" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <BookOpen className="w-4 h-4" /> Conhecimento
           </TabsTrigger>
-          <TabsTrigger value="qualification" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 transition-all text-ink">
+          <TabsTrigger value="qualification" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <Target className="w-4 h-4" /> Qualificação
           </TabsTrigger>
-          <TabsTrigger value="simulation" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 transition-all text-ink">
+          <TabsTrigger value="simulation" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <Play className="w-4 h-4" /> Simulação
           </TabsTrigger>
-          <TabsTrigger value="history" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 transition-all text-ink">
+          <TabsTrigger value="history" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <History className="w-4 h-4" /> Histórico
           </TabsTrigger>
         </TabsList>
 
-        <div className="mt-6 space-y-6">
-          <TabsContent value="personality" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-card border-border bg-white rounded-[14px] overflow-hidden">
-                <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
-                  <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Instruções de Abordagem</CardTitle>
-                  <CardDescription className="text-gray-500 font-medium">Defina o tom de voz e o comportamento base da IA.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Prompt do Sistema (Personalidade)</Label>
-                    <Textarea 
-                      placeholder="Ex: Você é um atendente amigável da Ótica Catelan..." 
-                      className="min-h-[220px] bg-white border-border rounded-xl text-ink font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
-                      value={config.prompt_system}
-                      onChange={(e) => setConfig({...config, prompt_system: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Tom de Voz</Label>
-                      <Select defaultValue="consultive">
-                      <SelectTrigger className="bg-white border-border h-12 rounded-xl text-ink font-black text-[10px] uppercase tracking-widest">
-                          <SelectValue placeholder="Selecione o tom" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="formal">Formal</SelectItem>
-                          <SelectItem value="friendly">Amigável</SelectItem>
-                          <SelectItem value="consultive">Consultivo</SelectItem>
-                          <SelectItem value="direct">Direto</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Objetivo da Conversa</Label>
-                      <Select defaultValue={config.goal}>
-                      <SelectTrigger className="bg-white border-border h-12 rounded-xl text-ink font-black text-[10px] uppercase tracking-widest">
-                          <SelectValue placeholder="Selecione o objetivo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="appointment">Agendamento</SelectItem>
-                          <SelectItem value="qualification">Qualificação</SelectItem>
-                          <SelectItem value="support">Suporte</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-card border-border bg-white rounded-[14px] overflow-hidden">
-                <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
-                  <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Scripts de Exemplo</CardTitle>
-                  <CardDescription className="text-gray-500 font-medium">Mimetize o estilo de atendimento real da Ótica Catelan.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Textarea 
-                    placeholder="Insira diálogos reais de exemplo aqui..." 
-                    className="min-h-[320px] bg-white border-border rounded-xl text-ink font-medium p-4 focus:ring-1 focus:ring-primary shadow-inner"
-                  />
-                  <p className="text-[11px] text-gray-500 font-bold italic leading-relaxed">
-                    Fornecer bons exemplos ajuda a IA a entender nuances de linguagem e gírias regionais.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="knowledge" className="space-y-6">
-            <Card className="shadow-card border-border bg-white rounded-[14px] overflow-hidden">
+        <TabsContent value="personality" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="shadow-card border-border bg-white rounded-[14px]">
               <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Documentos {'&'} FAQ</CardTitle>
-                <CardDescription className="text-gray-500 font-medium">Fontes de informação estratégica para a base de conhecimento.</CardDescription>
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Instruções de Abordagem</CardTitle>
+                <CardDescription>Defina o tom de voz e o comportamento base da IA.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Upload de Arquivos (PDF/Word)</Label>
-                    <div className="border-2 border-dashed border-border rounded-xl p-10 flex flex-col items-center justify-center text-center gap-4 hover:border-primary/50 hover:bg-white/5 transition-all cursor-pointer group shadow-inner">
-                      <div className="p-3 bg-primary/10 rounded-full">
-                        <Upload className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-ink mb-1">Upload de Conhecimento</p>
-                        <p className="text-[10px] text-gray-500 font-bold max-w-[200px] mx-auto leading-relaxed">Manuais de serviço, tabelas de preços e guias de conduta.</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Documentos Ativos</p>
-                      <div className="flex items-center justify-between p-4 bg-white border border-border rounded-xl shadow-inner">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-primary shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
-                          <span className="text-xs font-black text-ink uppercase tracking-tight">Manual_Servicos_Catelan.pdf</span>
-                        </div>
-                        <Badge variant="outline" className="bg-success/10 text-success border-success/30 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-lg shadow-sm">
-                          PRONTO
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">FAQ Estruturada (Knowledge Base)</Label>
-                    <Textarea 
-                      placeholder="1. Pergunta? R: Resposta..." 
-                      className="min-h-[280px] font-mono text-[11px] bg-white border-border rounded-xl text-primary font-black p-4 focus:ring-1 focus:ring-primary shadow-inner leading-relaxed"
-                      value={config.knowledge_base_faq}
-                      onChange={(e) => setConfig({...config, knowledge_base_faq: e.target.value})}
-                    />
-                  </div>
+              <CardContent className="space-y-4 pt-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Prompt do Sistema (Personalidade)</Label>
+                  <Textarea
+                    className="min-h-[220px] bg-white border-border rounded-xl text-ink font-medium p-4"
+                    value={form.prompt_system}
+                    onChange={(e) => setField('prompt_system', e.target.value)}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="qualification" className="space-y-6">
-            <Card className="bg-white border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.03)] rounded-[24px] overflow-hidden">
-              <CardHeader className="pb-8 border-b border-[#E3E6EB] bg-[#F6F7F9]/50">
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-8 h-0.5 bg-primary rounded-full" />
-                  <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Fluxo de Qualificação</CardTitle>
-                </div>
-                <CardDescription className="text-[14px] text-gray-500 font-medium">Defina as perguntas obrigatórias para filtrar e pontuar leads qualificados.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  {[
-                    "Qual o motivo da consulta (exame de rotina, troca de armação, dor)?",
-                    "Você possui algum convênio médico?",
-                    "Qual a sua disponibilidade de horário (Manhã ou Tarde)?"
-                  ].map((q, idx) => (
-                    <div key={idx} className="flex gap-3 items-center">
-                      <Badge className="h-6 w-6 rounded-full flex items-center justify-center p-0">{idx + 1}</Badge>
-                      <Input defaultValue={q} />
-                      <Button variant="ghost" size="icon" className="text-red-500"><X className="w-4 h-4" /></Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" className="gap-2 w-full border-dashed">
-                    <Plus className="w-4 h-4" /> Adicionar Pergunta de Qualificação
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Tempo de Resposta (Delay Humano)</Label>
-                    <div className="flex items-center gap-3">
-                      <Input type="number" value={config.response_delay} className="w-24" />
-                      <span className="text-sm text-muted-foreground">segundos</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground italic">Evita que a IA pareça um robô respondendo instantaneamente.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Link de Agendamento Padrão</Label>
-                    <Input value={config.scheduling_link} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="simulation" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-1 bg-white border-border shadow-card">
-                <CardHeader>
-                  <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Configuração do Teste</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Cenário do Lead</Label>
-                    <Select defaultValue="new-lead">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um cenário" />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Objetivo da Conversa</Label>
+                    <Select value={form.goal} onValueChange={(v) => setField('goal', v)}>
+                      <SelectTrigger className="bg-white border-border h-12 rounded-xl text-ink font-black text-[10px] uppercase tracking-widest">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="new-lead">Novo Lead (Interessado)</SelectItem>
-                        <SelectItem value="angry">Lead Insatisfeito</SelectItem>
-                        <SelectItem value="existing">Cliente Antigo</SelectItem>
+                        <SelectItem value="appointment">Agendamento</SelectItem>
+                        <SelectItem value="qualification">Qualificação</SelectItem>
+                        <SelectItem value="support">Suporte</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                    <p className="text-xs text-blue-800">Use a simulação para validar como a IA reage às novas instruções sem afetar clientes reais.</p>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Temperatura ({form.model_temperature.toFixed(2)})</Label>
+                    <Input
+                      type="range" min={0} max={1} step={0.05}
+                      value={form.model_temperature}
+                      onChange={(e) => setField('model_temperature', Number(e.target.value))}
+                    />
                   </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full gap-2">
-                    <Zap className="w-4 h-4" /> Limpar Conversa
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              <Card className="lg:col-span-2 bg-white border-border shadow-card">
-                <CardHeader className="border-b border-border bg-gray-50/50">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Chat de Simulação</CardTitle>
-                    <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Sandbox Ativo</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <ScrollArea className="h-[400px] p-4 space-y-4">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex gap-3 max-w-[80%] items-start">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">L</div>
-                        <div className="bg-slate-100 p-3 rounded-2xl rounded-tl-none text-sm">
-                          Olá! Vi o anúncio de vocês e queria saber o preço do exame de vista.
-                        </div>
-                      </div>
-                      <div className="flex gap-3 max-w-[80%] items-start self-end flex-row-reverse">
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 text-white font-bold text-xs">AI</div>
-                        <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm">
-                          Olá! Que bom que você entrou em contato conosco. 😊 O nosso exame de vista custa R$ 100,00, mas temos condições especiais para quem agenda pelo WhatsApp. Você possui algum convênio ou gostaria de agendar no particular?
-                        </div>
-                      </div>
-                    </div>
-                  </ScrollArea>
-                  <div className="p-4 border-t bg-slate-50/50">
-                    <div className="flex gap-2">
-                      <Input placeholder="Digite sua mensagem de teste..." className="bg-white" />
-                      <Button size="icon"><Play className="w-4 h-4" /></Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Revisões de Treinamento</CardTitle>
-                <CardDescription>Restaure versões anteriores do conhecimento da IA.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { id: 'v2', date: 'Hoje às 14:20', author: 'João Silva', change: 'Atualização de preços de lentes' },
-                    { id: 'v1', date: '01/06/2024 às 09:00', author: 'Maria Oliveira', change: 'Prompt inicial e tom consultivo' },
-                  ].map((rev) => (
-                    <div key={rev.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-slate-100 rounded-lg">
-                          <History className="w-5 h-5 text-slate-500" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm">Versão {rev.id} - {rev.change}</p>
-                          <p className="text-xs text-muted-foreground">{rev.date} por {rev.author}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">Ver Snapshot</Button>
-                        <Button variant="outline" size="sm">Restaurar</Button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </div>
+
+            <Card className="shadow-card border-border bg-white rounded-[14px]">
+              <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Scripts de Exemplo</CardTitle>
+                <CardDescription>Mimetize o estilo de atendimento real.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <Textarea
+                  placeholder="Insira diálogos reais de exemplo aqui..."
+                  className="min-h-[260px] bg-white border-border rounded-xl text-ink font-medium p-4"
+                  value={form.sample_scripts}
+                  onChange={(e) => setField('sample_scripts', e.target.value)}
+                />
+                <p className="text-[11px] text-gray-500 font-bold italic">Bons exemplos ajudam a IA a entender nuances de linguagem.</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="shadow-card border-border bg-white rounded-[14px]">
+            <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
+              <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Instruções de Rejeição</CardTitle>
+              <CardDescription>O que a IA NUNCA deve fazer.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <Textarea
+                placeholder="Ex: Nunca prometer descontos. Nunca dar diagnóstico médico..."
+                className="min-h-[120px]"
+                value={form.rejection_instructions}
+                onChange={(e) => setField('rejection_instructions', e.target.value)}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="knowledge" className="space-y-6">
+          <KnowledgeTab
+            faq={form.knowledge_base_faq}
+            onFaqChange={(v) => setField('knowledge_base_faq', v)}
+          />
+        </TabsContent>
+
+        <TabsContent value="qualification" className="space-y-6">
+          <QualificationTab
+            questions={form.qualification_questions}
+            onChange={(q) => setField('qualification_questions', q)}
+            delay={form.response_delay}
+            onDelayChange={(v) => setField('response_delay', v)}
+            link={form.scheduling_link}
+            onLinkChange={(v) => setField('scheduling_link', v)}
+          />
+        </TabsContent>
+
+        <TabsContent value="simulation" className="space-y-6">
+          <SimulationTab />
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          <HistoryTab />
+        </TabsContent>
       </Tabs>
-      
-      {!config.prompt_system.trim() && (
+
+      {!form.prompt_system.trim() && (
         <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 border border-red-100 rounded-xl">
           <AlertCircle className="w-5 h-5" />
           <p className="text-sm font-medium">Atenção: A IA não responderá sem um Prompt do Sistema definido.</p>
         </div>
       )}
     </div>
+  )
+}
+
+// ============= Knowledge Tab =============
+function KnowledgeTab({ faq, onFaqChange }: { faq: string; onFaqChange: (v: string) => void }) {
+  const qc = useQueryClient()
+  const list = useServerFn(listKnowledgeDocs)
+  const upload = useServerFn(uploadKnowledgeDoc)
+  const remove = useServerFn(deleteKnowledgeDoc)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const docsQuery = useQuery({ queryKey: ['knowledge-docs'], queryFn: () => list() })
+
+  const removeMut = useMutation({
+    mutationFn: (id: string) => remove({ data: { id } }),
+    onSuccess: () => {
+      toast.success('Documento removido')
+      qc.invalidateQueries({ queryKey: ['knowledge-docs'] })
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro ao remover'),
+  })
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Arquivo maior que 10MB')
+      return
+    }
+    setUploading(true)
+    try {
+      let text = ''
+      const buf = await file.arrayBuffer()
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        text = await extractPdfText(buf)
+      } else {
+        text = new TextDecoder().decode(buf)
+      }
+      if (!text.trim()) {
+        toast.error('Não foi possível extrair texto do arquivo')
+        setUploading(false)
+        return
+      }
+      // base64 do binário pra storage
+      const bytes = new Uint8Array(buf)
+      let bin = ''
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+      const b64 = btoa(bin)
+      await upload({ data: {
+        name: file.name,
+        file_type: file.type || 'application/octet-stream',
+        content: text.slice(0, 200000),
+        file_base64: b64,
+        file_size_bytes: file.size,
+      }})
+      toast.success(`${file.name} processado (${text.length.toLocaleString()} caracteres)`)
+      qc.invalidateQueries({ queryKey: ['knowledge-docs'] })
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Falha no upload')
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  return (
+    <Card className="shadow-card border-border bg-white rounded-[14px]">
+      <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
+        <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Documentos & FAQ</CardTitle>
+        <CardDescription>Fontes de informação injetadas no prompt da IA.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6 pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Upload de Arquivos (PDF, TXT, MD)</Label>
+            <input ref={fileRef} type="file" accept=".pdf,.txt,.md,application/pdf,text/plain" className="hidden" onChange={handleFile} />
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="w-full border-2 border-dashed border-border rounded-xl p-10 flex flex-col items-center justify-center text-center gap-4 hover:border-primary/50 transition-all"
+            >
+              <div className="p-3 bg-primary/10 rounded-full">
+                {uploading ? <Loader2 className="w-6 h-6 text-primary animate-spin" /> : <Upload className="w-6 h-6 text-primary" />}
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-ink mb-1">
+                  {uploading ? 'Processando...' : 'Adicionar documento'}
+                </p>
+                <p className="text-[10px] text-gray-500 font-bold leading-relaxed">PDFs, manuais, tabelas de preços. Máx. 10MB.</p>
+              </div>
+            </button>
+
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Documentos Ativos</p>
+              {docsQuery.isLoading && <p className="text-sm text-gray-400">Carregando...</p>}
+              {docsQuery.data && docsQuery.data.length === 0 && (
+                <p className="text-xs text-gray-400 italic">Nenhum documento carregado.</p>
+              )}
+              {(docsQuery.data ?? []).map((d: any) => (
+                <div key={d.id} className="flex items-center justify-between p-4 bg-white border border-border rounded-xl">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="w-5 h-5 text-primary shrink-0" />
+                    <span className="text-xs font-bold text-ink truncate">{d.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-success/10 text-success border-success/30 text-[9px] uppercase">{d.status}</Badge>
+                    <Button size="icon" variant="ghost" onClick={() => removeMut.mutate(d.id)} disabled={removeMut.isPending}>
+                      <X className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">FAQ Estruturada</Label>
+            <Textarea
+              placeholder="1. Pergunta? R: Resposta..."
+              className="min-h-[400px] font-mono text-[12px] bg-white border-border rounded-xl text-ink p-4"
+              value={faq}
+              onChange={(e) => onFaqChange(e.target.value)}
+            />
+            <p className="text-[11px] text-gray-500 italic">Não esqueça de clicar em "Salvar Alterações" no topo.</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+async function extractPdfText(buf: ArrayBuffer): Promise<string> {
+  const pdfjsLib: any = await import('pdfjs-dist')
+  const workerMod: any = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerMod.default
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise
+  let text = ''
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    text += content.items.map((it: any) => it.str).join(' ') + '\n\n'
+  }
+  return text.trim()
+}
+
+// ============= Qualification Tab =============
+function QualificationTab(props: {
+  questions: string[]
+  onChange: (q: string[]) => void
+  delay: number
+  onDelayChange: (v: number) => void
+  link: string
+  onLinkChange: (v: string) => void
+}) {
+  return (
+    <Card className="bg-white border-[#E3E6EB] shadow-card rounded-[24px]">
+      <CardHeader className="pb-8 border-b border-[#E3E6EB] bg-[#F6F7F9]/50">
+        <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Fluxo de Qualificação</CardTitle>
+        <CardDescription>Perguntas que a IA fará em sequência para qualificar o lead.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6 pt-6">
+        <div className="space-y-3">
+          {props.questions.map((q, idx) => (
+            <div key={idx} className="flex gap-3 items-center">
+              <Badge className="h-6 w-6 rounded-full flex items-center justify-center p-0">{idx + 1}</Badge>
+              <Input
+                value={q}
+                onChange={(e) => {
+                  const next = [...props.questions]
+                  next[idx] = e.target.value
+                  props.onChange(next)
+                }}
+              />
+              <Button variant="ghost" size="icon" className="text-red-500" onClick={() => {
+                props.onChange(props.questions.filter((_, i) => i !== idx))
+              }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+          <Button variant="outline" className="gap-2 w-full border-dashed"
+            onClick={() => props.onChange([...props.questions, ''])}>
+            <Plus className="w-4 h-4" /> Adicionar Pergunta
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t">
+          <div className="space-y-2">
+            <Label>Tempo de Resposta (Delay Humano)</Label>
+            <div className="flex items-center gap-3">
+              <Input type="number" value={props.delay} min={0} max={60}
+                onChange={(e) => props.onDelayChange(Math.max(0, Number(e.target.value) || 0))}
+                className="w-24" />
+              <span className="text-sm text-muted-foreground">segundos</span>
+            </div>
+            <p className="text-xs text-muted-foreground italic">Evita que a IA pareça um robô respondendo instantaneamente.</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Link de Agendamento Padrão</Label>
+            <Input value={props.link} onChange={(e) => props.onLinkChange(e.target.value)} placeholder="https://..." />
+          </div>
+        </div>
+        <p className="text-[11px] text-gray-500 italic">Não esqueça de clicar em "Salvar Alterações" no topo.</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ============= Simulation Tab =============
+function SimulationTab() {
+  const sim = useServerFn(simulateChat)
+  type Msg = { role: 'user' | 'assistant'; content: string }
+  const [messages, setMessages] = useState<Msg[]>([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+  }, [messages, loading])
+
+  const send = async () => {
+    const text = input.trim()
+    if (!text || loading) return
+    const nextMessages: Msg[] = [...messages, { role: 'user', content: text }]
+    setMessages(nextMessages)
+    setInput('')
+    setLoading(true)
+    try {
+      const res = await sim({ data: { messages: nextMessages } })
+      setMessages([...nextMessages, { role: 'assistant', content: res.reply }])
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Erro na simulação')
+      setMessages(nextMessages.slice(0, -1))
+      setInput(text)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Card className="bg-white border-border shadow-card">
+      <CardHeader className="border-b border-border bg-gray-50/50 flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Chat de Simulação</CardTitle>
+          <CardDescription>Testa a configuração SALVA — chama o mesmo modelo do atendimento real.</CardDescription>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Sandbox</Badge>
+          <Button variant="outline" size="sm" onClick={() => setMessages([])} disabled={!messages.length}>
+            Limpar
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div ref={scrollRef} className="h-[420px] overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center text-gray-400 text-sm py-16">
+              Comece digitando uma mensagem como se fosse um cliente.
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <div key={i} className={`flex gap-3 max-w-[80%] ${m.role === 'assistant' ? 'self-start' : 'self-end flex-row-reverse ml-auto'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${m.role === 'assistant' ? 'bg-primary text-white' : 'bg-slate-200'}`}>
+                {m.role === 'assistant' ? 'IA' : 'L'}
+              </div>
+              <div className={`p-3 rounded-2xl text-sm whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-primary/10 text-ink rounded-tl-none' : 'bg-slate-100 text-ink rounded-tr-none'}`}>
+                {m.content}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex gap-3 max-w-[80%]">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white">IA</div>
+              <div className="p-3 bg-primary/10 rounded-2xl rounded-tl-none"><Loader2 className="w-4 h-4 animate-spin" /></div>
+            </div>
+          )}
+        </div>
+        <div className="p-4 border-t bg-slate-50/50">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Digite uma mensagem de teste..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+              disabled={loading}
+            />
+            <Button size="icon" onClick={send} disabled={loading || !input.trim()}>
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ============= History Tab =============
+function HistoryTab() {
+  const qc = useQueryClient()
+  const list = useServerFn(listAiVersions)
+  const restore = useServerFn(restoreAiVersion)
+  const q = useQuery({ queryKey: ['ai-versions'], queryFn: () => list() })
+
+  const restoreMut = useMutation({
+    mutationFn: (id: string) => restore({ data: { version_id: id } }),
+    onSuccess: () => {
+      toast.success('Versão restaurada')
+      qc.invalidateQueries({ queryKey: ['ai-config'] })
+      qc.invalidateQueries({ queryKey: ['ai-versions'] })
+      // force refresh of form state
+      window.location.reload()
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Erro ao restaurar'),
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Revisões de Treinamento</CardTitle>
+        <CardDescription>Cada salvamento gera uma versão. Restaure qualquer uma.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {q.isLoading && <p className="text-sm text-gray-400">Carregando...</p>}
+        {q.data && q.data.length === 0 && (
+          <p className="text-sm text-gray-400 italic">Nenhuma versão salva ainda. Edite e clique em "Salvar Alterações" para gerar a primeira.</p>
+        )}
+        <div className="space-y-3">
+          {(q.data ?? []).map((rev: any, idx: number) => {
+            const snap = rev.config_snapshot ?? {}
+            const date = new Date(rev.created_at).toLocaleString('pt-BR')
+            const preview = (snap.prompt_system ?? '').slice(0, 80)
+            return (
+              <div key={rev.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="p-2 bg-slate-100 rounded-lg">
+                    <History className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm">Versão {q.data!.length - idx} <span className="text-gray-400 font-normal">— {date}</span></p>
+                    <p className="text-xs text-muted-foreground truncate">{preview || '(sem prompt)'}</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="gap-2 shrink-0"
+                  disabled={restoreMut.isPending}
+                  onClick={() => {
+                    if (confirm('Restaurar esta versão? A configuração atual será sobrescrita.')) restoreMut.mutate(rev.id)
+                  }}>
+                  <RotateCcw className="w-3 h-3" /> Restaurar
+                </Button>
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
