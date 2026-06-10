@@ -1,19 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, Phone, Info, Layout, PlusCircle, Settings, ChevronRight, MessageSquare, Calendar, Brain, ShieldCheck, Zap, AlertCircle, FileText, RefreshCw, Upload, Search, Paperclip, MoreVertical, Smile, Users, UserPlus } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import { useChatStore } from '@/hooks/use-chat'
+import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, FileText, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useKanban } from '@/hooks/use-kanban'
+import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, formatPhoneLast4 } from '@/hooks/use-whatsapp-chat'
+import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -23,20 +24,50 @@ export const Route = createFileRoute('/chat')({
 })
 
 function Chat() {
-  const { sessions, selectedSessionId, setSelectedSession } = useChatStore()
+  const { phone: phoneFromUrl } = Route.useSearch()
+  const { conversations, loading } = useWhatsAppChat()
+  const { sendText, isConnected: waConnected } = useWhatsApp()
   const { leads, updateLead } = useKanban()
   const [activeTab, setActiveTab] = useState('ia')
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  
-  const selectedSession = sessions.find(s => s.id === selectedSessionId)
-  const currentLead = leads.find(l => l.name === selectedSession?.name)
+
+  // Auto-seleciona a primeira conversa ou a que vier pela URL
+  useEffect(() => {
+    if (selectedPhone) return
+    if (phoneFromUrl) { setSelectedPhone(phoneFromUrl); return }
+    if (conversations.length > 0) setSelectedPhone(conversations[0].phone)
+  }, [conversations, phoneFromUrl, selectedPhone])
+
+  const selectedConv = useMemo(
+    () => conversations.find((c) => c.phone === selectedPhone) ?? null,
+    [conversations, selectedPhone]
+  )
+
+  const filteredConvs = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return conversations
+    return conversations.filter((c) =>
+      c.phone.toLowerCase().includes(q) || c.lastText.toLowerCase().includes(q)
+    )
+  }, [conversations, search])
+
+  const currentLead = leads.find((l) => l.phone && selectedConv && l.phone.replace(/\D+/g, '').endsWith(selectedConv.phone.replace(/\D+/g, '').slice(-8)))
+
+  // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [selectedConv?.messages.length, selectedPhone])
 
   const [isOcrProcessing, setIsOcrProcessing] = useState(false)
 
   const handleSimulateOCR = () => {
     setIsOcrProcessing(true)
     toast.loading("Processando receita via OCR...")
-    
     setTimeout(() => {
       if (currentLead) {
         updateLead(currentLead.id, {
@@ -58,6 +89,21 @@ function Chat() {
       success: 'IA Recalibrada! Interpretação ajustada.',
       error: 'Erro na recalibração.'
     })
+  }
+
+  const handleSend = async () => {
+    if (!draft.trim() || !selectedPhone) return
+    if (!waConnected) { toast.error('WhatsApp não está conectado.'); return }
+    setSending(true)
+    try {
+      await sendText(selectedPhone, draft.trim())
+      setDraft('')
+      toast.success('Mensagem enviada')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao enviar')
+    } finally {
+      setSending(false)
+    }
   }
 
   const [isRoutingOpen, setIsRoutingOpen] = useState(false)
