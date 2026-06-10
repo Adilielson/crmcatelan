@@ -172,7 +172,7 @@ export type Database = {
           {
             foreignKeyName: "ai_configs_tenant_id_fkey"
             columns: ["tenant_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -180,7 +180,9 @@ export type Database = {
       }
       ai_knowledge_documents: {
         Row: {
+          content: string | null
           created_at: string | null
+          file_size_bytes: number | null
           file_type: string | null
           file_url: string
           id: string
@@ -189,7 +191,9 @@ export type Database = {
           tenant_id: string | null
         }
         Insert: {
+          content?: string | null
           created_at?: string | null
+          file_size_bytes?: number | null
           file_type?: string | null
           file_url: string
           id?: string
@@ -198,7 +202,9 @@ export type Database = {
           tenant_id?: string | null
         }
         Update: {
+          content?: string | null
           created_at?: string | null
+          file_size_bytes?: number | null
           file_type?: string | null
           file_url?: string
           id?: string
