@@ -40,9 +40,22 @@ interface LogRow {
   sender_avatar_url: string | null;
   media_url: string | null;
   media_mime: string | null;
+  media_storage_path: string | null;
 }
 
-function mapRow(row: LogRow): WhatsAppMessage {
+const MEDIA_BUCKET = 'whatsapp-media';
+
+async function resolveMediaUrl(row: Pick<LogRow, 'media_storage_path' | 'media_url'>): Promise<string | null> {
+  if (row.media_storage_path) {
+    const { data } = await supabase.storage
+      .from(MEDIA_BUCKET)
+      .createSignedUrl(row.media_storage_path, 60 * 60);
+    if (data?.signedUrl) return data.signedUrl;
+  }
+  return row.media_url;
+}
+
+function mapRowSync(row: LogRow, resolvedUrl: string | null): WhatsAppMessage {
   return {
     id: row.id,
     phone: row.recipient_phone,
@@ -53,10 +66,11 @@ function mapRow(row: LogRow): WhatsAppMessage {
     fromMe: row.status === 'sent',
     senderName: row.sender_name,
     senderAvatarUrl: row.sender_avatar_url,
-    mediaUrl: row.media_url,
+    mediaUrl: resolvedUrl,
     mediaMime: row.media_mime,
   };
 }
+
 
 function timeLabel(iso: string) {
   const d = new Date(iso);
