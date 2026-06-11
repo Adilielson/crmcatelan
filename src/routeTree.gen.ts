@@ -15,6 +15,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MarketingRouteImport } from './routes/marketing'
+import { Route as MRouteImport } from './routes/m'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as FilaRouteImport } from './routes/fila'
@@ -57,6 +58,11 @@ const PerformanceRoute = PerformanceRouteImport.update({
 const MarketingRoute = MarketingRouteImport.update({
   id: '/marketing',
   path: '/marketing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MRoute = MRouteImport.update({
+  id: '/m',
+  path: '/m',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -105,9 +111,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const MChatRoute = MChatRouteImport.update({
-  id: '/m/chat',
-  path: '/m/chat',
-  getParentRoute: () => rootRouteImport,
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => MRoute,
 } as any)
 const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
   id: '/analytics/no-show',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
+  '/m': typeof MRouteWithChildren
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
+  '/m': typeof MRouteWithChildren
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
+  '/m': typeof MRouteWithChildren
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
+    | '/m'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
+    | '/m'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
+    | '/m'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -266,6 +278,7 @@ export interface RootRouteChildren {
   FilaRoute: typeof FilaRoute
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
+  MRoute: typeof MRouteWithChildren
   MarketingRoute: typeof MarketingRoute
   PerformanceRoute: typeof PerformanceRoute
   SaasRoute: typeof SaasRoute
@@ -273,7 +286,6 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
-  MChatRoute: typeof MChatRouteWithChildren
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
 }
 
@@ -319,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/marketing'
       fullPath: '/marketing'
       preLoaderRoute: typeof MarketingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/m': {
+      id: '/m'
+      path: '/m'
+      fullPath: '/m'
+      preLoaderRoute: typeof MRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -386,10 +405,10 @@ declare module '@tanstack/react-router' {
     }
     '/m/chat': {
       id: '/m/chat'
-      path: '/m/chat'
+      path: '/chat'
       fullPath: '/m/chat'
       preLoaderRoute: typeof MChatRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MRoute
     }
     '/analytics/no-show': {
       id: '/analytics/no-show'
@@ -425,6 +444,16 @@ const MChatRouteChildren: MChatRouteChildren = {
 
 const MChatRouteWithChildren = MChatRoute._addFileChildren(MChatRouteChildren)
 
+interface MRouteChildren {
+  MChatRoute: typeof MChatRouteWithChildren
+}
+
+const MRouteChildren: MRouteChildren = {
+  MChatRoute: MChatRouteWithChildren,
+}
+
+const MRouteWithChildren = MRoute._addFileChildren(MRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
@@ -435,6 +464,7 @@ const rootRouteChildren: RootRouteChildren = {
   FilaRoute: FilaRoute,
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
+  MRoute: MRouteWithChildren,
   MarketingRoute: MarketingRoute,
   PerformanceRoute: PerformanceRoute,
   SaasRoute: SaasRoute,
@@ -442,9 +472,18 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
-  MChatRoute: MChatRouteWithChildren,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
