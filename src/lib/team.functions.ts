@@ -151,7 +151,7 @@ export const updateTeamMember = createServerFn({ method: "POST" })
     if (data.role !== undefined) patch.role = data.role;
     if (data.status !== undefined) patch.status = data.status;
 
-    const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", data.id);
+    const { error } = await supabaseAdmin.from("profiles").update(patch as never).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
