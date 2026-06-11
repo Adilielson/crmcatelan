@@ -434,9 +434,9 @@ function Chat() {
                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Temperatura Lead</span>
                         <Badge className={cn(
                           "px-2.5 py-1 rounded-lg border-none text-[11px] font-bold",
-                          (currentLead.ia_score || 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
+                          (currentLead.score_ia ?? 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
                         )}>
-                          {currentLead.ia_score || 0}/100
+                          {currentLead.score_ia ?? 0}/100
                         </Badge>
                       </div>
                       <div className="space-y-3">
@@ -444,7 +444,7 @@ function Chat() {
                           <span className="text-gray-500">Sentimento: <span className="text-ink capitalize">{currentLead.ia_sentimento || 'Neutro'}</span></span>
                           <span className="text-gray-500">Urgência: <span className="text-danger capitalize">{currentLead.ia_urgencia || 'Média'}</span></span>
                         </div>
-                        <Progress value={currentLead.ia_score || 0} className="h-2 bg-gray-200" />
+                        <Progress value={currentLead.score_ia ?? 0} className="h-2 bg-gray-200" />
                       </div>
                     </div>
 
@@ -458,7 +458,7 @@ function Chat() {
                           <Brain className="w-16 h-16 text-primary" />
                         </div>
                         <p className="text-sm text-ink leading-relaxed font-medium relative z-10">
-                          {currentLead.ia_resumo || 'Analisando conversa em tempo real...'}
+                          {currentLead.ia_summary || 'Analisando conversa em tempo real...'}
                         </p>
                       </div>
                     </div>
