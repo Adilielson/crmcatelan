@@ -1,23 +1,28 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useKanban } from '@/hooks/use-kanban'
+import { useLeads, stageLabel } from '@/hooks/use-leads'
+import { useUnits } from '@/hooks/use-leads'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { TrendingUp, Users, DollarSign, Target } from 'lucide-react'
 
 export function MarketingMetrics() {
-  const { leads, pipelines } = useKanban()
-  
-  const leadsByStatus = leads.reduce((acc: any, lead) => {
-    acc[lead.status] = (acc[lead.status] || 0) + 1
+  const { data: leads = [] } = useLeads()
+
+  const leadsByStatus = leads.reduce((acc: Record<string, number>, lead) => {
+    const label = stageLabel(lead.status)
+    acc[label] = (acc[label] || 0) + 1
     return acc
   }, {})
 
   const chartData = Object.entries(leadsByStatus).map(([name, value]) => ({ name, value }))
-  
-  const totalValue = leads.reduce((acc, lead) => acc + lead.value, 0)
-  const conversionRate = (leads.filter(l => l.status === 'Agendado').length / leads.length * 100).toFixed(1)
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
+  const totalValue = leads.reduce((acc, lead) => acc + (lead.sales_value ?? 0), 0)
+  const scheduledCount = leads.filter(l => l.status === 'scheduled').length
+  const conversionRate = leads.length > 0
+    ? ((scheduledCount / leads.length) * 100).toFixed(1)
+    : '0.0'
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#eab308', '#22c55e']
 
   return (
     <div className="space-y-6">
@@ -52,7 +57,7 @@ export function MarketingMetrics() {
   )
 }
 
-function MetricCard({ title, value, icon, trend }: any) {
+function MetricCard({ title, value, icon, trend }: { title: string; value: string | number; icon: React.ReactNode; trend?: 'up' | 'down' }) {
   return (
     <Card>
       <CardContent className="pt-6">
