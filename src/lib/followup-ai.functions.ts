@@ -1,10 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
-import { DEV_TENANT_ID, getDevSupabase } from "./dev-tenant.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getTenantAiKey, logAiUsage } from "./ai-credentials.server";
 
-
-// TODO(auth): trocar DEV_TENANT_ID/supabaseAdmin por requireSupabaseAuth
-// + tenant_id real do profile quando Supabase Auth for implementado.
+async function getUserTenant(supabase: any, userId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("tenant_id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.tenant_id) throw new Error("Tenant não encontrado para o usuário");
+  return data.tenant_id as string;
+}
 
 const TOUCH_BRIEF: Record<string, string> = {
   followup_d1: "1 dia após a consulta — agradeça a visita e abra espaço para dúvidas, tom leve e acolhedor.",
