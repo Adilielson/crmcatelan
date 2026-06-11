@@ -132,6 +132,8 @@ const AppLayout = () => {
     menuItems.push({ label: 'Admin SaaS', icon: ShieldCheck, href: '/saas' });
   }
 
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
   if (loading) return (
     <div className="min-h-screen bg-[#0E0E11] flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-[#FFC400] border-t-transparent rounded-full animate-spin" />
