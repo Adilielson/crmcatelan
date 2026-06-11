@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { UserPlus, Search, MoreHorizontal, Copy, KeyRound, Check } from 'lucide-react';
+import { UserPlus, Search, MoreHorizontal, Copy, KeyRound, Check, ShieldCheck } from 'lucide-react';
+import { UserPermissionsDialog } from '@/components/users/UserPermissionsDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,9 @@ export default function UserManagement() {
     open: boolean; email: string; password: string;
   }>({ open: false, email: '', password: '' });
   const [copied, setCopied] = useState(false);
+  const [permsDialog, setPermsDialog] = useState<{ open: boolean; userId: string | null; name: string }>({
+    open: false, userId: null, name: '',
+  });
 
   const canManage = user && ['admin', 'manager', 'super_admin'].includes(user.role);
 
@@ -248,7 +252,12 @@ export default function UserManagement() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <RowMenu m={m} onToggle={() => toggleStatusMut.mutate(m)} onRegen={() => regenMut.mutate(m.id)} />
+                  <RowMenu
+                    m={m}
+                    onToggle={() => toggleStatusMut.mutate(m)}
+                    onRegen={() => regenMut.mutate(m.id)}
+                    onPerms={() => setPermsDialog({ open: true, userId: m.id, name: m.full_name ?? m.email ?? '' })}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -273,10 +282,22 @@ export default function UserManagement() {
                 </Badge>
               </div>
             </div>
-            <RowMenu m={m} onToggle={() => toggleStatusMut.mutate(m)} onRegen={() => regenMut.mutate(m.id)} />
+            <RowMenu
+              m={m}
+              onToggle={() => toggleStatusMut.mutate(m)}
+              onRegen={() => regenMut.mutate(m.id)}
+              onPerms={() => setPermsDialog({ open: true, userId: m.id, name: m.full_name ?? m.email ?? '' })}
+            />
           </div>
         ))}
       </div>
+
+      <UserPermissionsDialog
+        open={permsDialog.open}
+        onOpenChange={(o) => setPermsDialog((p) => ({ ...p, open: o }))}
+        userId={permsDialog.userId}
+        userName={permsDialog.name}
+      />
 
       {/* Dialog credenciais */}
       <Dialog open={credentialDialog.open} onOpenChange={(o) => !o && setCredentialDialog({ ...credentialDialog, open: false })}>
@@ -311,7 +332,7 @@ export default function UserManagement() {
   );
 }
 
-function RowMenu({ m, onToggle, onRegen }: { m: Member; onToggle: () => void; onRegen: () => void }) {
+function RowMenu({ m, onToggle, onRegen, onPerms }: { m: Member; onToggle: () => void; onRegen: () => void; onPerms: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -319,6 +340,9 @@ function RowMenu({ m, onToggle, onRegen }: { m: Member; onToggle: () => void; on
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Ações</DropdownMenuLabel>
+        <DropdownMenuItem onClick={onPerms}>
+          <ShieldCheck className="mr-2 h-4 w-4" /> Permissões
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onRegen}>
           <KeyRound className="mr-2 h-4 w-4" /> Gerar nova senha
         </DropdownMenuItem>
