@@ -510,6 +510,17 @@ Deno.serve(async (req) => {
       }
 
       if (!fromMe && senderPhone) {
+        // Persiste a mídia no Storage (histórico permanente) ─────────────
+        let mediaStoragePath: string | null = null;
+        let finalMime: string | null = media.mime;
+        if (mediaUrl) {
+          const saved = await persistMediaToStorage(tenantId, mediaUrl, media.mime);
+          if (saved) {
+            mediaStoragePath = saved.path;
+            finalMime = saved.mime;
+          }
+        }
+
         const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
           tenant_id: tenantId,
           recipient_phone: senderPhone,
@@ -519,7 +530,8 @@ Deno.serve(async (req) => {
           sender_name: senderName,
           sender_avatar_url: senderAvatarUrl,
           media_url: mediaUrl,
-          media_mime: media.mime,
+          media_mime: finalMime,
+          media_storage_path: mediaStoragePath,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
 
