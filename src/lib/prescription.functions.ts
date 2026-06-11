@@ -184,16 +184,14 @@ export const runPrescriptionOcr = createServerFn({ method: "POST" })
       ? existingTags
       : [...existingTags, "Receita Digitalizada"];
 
-    const updates: Record<string, any> = {
-      prescription_ocr_at: new Date().toISOString(),
-      ia_tags: newTags,
-    };
-    if (grau) updates.ia_receita_grau = grau;
-    if (validade) updates.ia_receita_validade = validade;
-
     const { error: updErr } = await supabaseAdmin
       .from("leads")
-      .update(updates)
+      .update({
+        prescription_ocr_at: new Date().toISOString(),
+        ia_tags: newTags,
+        ...(grau ? { ia_receita_grau: grau } : {}),
+        ...(validade ? { ia_receita_validade: validade } : {}),
+      })
       .eq("id", data.leadId);
     if (updErr) throw new Error(updErr.message);
 
