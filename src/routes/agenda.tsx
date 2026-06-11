@@ -60,7 +60,10 @@ function Agenda() {
   const [view, setView] = useState<'month' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const { data: businessHours = [] } = useBusinessHours()
+  const { data: blockedDates = [] } = useBlockedDates()
   
   const [formData, setFormData] = useState({
     leadId: '',
@@ -92,6 +95,12 @@ function Agenda() {
     const lead = leads.find(l => l.id === formData.leadId)
     if (!lead) {
       toast.error('Selecione um lead válido')
+      return
+    }
+
+    const avail = checkAvailability(formData.date, formData.startTime, formData.endTime, businessHours, blockedDates)
+    if (!avail.ok) {
+      toast.error(avail.reason ?? 'Horário indisponível')
       return
     }
 
