@@ -1,35 +1,40 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Brain, Users, TrendingUp, MessageCircle, AlertTriangle, Target, Clock, Filter, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { useServerFn } from '@tanstack/react-start'
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { Brain, Target, Filter, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from '@/lib/utils'
+import { getIAPerformanceMetrics } from '@/lib/analytics.functions'
 
 export const Route = createFileRoute('/performance')({
   component: IAMetrics,
 })
 
+type Period = 'weekly' | 'monthly' | 'yearly'
+
 function IAMetrics() {
+  const [period, setPeriod] = useState<Period>('monthly')
+  const fetchMetrics = useServerFn(getIAPerformanceMetrics)
+  const { data, isLoading } = useQuery({
+    queryKey: ['ia-performance', period],
+    queryFn: () => fetchMetrics({ data: { period } }),
+  })
+
+  const fmt = (n: number) => n.toLocaleString('pt-BR')
+  const sign = (n: number) => (n >= 0 ? `+${n}%` : `${n}%`)
+
   const stats = [
-    { title: 'Total Processado', value: '1.284', change: '+12%', icon: Brain, color: 'text-blue-600' },
-    { title: 'Qualificados (SDR)', value: '842', change: '+18%', icon: Target, color: 'text-green-600' },
-    { title: 'Desqualificados', value: '442', change: '-5%', icon: Filter, color: 'text-slate-600' },
-    { title: 'Economia Horas/Atendimento', value: '215h', change: '+22%', icon: Clock, color: 'text-purple-600' },
+    { title: 'Total Processado', value: fmt(data?.stats.processed.value ?? 0), change: sign(data?.stats.processed.change ?? 0), icon: Brain, color: 'text-blue-600' },
+    { title: 'Qualificados (SDR)', value: fmt(data?.stats.qualified.value ?? 0), change: sign(data?.stats.qualified.change ?? 0), icon: Target, color: 'text-green-600' },
+    { title: 'Desqualificados', value: fmt(data?.stats.disqualified.value ?? 0), change: sign(data?.stats.disqualified.change ?? 0), icon: Filter, color: 'text-slate-600' },
+    { title: 'Economia Horas/Atendimento', value: `${fmt(data?.stats.hoursSaved.value ?? 0)}h`, change: sign(data?.stats.hoursSaved.change ?? 0), icon: Clock, color: 'text-purple-600' },
   ]
 
-  const funnelData = [
-    { label: 'Primeiro Contato', count: 1284, percentage: 100 },
-    { label: 'Identificação de Necessidade', count: 1020, percentage: 79 },
-    { label: 'Qualificação Financeira', count: 890, percentage: 69 },
-    { label: 'Pronto para Agendamento', count: 842, percentage: 65 },
-  ]
-
-  const dropOffReasons = [
-    { question: 'Qualificação de Receita', drop: 15, color: 'bg-red-500' },
-    { question: 'Consulta de Preço', drop: 12, color: 'bg-orange-500' },
-    { question: 'Localização da Unidade', drop: 8, color: 'bg-yellow-500' },
-    { question: 'Urgência do Problema', drop: 4, color: 'bg-blue-500' },
-  ]
+  const funnelData = data?.funnelData ?? []
+  const dropOffReasons = data?.dropOffReasons ?? []
 
   return (
     <div className="space-y-10 text-ink animate-in fade-in duration-700">
@@ -37,20 +42,25 @@ function IAMetrics() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-1 h-1 rounded-full bg-primary" />
+            <div className="w-10 h-1 rounded-full bg-primary" />
             <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Performance de Qualificação</span>
           </div>
           <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">Inteligência Artificial</h1>
           <p className="text-gray-500 font-medium text-[15px] max-w-xl">Análise granular da eficiência operacional da sua IA SDR em tempo real com métricas preditivas.</p>
         </div>
         <div className="flex items-center gap-4 relative z-10">
-          <div className="flex flex-col items-end mr-4">
-            <span className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] leading-none mb-1">Status do Sistema</span>
-            <span className="text-xs font-black text-[#1FA463] uppercase tracking-wider">IA Operacional 24/7</span>
-          </div>
-          <div className="p-4 bg-green-50 rounded-[18px] border border-green-100 shadow-sm group cursor-help relative overflow-hidden">
-            <div className="absolute inset-0 bg-green-100/30 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-            <div className="w-4 h-4 bg-[#1FA463] rounded-full animate-pulse shadow-[0_0_15px_rgba(31,164,99,0.5)] relative z-10" />
+          <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+            <SelectTrigger className="w-[160px] h-11 rounded-xl border-[#E3E6EB] bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="weekly">Últimos 7 dias</SelectItem>
+              <SelectItem value="monthly">Últimos 30 dias</SelectItem>
+              <SelectItem value="yearly">Últimos 12 meses</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="p-4 bg-green-50 rounded-[18px] border border-green-100 shadow-sm relative overflow-hidden">
+            <div className="w-4 h-4 bg-[#1FA463] rounded-full animate-pulse shadow-[0_0_15px_rgba(31,164,99,0.5)]" />
           </div>
         </div>
       </div>
@@ -68,7 +78,7 @@ function IAMetrics() {
               </div>
             </CardHeader>
             <CardContent className="px-8 pb-8 relative z-10">
-              <div className="text-[42px] font-black text-ink tracking-tight mb-3 leading-none">{stat.value}</div>
+              <div className="text-[42px] font-black text-ink tracking-tight mb-3 leading-none">{isLoading ? '—' : stat.value}</div>
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-sm",
@@ -77,7 +87,7 @@ function IAMetrics() {
                   {stat.change.startsWith('+') ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                   {stat.change}
                 </div>
-                <span className="text-[11px] font-bold text-[#A7ADB8] uppercase tracking-widest">vs mês anterior</span>
+                <span className="text-[11px] font-bold text-[#A7ADB8] uppercase tracking-widest">vs período anterior</span>
               </div>
             </CardContent>
           </Card>
@@ -94,6 +104,9 @@ function IAMetrics() {
             <p className="text-[14px] text-gray-500 font-medium">Fluxo de leads qualificados pela inteligência artificial.</p>
           </CardHeader>
           <CardContent className="p-8 space-y-8">
+            {funnelData.length === 0 && !isLoading && (
+              <p className="text-sm text-gray-400 italic">Sem dados de qualificação no período. A IA ainda não processou leads suficientes.</p>
+            )}
             {funnelData.map((item, i) => (
               <div key={i} className="space-y-3">
                 <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
@@ -112,19 +125,24 @@ function IAMetrics() {
               <div className="w-8 h-0.5 bg-danger rounded-full" />
               <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-danger">Pontos de Drop-off</CardTitle>
             </div>
-            <p className="text-[14px] text-gray-500 font-medium">Principais motivos de abandono na qualificação.</p>
+            <p className="text-[14px] text-gray-500 font-medium">Principais motivos de não fechamento registrados.</p>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <p className="text-[11px] text-gray-500 font-medium leading-relaxed mb-6 italic">
-              "Análise de onde os leads param de responder durante a qualificação automática via WhatsApp."
+              Agregação de "motivo de não fechamento" registrado nas consultas de leads.
             </p>
+            {dropOffReasons.length === 0 && !isLoading && (
+              <p className="text-sm text-gray-400 italic">
+                Nenhum motivo de não fechamento registrado ainda. Preencha no resumo de consulta dos leads para começar a ver o padrão.
+              </p>
+            )}
             <div className="space-y-4">
               {dropOffReasons.map((item, i) => (
                 <div key={i} className="flex items-center gap-5 group cursor-pointer p-3 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-border">
                   <div className={cn("w-2 h-10 rounded-full transition-all group-hover:scale-y-110 shadow-sm", item.color)} />
                   <div className="flex-1">
                     <div className="text-xs font-black text-ink uppercase tracking-tight">{item.question}</div>
-                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.drop}% de desistência</div>
+                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.drop}% das ocorrências</div>
                   </div>
                   <div className="h-8 w-8 rounded-xl bg-gray-50 border border-border flex items-center justify-center group-hover:bg-red-50 group-hover:border-red-100 transition-colors">
                     <ArrowDownRight className="w-4 h-4 text-danger group-hover:scale-110 transition-transform" />
