@@ -399,7 +399,24 @@ const AppLayout = () => {
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const isSuperAdmin = user?.role === 'super_admin';
-  const items = useNavItems(isSuperAdmin);
+  const { can } = usePermissions();
+  const rawItems = useNavItems(isSuperAdmin);
+  const items = filterItems(rawItems, can);
+
+  // Guard: se a rota atual não está permitida, redireciona para /
+  useEffect(() => {
+    if (!user || loading) return;
+    if (user.role === 'super_admin' || user.role === 'admin') return;
+    const moduleForPath = (() => {
+      for (const i of rawItems) {
+        if (isGroup(i)) {
+          for (const c of i.children) if (c.href === location.pathname) return c.module;
+        } else if (i.href === location.pathname) return i.module;
+      }
+      return undefined;
+    })();
+    if (moduleForPath && !can(moduleForPath)) navigate({ to: '/' });
+  }, [location.pathname, user, loading]);
 
   if (loading)
     return (
