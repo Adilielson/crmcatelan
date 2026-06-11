@@ -111,3 +111,8 @@
     @apply bg-yellow text-[#1a1500] hover:bg-yellow-bright hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(255,196,0,0.35)];
   }
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
