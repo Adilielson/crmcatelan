@@ -56,7 +56,7 @@ export const Route = createFileRoute('/analytics/no-show')({
   component: NoShowAnalytics,
 })
 
-const REASON_COLORS = ['#f59e0b', '#6366f1', '#ef4444', '#94a3b8', '#10b981']
+
 
 function NoShowAnalytics() {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly')
