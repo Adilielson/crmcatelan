@@ -243,7 +243,10 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {leads.filter(l => l.ia_summary || (l.score_ia ?? 0) > 0).slice(0, 3).map((lead, i) => (
+              {recentAi.length === 0 && (
+                <p className="text-xs text-gray-400 italic p-4 text-center">Sem atividade da IA ainda.</p>
+              )}
+              {recentAi.map((lead, i) => (
                 <div key={i} className="flex items-center justify-between p-4 border border-border rounded-[14px] bg-background/50 hover:border-primary/30 transition-all cursor-pointer group/item">
                   <div className="flex items-center gap-3">
                     <Badge className={cn(
@@ -264,6 +267,7 @@ function Dashboard() {
               ))}
             </div>
           </CardContent>
+
         </Card>
 
         {/* Alertas de SLA e Estagnação */}
