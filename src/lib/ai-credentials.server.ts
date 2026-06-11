@@ -105,7 +105,7 @@ export async function logAiUsage(args: {
       tokens_output: args.tokensOutput,
       cost_usd: cost,
       used_fallback: args.usedFallback || args.source === "master",
-      feature: args.feature ?? "followup-ai",
+      context: args.feature ?? "followup-ai",
     } as any);
   } catch (e: any) {
     console.warn("[ai-credentials] log falhou:", e?.message);
