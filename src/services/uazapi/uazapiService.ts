@@ -11,7 +11,14 @@ function makeHeaders(token: string): HeadersInit {
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    throw new Error(`Erro HTTP ${res.status}`);
+    let bodyMsg = '';
+    try {
+      const body = await res.json();
+      bodyMsg = body?.error ? String(body.error) : JSON.stringify(body);
+    } catch {
+      bodyMsg = await res.text().catch(() => '');
+    }
+    throw new Error(bodyMsg || `Erro HTTP ${res.status}`);
   }
   return res.json() as Promise<T>;
 }
