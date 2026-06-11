@@ -110,13 +110,15 @@ function buildPrompt(args: {
 }
 
 export const generateFollowupMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
     const i = input as { followupId: string };
     if (!i?.followupId) throw new Error("followupId obrigatório");
     return i;
   })
-  .handler(async ({ data }) => {
-    const supabase = await getDevSupabase();
+  .handler(async ({ data, context }) => {
+    const tenantId = await getUserTenant(context.supabase, context.userId);
+    const supabase = context.supabase;
 
     // 1) Follow-up
     const { data: followup, error: fErr } = await supabase
