@@ -551,34 +551,43 @@ export type Database = {
           context: string | null
           cost_billed: number | null
           cost_raw: number | null
+          cost_usd: number
           created_at: string | null
           id: string
           model: string
+          provider: string | null
           tenant_id: string | null
           tokens_input: number | null
           tokens_output: number | null
+          used_fallback: boolean
         }
         Insert: {
           context?: string | null
           cost_billed?: number | null
           cost_raw?: number | null
+          cost_usd?: number
           created_at?: string | null
           id?: string
           model: string
+          provider?: string | null
           tenant_id?: string | null
           tokens_input?: number | null
           tokens_output?: number | null
+          used_fallback?: boolean
         }
         Update: {
           context?: string | null
           cost_billed?: number | null
           cost_raw?: number | null
+          cost_usd?: number
           created_at?: string | null
           id?: string
           model?: string
+          provider?: string | null
           tenant_id?: string | null
           tokens_input?: number | null
           tokens_output?: number | null
+          used_fallback?: boolean
         }
         Relationships: [
           {
@@ -1509,6 +1518,62 @@ export type Database = {
           },
         ]
       }
+      tenant_ai_credentials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          key_hint: string
+          last_used_at: string | null
+          model_default: string
+          monthly_budget_usd: number
+          notes: string | null
+          provider: Database["public"]["Enums"]["ai_provider"]
+          tenant_id: string
+          updated_at: string
+          vault_secret_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key_hint: string
+          last_used_at?: string | null
+          model_default?: string
+          monthly_budget_usd?: number
+          notes?: string | null
+          provider?: Database["public"]["Enums"]["ai_provider"]
+          tenant_id: string
+          updated_at?: string
+          vault_secret_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key_hint?: string
+          last_used_at?: string | null
+          model_default?: string
+          monthly_budget_usd?: number
+          notes?: string | null
+          provider?: Database["public"]["Enums"]["ai_provider"]
+          tenant_id?: string
+          updated_at?: string
+          vault_secret_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_ai_credentials_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           cnpj: string | null
@@ -1794,6 +1859,26 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_ai_usage_month: {
+        Row: {
+          fallback_calls: number | null
+          provider: string | null
+          reference_month: string | null
+          tenant_id: string | null
+          total_calls: number | null
+          total_cost_usd: number | null
+          total_tokens: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_token_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_ia_usage_safe: {
         Row: {
           context: string | null
@@ -1859,6 +1944,19 @@ export type Database = {
       }
     }
     Functions: {
+      get_active_ai_credential: {
+        Args: {
+          _provider?: Database["public"]["Enums"]["ai_provider"]
+          _tenant_id: string
+        }
+        Returns: {
+          api_key: string
+          credential_id: string
+          current_month_cost_usd: number
+          model_default: string
+          monthly_budget_usd: number
+        }[]
+      }
       get_auth_profile: {
         Args: never
         Returns: {
@@ -1881,8 +1979,19 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
       }
+      upsert_ai_credential: {
+        Args: {
+          _api_key: string
+          _model_default?: string
+          _monthly_budget_usd?: number
+          _provider: Database["public"]["Enums"]["ai_provider"]
+          _tenant_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
+      ai_provider: "openai" | "anthropic" | "gemini" | "lovable"
       appointment_status:
         | "pending"
         | "confirmed"
@@ -2046,6 +2155,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_provider: ["openai", "anthropic", "gemini", "lovable"],
       appointment_status: [
         "pending",
         "confirmed",
