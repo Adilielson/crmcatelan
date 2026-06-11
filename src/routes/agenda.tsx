@@ -201,7 +201,7 @@ function Agenda() {
           <Button onClick={() => setIsModalOpen(true)} className="gap-3 bg-primary hover:bg-yellow-bright text-[#1a1500] font-black text-[11px] h-14 px-8 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-[1.05] uppercase tracking-widest border-none">
             <Plus className="w-5 h-5" /> NOVO AGENDAMENTO
           </Button>
-          <Button variant="outline" className="gap-3 bg-white border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] h-14 px-8 rounded-[16px] transition-all uppercase tracking-widest">
+          <Button onClick={() => setIsSettingsOpen(true)} variant="outline" className="gap-3 bg-white border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] h-14 px-8 rounded-[16px] transition-all uppercase tracking-widest">
             <Settings className="w-5 h-5" /> CONFIGURAÇÕES
           </Button>
         </div>
@@ -264,6 +264,7 @@ function Agenda() {
                 const isToday = isSameDay(day, new Date())
                 const dayAppts = appointments.filter(a => isSameDay(new Date(a.date + 'T00:00:00'), day))
                 const isCurrentMonth = format(day, 'MM') === format(currentDate, 'MM')
+                const closed = isDayFullyClosed(day, businessHours, blockedDates)
 
                 return (
                   <div 
@@ -275,6 +276,7 @@ function Agenda() {
                     className={cn(
                       "h-32 border-r border-b border-border p-3 transition-all cursor-pointer group relative overflow-hidden",
                       !isCurrentMonth ? "bg-gray-50 opacity-40" : "bg-white hover:bg-gray-50/50",
+                      closed && isCurrentMonth && "bg-[repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6_6px,#ffffff_6px,#ffffff_12px)]",
                       isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5"
                     )}
                   >
