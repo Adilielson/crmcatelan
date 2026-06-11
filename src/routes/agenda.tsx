@@ -288,7 +288,9 @@ function Agenda() {
                       )}>
                         {format(day, 'd')}
                       </span>
-                      {dayAppts.length > 0 && (
+                      {closed && isCurrentMonth ? (
+                        <Badge className="text-[9px] h-5 px-1.5 bg-gray-200 text-gray-600 border-none font-black">FECHADO</Badge>
+                      ) : dayAppts.length > 0 && (
                         <Badge className="text-[10px] h-5 px-1.5 bg-primary/20 text-primary border-none font-black">{dayAppts.length}</Badge>
                       )}
                     </div>
