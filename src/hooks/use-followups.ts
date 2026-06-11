@@ -38,3 +38,43 @@ export function useTodayFollowups() {
     refetchInterval: 60_000,
   });
 }
+
+/**
+ * Marca um follow-up como respondido e move o lead para "Em Negociação".
+ * Reutilizável: a IA poderá chamar a mesma função automaticamente no futuro
+ * quando detectar uma resposta do lead, sem refatorar.
+ */
+export function useRespondToFollowup() {
+  const qc = useQueryClient();
+  const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
+  return useMutation({
+    mutationFn: async (payload: { followupId: string; leadId: string }) => {
+      // 1) Atualiza o follow-up
+      const { error: fErr } = await (supabase as any)
+        .from('lead_followups')
+        .update({
+          status: 'responded',
+          response_at: new Date().toISOString(),
+        })
+        .eq('id', payload.followupId);
+      if (fErr) throw fErr;
+
+      // 2) Move o lead para "Em Negociação"
+      const { error: lErr } = await (supabase as any)
+        .from('leads')
+        .update({
+          status: 'negotiating',
+          custom_column_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', payload.leadId);
+      if (lErr) throw lErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['lead_followups', 'today', tenantId] });
+      qc.invalidateQueries({ queryKey: ['leads'] });
+      toast.success('Lead movido para Em Negociação');
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao marcar como respondido'),
+  });
+}
