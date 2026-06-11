@@ -91,6 +91,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { supabase } from '@/integrations/supabase/client'
 import { useAuthStore } from '@/hooks/use-auth'
+import { AiCredentialsTab } from '@/components/saas/AiCredentialsTab'
 
 export const Route = createFileRoute('/saas')({
   component: SaaSAdmin,
