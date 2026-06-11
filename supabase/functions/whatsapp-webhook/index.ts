@@ -383,9 +383,10 @@ Deno.serve(async (req) => {
       );
 
       const text = extractText(message) || extractText(b);
-      const msgType = pickString(message.type, message.messageType, b.messageType) || "text";
+      const media = extractMedia(message, b);
+      const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
-      console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} avatar=${senderAvatarUrl ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
+      console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} type=${msgType} media=${media.url ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
 
       if (!fromMe && senderPhone) {
         const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
@@ -396,6 +397,8 @@ Deno.serve(async (req) => {
           error_message: text ? text.slice(0, 500) : null,
           sender_name: senderName,
           sender_avatar_url: senderAvatarUrl,
+          media_url: media.url,
+          media_mime: media.mime,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
 
