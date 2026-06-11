@@ -27,6 +27,10 @@ async function callManage(
           : error.context;
       if (ctx?.error) msg = ctx.error;
     } catch { /* ignore */ }
+    // Mensagem amigável quando o número não está no WhatsApp
+    if (msg.toLowerCase().includes('not on whatsapp') || msg.toLowerCase().includes('is not on whatsapp')) {
+      msg = 'Este número não possui WhatsApp.';
+    }
     throw new Error(msg);
   }
   if (data?.error) throw new Error(String(data.error));
