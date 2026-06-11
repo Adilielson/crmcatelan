@@ -1,13 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { format, isToday, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Phone, MessageSquare, Clock, AlertCircle, User, CheckCircle2 } from 'lucide-react';
+import { Phone, MessageSquare, Clock, AlertCircle, User, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTodayFollowups, useRespondToFollowup } from '@/hooks/use-followups';
 import { useLeads } from '@/hooks/use-leads';
 import { FollowupContextBlock } from './FollowupContextBlock';
+import { FollowupAiDialog } from './FollowupAiDialog';
 import { toast } from 'sonner';
 
 const TEMPLATE_LABEL: Record<string, string> = {
@@ -26,6 +27,13 @@ export function TodayFollowupsTab() {
   const { data: leads = [] } = useLeads();
   const respond = useRespondToFollowup();
   const navigate = useNavigate();
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTarget, setAiTarget] = useState<{ followupId: string; leadPhone: string | null; leadName: string } | null>(null);
+
+  const openAi = (followupId: string, leadPhone: string | null, leadName: string) => {
+    setAiTarget({ followupId, leadPhone, leadName });
+    setAiOpen(true);
+  };
 
   const leadMap = useMemo(() => {
     const m = new Map<string, (typeof leads)[number]>();
