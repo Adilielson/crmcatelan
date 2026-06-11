@@ -18,6 +18,7 @@ import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as FilaRouteImport } from './routes/fila'
+import { Route as EquipeRouteImport } from './routes/equipe'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AgendaRouteImport } from './routes/agenda'
@@ -70,6 +71,11 @@ const FilaRoute = FilaRouteImport.update({
   path: '/fila',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EquipeRoute = EquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/equipe': typeof EquipeRoute
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/equipe': typeof EquipeRoute
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/equipe': typeof EquipeRoute
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/equipe'
     | '/fila'
     | '/kanban'
     | '/login'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/equipe'
     | '/fila'
     | '/kanban'
     | '/login'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/equipe'
     | '/fila'
     | '/kanban'
     | '/login'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   AgendaRoute: typeof AgendaRoute
   AiTrainingRoute: typeof AiTrainingRoute
   ChatRoute: typeof ChatRoute
+  EquipeRoute: typeof EquipeRoute
   FilaRoute: typeof FilaRoute
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FilaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/equipe': {
+      id: '/equipe'
+      path: '/equipe'
+      fullPath: '/equipe'
+      preLoaderRoute: typeof EquipeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaRoute: AgendaRoute,
   AiTrainingRoute: AiTrainingRoute,
   ChatRoute: ChatRoute,
+  EquipeRoute: EquipeRoute,
   FilaRoute: FilaRoute,
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
