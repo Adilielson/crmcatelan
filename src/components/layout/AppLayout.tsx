@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   Brain,
   TrendingDown,
+  ListOrdered,
+  UsersRound,
+  Contact,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
@@ -46,6 +49,9 @@ const AppLayout = () => {
     { label: 'Métricas No-Show', icon: TrendingDown, href: '/analytics/no-show' },
     { label: 'Treinamento IA', icon: Brain, href: '/ai-training' },
     { label: 'Kanban', icon: Columns, href: '/kanban' },
+    { label: 'Fila', icon: ListOrdered, href: '/fila' },
+    { label: 'Equipe', icon: UsersRound, href: '/equipe' },
+    { label: 'Clientes', icon: Contact, href: '/clientes' },
     { label: 'Chat', icon: MessageSquare, href: '/chat' },
     { label: 'Agenda', icon: Calendar, href: '/agenda' },
     { label: 'Marketing', icon: Target, href: '/marketing' },

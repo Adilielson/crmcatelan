@@ -17,6 +17,9 @@ import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
+import { Route as FilaRouteImport } from './routes/fila'
+import { Route as EquipeRouteImport } from './routes/equipe'
+import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AgendaRouteImport } from './routes/agenda'
@@ -64,6 +67,21 @@ const KanbanRoute = KanbanRouteImport.update({
   path: '/kanban',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FilaRoute = FilaRouteImport.update({
+  id: '/fila',
+  path: '/fila',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EquipeRoute = EquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientesRoute = ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -101,6 +119,9 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/clientes': typeof ClientesRoute
+  '/equipe': typeof EquipeRoute
+  '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
@@ -117,6 +138,9 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/clientes': typeof ClientesRoute
+  '/equipe': typeof EquipeRoute
+  '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
@@ -134,6 +158,9 @@ export interface FileRoutesById {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/clientes': typeof ClientesRoute
+  '/equipe': typeof EquipeRoute
+  '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
@@ -152,6 +179,9 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/clientes'
+    | '/equipe'
+    | '/fila'
     | '/kanban'
     | '/login'
     | '/marketing'
@@ -168,6 +198,9 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/clientes'
+    | '/equipe'
+    | '/fila'
     | '/kanban'
     | '/login'
     | '/marketing'
@@ -184,6 +217,9 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/clientes'
+    | '/equipe'
+    | '/fila'
     | '/kanban'
     | '/login'
     | '/marketing'
@@ -201,6 +237,9 @@ export interface RootRouteChildren {
   AgendaRoute: typeof AgendaRoute
   AiTrainingRoute: typeof AiTrainingRoute
   ChatRoute: typeof ChatRoute
+  ClientesRoute: typeof ClientesRoute
+  EquipeRoute: typeof EquipeRoute
+  FilaRoute: typeof FilaRoute
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
   MarketingRoute: typeof MarketingRoute
@@ -271,6 +310,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KanbanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fila': {
+      id: '/fila'
+      path: '/fila'
+      fullPath: '/fila'
+      preLoaderRoute: typeof FilaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/equipe': {
+      id: '/equipe'
+      path: '/equipe'
+      fullPath: '/equipe'
+      preLoaderRoute: typeof EquipeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clientes': {
+      id: '/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
@@ -321,6 +381,9 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaRoute: AgendaRoute,
   AiTrainingRoute: AiTrainingRoute,
   ChatRoute: ChatRoute,
+  ClientesRoute: ClientesRoute,
+  EquipeRoute: EquipeRoute,
+  FilaRoute: FilaRoute,
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
   MarketingRoute: MarketingRoute,
