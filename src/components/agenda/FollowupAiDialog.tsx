@@ -76,7 +76,7 @@ export function FollowupAiDialog({
       return;
     }
     try {
-      await sendText({ number: phone, text: message });
+      await sendText(phone, message);
       toast.success('Mensagem enviada via WhatsApp');
       onOpenChange(false);
     } catch (e: any) {
