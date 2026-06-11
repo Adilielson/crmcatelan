@@ -15,6 +15,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MarketingRouteImport } from './routes/marketing'
+import { Route as MRouteImport } from './routes/m'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as FilaRouteImport } from './routes/fila'
@@ -24,7 +25,16 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MIndexRouteImport } from './routes/m.index'
+import { Route as MLeadsRouteImport } from './routes/m.leads'
+import { Route as MFunilRouteImport } from './routes/m.funil'
+import { Route as MEuRouteImport } from './routes/m.eu'
+import { Route as MEquipeRouteImport } from './routes/m.equipe'
+import { Route as MDashboardRouteImport } from './routes/m.dashboard'
 import { Route as MChatRouteImport } from './routes/m.chat'
+import { Route as MBuscarRouteImport } from './routes/m.buscar'
+import { Route as MAlertasRouteImport } from './routes/m.alertas'
+import { Route as MAgendaRouteImport } from './routes/m.agenda'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 import { Route as MChatPhoneRouteImport } from './routes/m.chat.$phone'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
@@ -57,6 +67,11 @@ const PerformanceRoute = PerformanceRouteImport.update({
 const MarketingRoute = MarketingRouteImport.update({
   id: '/marketing',
   path: '/marketing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MRoute = MRouteImport.update({
+  id: '/m',
+  path: '/m',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -104,10 +119,55 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MIndexRoute = MIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MRoute,
+} as any)
+const MLeadsRoute = MLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => MRoute,
+} as any)
+const MFunilRoute = MFunilRouteImport.update({
+  id: '/funil',
+  path: '/funil',
+  getParentRoute: () => MRoute,
+} as any)
+const MEuRoute = MEuRouteImport.update({
+  id: '/eu',
+  path: '/eu',
+  getParentRoute: () => MRoute,
+} as any)
+const MEquipeRoute = MEquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => MRoute,
+} as any)
+const MDashboardRoute = MDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => MRoute,
+} as any)
 const MChatRoute = MChatRouteImport.update({
-  id: '/m/chat',
-  path: '/m/chat',
-  getParentRoute: () => rootRouteImport,
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => MRoute,
+} as any)
+const MBuscarRoute = MBuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
+  getParentRoute: () => MRoute,
+} as any)
+const MAlertasRoute = MAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => MRoute,
+} as any)
+const MAgendaRoute = MAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => MRoute,
 } as any)
 const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
   id: '/analytics/no-show',
@@ -136,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
+  '/m': typeof MRouteWithChildren
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -143,7 +204,16 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/m/agenda': typeof MAgendaRoute
+  '/m/alertas': typeof MAlertasRoute
+  '/m/buscar': typeof MBuscarRoute
   '/m/chat': typeof MChatRouteWithChildren
+  '/m/dashboard': typeof MDashboardRoute
+  '/m/equipe': typeof MEquipeRoute
+  '/m/eu': typeof MEuRoute
+  '/m/funil': typeof MFunilRoute
+  '/m/leads': typeof MLeadsRoute
+  '/m/': typeof MIndexRoute
   '/m/chat/$phone': typeof MChatPhoneRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
@@ -164,7 +234,16 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/m/agenda': typeof MAgendaRoute
+  '/m/alertas': typeof MAlertasRoute
+  '/m/buscar': typeof MBuscarRoute
   '/m/chat': typeof MChatRouteWithChildren
+  '/m/dashboard': typeof MDashboardRoute
+  '/m/equipe': typeof MEquipeRoute
+  '/m/eu': typeof MEuRoute
+  '/m/funil': typeof MFunilRoute
+  '/m/leads': typeof MLeadsRoute
+  '/m': typeof MIndexRoute
   '/m/chat/$phone': typeof MChatPhoneRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
@@ -179,6 +258,7 @@ export interface FileRoutesById {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
+  '/m': typeof MRouteWithChildren
   '/marketing': typeof MarketingRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
@@ -186,7 +266,16 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/m/agenda': typeof MAgendaRoute
+  '/m/alertas': typeof MAlertasRoute
+  '/m/buscar': typeof MBuscarRoute
   '/m/chat': typeof MChatRouteWithChildren
+  '/m/dashboard': typeof MDashboardRoute
+  '/m/equipe': typeof MEquipeRoute
+  '/m/eu': typeof MEuRoute
+  '/m/funil': typeof MFunilRoute
+  '/m/leads': typeof MLeadsRoute
+  '/m/': typeof MIndexRoute
   '/m/chat/$phone': typeof MChatPhoneRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
@@ -202,6 +291,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
+    | '/m'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -209,7 +299,16 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/m/agenda'
+    | '/m/alertas'
+    | '/m/buscar'
     | '/m/chat'
+    | '/m/dashboard'
+    | '/m/equipe'
+    | '/m/eu'
+    | '/m/funil'
+    | '/m/leads'
+    | '/m/'
     | '/m/chat/$phone'
     | '/api/public/hooks/process-followups'
   fileRoutesByTo: FileRoutesByTo
@@ -230,7 +329,16 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/m/agenda'
+    | '/m/alertas'
+    | '/m/buscar'
     | '/m/chat'
+    | '/m/dashboard'
+    | '/m/equipe'
+    | '/m/eu'
+    | '/m/funil'
+    | '/m/leads'
+    | '/m'
     | '/m/chat/$phone'
     | '/api/public/hooks/process-followups'
   id:
@@ -244,6 +352,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
+    | '/m'
     | '/marketing'
     | '/performance'
     | '/saas'
@@ -251,7 +360,16 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/m/agenda'
+    | '/m/alertas'
+    | '/m/buscar'
     | '/m/chat'
+    | '/m/dashboard'
+    | '/m/equipe'
+    | '/m/eu'
+    | '/m/funil'
+    | '/m/leads'
+    | '/m/'
     | '/m/chat/$phone'
     | '/api/public/hooks/process-followups'
   fileRoutesById: FileRoutesById
@@ -266,6 +384,7 @@ export interface RootRouteChildren {
   FilaRoute: typeof FilaRoute
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
+  MRoute: typeof MRouteWithChildren
   MarketingRoute: typeof MarketingRoute
   PerformanceRoute: typeof PerformanceRoute
   SaasRoute: typeof SaasRoute
@@ -273,7 +392,6 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
-  MChatRoute: typeof MChatRouteWithChildren
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
 }
 
@@ -319,6 +437,13 @@ declare module '@tanstack/react-router' {
       path: '/marketing'
       fullPath: '/marketing'
       preLoaderRoute: typeof MarketingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/m': {
+      id: '/m'
+      path: '/m'
+      fullPath: '/m'
+      preLoaderRoute: typeof MRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -384,12 +509,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/m/': {
+      id: '/m/'
+      path: '/'
+      fullPath: '/m/'
+      preLoaderRoute: typeof MIndexRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/leads': {
+      id: '/m/leads'
+      path: '/leads'
+      fullPath: '/m/leads'
+      preLoaderRoute: typeof MLeadsRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/funil': {
+      id: '/m/funil'
+      path: '/funil'
+      fullPath: '/m/funil'
+      preLoaderRoute: typeof MFunilRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/eu': {
+      id: '/m/eu'
+      path: '/eu'
+      fullPath: '/m/eu'
+      preLoaderRoute: typeof MEuRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/equipe': {
+      id: '/m/equipe'
+      path: '/equipe'
+      fullPath: '/m/equipe'
+      preLoaderRoute: typeof MEquipeRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/dashboard': {
+      id: '/m/dashboard'
+      path: '/dashboard'
+      fullPath: '/m/dashboard'
+      preLoaderRoute: typeof MDashboardRouteImport
+      parentRoute: typeof MRoute
+    }
     '/m/chat': {
       id: '/m/chat'
-      path: '/m/chat'
+      path: '/chat'
       fullPath: '/m/chat'
       preLoaderRoute: typeof MChatRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/buscar': {
+      id: '/m/buscar'
+      path: '/buscar'
+      fullPath: '/m/buscar'
+      preLoaderRoute: typeof MBuscarRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/alertas': {
+      id: '/m/alertas'
+      path: '/alertas'
+      fullPath: '/m/alertas'
+      preLoaderRoute: typeof MAlertasRouteImport
+      parentRoute: typeof MRoute
+    }
+    '/m/agenda': {
+      id: '/m/agenda'
+      path: '/agenda'
+      fullPath: '/m/agenda'
+      preLoaderRoute: typeof MAgendaRouteImport
+      parentRoute: typeof MRoute
     }
     '/analytics/no-show': {
       id: '/analytics/no-show'
@@ -425,6 +613,34 @@ const MChatRouteChildren: MChatRouteChildren = {
 
 const MChatRouteWithChildren = MChatRoute._addFileChildren(MChatRouteChildren)
 
+interface MRouteChildren {
+  MAgendaRoute: typeof MAgendaRoute
+  MAlertasRoute: typeof MAlertasRoute
+  MBuscarRoute: typeof MBuscarRoute
+  MChatRoute: typeof MChatRouteWithChildren
+  MDashboardRoute: typeof MDashboardRoute
+  MEquipeRoute: typeof MEquipeRoute
+  MEuRoute: typeof MEuRoute
+  MFunilRoute: typeof MFunilRoute
+  MLeadsRoute: typeof MLeadsRoute
+  MIndexRoute: typeof MIndexRoute
+}
+
+const MRouteChildren: MRouteChildren = {
+  MAgendaRoute: MAgendaRoute,
+  MAlertasRoute: MAlertasRoute,
+  MBuscarRoute: MBuscarRoute,
+  MChatRoute: MChatRouteWithChildren,
+  MDashboardRoute: MDashboardRoute,
+  MEquipeRoute: MEquipeRoute,
+  MEuRoute: MEuRoute,
+  MFunilRoute: MFunilRoute,
+  MLeadsRoute: MLeadsRoute,
+  MIndexRoute: MIndexRoute,
+}
+
+const MRouteWithChildren = MRoute._addFileChildren(MRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
@@ -435,6 +651,7 @@ const rootRouteChildren: RootRouteChildren = {
   FilaRoute: FilaRoute,
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
+  MRoute: MRouteWithChildren,
   MarketingRoute: MarketingRoute,
   PerformanceRoute: PerformanceRoute,
   SaasRoute: SaasRoute,
@@ -442,7 +659,6 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
-  MChatRoute: MChatRouteWithChildren,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,
 }
 export const routeTree = rootRouteImport
