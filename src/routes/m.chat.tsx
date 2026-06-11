@@ -224,38 +224,8 @@ function MobileChat() {
         </ul>
       </div>
 
-      {/* Bottom Nav */}
-      <nav className="border-t border-[#E8EAEE] bg-white/95 backdrop-blur-md pb-[max(env(safe-area-inset-bottom),12px)] pt-2">
-        <ul className="grid grid-cols-5 px-2">
-          <BottomItem
-            to="/"
-            icon={<RefreshCw className="h-5 w-5" />}
-            label="Início"
-          />
-          <BottomItem
-            to="/fila"
-            icon={<Phone className="h-5 w-5" />}
-            label="Fila"
-          />
-          <BottomItem
-            to="/agenda"
-            icon={<CalendarCheck className="h-5 w-5" />}
-            label="Agenda"
-          />
-          <BottomItem
-            to="/m/chat"
-            icon={<MessageSquare className="h-5 w-5" />}
-            label="Conversas"
-            active
-            badge={totalUnread}
-          />
-          <BottomItem
-            to="/equipe"
-            icon={<User className="h-5 w-5" />}
-            label="Equipe"
-          />
-        </ul>
-      </nav>
+      {/* Bottom nav é fornecida pelo MobileShell (/m) — não duplicar aqui */}
+
     </div>
   )
 }
