@@ -102,7 +102,7 @@ export function TodayFollowupsTab() {
                     <span className="text-gray-300">•</span>
                     <span className="font-bold">{TEMPLATE_LABEL[f.template_key] ?? f.template_key}</span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {lead?.phone && (
                       <a href={`tel:${lead.phone}`}>
                         <Button size="sm" className="h-9 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl">
@@ -117,6 +117,14 @@ export function TodayFollowupsTab() {
                       className="h-9 text-[10px] font-black uppercase tracking-wider rounded-xl"
                     >
                       <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> WHATSAPP
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={respond.isPending || !lead}
+                      onClick={() => lead && respond.mutate({ followupId: f.id, leadId: lead.id })}
+                      className="h-9 bg-cyan-600 hover:bg-cyan-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> RESPONDIDO
                     </Button>
                   </div>
                 </div>
