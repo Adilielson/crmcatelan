@@ -239,6 +239,7 @@ const AppLayout = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 
