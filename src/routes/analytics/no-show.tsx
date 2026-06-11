@@ -48,39 +48,46 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
+import { useServerFn } from '@tanstack/react-start'
+import { useQuery } from '@tanstack/react-query'
+import { getNoShowMetrics, getTenantUnits } from '@/lib/analytics.functions'
+
 export const Route = createFileRoute('/analytics/no-show')({
   component: NoShowAnalytics,
 })
 
-const attendanceTrend = [
-  { name: 'Jan', compareceu: 120, noShow: 30, cancelado: 10 },
-  { name: 'Fev', compareceu: 132, noShow: 25, cancelado: 15 },
-  { name: 'Mar', compareceu: 101, noShow: 45, cancelado: 12 },
-  { name: 'Abr', compareceu: 154, noShow: 20, cancelado: 8 },
-  { name: 'Mai', compareceu: 140, noShow: 35, cancelado: 20 },
-  { name: 'Jun', compareceu: 165, noShow: 28, cancelado: 10 },
-]
 
-const sourceData = [
-  { name: 'Facebook Ads', value: 45, noShow: 12 },
-  { name: 'Google Ads', value: 38, noShow: 5 },
-  { name: 'Instagram Org', value: 25, noShow: 2 },
-  { name: 'Indicação', value: 15, noShow: 1 },
-]
-
-const reasonsData = [
-  { name: 'Esquecimento', value: 40, color: '#f59e0b' },
-  { name: 'Imprevisto Trabalho', value: 25, color: '#6366f1' },
-  { name: 'Problema Financeiro', value: 20, color: '#ef4444' },
-  { name: 'Distância/Trânsito', value: 15, color: '#94a3b8' },
-]
 
 function NoShowAnalytics() {
-  const [period, setPeriod] = useState('monthly')
-  const [unit, setUnit] = useState('all')
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly')
+  const [unit, setUnit] = useState<string>('all')
 
-  const noShowRate = 22.5
+  const fetchMetrics = useServerFn(getNoShowMetrics)
+  const fetchUnits = useServerFn(getTenantUnits)
+
+  const { data: units = [] } = useQuery({
+    queryKey: ['tenant-units'],
+    queryFn: () => fetchUnits({}),
+  })
+
+  const { data: metrics } = useQuery({
+    queryKey: ['noshow-metrics', period, unit],
+    queryFn: () =>
+      fetchMetrics({ data: { period, unitId: unit === 'all' ? null : unit } }),
+  })
+
+  const attendanceTrend = metrics?.attendanceTrend ?? []
+  const sourceData = metrics?.sourceData ?? []
+  const recovery = metrics?.recovery ?? []
+  const noShowRate = metrics?.kpis.noShowRate ?? 0
+  const attendanceRate = metrics?.kpis.attendanceRate ?? 0
+  const noShowValue = metrics?.kpis.noShowValue ?? 0
+  const totalAppts = metrics?.kpis.total ?? 0
   const isCritical = noShowRate > 20
+
+  // Reasons data — placeholder até existir tabela de motivos
+  const reasonsData: Array<{ name: string; value: number; color: string }> = []
+
 
   return (
     <div className="p-6 space-y-6">
@@ -104,7 +111,7 @@ function NoShowAnalytics() {
           <Filter className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">Filtros:</span>
         </div>
-        <Select value={period} onValueChange={setPeriod}>
+        <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Período" />
           </SelectTrigger>
@@ -122,8 +129,9 @@ function NoShowAnalytics() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as Unidades</SelectItem>
-            <SelectItem value="sul">Unidade Sul</SelectItem>
-            <SelectItem value="norte">Unidade Norte</SelectItem>
+            {units.map((u) => (
+              <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -131,36 +139,36 @@ function NoShowAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-ink">
         <MetricCard 
           title="Taxa de Presença" 
-          value="77.5%" 
-          trend="+2.4%" 
-          trendUp={true} 
+          value={`${attendanceRate.toFixed(1)}%`} 
+          trend={`${totalAppts} agend.`} 
+          trendUp={attendanceRate >= 75} 
           icon={<UserCheck className="w-5 h-5 text-green-600" />} 
           description="Agendamentos que compareceram"
         />
         <MetricCard 
           title="Taxa de No-Show" 
-          value={`${noShowRate}%`} 
-          trend="+5.1%" 
-          trendUp={false} 
+          value={`${noShowRate.toFixed(1)}%`} 
+          trend={isCritical ? 'crítico' : 'normal'} 
+          trendUp={!isCritical} 
           icon={<UserX className="w-5 h-5" />} 
           description="Não comparecimentos"
           alert={isCritical}
         />
         <MetricCard 
-          title="Conversão de Vendas" 
-          value="18.2%" 
-          trend="-1.5%" 
-          trendUp={false} 
+          title="Conversão Final" 
+          value={`${(metrics?.kpis ? 100 - (metrics.kpis.noShowRate + metrics.kpis.cancelRate) : 0).toFixed(1)}%`} 
+          trend="presença líquida" 
+          trendUp={true} 
           icon={<ArrowUpRight className="w-5 h-5" />} 
-          description="Leads → Vendas Finalizadas"
+          description="Compareceram vs agendados"
         />
         <MetricCard 
           title="Perda Estimada" 
-          value="R$ 12.450" 
-          trend="+R$ 3.200" 
+          value={noShowValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} 
+          trend={`${metrics?.recovery.length ?? 0} p/ recuperar`} 
           trendUp={false} 
           icon={<DollarSign className="w-5 h-5 text-red-600" />} 
-          description="Ticket médio de No-Shows"
+          description="Valor de no-shows no período"
         />
       </div>
 
@@ -223,24 +231,24 @@ function NoShowAnalytics() {
             <CardTitle>Motivos de No-Show</CardTitle>
             <CardDescription>Principais justificativas registradas.</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={reasonsData}
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {reasonsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend layout="vertical" align="right" verticalAlign="middle" />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="h-[300px] flex items-center justify-center">
+            {reasonsData.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center italic px-6">
+                Ainda não há motivos registrados. Os motivos serão capturados automaticamente quando o atendente registrar a causa de uma falta.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={reasonsData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {reasonsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend layout="vertical" align="right" verticalAlign="middle" />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -251,23 +259,21 @@ function NoShowAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { name: 'Ricardo Santos', date: 'Hoje às 10:00', source: 'Google Ads', reason: 'Esquecimento' },
-                { name: 'Julia Paiva', date: 'Ontem às 15:30', source: 'Facebook Ads', reason: 'Trabalho' },
-                { name: 'Marcos Lima', date: '04/06 às 09:00', source: 'Indicação', reason: 'Financeiro' },
-              ].map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+              {recovery.length === 0 && (
+                <p className="text-xs text-muted-foreground italic text-center py-6">Nenhum no-show nos últimos 7 dias.</p>
+              )}
+              {recovery.map((lead) => (
+                <div key={lead.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium text-sm">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.date} • {lead.source}</p>
+                    <p className="text-xs text-muted-foreground">{lead.date}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant="outline" className="text-[10px]">{lead.reason}</Badge>
-                    <Button size="sm" variant="secondary">Reagendar</Button>
+                    <Badge variant="outline" className="text-[10px]">no-show</Badge>
+                    <Button size="sm" variant="secondary" onClick={() => window.location.assign('/agenda')}>Reagendar</Button>
                   </div>
                 </div>
               ))}
-              <Button variant="link" className="w-full text-xs">Ver todos os 28 faltantes →</Button>
             </div>
           </CardContent>
         </Card>

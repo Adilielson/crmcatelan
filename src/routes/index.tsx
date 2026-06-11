@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { 
   Card, 
@@ -43,50 +43,47 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
-import { useLeads, useUnits } from '@/hooks/use-leads'
-import { useAgenda } from '@/hooks/use-agenda'
-import { useChatStore } from '@/hooks/use-chat'
+import { useUnits } from '@/hooks/use-leads'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Progress } from '@/components/ui/progress'
+import { useServerFn } from '@tanstack/react-start'
+import { useQuery } from '@tanstack/react-query'
+import { getDashboardMetrics } from '@/lib/analytics.functions'
 
 export const Route = createFileRoute('/')({
   component: Dashboard,
 })
 
-const funnelData = [
-  { name: 'Leads Prontos', value: 120, color: '#94a3b8' },
-  { name: 'Em Atendimento', value: 85, color: '#6366f1' },
-  { name: 'Agendado', value: 42, color: '#10b981' },
-  { name: 'Perdido', value: 15, color: '#ef4444' },
-]
-
-const sourceData = [
-  { name: 'WhatsApp', value: 65, color: '#22c55e' },
-  { name: 'Instagram', value: 25, color: '#ec4899' },
-  { name: 'Google', value: 10, color: '#3b82f6' },
-]
+function fmtBRL(n: number) {
+  if (n >= 1000) return `R$ ${(n / 1000).toFixed(1)}k`
+  return `R$ ${n.toFixed(0)}`
+}
+function fmtDelta(n: number) {
+  const sign = n >= 0 ? '+' : ''
+  return `${sign}${n.toFixed(1)}%`
+}
 
 function Dashboard() {
-  const { data: leads = [] } = useLeads()
   const { data: pipelines = [] } = useUnits()
-  const { appointments } = useAgenda()
-  const { sessions } = useChatStore()
-  const [selectedUnit, setSelectedUnit] = useState('all')
+  const [selectedUnit, setSelectedUnit] = useState<string>('all')
 
-  const stats = useMemo(() => {
-    const totalLeads = leads.length
-    const totalValue = leads.reduce((acc, lead) => acc + (lead.sales_value ?? 0), 0)
-    const confirmedAppts = appointments.filter(a => a.status === 'confirmado').length
-    const qualifiedCount = leads.filter(l => (l.score_ia ?? 0) >= 70).length
-    const qualRate = leads.length > 0 ? (qualifiedCount / leads.length) * 100 : 0
+  const fetchMetrics = useServerFn(getDashboardMetrics)
+  const { data: metrics } = useQuery({
+    queryKey: ['dashboard-metrics', selectedUnit],
+    queryFn: () => fetchMetrics({ data: { unitId: selectedUnit === 'all' ? null : selectedUnit } }),
+  })
 
-    return {
-      totalLeads,
-      totalValue: `R$ ${(totalValue / 1000).toFixed(1)}k`,
-      confirmedAppts,
-      qualRate: `${qualRate.toFixed(0)}%`
-    }
-  }, [leads, appointments])
+  const funnelData = metrics?.funnelData ?? []
+  const sourceData = metrics?.sourceData ?? []
+  const slaAlerts = metrics?.slaAlerts ?? []
+  const recentAi = metrics?.recentAi ?? []
+  const kpis = metrics?.kpis
+  const stats = {
+    totalLeads: kpis?.totalLeads ?? 0,
+    totalValue: fmtBRL(kpis?.totalValue ?? 0),
+    confirmedAppts: kpis?.confirmedAppts ?? 0,
+    qualRate: `${kpis?.qualRate?.toFixed(0) ?? 0}%`,
+  }
+
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
@@ -128,23 +125,23 @@ function Dashboard() {
         <StatCard 
           title="Total de Leads" 
           value={stats.totalLeads.toString()} 
-          change="+12.5%" 
-          changeDesc="vs semana anterior"
+          change={fmtDelta(kpis?.leadsDelta ?? 0)} 
+          changeDesc="vs 30 dias anteriores"
           icon={<Users className="w-5 h-5" />}
           link="/kanban"
         />
         <StatCard 
           title="Valor em Pipeline" 
           value={stats.totalValue} 
-          change="R$ 12k" 
-          changeDesc="leads ativos no funil"
+          change={fmtDelta(kpis?.valueDelta ?? 0)} 
+          changeDesc="vs 30 dias anteriores"
           icon={<DollarSign className="w-5 h-5" />}
           link="/kanban"
         />
         <StatCard 
           title="Consultas Agendadas" 
           value={stats.confirmedAppts.toString()} 
-          change="+8" 
+          change={`${stats.confirmedAppts}`} 
           changeDesc="próximos 7 dias"
           icon={<Calendar className="w-5 h-5" />}
           link="/agenda"
@@ -152,8 +149,8 @@ function Dashboard() {
         <StatCard 
           title="Qualificação IA" 
           value={stats.qualRate} 
-          change="92%" 
-          changeDesc="performance SDR"
+          change={`${kpis?.qualRate?.toFixed(0) ?? 0}%`} 
+          changeDesc="leads com score ≥ 70"
           icon={<Brain className="w-5 h-5" />}
           highlight
           link="/performance"
@@ -246,7 +243,10 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {leads.filter(l => l.ia_summary || (l.score_ia ?? 0) > 0).slice(0, 3).map((lead, i) => (
+              {recentAi.length === 0 && (
+                <p className="text-xs text-gray-400 italic p-4 text-center">Sem atividade da IA ainda.</p>
+              )}
+              {recentAi.map((lead, i) => (
                 <div key={i} className="flex items-center justify-between p-4 border border-border rounded-[14px] bg-background/50 hover:border-primary/30 transition-all cursor-pointer group/item">
                   <div className="flex items-center gap-3">
                     <Badge className={cn(
@@ -267,6 +267,7 @@ function Dashboard() {
               ))}
             </div>
           </CardContent>
+
         </Card>
 
         {/* Alertas de SLA e Estagnação */}
@@ -284,10 +285,10 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { name: 'Roberto Lima', stage: 'Leads Prontos', wait: '5h', priority: 'VIP' },
-                { name: 'Ana Souza', stage: 'Em Atendimento', wait: '26h', priority: 'Alta' },
-              ].map((alert, i) => (
+              {slaAlerts.length === 0 && (
+                <p className="text-xs text-gray-400 italic p-4 text-center">Nenhum lead estagnado. ✓</p>
+              )}
+              {slaAlerts.map((alert, i) => (
                 <div key={i} className="flex items-center justify-between p-4 border border-danger/20 rounded-[14px] bg-danger/5 hover:bg-danger/10 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -295,7 +296,7 @@ function Dashboard() {
                     </div>
                     <div>
                       <p className="text-sm font-black text-ink font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
-                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.wait}</p>
+                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.waitHours}h</p>
                     </div>
                   </div>
                   <Link to="/chat">
@@ -305,6 +306,7 @@ function Dashboard() {
               ))}
             </div>
           </CardContent>
+
         </Card>
       </div>
     </div>
