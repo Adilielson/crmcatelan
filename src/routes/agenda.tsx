@@ -39,6 +39,8 @@ import { ptBR } from 'date-fns/locale'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { TodayFollowupsTab } from '@/components/agenda/TodayFollowupsTab'
 import { useTodayFollowups } from '@/hooks/use-followups'
+import { AgendaSettingsDialog } from '@/components/agenda/AgendaSettingsDialog'
+import { useBusinessHours, useBlockedDates, checkAvailability, isDayFullyClosed } from '@/hooks/use-agenda-settings'
 
 export const Route = createFileRoute('/agenda')({
   component: Agenda,
@@ -58,7 +60,10 @@ function Agenda() {
   const [view, setView] = useState<'month' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const { data: businessHours = [] } = useBusinessHours()
+  const { data: blockedDates = [] } = useBlockedDates()
   
   const [formData, setFormData] = useState({
     leadId: '',
@@ -90,6 +95,12 @@ function Agenda() {
     const lead = leads.find(l => l.id === formData.leadId)
     if (!lead) {
       toast.error('Selecione um lead válido')
+      return
+    }
+
+    const avail = checkAvailability(formData.date, formData.startTime, formData.endTime, businessHours, blockedDates)
+    if (!avail.ok) {
+      toast.error(avail.reason ?? 'Horário indisponível')
       return
     }
 
@@ -190,7 +201,7 @@ function Agenda() {
           <Button onClick={() => setIsModalOpen(true)} className="gap-3 bg-primary hover:bg-yellow-bright text-[#1a1500] font-black text-[11px] h-14 px-8 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-[1.05] uppercase tracking-widest border-none">
             <Plus className="w-5 h-5" /> NOVO AGENDAMENTO
           </Button>
-          <Button variant="outline" className="gap-3 bg-white border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] h-14 px-8 rounded-[16px] transition-all uppercase tracking-widest">
+          <Button onClick={() => setIsSettingsOpen(true)} variant="outline" className="gap-3 bg-white border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] h-14 px-8 rounded-[16px] transition-all uppercase tracking-widest">
             <Settings className="w-5 h-5" /> CONFIGURAÇÕES
           </Button>
         </div>
@@ -253,6 +264,7 @@ function Agenda() {
                 const isToday = isSameDay(day, new Date())
                 const dayAppts = appointments.filter(a => isSameDay(new Date(a.date + 'T00:00:00'), day))
                 const isCurrentMonth = format(day, 'MM') === format(currentDate, 'MM')
+                const closed = isDayFullyClosed(day, businessHours, blockedDates)
 
                 return (
                   <div 
@@ -264,6 +276,7 @@ function Agenda() {
                     className={cn(
                       "h-32 border-r border-b border-border p-3 transition-all cursor-pointer group relative overflow-hidden",
                       !isCurrentMonth ? "bg-gray-50 opacity-40" : "bg-white hover:bg-gray-50/50",
+                      closed && isCurrentMonth && "bg-[repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6_6px,#ffffff_6px,#ffffff_12px)]",
                       isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5"
                     )}
                   >
@@ -275,7 +288,9 @@ function Agenda() {
                       )}>
                         {format(day, 'd')}
                       </span>
-                      {dayAppts.length > 0 && (
+                      {closed && isCurrentMonth ? (
+                        <Badge className="text-[9px] h-5 px-1.5 bg-gray-200 text-gray-600 border-none font-black">FECHADO</Badge>
+                      ) : dayAppts.length > 0 && (
                         <Badge className="text-[10px] h-5 px-1.5 bg-primary/20 text-primary border-none font-black">{dayAppts.length}</Badge>
                       )}
                     </div>
@@ -496,6 +511,8 @@ function Agenda() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AgendaSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </div>
   )
 }

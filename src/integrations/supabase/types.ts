@@ -65,6 +65,97 @@ export type Database = {
           },
         ]
       }
+      agenda_blocked_dates: {
+        Row: {
+          all_day: boolean
+          block_end: string | null
+          block_start: string | null
+          blocked_date: string
+          created_at: string
+          id: string
+          reason: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          all_day?: boolean
+          block_end?: string | null
+          block_start?: string | null
+          blocked_date: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          all_day?: boolean
+          block_end?: string | null
+          block_start?: string | null
+          blocked_date?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_blocked_dates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_business_hours: {
+        Row: {
+          close_time: string | null
+          created_at: string
+          id: string
+          is_open: boolean
+          lunch_end: string | null
+          lunch_start: string | null
+          open_time: string | null
+          tenant_id: string
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          close_time?: string | null
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          lunch_end?: string | null
+          lunch_start?: string | null
+          open_time?: string | null
+          tenant_id: string
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          close_time?: string | null
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          lunch_end?: string | null
+          lunch_start?: string | null
+          open_time?: string | null
+          tenant_id?: string
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_business_hours_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_config_versions: {
         Row: {
           ai_config_id: string | null
