@@ -158,7 +158,7 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'text',
           status: 'sent',
-          error_message: null,
+          error_message: text,
         });
       } catch (err) {
         await db.from('whatsapp_message_logs').insert({
