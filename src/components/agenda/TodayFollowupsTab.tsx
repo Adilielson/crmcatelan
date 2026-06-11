@@ -1,13 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { format, isToday, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Phone, MessageSquare, Clock, AlertCircle, User, CheckCircle2 } from 'lucide-react';
+import { Phone, MessageSquare, Clock, AlertCircle, User, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTodayFollowups, useRespondToFollowup } from '@/hooks/use-followups';
 import { useLeads } from '@/hooks/use-leads';
 import { FollowupContextBlock } from './FollowupContextBlock';
+import { FollowupAiDialog } from './FollowupAiDialog';
 import { toast } from 'sonner';
 
 const TEMPLATE_LABEL: Record<string, string> = {
@@ -26,6 +27,13 @@ export function TodayFollowupsTab() {
   const { data: leads = [] } = useLeads();
   const respond = useRespondToFollowup();
   const navigate = useNavigate();
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTarget, setAiTarget] = useState<{ followupId: string; leadPhone: string | null; leadName: string } | null>(null);
+
+  const openAi = (followupId: string, leadPhone: string | null, leadName: string) => {
+    setAiTarget({ followupId, leadPhone, leadName });
+    setAiOpen(true);
+  };
 
   const leadMap = useMemo(() => {
     const m = new Map<string, (typeof leads)[number]>();
@@ -114,6 +122,15 @@ export function TodayFollowupsTab() {
                     <Button
                       size="sm"
                       variant="outline"
+                      disabled={!lead}
+                      onClick={() => lead && openAi(f.id, lead.phone ?? null, lead.full_name)}
+                      className="h-9 text-[10px] font-black uppercase tracking-wider rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 mr-1.5" /> SCRIPT IA
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => openChat(lead?.phone)}
                       className="h-9 text-[10px] font-black uppercase tracking-wider rounded-xl"
                     >
@@ -175,15 +192,26 @@ export function TodayFollowupsTab() {
                       <Clock className="w-3 h-3" />
                       <span>Envio: {format(new Date(f.scheduled_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={respond.isPending || !lead}
-                      onClick={() => lead && respond.mutate({ followupId: f.id, leadId: lead.id })}
-                      className="h-8 text-[10px] font-black uppercase tracking-wider rounded-xl border-cyan-200 text-cyan-700 hover:bg-cyan-50"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> RESPONDIDO
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!lead}
+                        onClick={() => lead && openAi(f.id, lead.phone ?? null, lead.full_name)}
+                        className="h-8 text-[10px] font-black uppercase tracking-wider rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 mr-1.5" /> GERAR IA
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={respond.isPending || !lead}
+                        onClick={() => lead && respond.mutate({ followupId: f.id, leadId: lead.id })}
+                        className="h-8 text-[10px] font-black uppercase tracking-wider rounded-xl border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> RESPONDIDO
+                      </Button>
+                    </div>
                   </div>
                   {lead && <FollowupContextBlock leadId={lead.id} />}
                 </div>
@@ -192,6 +220,14 @@ export function TodayFollowupsTab() {
           )}
         </div>
       </div>
+
+      <FollowupAiDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        followupId={aiTarget?.followupId ?? null}
+        initialLeadPhone={aiTarget?.leadPhone ?? null}
+        initialLeadName={aiTarget?.leadName}
+      />
     </div>
   );
 }
