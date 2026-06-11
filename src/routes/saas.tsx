@@ -304,6 +304,7 @@ function SaaSAdmin() {
           <TabsTrigger value="tenants" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Lista de Óticas</TabsTrigger>
           <TabsTrigger value="plans" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Planos {'&'} Config</TabsTrigger>
           <TabsTrigger value="ia" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Performance IA</TabsTrigger>
+          <TabsTrigger value="credenciais" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Credenciais IA</TabsTrigger>
           <TabsTrigger value="security" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Segurança</TabsTrigger>
         </TabsList>
 
