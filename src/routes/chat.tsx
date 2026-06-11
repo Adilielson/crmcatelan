@@ -34,6 +34,10 @@ function Chat() {
   const [search, setSearch] = useState('')
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Auto-seleciona a primeira conversa ou a que vier pela URL
@@ -110,6 +114,109 @@ function Chat() {
     } finally {
       setSending(false)
     }
+  }
+
+  // Lê arquivo como data URL, com downscale para imagens (máx 1280px)
+  const fileToDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(reader.error)
+    reader.onload = () => {
+      const result = String(reader.result || '')
+      if (!file.type.startsWith('image/')) return resolve(result)
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 1280
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return resolve(result)
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = () => resolve(result)
+      img.src = result
+    }
+    reader.readAsDataURL(file)
+  })
+
+  const handlePickFile = () => fileInputRef.current?.click()
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !selectedPhone) return
+    if (!waConnected) { toast.error('WhatsApp não está conectado.'); return }
+    if (!file.type.startsWith('image/')) { toast.error('Apenas imagens por enquanto.'); return }
+    setSending(true)
+    try {
+      const dataUrl = await fileToDataUrl(file)
+      await sendImage(selectedPhone, dataUrl, draft.trim() || undefined, 'image/jpeg')
+      setDraft('')
+      toast.success('Imagem enviada')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao enviar imagem')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const startRecording = async () => {
+    if (!selectedPhone) return
+    if (!waConnected) { toast.error('WhatsApp não está conectado.'); return }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeCandidates = ['audio/ogg;codecs=opus', 'audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+      const mime = mimeCandidates.find((m) => (window as any).MediaRecorder?.isTypeSupported?.(m)) || ''
+      const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
+      audioChunksRef.current = []
+      mr.ondataavailable = (ev) => { if (ev.data.size > 0) audioChunksRef.current.push(ev.data) }
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const blob = new Blob(audioChunksRef.current, { type: mr.mimeType || 'audio/webm' })
+        if (blob.size === 0) return
+        if (blob.size > 5_000_000) { toast.error('Áudio muito longo (máx ~1min).'); return }
+        const reader = new FileReader()
+        reader.onload = async () => {
+          const dataUrl = String(reader.result || '')
+          setSending(true)
+          try {
+            await sendAudio(selectedPhone, dataUrl, blob.type)
+            toast.success('Áudio enviado')
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao enviar áudio')
+          } finally {
+            setSending(false)
+          }
+        }
+        reader.readAsDataURL(blob)
+      }
+      mediaRecorderRef.current = mr
+      mr.start()
+      setRecording(true)
+    } catch (err) {
+      toast.error('Não foi possível acessar o microfone.')
+      console.error(err)
+    }
+  }
+
+  const stopRecording = () => {
+    const mr = mediaRecorderRef.current
+    if (mr && mr.state !== 'inactive') mr.stop()
+    setRecording(false)
+  }
+
+  const cancelRecording = () => {
+    const mr = mediaRecorderRef.current
+    if (mr && mr.state !== 'inactive') {
+      audioChunksRef.current = []
+      mr.onstop = null as unknown as () => void
+      mr.stop()
+      mr.stream.getTracks().forEach((t) => t.stop())
+    }
+    setRecording(false)
   }
 
   const [isRoutingOpen, setIsRoutingOpen] = useState(false)
