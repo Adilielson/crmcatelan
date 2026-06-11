@@ -511,6 +511,8 @@ function Agenda() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AgendaSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </div>
   )
 }
