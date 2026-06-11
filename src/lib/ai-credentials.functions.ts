@@ -75,3 +75,26 @@ export const toggleTenantAiCredential = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const testTenantAiCredential = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ tenantId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { getTenantAiKey } = await import("./ai-credentials.server");
+    try {
+      const resolved = await getTenantAiKey(data.tenantId, "openai");
+      const r = await fetch("https://api.openai.com/v1/models", {
+        headers: { Authorization: `Bearer ${resolved.apiKey}` },
+      });
+      if (r.status === 401) {
+        return { ok: false, source: resolved.source, status: 401, message: "Chave inválida (401)" };
+      }
+      if (!r.ok) {
+        return { ok: false, source: resolved.source, status: r.status, message: `OpenAI respondeu ${r.status}` };
+      }
+      return { ok: true, source: resolved.source, model: resolved.model, message: "Conexão OK" };
+    } catch (e: any) {
+      return { ok: false, source: "none", status: 0, message: e?.message ?? "Falha ao testar" };
+    }
+  });
