@@ -7,15 +7,13 @@ import {
   MoreHorizontal,
   Archive,
   CheckCheck,
-  RefreshCw,
   MessageSquare,
-  Phone,
-  Users,
-  User,
   Brain,
   CalendarCheck,
   LogIn,
 } from 'lucide-react'
+
+
 import {
   useWhatsAppChat,
   formatChatTime,
@@ -224,38 +222,8 @@ function MobileChat() {
         </ul>
       </div>
 
-      {/* Bottom Nav */}
-      <nav className="border-t border-[#E8EAEE] bg-white/95 backdrop-blur-md pb-[max(env(safe-area-inset-bottom),12px)] pt-2">
-        <ul className="grid grid-cols-5 px-2">
-          <BottomItem
-            to="/"
-            icon={<RefreshCw className="h-5 w-5" />}
-            label="Início"
-          />
-          <BottomItem
-            to="/fila"
-            icon={<Phone className="h-5 w-5" />}
-            label="Fila"
-          />
-          <BottomItem
-            to="/agenda"
-            icon={<CalendarCheck className="h-5 w-5" />}
-            label="Agenda"
-          />
-          <BottomItem
-            to="/m/chat"
-            icon={<MessageSquare className="h-5 w-5" />}
-            label="Conversas"
-            active
-            badge={totalUnread}
-          />
-          <BottomItem
-            to="/equipe"
-            icon={<User className="h-5 w-5" />}
-            label="Equipe"
-          />
-        </ul>
-      </nav>
+      {/* Bottom nav é fornecida pelo MobileShell (/m) — não duplicar aqui */}
+
     </div>
   )
 }
@@ -351,46 +319,8 @@ function ConversationRow({
   )
 }
 
-function BottomItem({
-  to,
-  icon,
-  label,
-  active,
-  badge,
-}: {
-  to: string
-  icon: React.ReactNode
-  label: string
-  active?: boolean
-  badge?: number
-}) {
-  return (
-    <li>
-      <Link
-        to={to}
-        className={cn(
-          'w-full flex flex-col items-center gap-1 py-1.5 rounded-2xl transition-colors',
-          active ? 'text-ink' : 'text-gray-400',
-        )}
-      >
-        <span
-          className={cn(
-            'relative grid place-items-center h-9 w-14 rounded-full transition-colors',
-            active && 'bg-primary/15',
-          )}
-        >
-          {icon}
-          {badge && badge > 0 ? (
-            <span className="absolute -top-1 right-1 min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-black">
-              {badge > 99 ? '99+' : badge}
-            </span>
-          ) : null}
-        </span>
-        <span className="text-[10px] font-bold tracking-wide">{label}</span>
-      </Link>
-    </li>
-  )
-}
+
+
 
 function previewText(text: string, type?: string): string {
   if (text && text.trim()) return text
