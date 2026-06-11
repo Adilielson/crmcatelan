@@ -25,8 +25,10 @@ import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { NotificationCenter } from './NotificationCenter';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { usePermissions } from '@/hooks/use-permissions';
+import type { ModuleKey } from '@/lib/permissions';
 
-type NavLeaf = { label: string; icon: any; href: string };
+type NavLeaf = { label: string; icon: any; href: string; module?: ModuleKey };
 type NavGroup = { label: string; icon?: any; children: NavLeaf[] };
 type NavItem = NavLeaf | NavGroup;
 
@@ -53,44 +55,57 @@ const Logo = () => (
 
 const useNavItems = (isSuperAdmin: boolean): NavItem[] => {
   const items: NavItem[] = [
-    { label: 'Início', icon: Home, href: '/' },
+    { label: 'Início', icon: Home, href: '/', module: 'home' },
     {
       label: 'Atendimento',
       icon: MessageSquare,
       children: [
-        { label: 'Chat', icon: MessageSquare, href: '/chat' },
-        { label: 'Equipe', icon: Users, href: '/equipe' },
+        { label: 'Chat', icon: MessageSquare, href: '/chat', module: 'chat' },
+        { label: 'Equipe', icon: Users, href: '/equipe', module: 'equipe' },
       ],
     },
-    { label: 'Kanban', icon: Columns, href: '/kanban' },
-    { label: 'Fila', icon: Inbox, href: '/fila' },
-    { label: 'Agenda', icon: Calendar, href: '/agenda' },
-    { label: 'Clientes', icon: Contact, href: '/clientes' },
+    { label: 'Kanban', icon: Columns, href: '/kanban', module: 'kanban' },
+    { label: 'Fila', icon: Inbox, href: '/fila', module: 'fila' },
+    { label: 'Agenda', icon: Calendar, href: '/agenda', module: 'agenda' },
+    { label: 'Clientes', icon: Contact, href: '/clientes', module: 'clientes' },
     {
       label: 'Performance',
       icon: BarChart3,
       children: [
-        { label: 'Dashboard', icon: BarChart3, href: '/performance' },
-        { label: 'Métricas No-Show', icon: TrendingDown, href: '/analytics/no-show' },
-        { label: 'Relatórios', icon: FileBarChart, href: '/performance' },
+        { label: 'Dashboard', icon: BarChart3, href: '/performance', module: 'performance' },
+        { label: 'Métricas No-Show', icon: TrendingDown, href: '/analytics/no-show', module: 'no_show' },
+        { label: 'Relatórios', icon: FileBarChart, href: '/performance', module: 'reports' },
       ],
     },
-    { label: 'Marketing', icon: Megaphone, href: '/marketing' },
+    { label: 'Marketing', icon: Megaphone, href: '/marketing', module: 'marketing' },
     {
       label: 'Ajustes',
       icon: Settings,
       children: [
-        { label: 'Configurações', icon: Settings, href: '/settings' },
-        { label: 'Treinamento IA', icon: Brain, href: '/ai-training' },
-        { label: 'Usuários', icon: UserCog, href: '/users' },
+        { label: 'Configurações', icon: Settings, href: '/settings', module: 'settings' },
+        { label: 'Treinamento IA', icon: Brain, href: '/ai-training', module: 'ai_training' },
+        { label: 'Usuários', icon: UserCog, href: '/users', module: 'users' },
         ...(isSuperAdmin
-          ? [{ label: 'Admin SaaS', icon: ShieldCheck, href: '/saas' }]
+          ? [{ label: 'Admin SaaS', icon: ShieldCheck, href: '/saas', module: 'saas' as ModuleKey }]
           : []),
       ],
     },
   ];
   return items;
 };
+
+function filterItems(items: NavItem[], can: (k: ModuleKey) => boolean): NavItem[] {
+  const out: NavItem[] = [];
+  for (const item of items) {
+    if (isGroup(item)) {
+      const kids = item.children.filter((c) => !c.module || can(c.module));
+      if (kids.length) out.push({ ...item, children: kids });
+    } else {
+      if (!item.module || can(item.module)) out.push(item);
+    }
+  }
+  return out;
+}
 
 const isItemActive = (item: NavItem, pathname: string): boolean => {
   if (isGroup(item)) return item.children.some((c) => c.href === pathname);
@@ -384,7 +399,24 @@ const AppLayout = () => {
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const isSuperAdmin = user?.role === 'super_admin';
-  const items = useNavItems(isSuperAdmin);
+  const { can } = usePermissions();
+  const rawItems = useNavItems(isSuperAdmin);
+  const items = filterItems(rawItems, can);
+
+  // Guard: se a rota atual não está permitida, redireciona para /
+  useEffect(() => {
+    if (!user || loading) return;
+    if (user.role === 'super_admin' || user.role === 'admin') return;
+    const moduleForPath = (() => {
+      for (const i of rawItems) {
+        if (isGroup(i)) {
+          for (const c of i.children) if (c.href === location.pathname) return c.module;
+        } else if (i.href === location.pathname) return i.module;
+      }
+      return undefined;
+    })();
+    if (moduleForPath && !can(moduleForPath)) navigate({ to: '/' });
+  }, [location.pathname, user, loading]);
 
   if (loading)
     return (

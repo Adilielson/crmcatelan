@@ -1,0 +1,31 @@
+// Catálogo de módulos do sistema (compartilhado client+server).
+export const MODULE_CATALOG = [
+  { key: 'home', label: 'Início', path: '/' },
+  { key: 'chat', label: 'Chat / Atendimento', path: '/chat' },
+  { key: 'equipe', label: 'Equipe', path: '/equipe' },
+  { key: 'kanban', label: 'Kanban', path: '/kanban' },
+  { key: 'fila', label: 'Fila', path: '/fila' },
+  { key: 'agenda', label: 'Agenda', path: '/agenda' },
+  { key: 'clientes', label: 'Clientes', path: '/clientes' },
+  { key: 'performance', label: 'Performance / Dashboard', path: '/performance' },
+  { key: 'no_show', label: 'Métricas No-Show', path: '/analytics/no-show' },
+  { key: 'reports', label: 'Relatórios' },
+  { key: 'marketing', label: 'Marketing', path: '/marketing' },
+  { key: 'settings', label: 'Configurações', path: '/settings' },
+  { key: 'ai_training', label: 'Treinamento IA', path: '/ai-training' },
+  { key: 'users', label: 'Usuários', path: '/users' },
+  { key: 'saas', label: 'Admin SaaS', path: '/saas' },
+] as const;
+
+export type ModuleKey = (typeof MODULE_CATALOG)[number]['key'];
+
+export const ALL_MODULE_KEYS = MODULE_CATALOG.map((m) => m.key) as ModuleKey[];
+
+// Mapa de path -> moduleKey, para guard de rotas.
+export const PATH_TO_MODULE: Record<string, ModuleKey> = MODULE_CATALOG.reduce(
+  (acc, m) => {
+    if ('path' in m && m.path) acc[m.path] = m.key;
+    return acc;
+  },
+  {} as Record<string, ModuleKey>,
+);
