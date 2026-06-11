@@ -86,7 +86,7 @@ const AppLayout = () => {
   if (location.pathname.startsWith('/m')) return <Outlet />;
 
   return (
-    <div className="flex h-screen bg-[#F6F7F9] relative z-10 text-ink font-jakarta">
+    <div className="flex h-full bg-[#F6F7F9] relative z-10 text-ink font-jakarta">
       <aside className="w-64 bg-[#0E0E11] border-r border-[#23232B] flex flex-col shrink-0">
         <div className="p-8 border-b border-[#23232B]">
           <div className="flex items-center gap-3 mb-6">

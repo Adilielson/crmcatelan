@@ -2,6 +2,7 @@ import { createRootRouteWithContext, ScrollRestoration } from '@tanstack/react-r
 import { HeadContent, Scripts } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from '../components/layout/AppLayout';
+import { SecurityReviewBanner } from '../components/layout/SecurityReviewBanner';
 import '../styles.css';
 
 interface RouterContext {
@@ -44,7 +45,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <HeadContent />
-      <AppLayout />
+      <div className="flex flex-col h-screen">
+        <SecurityReviewBanner />
+        <div className="flex-1 overflow-hidden">
+          <AppLayout />
+        </div>
+      </div>
       <ScrollRestoration />
       <Scripts />
     </QueryClientProvider>
