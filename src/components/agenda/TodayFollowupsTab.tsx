@@ -23,6 +23,7 @@ const TEMPLATE_LABEL: Record<string, string> = {
 export function TodayFollowupsTab() {
   const { data: followups = [], isLoading } = useTodayFollowups();
   const { data: leads = [] } = useLeads();
+  const respond = useRespondToFollowup();
   const navigate = useNavigate();
 
   const leadMap = useMemo(() => {
