@@ -40,9 +40,22 @@ interface LogRow {
   sender_avatar_url: string | null;
   media_url: string | null;
   media_mime: string | null;
+  media_storage_path: string | null;
 }
 
-function mapRow(row: LogRow): WhatsAppMessage {
+const MEDIA_BUCKET = 'whatsapp-media';
+
+async function resolveMediaUrl(row: Pick<LogRow, 'media_storage_path' | 'media_url'>): Promise<string | null> {
+  if (row.media_storage_path) {
+    const { data } = await supabase.storage
+      .from(MEDIA_BUCKET)
+      .createSignedUrl(row.media_storage_path, 60 * 60);
+    if (data?.signedUrl) return data.signedUrl;
+  }
+  return row.media_url;
+}
+
+function mapRowSync(row: LogRow, resolvedUrl: string | null): WhatsAppMessage {
   return {
     id: row.id,
     phone: row.recipient_phone,
@@ -53,10 +66,11 @@ function mapRow(row: LogRow): WhatsAppMessage {
     fromMe: row.status === 'sent',
     senderName: row.sender_name,
     senderAvatarUrl: row.sender_avatar_url,
-    mediaUrl: row.media_url,
+    mediaUrl: resolvedUrl,
     mediaMime: row.media_mime,
   };
 }
+
 
 function timeLabel(iso: string) {
   const d = new Date(iso);
@@ -108,12 +122,14 @@ export function useWhatsAppChat() {
     setLoading(true);
     const { data, error } = await db
       .from('whatsapp_message_logs')
-      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime')
+      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
       .eq('tenant_id', tenant.id)
       .order('sent_at', { ascending: true })
       .limit(500);
     if (!error && data) {
-      setMessages((data as LogRow[]).map(mapRow));
+      const rows = data as LogRow[];
+      const resolved = await Promise.all(rows.map((r) => resolveMediaUrl(r)));
+      setMessages(rows.map((r, i) => mapRowSync(r, resolved[i])));
     }
     setLoading(false);
   }, [tenant?.id]);
@@ -133,16 +149,18 @@ export function useWhatsAppChat() {
           table: 'whatsapp_message_logs',
           filter: `tenant_id=eq.${tenant.id}`,
         },
-        (payload) => {
+        async (payload) => {
           const row = payload.new as LogRow;
+          const resolved = await resolveMediaUrl(row);
           setMessages((prev) =>
-            prev.some((m) => m.id === row.id) ? prev : [...prev, mapRow(row)]
+            prev.some((m) => m.id === row.id) ? prev : [...prev, mapRowSync(row, resolved)]
           );
         }
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [tenant?.id]);
+
 
   // Agrupa por número, escolhendo o nome/avatar mais recente disponível
   const conversations: WhatsAppConversation[] = (() => {

@@ -1804,6 +1804,7 @@ export type Database = {
           error_message: string | null
           id: string
           media_mime: string | null
+          media_storage_path: string | null
           media_url: string | null
           message_type: string
           recipient_phone: string
@@ -1817,6 +1818,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           media_mime?: string | null
+          media_storage_path?: string | null
           media_url?: string | null
           message_type: string
           recipient_phone: string
@@ -1830,6 +1832,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           media_mime?: string | null
+          media_storage_path?: string | null
           media_url?: string | null
           message_type?: string
           recipient_phone?: string

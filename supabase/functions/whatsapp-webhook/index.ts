@@ -250,6 +250,76 @@ async function downloadMediaViaUazapi(instanceToken: string, messageId: string):
   }
 }
 
+// ── Persistência de mídia no Storage (histórico permanente) ─────────────
+const MEDIA_BUCKET = "whatsapp-media";
+let bucketEnsured = false;
+async function ensureMediaBucket(): Promise<void> {
+  if (bucketEnsured) return;
+  try {
+    const { data } = await adminClient.storage.getBucket(MEDIA_BUCKET);
+    if (!data) {
+      await adminClient.storage.createBucket(MEDIA_BUCKET, {
+        public: false,
+        fileSizeLimit: 50 * 1024 * 1024,
+      });
+      console.log(`[storage] bucket ${MEDIA_BUCKET} criado`);
+    }
+    bucketEnsured = true;
+  } catch (e) {
+    console.error("[storage] ensureBucket erro:", e instanceof Error ? e.message : String(e));
+  }
+}
+
+function extFromMime(mime: string | null | undefined): string {
+  if (!mime) return "bin";
+  const m = mime.split(";")[0].trim().toLowerCase();
+  const map: Record<string, string> = {
+    "image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/webp": "webp",
+    "image/gif": "gif", "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp4": "m4a",
+    "audio/aac": "aac", "audio/wav": "wav", "video/mp4": "mp4", "video/webm": "webm",
+    "video/quicktime": "mov", "application/pdf": "pdf",
+  };
+  if (map[m]) return map[m];
+  const slash = m.indexOf("/");
+  return slash > 0 ? (m.slice(slash + 1).replace(/[^a-z0-9]+/g, "") || "bin") : "bin";
+}
+
+// Baixa a mídia da URL temporária e salva permanentemente no Storage.
+async function persistMediaToStorage(
+  tenantId: string,
+  mediaUrl: string,
+  mime: string | null,
+): Promise<{ path: string; mime: string } | null> {
+  try {
+    await ensureMediaBucket();
+    const res = await fetch(mediaUrl);
+    if (!res.ok) {
+      console.error(`[storage] fetch mídia ${res.status}`);
+      return null;
+    }
+    const finalMime = mime || res.headers.get("content-type") || "application/octet-stream";
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const now = new Date();
+    const yyyy = now.getUTCFullYear();
+    const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const id = crypto.randomUUID();
+    const path = `${tenantId}/${yyyy}/${mm}/${id}.${extFromMime(finalMime)}`;
+    const { error } = await adminClient.storage.from(MEDIA_BUCKET).upload(path, bytes, {
+      contentType: finalMime,
+      upsert: false,
+    });
+    if (error) {
+      console.error("[storage] upload erro:", error.message);
+      return null;
+    }
+    console.log(`[storage] mídia salva: ${path} (${bytes.length} bytes)`);
+    return { path, mime: finalMime };
+  } catch (e) {
+    console.error("[storage] persistMedia erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 // Limpa um identificador de WhatsApp (JID ou telefone) e devolve apenas o número.
 // Retorna null se não for um telefone individual válido (10-13 dígitos).
 function cleanPhone(raw: string | null): string | null {
@@ -440,6 +510,17 @@ Deno.serve(async (req) => {
       }
 
       if (!fromMe && senderPhone) {
+        // Persiste a mídia no Storage (histórico permanente) ─────────────
+        let mediaStoragePath: string | null = null;
+        let finalMime: string | null = media.mime;
+        if (mediaUrl) {
+          const saved = await persistMediaToStorage(tenantId, mediaUrl, media.mime);
+          if (saved) {
+            mediaStoragePath = saved.path;
+            finalMime = saved.mime;
+          }
+        }
+
         const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
           tenant_id: tenantId,
           recipient_phone: senderPhone,
@@ -449,7 +530,8 @@ Deno.serve(async (req) => {
           sender_name: senderName,
           sender_avatar_url: senderAvatarUrl,
           media_url: mediaUrl,
-          media_mime: media.mime,
+          media_mime: finalMime,
+          media_storage_path: mediaStoragePath,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
 
