@@ -231,24 +231,24 @@ function NoShowAnalytics() {
             <CardTitle>Motivos de No-Show</CardTitle>
             <CardDescription>Principais justificativas registradas.</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={reasonsData}
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {reasonsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend layout="vertical" align="right" verticalAlign="middle" />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="h-[300px] flex items-center justify-center">
+            {reasonsData.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center italic px-6">
+                Ainda não há motivos registrados. Os motivos serão capturados automaticamente quando o atendente registrar a causa de uma falta.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={reasonsData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {reasonsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend layout="vertical" align="right" verticalAlign="middle" />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -259,23 +259,21 @@ function NoShowAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { name: 'Ricardo Santos', date: 'Hoje às 10:00', source: 'Google Ads', reason: 'Esquecimento' },
-                { name: 'Julia Paiva', date: 'Ontem às 15:30', source: 'Facebook Ads', reason: 'Trabalho' },
-                { name: 'Marcos Lima', date: '04/06 às 09:00', source: 'Indicação', reason: 'Financeiro' },
-              ].map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+              {recovery.length === 0 && (
+                <p className="text-xs text-muted-foreground italic text-center py-6">Nenhum no-show nos últimos 7 dias.</p>
+              )}
+              {recovery.map((lead) => (
+                <div key={lead.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium text-sm">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.date} • {lead.source}</p>
+                    <p className="text-xs text-muted-foreground">{lead.date}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant="outline" className="text-[10px]">{lead.reason}</Badge>
-                    <Button size="sm" variant="secondary">Reagendar</Button>
+                    <Badge variant="outline" className="text-[10px]">no-show</Badge>
+                    <Button size="sm" variant="secondary" onClick={() => window.location.assign('/agenda')}>Reagendar</Button>
                   </div>
                 </div>
               ))}
-              <Button variant="link" className="w-full text-xs">Ver todos os 28 faltantes →</Button>
             </div>
           </CardContent>
         </Card>
