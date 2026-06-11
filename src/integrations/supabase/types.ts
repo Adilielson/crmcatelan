@@ -876,6 +876,8 @@ export type Database = {
           notes: string | null
           payment_method: string | null
           phone: string | null
+          prescription_image_path: string | null
+          prescription_ocr_at: string | null
           priority: string | null
           products_sold: string | null
           sales_value: number | null
@@ -913,6 +915,8 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           phone?: string | null
+          prescription_image_path?: string | null
+          prescription_ocr_at?: string | null
           priority?: string | null
           products_sold?: string | null
           sales_value?: number | null
@@ -950,6 +954,8 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           phone?: string | null
+          prescription_image_path?: string | null
+          prescription_ocr_at?: string | null
           priority?: string | null
           products_sold?: string | null
           sales_value?: number | null
