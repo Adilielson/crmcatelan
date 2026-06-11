@@ -93,9 +93,9 @@ function buildFallbackUser(userId: string, email: string): User {
     id: userId,
     email,
     name: email || 'Usuário',
-    role: 'attendant',
+    role: 'seller',
     tenant_id: DEV_TENANT_ID,
-  } as User;
+  };
 }
 
 async function loadProfile(
