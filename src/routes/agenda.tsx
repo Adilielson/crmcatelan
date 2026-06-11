@@ -36,6 +36,9 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { TodayFollowupsTab } from '@/components/agenda/TodayFollowupsTab'
+import { useTodayFollowups } from '@/hooks/use-followups'
 
 export const Route = createFileRoute('/agenda')({
   component: Agenda,
@@ -193,7 +196,17 @@ function Agenda() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <Tabs defaultValue="agenda" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="agenda">📅 Agenda do dia</TabsTrigger>
+          <TabsTrigger value="followups">
+            🔔 Follow-ups de hoje
+            <FollowupsCountBadge />
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agenda">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendário */}
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white border border-[#E3E6EB] rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-hidden">
@@ -402,6 +415,14 @@ function Agenda() {
           </div>
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="followups">
+          <TodayFollowupsTab />
+        </TabsContent>
+      </Tabs>
+
+
 
       {/* Modal Novo Agendamento */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -478,3 +499,14 @@ function Agenda() {
     </div>
   )
 }
+
+function FollowupsCountBadge() {
+  const { data = [] } = useTodayFollowups()
+  if (data.length === 0) return null
+  return (
+    <Badge className="ml-2 h-5 px-1.5 bg-primary/20 text-primary border-none font-black text-[10px]">
+      {data.length}
+    </Badge>
+  )
+}
+

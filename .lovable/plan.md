@@ -84,9 +84,24 @@ Mapeamento de etapas no Kanban atual + regras de SLA, automações e follow-up p
 
 ---
 
-### Perguntas antes de codar
+## 🗺️ Holdmap (próximas implementações)
 
-1. **Cadência D+3/7/15/30/90/180** está boa ou quer ajustar (ex: mais agressivo nos primeiros 30 dias)?
-2. **Auto-envio de WhatsApp** ou apenas criar a tarefa e atendente confirma o envio? (auto = mais conversão, manual = mais controle)
-3. Quer que eu já implemente **tudo numa tacada** ou prefere fasear (ex: fase 1 = colunas novas + dialog de fechamento; fase 2 = follow-up automático)?
-4. **Comissão por venda** entra agora? (poderia registrar % do `sales_value` por atendente em `professional_performance`)
+### IA — Detecção automática de resposta do lead
+**Objetivo:** quando o lead em `Follow-up` responder no WhatsApp, mover automaticamente para `Em Negociação` e marcar os toques pendentes como `responded`.
+
+**Escopo:**
+- Hook no webhook do WhatsApp (`whatsapp-webhook`): ao receber mensagem de número cujo lead está em `followup`, disparar fluxo.
+- IA classifica intenção da resposta (interesse / desinteresse / dúvida / pedido de tempo).
+  - Interesse / dúvida → mover para `Em Negociação` + cancelar follow-ups pendentes.
+  - Desinteresse explícito ("não quero") → mover para `Perdido`.
+  - Pedido de tempo ("me liga mês que vem") → reagendar próximo toque.
+- Botão manual "Marcar como respondido" no card (fallback enquanto IA não estiver pronta) — **não implementado de propósito**, fica para depois.
+- Registrar `response_at` em `lead_followups` e summary em `lead_pipeline_history`.
+
+**Dependências:** ai_configs já existe; precisa expor endpoint de classificação no edge function ou server function.
+
+### Perguntas pendentes (do escopo anterior)
+1. **Comissão por venda** — registrar % do `sales_value` por atendente em `professional_performance`?
+2. **Templates editáveis** — UI de Configurações para editar as 8 mensagens de follow-up.
+3. **Reagendamento de toque** — atendente poder atrasar/adiantar um toque específico.
+
