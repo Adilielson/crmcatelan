@@ -63,7 +63,17 @@ function Chat() {
     )
   }, [conversations, search])
 
-  const currentLead = leads[0]
+  // Casar o lead com o telefone da conversa selecionada (normalizando dígitos)
+  const currentLead = useMemo(() => {
+    if (!selectedPhone) return leads[0]
+    const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
+    const target = onlyDigits(selectedPhone)
+    return (
+      leads.find((l) => onlyDigits(l.phone) === target) ||
+      leads.find((l) => target.endsWith(onlyDigits(l.phone)) && onlyDigits(l.phone).length >= 8) ||
+      leads[0]
+    )
+  }, [leads, selectedPhone])
 
   // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
   useEffect(() => {
