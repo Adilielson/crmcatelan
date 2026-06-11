@@ -41,8 +41,8 @@ export async function checkInstanceStatus(token: string): Promise<InstanceStatus
       headers: makeHeaders(token),
     });
     return handleResponse<InstanceStatus>(res);
-  } catch {
-    throw new Error('Não foi possível verificar o status da instância.');
+  } catch (err) {
+    throw err instanceof Error ? err : new Error('Não foi possível verificar o status da instância.');
   }
 }
 
@@ -53,8 +53,8 @@ export async function getQRCode(token: string): Promise<QRCodeResponse> {
       headers: makeHeaders(token),
     });
     return handleResponse<QRCodeResponse>(res);
-  } catch {
-    throw new Error('Não foi possível obter o QR Code.');
+  } catch (err) {
+    throw err instanceof Error ? err : new Error('Não foi possível obter o QR Code.');
   }
 }
 
@@ -65,8 +65,8 @@ export async function disconnectInstance(token: string): Promise<void> {
       headers: makeHeaders(token),
     });
     await handleResponse<unknown>(res);
-  } catch {
-    throw new Error('Não foi possível desconectar a instância.');
+  } catch (err) {
+    throw err instanceof Error ? err : new Error('Não foi possível desconectar a instância.');
   }
 }
 
@@ -78,8 +78,8 @@ export async function sendTextMessage(token: string, phone: string, text: string
       body: JSON.stringify({ number: phone, text }),
     });
     await handleResponse<unknown>(res);
-  } catch {
-    throw new Error('Não foi possível enviar a mensagem de texto.');
+  } catch (err) {
+    throw err instanceof Error ? err : new Error('Não foi possível enviar a mensagem de texto.');
   }
 }
 
@@ -96,7 +96,7 @@ export async function sendImageMessage(
       body: JSON.stringify({ number: phone, imageUrl, caption }),
     });
     await handleResponse<unknown>(res);
-  } catch {
-    throw new Error('Não foi possível enviar a imagem.');
+  } catch (err) {
+    throw err instanceof Error ? err : new Error('Não foi possível enviar a imagem.');
   }
 }
