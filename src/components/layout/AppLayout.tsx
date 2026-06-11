@@ -31,16 +31,20 @@ const AppLayout = () => {
   }, []);
 
   useEffect(() => {
-    console.log('[layout] 🔍 guard check', {
-      loading,
-      hasUser: !!user,
-      pathname: location.pathname,
-      willRedirect: !loading && !user && location.pathname !== '/login',
-    });
-    if (!loading && !user && location.pathname !== '/login') {
-      console.log('[layout] ➡️ redirecionando para /login');
-      navigate({ to: '/login' });
-    }
+    if (loading || user || location.pathname === '/login') return;
+    // Antes de redirecionar, confirma que NÃO existe sessão persistida.
+    // Evita logout indevido durante janelas de rebuild/refresh do preview.
+    let cancelled = false;
+    import('@/integrations/supabase/client').then(({ supabase }) =>
+      supabase.auth.getSession().then(({ data }) => {
+        if (cancelled) return;
+        if (!data.session) {
+          console.log('[layout] ➡️ sem sessão — redirecionando para /login');
+          navigate({ to: '/login' });
+        }
+      }),
+    );
+    return () => { cancelled = true; };
   }, [loading, user, location.pathname]);
 
   const menuItems = [
