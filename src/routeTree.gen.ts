@@ -24,6 +24,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MChatRouteImport } from './routes/m.chat'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 
@@ -102,6 +103,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MChatRoute = MChatRouteImport.update({
+  id: '/m/chat',
+  path: '/m/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
   id: '/analytics/no-show',
   path: '/analytics/no-show',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/m/chat': typeof MChatRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesByTo {
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/m/chat': typeof MChatRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesById {
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/m/chat': typeof MChatRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRouteTypes {
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/m/chat'
     | '/api/public/hooks/process-followups'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/m/chat'
     | '/api/public/hooks/process-followups'
   id:
     | '__root__'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/m/chat'
     | '/api/public/hooks/process-followups'
   fileRoutesById: FileRoutesById
 }
@@ -249,6 +261,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
+  MChatRoute: typeof MChatRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
 }
 
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/m/chat': {
+      id: '/m/chat'
+      path: '/m/chat'
+      fullPath: '/m/chat'
+      preLoaderRoute: typeof MChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics/no-show': {
       id: '/analytics/no-show'
       path: '/analytics/no-show'
@@ -393,8 +413,19 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
+  MChatRoute: MChatRoute,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
