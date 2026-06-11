@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
 import {
   Search,
@@ -9,8 +9,10 @@ import {
   CheckCheck,
   MessageSquare,
   Brain,
+  CalendarCheck,
   LogIn,
 } from 'lucide-react'
+
 
 import {
   useWhatsAppChat,
