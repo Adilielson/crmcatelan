@@ -98,9 +98,7 @@ async function loadProfile(
       tenant_id: profile.tenant_id,
     };
 
-    const tenant = profile.role === 'super_admin'
-      ? null
-      : ((profile.tenants as Tenant | null) ?? null);
+    const tenant = (profile.tenants as Tenant | null) ?? null;
 
     set({ user, tenant, loading: false });
   } catch (e) {
