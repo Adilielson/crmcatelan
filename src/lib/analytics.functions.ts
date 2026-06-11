@@ -200,6 +200,7 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
     if (data.unitId) trendQ = trendQ.eq('unit_id', data.unitId)
     const { data: trendRows } = await trendQ
     for (const a of trendRows ?? []) {
+      if (!a.scheduled_at) continue
       const d = new Date(a.scheduled_at)
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       if (!monthMap[k]) monthMap[k] = { compareceu: 0, noShow: 0, cancelado: 0 }
@@ -217,7 +218,7 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
     // No-show by source — JOIN leads
     let sourceData: Array<{ name: string; value: number; noShow: number }> = []
     if (list.length > 0) {
-      const leadIds = Array.from(new Set(list.map((a) => a.lead_id).filter(Boolean) as string[]))
+      const leadIds = Array.from(new Set(list.map((a) => a.lead_id).filter((v): v is string => !!v)))
       if (leadIds.length > 0) {
         const { data: leadRows } = await supabase
           .from('leads')
@@ -243,13 +244,15 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
     const sevenAgo = new Date()
     sevenAgo.setDate(sevenAgo.getDate() - 7)
     const recovery = list
-      .filter((a) => a.status === 'no_show' && new Date(a.scheduled_at) >= sevenAgo)
-      .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())
+      .filter((a) => a.status === 'no_show' && a.scheduled_at && new Date(a.scheduled_at) >= sevenAgo)
+      .sort((a, b) => new Date(b.scheduled_at ?? 0).getTime() - new Date(a.scheduled_at ?? 0).getTime())
       .slice(0, 5)
       .map((a) => ({
         id: a.id,
         name: a.lead_name || 'Sem nome',
-        date: new Date(a.scheduled_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+        date: a.scheduled_at
+          ? new Date(a.scheduled_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+          : '',
       }))
 
     return {
