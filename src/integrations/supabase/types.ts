@@ -546,6 +546,62 @@ export type Database = {
           },
         ]
       }
+      lead_followups: {
+        Row: {
+          channel: string
+          created_at: string
+          day_offset: number
+          error_message: string | null
+          id: string
+          lead_id: string
+          response_at: string | null
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          day_offset: number
+          error_message?: string | null
+          id?: string
+          lead_id: string
+          response_at?: string | null
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string
+          template_key: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          day_offset?: number
+          error_message?: string | null
+          id?: string
+          lead_id?: string
+          response_at?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          template_key?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_pipeline_history: {
         Row: {
           changed_by: string | null
@@ -594,6 +650,7 @@ export type Database = {
       leads: {
         Row: {
           assigned_user_id: string | null
+          closed_at: string | null
           created_at: string | null
           custom_column_id: string | null
           email: string | null
@@ -606,8 +663,10 @@ export type Database = {
           id: string
           next_contact_at: string | null
           notes: string | null
+          payment_method: string | null
           phone: string | null
           priority: string | null
+          products_sold: string | null
           sales_value: number | null
           score_ia: number | null
           source: string | null
@@ -620,6 +679,7 @@ export type Database = {
         }
         Insert: {
           assigned_user_id?: string | null
+          closed_at?: string | null
           created_at?: string | null
           custom_column_id?: string | null
           email?: string | null
@@ -632,8 +692,10 @@ export type Database = {
           id?: string
           next_contact_at?: string | null
           notes?: string | null
+          payment_method?: string | null
           phone?: string | null
           priority?: string | null
+          products_sold?: string | null
           sales_value?: number | null
           score_ia?: number | null
           source?: string | null
@@ -646,6 +708,7 @@ export type Database = {
         }
         Update: {
           assigned_user_id?: string | null
+          closed_at?: string | null
           created_at?: string | null
           custom_column_id?: string | null
           email?: string | null
@@ -658,8 +721,10 @@ export type Database = {
           id?: string
           next_contact_at?: string | null
           notes?: string | null
+          payment_method?: string | null
           phone?: string | null
           priority?: string | null
+          products_sold?: string | null
           sales_value?: number | null
           score_ia?: number | null
           source?: string | null
@@ -1625,6 +1690,8 @@ export type Database = {
         | "showed_up"
         | "no_show"
         | "lost"
+        | "negotiating"
+        | "followup"
       log_severity: "info" | "warning" | "critical"
       marketing_platform: "facebook_ads" | "google_ads" | "tiktok_ads"
       message_direction: "inbound" | "outbound"
@@ -1788,6 +1855,8 @@ export const Constants = {
         "showed_up",
         "no_show",
         "lost",
+        "negotiating",
+        "followup",
       ],
       log_severity: ["info", "warning", "critical"],
       marketing_platform: ["facebook_ads", "google_ads", "tiktok_ads"],
