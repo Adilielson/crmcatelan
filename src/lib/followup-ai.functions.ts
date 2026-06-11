@@ -125,7 +125,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       .from("lead_followups")
       .select("id, lead_id, template_key, channel, day_offset")
       .eq("id", data.followupId)
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
     if (fErr) throw new Error(fErr.message);
     if (!followup) throw new Error("Follow-up não encontrado");
@@ -135,7 +135,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       .from("leads")
       .select("id, full_name, phone")
       .eq("id", (followup as any).lead_id)
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
     if (lErr) throw new Error(lErr.message);
     if (!lead) throw new Error("Lead não encontrado");
@@ -145,7 +145,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       .from("lead_consultation_summary")
       .select("*")
       .eq("lead_id", (followup as any).lead_id)
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false })
       .limit(1);
     const summary = (summaryRows ?? [])[0] ?? null;
@@ -154,7 +154,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
     const { data: cfg } = await supabase
       .from("ai_configs")
       .select("scheduling_link, prompt_system, model_temperature")
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
 
     const { system, user } = buildPrompt({
@@ -166,7 +166,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       schedulingLink: (cfg as any)?.scheduling_link ?? null,
     });
 
-    const cred = await getTenantAiKey(DEV_TENANT_ID, "openai");
+    const cred = await getTenantAiKey(tenantId, "openai");
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -196,7 +196,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
 
     const usage = json?.usage ?? {};
     await logAiUsage({
-      tenantId: DEV_TENANT_ID,
+      tenantId: tenantId,
       provider: "openai",
       model: cred.model,
       tokensInput: Number(usage.prompt_tokens) || 0,
