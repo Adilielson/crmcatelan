@@ -853,6 +853,8 @@ export type Database = {
       leads: {
         Row: {
           assigned_user_id: string | null
+          claimed_at: string | null
+          claimed_by: string | null
           closed_at: string | null
           created_at: string | null
           custom_column_id: string | null
@@ -888,6 +890,8 @@ export type Database = {
         }
         Insert: {
           assigned_user_id?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           closed_at?: string | null
           created_at?: string | null
           custom_column_id?: string | null
@@ -923,6 +927,8 @@ export type Database = {
         }
         Update: {
           assigned_user_id?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           closed_at?: string | null
           created_at?: string | null
           custom_column_id?: string | null
@@ -960,6 +966,13 @@ export type Database = {
           {
             foreignKeyName: "leads_assigned_user_id_fkey"
             columns: ["assigned_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_claimed_by_fkey"
+            columns: ["claimed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1186,6 +1199,7 @@ export type Database = {
       notification_preferences: {
         Row: {
           category: Database["public"]["Enums"]["notification_category"]
+          channel: string
           email_enabled: boolean | null
           id: string
           in_app_enabled: boolean | null
@@ -1194,6 +1208,7 @@ export type Database = {
         }
         Insert: {
           category: Database["public"]["Enums"]["notification_category"]
+          channel?: string
           email_enabled?: boolean | null
           id?: string
           in_app_enabled?: boolean | null
@@ -1202,6 +1217,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["notification_category"]
+          channel?: string
           email_enabled?: boolean | null
           id?: string
           in_app_enabled?: boolean | null
@@ -1418,6 +1434,7 @@ export type Database = {
           full_name: string | null
           id: string
           last_login_at: string | null
+          notification_phone: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           status: string | null
@@ -1433,6 +1450,7 @@ export type Database = {
           full_name?: string | null
           id: string
           last_login_at?: string | null
+          notification_phone?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: string | null
@@ -1448,6 +1466,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_login_at?: string | null
+          notification_phone?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: string | null
