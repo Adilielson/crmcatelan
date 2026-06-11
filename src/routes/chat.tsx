@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, FileText, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff } from 'lucide-react'
+import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, FileText, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff, Mic, Square, Image as ImageIcon, X } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useLeads, useUpdateLead } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
@@ -26,7 +26,7 @@ export const Route = createFileRoute('/chat')({
 function Chat() {
   const { phone: phoneFromUrl } = Route.useSearch()
   const { conversations, loading } = useWhatsAppChat()
-  const { sendText, isConnected: waConnected } = useWhatsApp()
+  const { sendText, sendImage, sendAudio, isConnected: waConnected } = useWhatsApp()
   const { data: leads = [] } = useLeads()
   const updateLeadMutation = useUpdateLead()
   const [activeTab, setActiveTab] = useState('ia')
