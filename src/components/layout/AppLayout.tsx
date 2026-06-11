@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useAuthStore } from '@/hooks/use-auth';
 import {
   LayoutDashboard,
@@ -15,68 +15,10 @@ import {
   ListOrdered,
   UsersRound,
   Contact,
-  ShieldAlert,
-  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { NotificationCenter } from './NotificationCenter';
-import { toast } from 'sonner';
-
-const SecurityReviewBanner = ({ dismissed, onDismiss, onRestore }: { dismissed: boolean; onDismiss: () => void; onRestore: () => void }) => {
-  if (dismissed) {
-    return (
-      <button
-        onClick={onRestore}
-        className="fixed top-4 right-4 z-[100] bg-amber-500 hover:bg-amber-400 text-black rounded-full p-2 shadow-lg transition-all"
-        title="Modo Security Review ativo"
-      >
-        <ShieldAlert className="w-5 h-5" />
-      </button>
-    );
-  }
-
-  return (
-    <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shrink-0">
-      <div className="flex items-center justify-between px-6 py-3 max-w-[1600px] mx-auto">
-        <div className="flex items-center gap-3">
-          <ShieldAlert className="w-5 h-5 shrink-0" />
-          <div className="flex items-center gap-2">
-            <span className="font-black text-sm uppercase tracking-wider">
-              Modo Security Review Ativo
-            </span>
-            <span className="text-sm font-semibold opacity-90">
-              — Não expira automaticamente
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              toast('Para sair do modo Security Review, troque o seletor no topo do chat para Default/Build.', {
-                duration: 10000,
-                icon: <ArrowRight className="w-4 h-4" />,
-              });
-            }}
-            className="bg-black/20 hover:bg-black/30 text-black font-black text-xs uppercase tracking-wider px-4 py-2 rounded-lg transition-all flex items-center gap-2"
-          >
-            Sair do Modo Security Review
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={onDismiss}
-            className="bg-black/20 hover:bg-black/30 text-black font-black text-xs uppercase tracking-wider px-3 py-2 rounded-lg transition-all"
-            title="Minimizar"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
 
 const AppLayout = () => {
   const { user, loading, tenant, logout, initialize } = useAuthStore();
@@ -132,8 +74,6 @@ const AppLayout = () => {
     menuItems.push({ label: 'Admin SaaS', icon: ShieldCheck, href: '/saas' });
   }
 
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-
   if (loading) return (
     <div className="min-h-screen bg-[#0E0E11] flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-[#FFC400] border-t-transparent rounded-full animate-spin" />
@@ -146,13 +86,7 @@ const AppLayout = () => {
   if (location.pathname.startsWith('/m')) return <Outlet />;
 
   return (
-    <>
-      <SecurityReviewBanner
-        dismissed={bannerDismissed}
-        onDismiss={() => setBannerDismissed(true)}
-        onRestore={() => setBannerDismissed(false)}
-      />
-      <div className="flex h-screen bg-[#F6F7F9] relative z-10 text-ink font-jakarta">
+    <div className="flex h-full bg-[#F6F7F9] relative z-10 text-ink font-jakarta">
       <aside className="w-64 bg-[#0E0E11] border-r border-[#23232B] flex flex-col shrink-0">
         <div className="p-8 border-b border-[#23232B]">
           <div className="flex items-center gap-3 mb-6">
@@ -244,7 +178,6 @@ const AppLayout = () => {
         </div>
       </main>
     </div>
-    </>
   );
 };
 
