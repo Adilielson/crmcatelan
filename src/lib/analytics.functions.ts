@@ -276,3 +276,111 @@ export const getTenantUnits = createServerFn({ method: 'GET' })
     if (error) throw error
     return data ?? []
   })
+
+const IAPerfInput = z.object({
+  period: z.enum(['weekly', 'monthly', 'yearly']).default('monthly'),
+})
+
+export const getIAPerformanceMetrics = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => IAPerfInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context
+    const periodDays = { weekly: 7, monthly: 30, yearly: 365 }[data.period]
+    const since = new Date()
+    since.setDate(since.getDate() - periodDays)
+    const sinceISO = since.toISOString()
+    const prevSince = new Date(since)
+    prevSince.setDate(prevSince.getDate() - periodDays)
+    const prevSinceISO = prevSince.toISOString()
+
+    // Current period leads (those touched by IA: have score_ia or ia_summary)
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('id, score_ia, ia_summary, status, created_at')
+      .gte('created_at', sinceISO)
+
+    const { data: leadsPrev } = await supabase
+      .from('leads')
+      .select('id, score_ia, ia_summary')
+      .gte('created_at', prevSinceISO)
+      .lt('created_at', sinceISO)
+
+    const cur = leads ?? []
+    const prev = leadsPrev ?? []
+
+    const processed = cur.filter((l) => l.score_ia != null || l.ia_summary).length
+    const qualified = cur.filter((l) => (l.score_ia ?? 0) >= 70).length
+    const disqualified = cur.filter((l) => l.score_ia != null && (l.score_ia ?? 0) < 70).length
+
+    const processedPrev = prev.filter((l) => l.score_ia != null || l.ia_summary).length
+    const qualifiedPrev = prev.filter((l) => (l.score_ia ?? 0) >= 70).length
+    const disqualifiedPrev = prev.filter((l) => l.score_ia != null && (l.score_ia ?? 0) < 70).length
+
+    // Hours saved: count outbound AI messages × 2 minutes average handling time
+    const { count: aiMsgCount } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('direction', 'outbound')
+      .gte('created_at', sinceISO)
+    const { count: aiMsgPrev } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('direction', 'outbound')
+      .gte('created_at', prevSinceISO)
+      .lt('created_at', sinceISO)
+
+    const hoursSaved = Math.round(((aiMsgCount ?? 0) * 2) / 60)
+    const hoursSavedPrev = Math.round(((aiMsgPrev ?? 0) * 2) / 60)
+
+    const delta = (n: number, p: number) => {
+      if (!p) return n > 0 ? 100 : 0
+      return Math.round(((n - p) / p) * 100)
+    }
+
+    const stats = {
+      processed: { value: processed, change: delta(processed, processedPrev) },
+      qualified: { value: qualified, change: delta(qualified, qualifiedPrev) },
+      disqualified: { value: disqualified, change: delta(disqualified, disqualifiedPrev) },
+      hoursSaved: { value: hoursSaved, change: delta(hoursSaved, hoursSavedPrev) },
+    }
+
+    // Funnel: progressive qualification stages
+    const contacted = cur.filter((l) => l.ia_summary || l.score_ia != null).length
+    const identified = cur.filter((l) => l.score_ia != null).length
+    const financial = cur.filter((l) => (l.score_ia ?? 0) >= 50).length
+    const ready = qualified
+    const base = Math.max(contacted, 1)
+    const funnelData = [
+      { label: 'Primeiro Contato', count: contacted, percentage: 100 },
+      { label: 'Identificação de Necessidade', count: identified, percentage: Math.round((identified / base) * 100) },
+      { label: 'Qualificação Financeira', count: financial, percentage: Math.round((financial / base) * 100) },
+      { label: 'Pronto para Agendamento', count: ready, percentage: Math.round((ready / base) * 100) },
+    ]
+
+    // Drop-off reasons from lead_consultation_summary.no_close_reason
+    const { data: reasonRows } = await supabase
+      .from('lead_consultation_summary')
+      .select('no_close_reason')
+      .gte('created_at', sinceISO)
+      .not('no_close_reason', 'is', null)
+
+    const reasonAgg: Record<string, number> = {}
+    for (const r of reasonRows ?? []) {
+      const k = (r.no_close_reason || '').trim()
+      if (!k) continue
+      reasonAgg[k] = (reasonAgg[k] ?? 0) + 1
+    }
+    const reasonTotal = Object.values(reasonAgg).reduce((a, b) => a + b, 0)
+    const palette = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-purple-500']
+    const dropOffReasons = Object.entries(reasonAgg)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([question, count], i) => ({
+        question,
+        drop: reasonTotal ? Math.round((count / reasonTotal) * 100) : 0,
+        color: palette[i % palette.length],
+      }))
+
+    return { stats, funnelData, dropOffReasons }
+  })
