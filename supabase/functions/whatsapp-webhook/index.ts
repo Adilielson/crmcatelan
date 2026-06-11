@@ -212,8 +212,29 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Shared-secret check — uazapi não assina HMAC, então usamos token
+  // configurável via WHATSAPP_WEBHOOK_SECRET (querystring `secret` ou header
+  // `x-webhook-secret`). Sem isso, qualquer um pode forjar mensagens.
+  const expectedSecret = Deno.env.get("WHATSAPP_WEBHOOK_SECRET");
+  if (!expectedSecret) {
+    console.error("[webhook] WHATSAPP_WEBHOOK_SECRET ausente");
+    return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+      status: 503,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const url = new URL(req.url);
+  const providedSecret =
+    url.searchParams.get("secret") || req.headers.get("x-webhook-secret") || "";
+  if (providedSecret !== expectedSecret) {
+    console.warn("[webhook] secret inválido");
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const url = new URL(req.url);
     let tenantId = url.searchParams.get("tenant_id") || DEFAULT_TENANT_ID;
     if (tenantId.includes("/")) tenantId = tenantId.split("/")[0];
 
