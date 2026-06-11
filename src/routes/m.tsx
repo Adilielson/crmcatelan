@@ -27,18 +27,18 @@ type NavItem = {
 
 const ATENDENTE_NAV: NavItem[] = [
   { to: '/m/chat', label: 'Conversas', icon: MessageSquare, match: (p) => p.startsWith('/m/chat') },
-  { to: '/m/leads', label: 'Leads', icon: Users },
-  { to: '/m/agenda', label: 'Hoje', icon: CalendarDays },
-  { to: '/m/buscar', label: 'Buscar', icon: Search },
-  { to: '/m/eu', label: 'Eu', icon: User },
+  { to: '/m/leads', label: 'Leads', icon: Users, match: (p) => p.startsWith('/m/leads') },
+  { to: '/m/agenda', label: 'Hoje', icon: CalendarDays, match: (p) => p.startsWith('/m/agenda') },
+  { to: '/m/buscar', label: 'Buscar', icon: Search, match: (p) => p.startsWith('/m/buscar') },
+  { to: '/m/eu', label: 'Eu', icon: User, match: (p) => p.startsWith('/m/eu') },
 ]
 
 const GERENTE_NAV: NavItem[] = [
-  { to: '/m/dashboard', label: 'Visão', icon: LayoutDashboard },
-  { to: '/m/equipe', label: 'Equipe', icon: UsersRound },
+  { to: '/m/dashboard', label: 'Visão', icon: LayoutDashboard, match: (p) => p.startsWith('/m/dashboard') },
+  { to: '/m/equipe', label: 'Equipe', icon: UsersRound, match: (p) => p.startsWith('/m/equipe') },
   { to: '/m/chat', label: 'Conversas', icon: MessageSquare, match: (p) => p.startsWith('/m/chat') },
-  { to: '/m/funil', label: 'Funil', icon: GitBranch },
-  { to: '/m/alertas', label: 'Alertas', icon: Bell },
+  { to: '/m/funil', label: 'Funil', icon: GitBranch, match: (p) => p.startsWith('/m/funil') },
+  { to: '/m/alertas', label: 'Alertas', icon: Bell, match: (p) => p.startsWith('/m/alertas') },
 ]
 
 function isManagerRole(role?: string | null) {
