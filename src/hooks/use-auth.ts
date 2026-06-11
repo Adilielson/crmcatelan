@@ -34,12 +34,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (_initialized) return;
     _initialized = true;
 
+    // Safety net: nunca deixa o spinner infinito — se em 10s o auth não
+    // resolver (rede, rebuild do servidor, sessão corrompida), libera a UI.
+    setTimeout(() => {
+      if (get().loading) {
+        console.warn('[auth] ⏱️ timeout de inicialização — forçando loading=false');
+        set({ loading: false });
+      }
+    }, 10000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         loadProfile(session.user.id, session.user.email ?? '', set, get);
       } else {
         set({ loading: false });
       }
+    }).catch((e) => {
+      console.error('[auth] getSession falhou', e);
+      set({ loading: false });
     });
 
     supabase.auth.onAuthStateChange((event, session) => {
