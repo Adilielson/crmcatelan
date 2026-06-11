@@ -422,8 +422,21 @@ Deno.serve(async (req) => {
       const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
       console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} type=${msgType} media=${media.url ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
-      if (!fromMe && (!media.url || msgType === "document")) {
-        console.log(`[webhook][debug] raw body keys=${JSON.stringify(Object.keys(b))} message=${JSON.stringify(message).slice(0, 1500)} root=${JSON.stringify(b).slice(0, 1500)}`);
+
+      // URLs do WhatsApp (mmg.whatsapp.net) são criptografadas — baixa via uazapi
+      let mediaUrl = media.url;
+      if (mediaUrl && /whatsapp\.net/.test(mediaUrl)) {
+        const instanceToken = pickString(b.token);
+        const messageId = pickString(message.messageid, message.id);
+        if (instanceToken && messageId) {
+          const downloaded = await downloadMediaViaUazapi(instanceToken, messageId);
+          if (downloaded) {
+            mediaUrl = downloaded;
+            console.log(`[media] download ok: ${downloaded.slice(0, 120)}`);
+          } else {
+            console.warn("[media] download falhou, mantendo URL original");
+          }
+        }
       }
 
       if (!fromMe && senderPhone) {
@@ -435,7 +448,7 @@ Deno.serve(async (req) => {
           error_message: text ? text.slice(0, 500) : null,
           sender_name: senderName,
           sender_avatar_url: senderAvatarUrl,
-          media_url: media.url,
+          media_url: mediaUrl,
           media_mime: media.mime,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
