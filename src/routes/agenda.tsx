@@ -36,6 +36,9 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { TodayFollowupsTab } from '@/components/agenda/TodayFollowupsTab'
+import { useTodayFollowups } from '@/hooks/use-followups'
 
 export const Route = createFileRoute('/agenda')({
   component: Agenda,
@@ -193,7 +196,7 @@ function Agenda() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <AgendaTabs />
         {/* Calendário */}
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white border border-[#E3E6EB] rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-hidden">
