@@ -492,6 +492,12 @@ function SaaSAdmin() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="credenciais" className="space-y-6 pt-4">
+          <AiCredentialsTab />
+        </TabsContent>
+
+
+
         <TabsContent value="security" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
