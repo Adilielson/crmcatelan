@@ -1,259 +1,332 @@
 import React, { useState } from 'react';
-import { UserPlus, Search, Filter, MoreHorizontal, Shield, Building2, Clock, Mail, Phone, Lock } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { UserPlus, Search, MoreHorizontal, Copy, KeyRound, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
+  DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useUserStore } from '@/store/useUserStore';
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+import {
+  listTeam, createTeamMember, updateTeamMember, regenerateTeamMemberPassword,
+} from '@/lib/team.functions';
+import { useAuthStore } from '@/hooks/use-auth';
 
-const UserManagement = () => {
-  const { users, addUser, updateUser, deleteUser } = useUserStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [newUser, setNewUser] = useState({
-    full_name: '',
-    email: '',
-    role: 'seller' as const,
-    units: [] as string[]
+type Member = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string;
+  status: string;
+  phone: string | null;
+  notification_phone: string | null;
+  last_login_at: string | null;
+};
+
+const roleLabel: Record<string, string> = {
+  admin: 'Administrador',
+  manager: 'Gerente',
+  seller: 'Atendente',
+  super_admin: 'Super Admin',
+};
+
+export default function UserManagement() {
+  const { user } = useAuthStore();
+  const qc = useQueryClient();
+  const fetchList = useServerFn(listTeam);
+  const createFn = useServerFn(createTeamMember);
+  const updateFn = useServerFn(updateTeamMember);
+  const regenFn = useServerFn(regenerateTeamMemberPassword);
+
+  const [search, setSearch] = useState('');
+  const [openCreate, setOpenCreate] = useState(false);
+  const [form, setForm] = useState({
+    full_name: '', email: '', phone: '', notification_phone: '', role: 'seller' as 'admin' | 'manager' | 'seller',
+  });
+  const [credentialDialog, setCredentialDialog] = useState<{
+    open: boolean; email: string; password: string;
+  }>({ open: false, email: '', password: '' });
+  const [copied, setCopied] = useState(false);
+
+  const canManage = user && ['admin', 'manager', 'super_admin'].includes(user.role);
+
+  const { data: members = [], isLoading } = useQuery({
+    queryKey: ['team-members'],
+    queryFn: () => fetchList(),
+    enabled: !!canManage,
   });
 
-  const filteredUsers = users.filter(user => 
-    user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const createMut = useMutation({
+    mutationFn: (input: typeof form) => createFn({ data: input }),
+    onSuccess: (res) => {
+      toast.success('Colaborador cadastrado');
+      setCredentialDialog({ open: true, email: res.email, password: res.password });
+      setOpenCreate(false);
+      setForm({ full_name: '', email: '', phone: '', notification_phone: '', role: 'seller' });
+      qc.invalidateQueries({ queryKey: ['team-members'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-  const handleInviteUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    addUser({
-      ...newUser,
-      status: 'pending',
-      units: (newUser.role as string) === 'admin' ? ['Todas as Unidades'] : ['Unidade Sul'] // Mock logic
-    });
-    setNewUser({ full_name: '', email: '', role: 'seller', units: [] });
-    setIsInviteModalOpen(false);
+  const toggleStatusMut = useMutation({
+    mutationFn: (m: Member) =>
+      updateFn({ data: { id: m.id, status: m.status === 'active' ? 'inactive' : 'active' } }),
+    onSuccess: () => {
+      toast.success('Status atualizado');
+      qc.invalidateQueries({ queryKey: ['team-members'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const regenMut = useMutation({
+    mutationFn: (id: string) => regenFn({ data: { id } }),
+    onSuccess: (res, id) => {
+      const m = (members as Member[]).find((x) => x.id === id);
+      setCredentialDialog({ open: true, email: m?.email ?? '', password: res.password });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const filtered = (members as Member[]).filter((m) => {
+    const q = search.toLowerCase();
+    return (
+      (m.full_name ?? '').toLowerCase().includes(q) ||
+      (m.email ?? '').toLowerCase().includes(q) ||
+      (m.phone ?? '').includes(q)
+    );
+  });
+
+  const copyPassword = async () => {
+    await navigator.clipboard.writeText(credentialDialog.password);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const getRoleBadge = (role: string) => {
-    const roles: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      admin: { label: 'Administrador', variant: 'default' },
-      manager: { label: 'Gerente', variant: 'secondary' },
-      seller: { label: 'Atendente', variant: 'outline' },
-    };
-    const r = roles[role] || { label: role, variant: 'outline' };
-    return <Badge variant={r.variant}>{r.label}</Badge>;
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      active: 'default',
-      pending: 'secondary',
-      inactive: 'destructive',
-    };
-    return <Badge variant={variants[status] || 'outline'}>
-      {status === 'active' ? 'Ativo' : status === 'pending' ? 'Pendente' : 'Inativo'}
-    </Badge>;
-  };
+  if (!canManage) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        Apenas administradores e gerentes podem gerenciar a equipe.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-1 h-1 rounded-full bg-primary" />
-            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Gestão de Talentos</span>
-          </div>
-          <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">Controle de Usuários</h1>
-          <p className="text-gray-500 font-medium text-[15px] max-w-xl">Administre níveis de acesso, permissões e horários operacionais da sua equipe com segurança.</p>
+    <div className="space-y-6 p-4 sm:p-6">
+      {/* Header responsivo */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-black sm:text-3xl">Equipe</h1>
+          <p className="text-sm text-muted-foreground">Cadastre e gerencie os colaboradores da sua loja.</p>
         </div>
-        
-        <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
+        <Dialog open={openCreate} onOpenChange={setOpenCreate}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black text-[11px] h-14 px-8 rounded-[16px] shadow-xl shadow-primary/20 transition-all hover:scale-[1.05] uppercase tracking-widest border-none">
-              <UserPlus className="mr-3 h-5 w-5" />
-              CONVIDAR NOVO USUÁRIO
+            <Button className="shrink-0">
+              <UserPlus className="mr-2 h-4 w-4" /> Cadastrar
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <form onSubmit={handleInviteUser}>
+          <DialogContent className="sm:max-w-[480px]">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createMut.mutate(form);
+              }}
+            >
               <DialogHeader>
-                <DialogTitle>Convidar Novo Usuário</DialogTitle>
+                <DialogTitle>Cadastrar colaborador</DialogTitle>
                 <DialogDescription>
-                  Insira os detalhes do novo colaborador. Um convite será preparado com status pendente.
+                  Os dados de acesso serão exibidos uma única vez após o cadastro.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Nome</Label>
-                  <Input 
-                    id="name" 
-                    className="col-span-3" 
-                    required 
-                    value={newUser.full_name}
-                    onChange={(e) => setNewUser({...newUser, full_name: e.target.value})}
+                <div className="grid gap-2">
+                  <Label htmlFor="full_name">Nome completo *</Label>
+                  <Input
+                    id="full_name" required maxLength={120}
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">E-mail</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    className="col-span-3" 
-                    required 
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                <div className="grid gap-2">
+                  <Label htmlFor="email">E-mail *</Label>
+                  <Input
+                    id="email" type="email" required maxLength={255}
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="role" className="text-right">Perfil</Label>
-                  <Select 
-                    value={newUser.role} 
-                    onValueChange={(v: any) => setNewUser({...newUser, role: v})}
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Celular * (com DDD, só números)</Label>
+                  <Input
+                    id="phone" required placeholder="11999998888"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Usado para notificações de leads, agendamentos e follow-ups.
+                  </p>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="role">Perfil *</Label>
+                  <Select
+                    value={form.role}
+                    onValueChange={(v: 'admin' | 'manager' | 'seller') => setForm({ ...form, role: v })}
                   >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione o perfil" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="manager">Gerente de Unidade</SelectItem>
+                      {user?.role === 'admin' || user?.role === 'super_admin' ? (
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      ) : null}
+                      <SelectItem value="manager">Gerente</SelectItem>
                       <SelectItem value="seller">Atendente</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-12 px-8 rounded-xl shadow-lg shadow-primary/20">CONVIDAR COLABORADOR</Button>
+                <Button type="submit" disabled={createMut.isPending}>
+                  {createMut.isPending ? 'Cadastrando...' : 'Cadastrar colaborador'}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4 bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-sm">
-        <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#A7ADB8] transition-colors group-focus-within:text-primary" />
-          <Input 
-            placeholder="Buscar por nome, e-mail ou unidade..." 
-            className="pl-12 h-14 bg-[#F6F7F9] border-none rounded-[14px] text-sm font-bold text-ink placeholder:text-[#A7ADB8] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-primary/20 transition-all shadow-inner"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <Button variant="outline" className="h-14 px-8 border-[#E3E6EB] text-[#A7ADB8] hover:text-ink hover:bg-[#F6F7F9] font-black text-[11px] uppercase tracking-widest rounded-[14px]">
-          <Filter className="mr-3 h-4 w-4" />
-          FILTROS AVANÇADOS
-        </Button>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome, e-mail ou celular..."
+          className="pl-10"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      <div className="bg-white rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-hidden">
+      {/* Lista — tabela no desktop, cards no mobile */}
+      <div className="hidden rounded-lg border bg-white sm:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-[#E3E6EB] bg-[#F6F7F9]">
-              <TableHead>Usuário</TableHead>
+            <TableRow>
+              <TableHead>Colaborador</TableHead>
+              <TableHead>Celular</TableHead>
               <TableHead>Perfil</TableHead>
-              <TableHead>Unidade(s)</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id} className="border-b border-border last:border-0 hover:bg-gray-50/50 transition-colors">
+            {isLoading ? (
+              <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Carregando...</TableCell></TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum colaborador encontrado.</TableCell></TableRow>
+            ) : filtered.map((m) => (
+              <TableRow key={m.id}>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-ink">{user.full_name}</span>
-                    <span className="text-sm text-muted-foreground">{user.email}</span>
-                  </div>
+                  <div className="font-medium">{m.full_name ?? '—'}</div>
+                  <div className="text-xs text-muted-foreground">{m.email}</div>
                 </TableCell>
-                <TableCell>{getRoleBadge(user.role)}</TableCell>
+                <TableCell>{m.phone ?? '—'}</TableCell>
+                <TableCell><Badge variant="outline">{roleLabel[m.role] ?? m.role}</Badge></TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {user.units.map(u => (
-                      <Badge key={u} variant="outline" className="text-[10px]">{u}</Badge>
-                    ))}
-                  </div>
+                  <Badge variant={m.status === 'active' ? 'default' : 'destructive'}>
+                    {m.status === 'active' ? 'Ativo' : 'Inativo'}
+                  </Badge>
                 </TableCell>
-                <TableCell>{getStatusBadge(user.status)}</TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" /> Permissões
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Building2 className="mr-2 h-4 w-4" /> Unidades
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Clock className="mr-2 h-4 w-4" /> Horários
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Lock className="mr-2 h-4 w-4" /> Resetar Senha
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {user.status !== 'inactive' ? (
-                        <DropdownMenuItem 
-                          className="text-destructive cursor-pointer"
-                          onClick={() => updateUser(user.id, { status: 'inactive' })}
-                        >
-                          Inativar Usuário
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem 
-                          className="text-green-600 cursor-pointer"
-                          onClick={() => updateUser(user.id, { status: 'active' })}
-                        >
-                          Reativar Usuário
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <RowMenu m={m} onToggle={() => toggleStatusMut.mutate(m)} onRegen={() => regenMut.mutate(m.id)} />
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Cards mobile */}
+      <div className="space-y-3 sm:hidden">
+        {isLoading && <div className="text-center text-muted-foreground">Carregando...</div>}
+        {!isLoading && filtered.length === 0 && <div className="text-center text-muted-foreground">Nenhum colaborador.</div>}
+        {filtered.map((m) => (
+          <div key={m.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-lg border bg-white p-4">
+            <div className="min-w-0">
+              <div className="truncate font-medium">{m.full_name ?? '—'}</div>
+              <div className="truncate text-xs text-muted-foreground">{m.email}</div>
+              <div className="mt-1 text-xs">{m.phone ?? '—'}</div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <Badge variant="outline">{roleLabel[m.role] ?? m.role}</Badge>
+                <Badge variant={m.status === 'active' ? 'default' : 'destructive'}>
+                  {m.status === 'active' ? 'Ativo' : 'Inativo'}
+                </Badge>
+              </div>
+            </div>
+            <RowMenu m={m} onToggle={() => toggleStatusMut.mutate(m)} onRegen={() => regenMut.mutate(m.id)} />
+          </div>
+        ))}
+      </div>
+
+      {/* Dialog credenciais */}
+      <Dialog open={credentialDialog.open} onOpenChange={(o) => !o && setCredentialDialog({ ...credentialDialog, open: false })}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-primary" /> Senha gerada</DialogTitle>
+            <DialogDescription>
+              Copie e envie ao colaborador por um canal seguro. Esta senha não será exibida novamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label>E-mail</Label>
+              <Input readOnly value={credentialDialog.email} className="mt-1 font-mono" />
+            </div>
+            <div>
+              <Label>Senha temporária</Label>
+              <div className="mt-1 flex gap-2">
+                <Input readOnly value={credentialDialog.password} className="font-mono" />
+                <Button type="button" onClick={copyPassword} className="shrink-0">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCredentialDialog({ ...credentialDialog, open: false })}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
+}
 
-export default UserManagement;
-
+function RowMenu({ m, onToggle, onRegen }: { m: Member; onToggle: () => void; onRegen: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+        <DropdownMenuItem onClick={onRegen}>
+          <KeyRound className="mr-2 h-4 w-4" /> Gerar nova senha
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onToggle} className={m.status === 'active' ? 'text-destructive' : 'text-green-600'}>
+          {m.status === 'active' ? 'Desativar' : 'Reativar'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
