@@ -196,7 +196,17 @@ function Agenda() {
         </div>
       </div>
 
-      <AgendaTabs />
+      <Tabs defaultValue="agenda" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="agenda">📅 Agenda do dia</TabsTrigger>
+          <TabsTrigger value="followups">
+            🔔 Follow-ups de hoje
+            <FollowupsCountBadge />
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agenda">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendário */}
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white border border-[#E3E6EB] rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-hidden">
