@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -62,7 +63,17 @@ function Chat() {
     )
   }, [conversations, search])
 
-  const currentLead = leads[0]
+  // Casar o lead com o telefone da conversa selecionada (normalizando dígitos)
+  const currentLead = useMemo(() => {
+    if (!selectedPhone) return leads[0]
+    const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
+    const target = onlyDigits(selectedPhone)
+    return (
+      leads.find((l) => onlyDigits(l.phone) === target) ||
+      leads.find((l) => target.endsWith(onlyDigits(l.phone)) && onlyDigits(l.phone).length >= 8) ||
+      leads[0]
+    )
+  }, [leads, selectedPhone])
 
   // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
   useEffect(() => {
@@ -664,40 +675,15 @@ function Chat() {
                 )}
               </TabsContent>
 
-              <TabsContent value="lead" className="m-0 space-y-8 outline-none">
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center px-1">
-                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Dados do Exame</h3>
-                    {currentLead?.ia_receita_validade && (
-                      <Badge className="bg-success/10 text-success text-[10px] font-bold border-none px-2">VÁLIDA</Badge>
-                    )}
+              <TabsContent value="lead" className="m-0 outline-none">
+                {currentLead ? (
+                  <LeadProfilePanel lead={currentLead} compact />
+                ) : (
+                  <div className="text-center py-20 opacity-30">
+                    <User className="w-12 h-12 mx-auto mb-4" />
+                    <p className="font-bold text-sm">Nenhum lead vinculado a esta conversa</p>
                   </div>
-                  <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 space-y-5">
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Grau (OD/OE)</Label>
-                       <p className="text-sm font-bold text-ink">{currentLead?.ia_receita_grau || 'Aguardando envio...'}</p>
-                    </div>
-                    <div className="space-y-1.5 pt-4 border-t border-gray-100">
-                       <Label className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Validade da Receita</Label>
-                       <p className="text-sm font-bold text-ink">{currentLead?.ia_receita_validade || '---'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-1">Segmentação</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(currentLead?.ia_tags || []).length > 0 ? (
-                      currentLead?.ia_tags?.map((tag, i) => (
-                        <Badge key={i} className="bg-ink text-white text-[10px] font-bold border-none px-3 py-1 rounded-lg">
-                          {tag}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-xs text-gray-400 italic">Nenhuma tag atribuída</p>
-                    )}
-                  </div>
-                </div>
+                )}
               </TabsContent>
             </div>
           </ScrollArea>

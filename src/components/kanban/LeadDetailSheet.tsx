@@ -7,9 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { DBLead, STAGES, useDeleteLead, useUpdateLead } from '@/hooks/use-leads';
-import { Trash2, Brain, ClipboardList } from 'lucide-react';
-import { FollowupContextBlock } from '@/components/agenda/FollowupContextBlock';
+import { Trash2, ClipboardList } from 'lucide-react';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
+import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel';
 
 export function LeadDetailSheet({
   lead,
@@ -78,90 +78,74 @@ export function LeadDetailSheet({
           <SheetTitle className="font-jakarta uppercase tracking-tight text-base">{lead.full_name}</SheetTitle>
         </SheetHeader>
 
-        <div className="mt-6 space-y-5">
-          {lead.score_ia != null && (
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">IA Score</span>
-                <Badge className="ml-auto bg-primary/10 text-primary border-none font-black">{lead.score_ia}</Badge>
+        <div className="mt-6 space-y-6">
+          {/* Painel unificado — mesma visão usada no Chat */}
+          <LeadProfilePanel lead={lead} />
+
+          {/* Edição rápida dos dados */}
+          <div className="space-y-4 pt-4 border-t border-gray-100">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Editar dados</h4>
+
+            <div className="grid gap-2">
+              <Label>Nome</Label>
+              <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label>Telefone</Label>
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
-              {lead.ia_summary && <p className="text-xs text-gray-600 leading-relaxed">{lead.ia_summary}</p>}
+              <div className="grid gap-2">
+                <Label>E-mail</Label>
+                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
             </div>
-          )}
 
-          <div className="grid gap-2">
-            <Label>Nome</Label>
-            <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label>Valor (R$)</Label>
+                <Input type="number" value={form.sales_value} onChange={(e) => setForm({ ...form, sales_value: Number(e.target.value) })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Estágio</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STAGES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label>Telefone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>E-mail</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label>Valor (R$)</Label>
-              <Input type="number" value={form.sales_value} onChange={(e) => setForm({ ...form, sales_value: Number(e.target.value) })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Estágio</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+              <Label>Origem</Label>
+              <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STAGES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="google">Google</SelectItem>
+                  <SelectItem value="direct">Direto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="grid gap-2">
-            <Label>Origem</Label>
-            <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                <SelectItem value="instagram">Instagram</SelectItem>
-                <SelectItem value="google">Google</SelectItem>
-                <SelectItem value="direct">Direto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Notas</Label>
-            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={4} />
-          </div>
-
-          {/* Resumo da consulta — visível quando lead está em followup ou já tem resumo */}
-          {lead.status === 'followup' && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="w-4 h-4 text-amber-600" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
-                    Resumo da consulta
-                  </span>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowConsultationDialog(true)}
-                  className="h-8 text-[10px] font-black uppercase tracking-wider rounded-xl border-amber-300 text-amber-700 hover:bg-amber-100"
-                >
-                  Editar
-                </Button>
-              </div>
-              <FollowupContextBlock leadId={lead.id} />
+            <div className="grid gap-2">
+              <Label>Notas</Label>
+              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={4} />
             </div>
-          )}
+          </div>
+
+          {/* Botão para editar resumo da consulta */}
+          <Button
+            variant="outline"
+            onClick={() => setShowConsultationDialog(true)}
+            className="w-full h-10 text-[10px] font-black uppercase tracking-wider rounded-xl border-amber-300 text-amber-700 hover:bg-amber-100"
+          >
+            <ClipboardList className="w-4 h-4 mr-2" />
+            {lead.status === 'followup' ? 'Editar resumo da consulta' : 'Adicionar resumo da consulta'}
+          </Button>
 
           <ConsultationSummaryDialog
             lead={lead}
@@ -169,9 +153,7 @@ export function LeadDetailSheet({
             onOpenChange={setShowConsultationDialog}
           />
 
-          <div className="text-[10px] text-gray-400 uppercase tracking-widest pt-2">
-            Criado em {new Date(lead.created_at).toLocaleString('pt-BR')}
-          </div>
+
 
           <div className="flex gap-2 pt-4 border-t border-gray-100">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
