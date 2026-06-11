@@ -3,6 +3,7 @@ import { Brain, History, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag
 import { DBLead, stageLabel } from '@/hooks/use-leads';
 import { useLeadHistory } from '@/hooks/use-lead-history';
 import { useConsultationSummary } from '@/hooks/use-consultation-summary';
+import { PrescriptionCard } from '@/components/leads/PrescriptionCard';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
