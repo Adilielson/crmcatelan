@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { format, isToday, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Phone, MessageSquare, Clock, AlertCircle, User } from 'lucide-react';
+import { Phone, MessageSquare, Clock, AlertCircle, User, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useTodayFollowups } from '@/hooks/use-followups';
+import { useTodayFollowups, useRespondToFollowup } from '@/hooks/use-followups';
 import { useLeads } from '@/hooks/use-leads';
 import { toast } from 'sonner';
 
@@ -23,6 +23,7 @@ const TEMPLATE_LABEL: Record<string, string> = {
 export function TodayFollowupsTab() {
   const { data: followups = [], isLoading } = useTodayFollowups();
   const { data: leads = [] } = useLeads();
+  const respond = useRespondToFollowup();
   const navigate = useNavigate();
 
   const leadMap = useMemo(() => {
@@ -101,7 +102,7 @@ export function TodayFollowupsTab() {
                     <span className="text-gray-300">•</span>
                     <span className="font-bold">{TEMPLATE_LABEL[f.template_key] ?? f.template_key}</span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {lead?.phone && (
                       <a href={`tel:${lead.phone}`}>
                         <Button size="sm" className="h-9 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl">
@@ -116,6 +117,14 @@ export function TodayFollowupsTab() {
                       className="h-9 text-[10px] font-black uppercase tracking-wider rounded-xl"
                     >
                       <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> WHATSAPP
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={respond.isPending || !lead}
+                      onClick={() => lead && respond.mutate({ followupId: f.id, leadId: lead.id })}
+                      className="h-9 bg-cyan-600 hover:bg-cyan-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> RESPONDIDO
                     </Button>
                   </div>
                 </div>
@@ -159,9 +168,20 @@ export function TodayFollowupsTab() {
                     </div>
                     <Badge variant="outline" className="text-[9px] font-black">{TEMPLATE_LABEL[f.template_key] ?? f.template_key}</Badge>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-500 ml-11">
-                    <Clock className="w-3 h-3" />
-                    <span>Envio: {format(new Date(f.scheduled_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
+                  <div className="flex items-center justify-between gap-2 ml-11">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      <span>Envio: {format(new Date(f.scheduled_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={respond.isPending || !lead}
+                      onClick={() => lead && respond.mutate({ followupId: f.id, leadId: lead.id })}
+                      className="h-8 text-[10px] font-black uppercase tracking-wider rounded-xl border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> RESPONDIDO
+                    </Button>
                   </div>
                 </div>
               );
