@@ -198,6 +198,65 @@ function cleanPhone(raw: string | null): string | null {
   return d;
 }
 
+// Valida se um "nome" enviado pelo WhatsApp parece um nome real
+// (não é só dígitos, não é o próprio telefone, não é JID).
+function isValidContactName(name: string | null, phone: string | null): boolean {
+  if (!name) return false;
+  const n = name.trim();
+  if (n.length < 2 || n.length > 80) return false;
+  if (/^\d+$/.test(n)) return false;
+  if (n.includes("@")) return false;
+  if (phone && n.replace(/\D+/g, "") === phone) return false;
+  return true;
+}
+
+// Extrai o primeiro nome de uma string completa
+function firstName(full: string | null | undefined): string | null {
+  if (!full) return null;
+  const t = full.trim().split(/\s+/)[0];
+  return t || null;
+}
+
+// Pede para a IA extrair o nome de uma mensagem curta do lead.
+// Retorna null se não conseguir identificar com confiança.
+async function extractNameFromMessage(message: string): Promise<string | null> {
+  if (!LOVABLE_API_KEY) return null;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": LOVABLE_API_KEY,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          {
+            role: "system",
+            content:
+              'Extraia o nome próprio do remetente da mensagem. Responda APENAS com JSON no formato {"name": "Fulano"} ou {"name": null} se não houver nome claro. Não inclua sobrenomes inventados, saudações ou texto extra.',
+          },
+          { role: "user", content: message.slice(0, 300) },
+        ],
+        temperature: 0,
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const raw = data?.choices?.[0]?.message?.content;
+    if (typeof raw !== "string") return null;
+    const parsed = JSON.parse(raw);
+    const name = typeof parsed?.name === "string" ? parsed.name.trim() : null;
+    if (!name || name.length < 2 || name.length > 60) return null;
+    if (/^\d+$/.test(name)) return null;
+    return name;
+  } catch (e) {
+    console.error("[sdr] extractNameFromMessage erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method === "GET") {
