@@ -140,6 +140,35 @@ export function LeadDetailSheet({
             <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={4} />
           </div>
 
+          {/* Resumo da consulta — visível quando lead está em followup ou já tem resumo */}
+          {lead.status === 'followup' && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-amber-600" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
+                    Resumo da consulta
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowConsultationDialog(true)}
+                  className="h-8 text-[10px] font-black uppercase tracking-wider rounded-xl border-amber-300 text-amber-700 hover:bg-amber-100"
+                >
+                  Editar
+                </Button>
+              </div>
+              <FollowupContextBlock leadId={lead.id} />
+            </div>
+          )}
+
+          <ConsultationSummaryDialog
+            lead={lead}
+            open={showConsultationDialog}
+            onOpenChange={setShowConsultationDialog}
+          />
+
           <div className="text-[10px] text-gray-400 uppercase tracking-widest pt-2">
             Criado em {new Date(lead.created_at).toLocaleString('pt-BR')}
           </div>
