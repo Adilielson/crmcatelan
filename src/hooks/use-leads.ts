@@ -43,6 +43,8 @@ export interface DBLead {
   ia_tags: string[] | null;
   ia_receita_grau: string | null;
   ia_receita_validade: string | null;
+  prescription_image_path: string | null;
+  prescription_ocr_at: string | null;
   created_at: string;
   updated_at: string;
 }
