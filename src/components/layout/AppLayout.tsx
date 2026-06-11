@@ -25,6 +25,8 @@ import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { NotificationCenter } from './NotificationCenter';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { usePermissions } from '@/hooks/use-permissions';
+import type { ModuleKey } from '@/lib/permissions';
 
 type NavLeaf = { label: string; icon: any; href: string };
 type NavGroup = { label: string; icon?: any; children: NavLeaf[] };
