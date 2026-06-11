@@ -441,21 +441,38 @@ function Chat() {
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50">
               <div className="p-8 space-y-4 min-h-full">
-                {selectedConv.messages.map((m) => (
+                {selectedConv.messages.map((m) => {
+                  const isImage = m.mediaUrl && (m.mediaMime?.startsWith('image/') || m.type === 'image')
+                  const isAudio = m.mediaUrl && (m.mediaMime?.startsWith('audio/') || m.type === 'audio' || m.type === 'ptt')
+                  const isVideo = m.mediaUrl && (m.mediaMime?.startsWith('video/') || m.type === 'video')
+                  return (
                   <div key={m.id} className={cn("flex", m.fromMe ? "justify-end" : "justify-start")}>
                     <div className="max-w-[70%]">
                       <div className={cn(
-                        "p-4 rounded-2xl shadow-sm",
+                        "p-2 rounded-2xl shadow-sm overflow-hidden",
                         m.fromMe
                           ? "bg-primary text-primary-foreground rounded-tr-none shadow-primary/10"
                           : "bg-white border border-gray-100 rounded-tl-none"
                       )}>
-                        <p className={cn(
-                          "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words",
-                          m.fromMe ? "text-primary-foreground font-bold" : "text-ink"
-                        )}>
-                          {m.text || <span className="italic opacity-60">[{m.type}]</span>}
-                        </p>
+                        {isImage && (
+                          <a href={m.mediaUrl!} target="_blank" rel="noreferrer" className="block">
+                            <img src={m.mediaUrl!} alt="imagem" className="rounded-xl max-h-72 object-cover" />
+                          </a>
+                        )}
+                        {isAudio && (
+                          <audio controls src={m.mediaUrl!} className="w-64 max-w-full" />
+                        )}
+                        {isVideo && (
+                          <video controls src={m.mediaUrl!} className="rounded-xl max-h-72" />
+                        )}
+                        {(m.text || (!isImage && !isAudio && !isVideo)) && (
+                          <p className={cn(
+                            "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words px-2 py-1.5",
+                            m.fromMe ? "text-primary-foreground font-bold" : "text-ink"
+                          )}>
+                            {m.text || <span className="italic opacity-60">[{m.type}]</span>}
+                          </p>
+                        )}
                       </div>
                       <div className={cn(
                         "mt-1.5 flex items-center gap-1.5",
@@ -470,37 +487,81 @@ function Chat() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
             <div className="p-4 border-t border-gray-100 bg-white">
-              <div className="flex gap-2 items-center">
-                <div className="flex-1 flex gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:bg-white focus-within:border-primary/30 focus-within:shadow-sm transition-all items-center">
-                  <Button variant="ghost" size="icon" className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl">
-                    <Smile className="w-5 h-5" />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {recording ? (
+                <div className="flex gap-2 items-center bg-red-50 border border-red-200 p-3 rounded-2xl">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span className="text-sm font-bold text-red-600">Gravando áudio...</span>
+                  </div>
+                  <Button onClick={cancelRecording} variant="ghost" size="icon" className="h-10 w-10 text-red-500 hover:bg-red-100 rounded-xl">
+                    <X className="w-5 h-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl">
-                    <Paperclip className="w-5 h-5" />
+                  <Button onClick={stopRecording} className="h-10 w-10 rounded-xl bg-red-500 hover:bg-red-600 text-white">
+                    <Send className="w-4 h-4" />
                   </Button>
-                  <input
-                    type="text"
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                    placeholder={waConnected ? 'Digite sua mensagem...' : 'WhatsApp desconectado'}
-                    disabled={!waConnected || sending}
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none disabled:opacity-50"
-                  />
                 </div>
-                <Button
-                  onClick={handleSend}
-                  disabled={!draft.trim() || sending || !waConnected}
-                  className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
-                >
-                  {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                </Button>
-              </div>
+              ) : (
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 flex gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:bg-white focus-within:border-primary/30 focus-within:shadow-sm transition-all items-center">
+                    <Button variant="ghost" size="icon" className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl">
+                      <Smile className="w-5 h-5" />
+                    </Button>
+                    <Button
+                      onClick={handlePickFile}
+                      disabled={!waConnected || sending}
+                      variant="ghost"
+                      size="icon"
+                      className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl"
+                      title="Anexar imagem"
+                    >
+                      <ImageIcon className="w-5 h-5" />
+                    </Button>
+                    <input
+                      type="text"
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                      placeholder={waConnected ? 'Digite sua mensagem...' : 'WhatsApp desconectado'}
+                      disabled={!waConnected || sending}
+                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none disabled:opacity-50"
+                    />
+                  </div>
+                  {draft.trim() ? (
+                    <Button
+                      onClick={handleSend}
+                      disabled={sending || !waConnected}
+                      className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
+                    >
+                      {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={startRecording}
+                      disabled={!waConnected || sending}
+                      className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
+                      title="Gravar áudio"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </>
         ) : (
