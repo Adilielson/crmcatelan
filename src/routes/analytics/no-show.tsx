@@ -139,36 +139,36 @@ function NoShowAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-ink">
         <MetricCard 
           title="Taxa de Presença" 
-          value="77.5%" 
-          trend="+2.4%" 
-          trendUp={true} 
+          value={`${attendanceRate.toFixed(1)}%`} 
+          trend={`${totalAppts} agend.`} 
+          trendUp={attendanceRate >= 75} 
           icon={<UserCheck className="w-5 h-5 text-green-600" />} 
           description="Agendamentos que compareceram"
         />
         <MetricCard 
           title="Taxa de No-Show" 
-          value={`${noShowRate}%`} 
-          trend="+5.1%" 
-          trendUp={false} 
+          value={`${noShowRate.toFixed(1)}%`} 
+          trend={isCritical ? 'crítico' : 'normal'} 
+          trendUp={!isCritical} 
           icon={<UserX className="w-5 h-5" />} 
           description="Não comparecimentos"
           alert={isCritical}
         />
         <MetricCard 
-          title="Conversão de Vendas" 
-          value="18.2%" 
-          trend="-1.5%" 
-          trendUp={false} 
+          title="Conversão Final" 
+          value={`${(metrics?.kpis ? 100 - (metrics.kpis.noShowRate + metrics.kpis.cancelRate) : 0).toFixed(1)}%`} 
+          trend="presença líquida" 
+          trendUp={true} 
           icon={<ArrowUpRight className="w-5 h-5" />} 
-          description="Leads → Vendas Finalizadas"
+          description="Compareceram vs agendados"
         />
         <MetricCard 
           title="Perda Estimada" 
-          value="R$ 12.450" 
-          trend="+R$ 3.200" 
+          value={noShowValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} 
+          trend={`${metrics?.recovery.length ?? 0} p/ recuperar`} 
           trendUp={false} 
           icon={<DollarSign className="w-5 h-5 text-red-600" />} 
-          description="Ticket médio de No-Shows"
+          description="Valor de no-shows no período"
         />
       </div>
 
