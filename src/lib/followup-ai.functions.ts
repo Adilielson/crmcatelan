@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { DEV_TENANT_ID, getDevSupabase } from "./dev-tenant.server";
+import { getTenantAiKey, logAiUsage } from "./ai-credentials.server";
+
 
 // TODO(auth): trocar DEV_TENANT_ID/supabaseAdmin por requireSupabaseAuth
 // + tenant_id real do profile quando Supabase Auth for implementado.
