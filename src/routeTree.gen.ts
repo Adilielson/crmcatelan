@@ -17,6 +17,7 @@ import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
+import { Route as FilaRouteImport } from './routes/fila'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AgendaRouteImport } from './routes/agenda'
@@ -64,6 +65,11 @@ const KanbanRoute = KanbanRouteImport.update({
   path: '/kanban',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FilaRoute = FilaRouteImport.update({
+  id: '/fila',
+  path: '/fila',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/agenda': typeof AgendaRoute
   '/ai-training': typeof AiTrainingRoute
   '/chat': typeof ChatRoute
+  '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/fila'
     | '/kanban'
     | '/login'
     | '/marketing'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/fila'
     | '/kanban'
     | '/login'
     | '/marketing'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-training'
     | '/chat'
+    | '/fila'
     | '/kanban'
     | '/login'
     | '/marketing'
@@ -201,6 +213,7 @@ export interface RootRouteChildren {
   AgendaRoute: typeof AgendaRoute
   AiTrainingRoute: typeof AiTrainingRoute
   ChatRoute: typeof ChatRoute
+  FilaRoute: typeof FilaRoute
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
   MarketingRoute: typeof MarketingRoute
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KanbanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fila': {
+      id: '/fila'
+      path: '/fila'
+      fullPath: '/fila'
+      preLoaderRoute: typeof FilaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
@@ -321,6 +341,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaRoute: AgendaRoute,
   AiTrainingRoute: AiTrainingRoute,
   ChatRoute: ChatRoute,
+  FilaRoute: FilaRoute,
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
   MarketingRoute: MarketingRoute,
@@ -335,3 +356,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
