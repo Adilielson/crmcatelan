@@ -372,6 +372,12 @@ function LeadCard({
 }) {
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 
+  const daysInStage = Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / 86400000);
+  const slaTone =
+    daysInStage >= 7 ? 'bg-red-50 text-red-700 border-red-200'
+    : daysInStage >= 3 ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+
   const actions = [
     { icon: Calendar, title: 'Agendar', onClick: onCalendar },
     { icon: MessageSquare, title: 'Abrir conversa', onClick: onChat },
@@ -411,6 +417,9 @@ function LeadCard({
             <span className="text-[12px] font-black text-ink">R$ {(lead.sales_value ?? 0).toLocaleString('pt-BR')}</span>
           </div>
           {lead.phone && <p className="text-[10px] text-gray-400 font-medium truncate">{lead.phone}</p>}
+          <span className={cn('inline-block mt-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide', slaTone)}>
+            {daysInStage === 0 ? 'Hoje' : `${daysInStage}d na etapa`}
+          </span>
         </div>
         <div className="p-2 rounded-[12px] border bg-white border-[#E3E6EB]">
           {sourceIcon(lead.source)}
