@@ -285,10 +285,10 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { name: 'Roberto Lima', stage: 'Leads Prontos', wait: '5h', priority: 'VIP' },
-                { name: 'Ana Souza', stage: 'Em Atendimento', wait: '26h', priority: 'Alta' },
-              ].map((alert, i) => (
+              {slaAlerts.length === 0 && (
+                <p className="text-xs text-gray-400 italic p-4 text-center">Nenhum lead estagnado. ✓</p>
+              )}
+              {slaAlerts.map((alert, i) => (
                 <div key={i} className="flex items-center justify-between p-4 border border-danger/20 rounded-[14px] bg-danger/5 hover:bg-danger/10 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -296,7 +296,7 @@ function Dashboard() {
                     </div>
                     <div>
                       <p className="text-sm font-black text-ink font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
-                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.wait}</p>
+                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.waitHours}h</p>
                     </div>
                   </div>
                   <Link to="/chat">
@@ -306,6 +306,7 @@ function Dashboard() {
               ))}
             </div>
           </CardContent>
+
         </Card>
       </div>
     </div>
