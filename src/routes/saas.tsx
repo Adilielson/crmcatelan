@@ -91,6 +91,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { supabase } from '@/integrations/supabase/client'
 import { useAuthStore } from '@/hooks/use-auth'
+import { AiCredentialsTab } from '@/components/saas/AiCredentialsTab'
 
 export const Route = createFileRoute('/saas')({
   component: SaaSAdmin,
@@ -303,6 +304,7 @@ function SaaSAdmin() {
           <TabsTrigger value="tenants" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Lista de Óticas</TabsTrigger>
           <TabsTrigger value="plans" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Planos {'&'} Config</TabsTrigger>
           <TabsTrigger value="ia" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Performance IA</TabsTrigger>
+          <TabsTrigger value="credenciais" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Credenciais IA</TabsTrigger>
           <TabsTrigger value="security" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-white/5 rounded-xl h-full flex items-center gap-2 px-8 transition-all">Segurança</TabsTrigger>
         </TabsList>
 
@@ -489,6 +491,12 @@ function SaaSAdmin() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="credenciais" className="space-y-6 pt-4">
+          <AiCredentialsTab />
+        </TabsContent>
+
+
 
         <TabsContent value="security" className="space-y-4 pt-4">
           <Card>
