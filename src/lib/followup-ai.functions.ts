@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { DEV_TENANT_ID, getDevSupabase } from "./dev-tenant.server";
+import { getTenantAiKey, logAiUsage } from "./ai-credentials.server";
+
 
 // TODO(auth): trocar DEV_TENANT_ID/supabaseAdmin por requireSupabaseAuth
 // + tenant_id real do profile quando Supabase Auth for implementado.
@@ -155,18 +157,16 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       schedulingLink: (cfg as any)?.scheduling_link ?? null,
     });
 
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("LOVABLE_API_KEY ausente");
+    const cred = await getTenantAiKey(DEV_TENANT_ID, "openai");
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": key,
-        "X-Lovable-AIG-SDK": "tanstack-server-fn",
+        Authorization: `Bearer ${cred.apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: cred.model,
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
@@ -177,13 +177,25 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
 
     if (!res.ok) {
       const txt = await res.text();
-      if (res.status === 429) throw new Error("Limite de requisições atingido. Tente novamente em alguns segundos.");
-      if (res.status === 402) throw new Error("Créditos da IA esgotados. Adicione créditos no workspace.");
-      throw new Error(`Gateway ${res.status}: ${txt.slice(0, 200)}`);
+      if (res.status === 429) throw new Error("Limite de requisições OpenAI atingido. Tente novamente em alguns segundos.");
+      if (res.status === 401) throw new Error("Chave OpenAI inválida. Verifique em Super Admin > Credenciais IA.");
+      throw new Error(`OpenAI ${res.status}: ${txt.slice(0, 200)}`);
     }
     const json = await res.json();
     const reply = json?.choices?.[0]?.message?.content;
     if (typeof reply !== "string" || !reply.trim()) throw new Error("Sem resposta do modelo");
+
+    const usage = json?.usage ?? {};
+    await logAiUsage({
+      tenantId: DEV_TENANT_ID,
+      provider: "openai",
+      model: cred.model,
+      tokensInput: Number(usage.prompt_tokens) || 0,
+      tokensOutput: Number(usage.completion_tokens) || 0,
+      usedFallback: cred.source === "master",
+      source: cred.source,
+      feature: "followup-ai",
+    });
 
     return {
       message: reply.trim(),
