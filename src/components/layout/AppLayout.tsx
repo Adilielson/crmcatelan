@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   Brain,
   TrendingDown,
+  ListOrdered,
+  UsersRound,
+  Contact,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
