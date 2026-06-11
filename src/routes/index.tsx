@@ -43,7 +43,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
-import { useKanban } from '@/hooks/use-kanban'
+import { useLeads, useUnits } from '@/hooks/use-leads'
 import { useAgenda } from '@/hooks/use-agenda'
 import { useChatStore } from '@/hooks/use-chat'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -67,17 +67,19 @@ const sourceData = [
 ]
 
 function Dashboard() {
-  const { leads, pipelines } = useKanban()
+  const { data: leads = [] } = useLeads()
+  const { data: pipelines = [] } = useUnits()
   const { appointments } = useAgenda()
   const { sessions } = useChatStore()
   const [selectedUnit, setSelectedUnit] = useState('all')
 
   const stats = useMemo(() => {
     const totalLeads = leads.length
-    const totalValue = leads.reduce((acc, lead) => acc + lead.value, 0)
+    const totalValue = leads.reduce((acc, lead) => acc + (lead.sales_value ?? 0), 0)
     const confirmedAppts = appointments.filter(a => a.status === 'confirmado').length
-    const qualRate = leads.filter(l => l.ia_status === 'qualificado').length / (leads.length || 1) * 100
-    
+    const qualifiedCount = leads.filter(l => (l.score_ia ?? 0) >= 70).length
+    const qualRate = leads.length > 0 ? (qualifiedCount / leads.length) * 100 : 0
+
     return {
       totalLeads,
       totalValue: `R$ ${(totalValue / 1000).toFixed(1)}k`,
@@ -244,22 +246,22 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {leads.filter(l => l.ia_status).slice(0, 3).map((lead, i) => (
+              {leads.filter(l => l.ia_summary || (l.score_ia ?? 0) > 0).slice(0, 3).map((lead, i) => (
                 <div key={i} className="flex items-center justify-between p-4 border border-border rounded-[14px] bg-background/50 hover:border-primary/30 transition-all cursor-pointer group/item">
                   <div className="flex items-center gap-3">
                     <Badge className={cn(
                       "text-[10px] uppercase font-bold",
-                      lead.ia_status === 'qualificado' ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
+                      (lead.score_ia ?? 0) >= 70 ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
                     )}>
-                      {lead.ia_status}
+                      {(lead.score_ia ?? 0) >= 70 ? 'qualificado' : 'em análise'}
                     </Badge>
                     <div>
-                      <p className="text-sm font-bold text-ink font-jakarta">{lead.name}</p>
-                      <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_resumo}</p>
+                      <p className="text-sm font-bold text-ink font-jakarta">{lead.full_name}</p>
+                      <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_summary ?? '—'}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className="text-[10px] font-bold border-slate-200">
-                    {lead.ia_score}%
+                    {lead.score_ia ?? 0}%
                   </Badge>
                 </div>
               ))}

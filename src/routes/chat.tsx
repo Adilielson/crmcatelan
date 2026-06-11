@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, FileText, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useKanban } from '@/hooks/use-kanban'
+import { useLeads, useUpdateLead } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,8 @@ function Chat() {
   const { phone: phoneFromUrl } = Route.useSearch()
   const { conversations, loading } = useWhatsAppChat()
   const { sendText, isConnected: waConnected } = useWhatsApp()
-  const { leads, updateLead } = useKanban()
+  const { data: leads = [] } = useLeads()
+  const updateLeadMutation = useUpdateLead()
   const [activeTab, setActiveTab] = useState('ia')
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -72,11 +73,14 @@ function Chat() {
     toast.loading("Processando receita via OCR...")
     setTimeout(() => {
       if (currentLead) {
-        updateLead(currentLead.id, {
-          ia_receita_validade: '2027-05-20',
-          ia_receita_grau: 'OD: -2.00 / OE: -1.75',
-          ia_interesses: [...(currentLead.ia_interesses || []), 'Lentes com Filtro Azul'],
-          ia_tags: [...(currentLead.ia_tags || []), 'Receita Digitalizada']
+        updateLeadMutation.mutate({
+          id: currentLead.id,
+          updates: {
+            ia_receita_validade: '2027-05-20',
+            ia_receita_grau: 'OD: -2.00 / OE: -1.75',
+            ia_interesses: [...(currentLead.ia_interesses ?? []), 'Lentes com Filtro Azul'],
+            ia_tags: [...(currentLead.ia_tags ?? []), 'Receita Digitalizada'],
+          },
         })
         toast.dismiss()
         toast.success("Receita processada com sucesso!")
@@ -430,9 +434,9 @@ function Chat() {
                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Temperatura Lead</span>
                         <Badge className={cn(
                           "px-2.5 py-1 rounded-lg border-none text-[11px] font-bold",
-                          (currentLead.ia_score || 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
+                          (currentLead.score_ia ?? 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
                         )}>
-                          {currentLead.ia_score || 0}/100
+                          {currentLead.score_ia ?? 0}/100
                         </Badge>
                       </div>
                       <div className="space-y-3">
@@ -440,7 +444,7 @@ function Chat() {
                           <span className="text-gray-500">Sentimento: <span className="text-ink capitalize">{currentLead.ia_sentimento || 'Neutro'}</span></span>
                           <span className="text-gray-500">Urgência: <span className="text-danger capitalize">{currentLead.ia_urgencia || 'Média'}</span></span>
                         </div>
-                        <Progress value={currentLead.ia_score || 0} className="h-2 bg-gray-200" />
+                        <Progress value={currentLead.score_ia ?? 0} className="h-2 bg-gray-200" />
                       </div>
                     </div>
 
@@ -454,7 +458,7 @@ function Chat() {
                           <Brain className="w-16 h-16 text-primary" />
                         </div>
                         <p className="text-sm text-ink leading-relaxed font-medium relative z-10">
-                          {currentLead.ia_resumo || 'Analisando conversa em tempo real...'}
+                          {currentLead.ia_summary || 'Analisando conversa em tempo real...'}
                         </p>
                       </div>
                     </div>

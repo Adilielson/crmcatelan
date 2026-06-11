@@ -37,6 +37,12 @@ export interface DBLead {
   payment_method: string | null;
   products_sold: string | null;
   closed_at: string | null;
+  ia_sentimento: string | null;
+  ia_urgencia: string | null;
+  ia_interesses: string[] | null;
+  ia_tags: string[] | null;
+  ia_receita_grau: string | null;
+  ia_receita_validade: string | null;
   created_at: string;
   updated_at: string;
 }
