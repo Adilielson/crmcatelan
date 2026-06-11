@@ -19,6 +19,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: 'apple-mobile-web-app-title', content: 'Catelan CRM' },
       { name: 'mobile-web-app-capable', content: 'yes' },
       { title: 'Ótica Catelan CRM' },
+      { name: 'description', content: 'CRM e atendimento WhatsApp para Ótica Catelan' },
+      { property: 'og:title', content: 'Ótica Catelan CRM' },
+      { property: 'og:description', content: 'CRM e atendimento WhatsApp para Ótica Catelan' },
+      { property: 'og:type', content: 'website' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'Ótica Catelan CRM' },
+      { name: 'twitter:description', content: 'CRM e atendimento WhatsApp para Ótica Catelan' },
     ],
     links: [
       { rel: 'manifest', href: '/manifest.webmanifest' },
