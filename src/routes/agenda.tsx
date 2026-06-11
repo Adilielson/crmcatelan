@@ -39,6 +39,8 @@ import { ptBR } from 'date-fns/locale'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { TodayFollowupsTab } from '@/components/agenda/TodayFollowupsTab'
 import { useTodayFollowups } from '@/hooks/use-followups'
+import { AgendaSettingsDialog } from '@/components/agenda/AgendaSettingsDialog'
+import { useBusinessHours, useBlockedDates, checkAvailability, isDayFullyClosed } from '@/hooks/use-agenda-settings'
 
 export const Route = createFileRoute('/agenda')({
   component: Agenda,
