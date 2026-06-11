@@ -1,107 +1,87 @@
-## Funil de Conversão — Ótica Catelan
+## Configurações da Agenda
 
-Mapeamento de etapas no Kanban atual + regras de SLA, automações e follow-up para garantir conversão em cada fase.
+Transformar o botão **Configurações** (hoje decorativo) em um dialog real para definir a programação da agenda da ótica. Foco em duas coisas que travam ou liberam horário no calendário:
 
----
+### 1. Horários disponíveis por dia da semana
+Para cada dia (Dom–Sáb), o gestor define:
+- **Aberto / Fechado** no dia.
+- **Janela de atendimento** (ex: 08:00 → 18:00).
+- **Pausa de almoço** opcional (ex: 12:00 → 13:00).
 
-### Etapa 1 — Agendamento do Exame
-**Coluna Kanban:** `Leads Prontos` → `Em Atendimento` → `Agendado`
+Hoje isso está hard-coded em `use-agenda.ts` (`WORKING_HOURS`). Vai virar dado por tenant.
 
-**Regras:**
-- **SLA de 1º contato:** atendente deve responder lead novo em até **15 min** (horário comercial). Após isso, badge vermelho "atrasado" no card.
-- **3 tentativas de contato** em janelas diferentes (manhã, tarde, noite) antes de mover para `Perdido`.
-- **Mensagens-padrão (WhatsApp):**
-  - Msg 1 (imediata): saudação + oferta de horários
-  - Msg 2 (+4h se sem resposta): reforço + benefício (ex: "exame gratuito")
-  - Msg 3 (+24h): última tentativa + senso de urgência
-- **Auto-mover para `Agendado`** quando appointment for criado na Agenda.
-- **Lembrete automático** 24h e 2h antes do exame (WhatsApp).
+### 2. Dias bloqueados (datas específicas)
+Lista de datas em que a agenda fica fechada mesmo sendo dia útil:
+- Feriados (25/12, 01/01…).
+- Confraternização, dedetização, treinamento.
+- Cada bloqueio tem: data, motivo opcional, dia inteiro **ou** intervalo de horas.
 
----
+### 3. Como isso afeta a agenda
+- O calendário do mês mostra dias bloqueados com hachura cinza e label "Fechado".
+- Ao tentar criar agendamento em horário fora da janela, dia fechado ou bloqueado: erro "Horário indisponível".
+- O check de conflito (`checkConflict` no `use-agenda.ts`) passa a considerar: janela do dia + almoço + bloqueios, além de sobreposição com outras consultas.
 
-### Etapa 2 — Comparecimento ao Exame (Check-IN)
-**Coluna:** `Agendado` → `Check-IN OK`
+### 4. UI do dialog
+Dialog com 2 abas:
+- **Horários da semana** — 7 linhas (Dom–Sáb) com switch aberto/fechado + 4 time-pickers (abre/fecha/almoço início/almoço fim).
+- **Dias bloqueados** — lista vertical de bloqueios + botão "Adicionar bloqueio" (date picker + motivo + checkbox "dia inteiro" ou intervalo).
 
-**Regras:**
-- Check-IN na Agenda move lead para `Check-IN OK` (já implementado).
-- **Se no-show:** lead volta para `Em Atendimento` com tag `reagendar` + tarefa automática de contato no mesmo dia.
-- **Pós-exame imediato:** após exame, atendente preenche resultado (precisa de óculos? sim/não) — se sim, lead segue para próxima etapa; se não, vai para `Pós-venda futura` (coluna customizada sugerida) com follow-up de 6 meses.
-
----
-
-### Etapa 3 — Venda de Óculos
-**Coluna nova sugerida:** `Em Negociação` (entre `Check-IN OK` e `Fechado`)
-
-**Regras:**
-- Lead com exame feito + precisa de óculos → move para `Em Negociação`.
-- **SLA de fechamento:** 48h após o exame. Se passar, badge amarelo "esfriando".
-- **Campo obrigatório ao fechar:** `sales_value` (já existe). Ao mover para `Fechado`, abrir dialog pedindo valor + forma de pagamento.
-- **Auto-checkout na Agenda** quando lead for movido para `Fechado` (fecha o ciclo Agenda↔Kanban).
+Salva tudo num "Salvar" único no rodapé.
 
 ---
 
-### Etapa 4 — Follow-up de Não-Compradores (o gap atual)
-**Coluna nova sugerida:** `Follow-up` (separada de `Perdido`)
+### Detalhes técnicos
 
-**Diferença chave:** `Perdido` = não quer mais. `Follow-up` = não comprou agora, mas é qualificado.
+**Migração SQL** (preciso de aprovação separada):
 
-**Cadência sugerida (automática):**
-| Quando | Canal | Conteúdo |
-|---|---|---|
-| D+3 | WhatsApp | "Conseguiu pensar sobre o óculos?" + foto de modelo |
-| D+7 | WhatsApp | Oferta com desconto/condição especial |
-| D+15 | Ligação | Atendente liga pessoalmente |
-| D+30 | WhatsApp | Nova coleção / promoção sazonal |
-| D+90 | WhatsApp | Reativação ("faz tempo que não te vemos") |
-| D+180 | WhatsApp | Lembrete de novo exame anual |
+```sql
+-- Horário semanal (1 linha por dia da semana por tenant)
+CREATE TABLE public.agenda_business_hours (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  weekday smallint NOT NULL CHECK (weekday BETWEEN 0 AND 6), -- 0=Dom
+  is_open boolean NOT NULL DEFAULT true,
+  open_time time,        -- ex: 08:00
+  close_time time,       -- ex: 18:00
+  lunch_start time,      -- opcional
+  lunch_end time,        -- opcional
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE (tenant_id, weekday)
+);
 
-- Após D+180 sem resposta → move para `Perdido` automaticamente.
-- Qualquer resposta do lead → volta para `Em Negociação` e notifica atendente.
+-- Datas bloqueadas
+CREATE TABLE public.agenda_blocked_dates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  blocked_date date NOT NULL,
+  all_day boolean NOT NULL DEFAULT true,
+  block_start time,      -- usado se all_day=false
+  block_end time,
+  reason text,
+  created_at timestamptz DEFAULT now()
+);
+```
 
----
-
-### O que precisa ser construído
-
-**Banco / lógica:**
-1. Migration: adicionar 2 colunas de sistema — `Em Negociação` e `Follow-up`.
-2. Tabela `lead_followups`: agenda de toques (lead_id, scheduled_at, channel, template, status).
-3. Trigger: ao mover para `Follow-up`, criar 6 toques agendados automaticamente.
-4. Edge function diária (pg_cron): processar toques do dia → enviar WhatsApp via uazapi.
-5. Trigger: ao mover para `Fechado`, fazer auto-checkout do appointment correspondente.
-6. Trigger: ao criar appointment → mover lead para `Agendado`.
++ GRANTs (`authenticated` full, `service_role` all), RLS por `tenant_id` via `get_current_user_tenant()`, trigger `set_updated_at`, e seed automático no `seed_kanban_columns_for_tenant` (8h–18h seg–sex, almoço 12–13h, fim de semana fechado).
 
 **Frontend:**
-1. Dialog de fechamento (`CloseLeadDialog`) pedindo valor + forma de pagamento.
-2. Badges visuais de SLA (verde/amarelo/vermelho) por tempo na coluna.
-3. Aba "Follow-ups de hoje" na Agenda mostrando toques agendados.
-4. Tag automática `reagendar` em no-shows.
-5. Templates de mensagem editáveis em Configurações.
+- `src/hooks/use-agenda-settings.ts` — `useBusinessHours()`, `useBlockedDates()`, mutations.
+- `src/components/agenda/AgendaSettingsDialog.tsx` — dialog com Tabs.
+- `src/routes/agenda.tsx`:
+  - Botão "Configurações" abre o dialog.
+  - `WORKING_HOURS` deixa de ser fixo: lê do hook.
+  - `checkConflict` valida janela do dia, almoço e bloqueios.
+  - Células do calendário pintam cinza + "Fechado" para dias bloqueados/fechados.
 
-**Configurável por tenant:**
-- SLA de cada etapa (minutos/horas).
-- Cadência de follow-up (dias entre toques).
-- Templates de mensagem (variáveis: `{{nome}}`, `{{loja}}`, `{{horario}}`).
+### Fora de escopo agora (vai pro holdmap)
+- Horário diferente por **profissional** (Dr. X só atende terça e quinta).
+- Horário diferente por **unidade/loja**.
+- Recorrência de bloqueio (ex: "toda 1ª segunda do mês").
+- Importar feriados nacionais automaticamente.
+
+Esses 3 últimos ficam pra depois — começamos simples com tenant único.
 
 ---
 
-## 🗺️ Holdmap (próximas implementações)
-
-### IA — Detecção automática de resposta do lead
-**Objetivo:** quando o lead em `Follow-up` responder no WhatsApp, mover automaticamente para `Em Negociação` e marcar os toques pendentes como `responded`.
-
-**Escopo:**
-- Hook no webhook do WhatsApp (`whatsapp-webhook`): ao receber mensagem de número cujo lead está em `followup`, disparar fluxo.
-- IA classifica intenção da resposta (interesse / desinteresse / dúvida / pedido de tempo).
-  - Interesse / dúvida → mover para `Em Negociação` + cancelar follow-ups pendentes.
-  - Desinteresse explícito ("não quero") → mover para `Perdido`.
-  - Pedido de tempo ("me liga mês que vem") → reagendar próximo toque.
-- Botão manual "Marcar como respondido" no card (fallback enquanto IA não estiver pronta) — **não implementado de propósito**, fica para depois.
-- Registrar `response_at` em `lead_followups` e summary em `lead_pipeline_history`.
-
-**Dependências:** ai_configs já existe; precisa expor endpoint de classificação no edge function ou server function.
-
-### Perguntas pendentes (do escopo anterior)
-1. **Comissão por venda** — registrar % do `sales_value` por atendente em `professional_performance`?
-2. **Templates editáveis** — UI de Configurações para editar as 8 mensagens de follow-up.
-3. **Reagendamento de toque** — atendente poder atrasar/adiantar um toque específico.
-
+**Tudo certo pra eu rodar a migração e implementar?**
