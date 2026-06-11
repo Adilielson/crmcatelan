@@ -850,9 +850,15 @@ export type Database = {
           email: string | null
           full_name: string
           ia_disqualified_reason: string | null
+          ia_interesses: string[] | null
           ia_profile: string | null
+          ia_receita_grau: string | null
+          ia_receita_validade: string | null
           ia_sentiment: string | null
+          ia_sentimento: string | null
           ia_summary: string | null
+          ia_tags: string[] | null
+          ia_urgencia: string | null
           ia_urgency: string | null
           id: string
           next_contact_at: string | null
@@ -879,9 +885,15 @@ export type Database = {
           email?: string | null
           full_name: string
           ia_disqualified_reason?: string | null
+          ia_interesses?: string[] | null
           ia_profile?: string | null
+          ia_receita_grau?: string | null
+          ia_receita_validade?: string | null
           ia_sentiment?: string | null
+          ia_sentimento?: string | null
           ia_summary?: string | null
+          ia_tags?: string[] | null
+          ia_urgencia?: string | null
           ia_urgency?: string | null
           id?: string
           next_contact_at?: string | null
@@ -908,9 +920,15 @@ export type Database = {
           email?: string | null
           full_name?: string
           ia_disqualified_reason?: string | null
+          ia_interesses?: string[] | null
           ia_profile?: string | null
+          ia_receita_grau?: string | null
+          ia_receita_validade?: string | null
           ia_sentiment?: string | null
+          ia_sentimento?: string | null
           ia_summary?: string | null
+          ia_tags?: string[] | null
+          ia_urgencia?: string | null
           ia_urgency?: string | null
           id?: string
           next_contact_at?: string | null

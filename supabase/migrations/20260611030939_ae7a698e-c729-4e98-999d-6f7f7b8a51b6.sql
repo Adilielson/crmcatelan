@@ -1,0 +1,7 @@
+ALTER TABLE public.leads
+  ADD COLUMN IF NOT EXISTS ia_sentimento TEXT,
+  ADD COLUMN IF NOT EXISTS ia_urgencia TEXT,
+  ADD COLUMN IF NOT EXISTS ia_interesses TEXT[] DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN IF NOT EXISTS ia_tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN IF NOT EXISTS ia_receita_grau TEXT,
+  ADD COLUMN IF NOT EXISTS ia_receita_validade DATE;
