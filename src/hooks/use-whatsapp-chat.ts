@@ -122,12 +122,14 @@ export function useWhatsAppChat() {
     setLoading(true);
     const { data, error } = await db
       .from('whatsapp_message_logs')
-      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime')
+      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
       .eq('tenant_id', tenant.id)
       .order('sent_at', { ascending: true })
       .limit(500);
     if (!error && data) {
-      setMessages((data as LogRow[]).map(mapRow));
+      const rows = data as LogRow[];
+      const resolved = await Promise.all(rows.map((r) => resolveMediaUrl(r)));
+      setMessages(rows.map((r, i) => mapRowSync(r, resolved[i])));
     }
     setLoading(false);
   }, [tenant?.id]);
@@ -147,16 +149,18 @@ export function useWhatsAppChat() {
           table: 'whatsapp_message_logs',
           filter: `tenant_id=eq.${tenant.id}`,
         },
-        (payload) => {
+        async (payload) => {
           const row = payload.new as LogRow;
+          const resolved = await resolveMediaUrl(row);
           setMessages((prev) =>
-            prev.some((m) => m.id === row.id) ? prev : [...prev, mapRow(row)]
+            prev.some((m) => m.id === row.id) ? prev : [...prev, mapRowSync(row, resolved)]
           );
         }
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [tenant?.id]);
+
 
   // Agrupa por número, escolhendo o nome/avatar mais recente disponível
   const conversations: WhatsAppConversation[] = (() => {
