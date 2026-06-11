@@ -415,6 +415,14 @@ function Agenda() {
           </div>
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="followups">
+          <TodayFollowupsTab />
+        </TabsContent>
+      </Tabs>
+
+
 
       {/* Modal Novo Agendamento */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -491,3 +499,14 @@ function Agenda() {
     </div>
   )
 }
+
+function FollowupsCountBadge() {
+  const { data = [] } = useTodayFollowups()
+  if (data.length === 0) return null
+  return (
+    <Badge className="ml-2 h-5 px-1.5 bg-primary/20 text-primary border-none font-black text-[10px]">
+      {data.length}
+    </Badge>
+  )
+}
+
