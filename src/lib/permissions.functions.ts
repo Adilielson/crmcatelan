@@ -39,7 +39,7 @@ export const getMyPermissions = createServerFn({ method: 'GET' })
         .from('module_permissions')
         .select('module_key, allowed')
         .eq('tenant_id', tenantId)
-        .eq('role', role),
+        .eq('role', role as any),
       supabaseAdmin
         .from('user_module_overrides')
         .select('module_key, allowed')
@@ -71,7 +71,7 @@ export const getUserPermissions = createServerFn({ method: 'POST' })
         .from('module_permissions')
         .select('module_key, allowed')
         .eq('tenant_id', caller.tenantId)
-        .eq('role', target.role),
+        .eq('role', target.role as any),
       supabaseAdmin
         .from('user_module_overrides')
         .select('module_key, allowed')
