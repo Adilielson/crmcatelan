@@ -48,39 +48,46 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
+import { useServerFn } from '@tanstack/react-start'
+import { useQuery } from '@tanstack/react-query'
+import { getNoShowMetrics, getTenantUnits } from '@/lib/analytics.functions'
+
 export const Route = createFileRoute('/analytics/no-show')({
   component: NoShowAnalytics,
 })
 
-const attendanceTrend = [
-  { name: 'Jan', compareceu: 120, noShow: 30, cancelado: 10 },
-  { name: 'Fev', compareceu: 132, noShow: 25, cancelado: 15 },
-  { name: 'Mar', compareceu: 101, noShow: 45, cancelado: 12 },
-  { name: 'Abr', compareceu: 154, noShow: 20, cancelado: 8 },
-  { name: 'Mai', compareceu: 140, noShow: 35, cancelado: 20 },
-  { name: 'Jun', compareceu: 165, noShow: 28, cancelado: 10 },
-]
-
-const sourceData = [
-  { name: 'Facebook Ads', value: 45, noShow: 12 },
-  { name: 'Google Ads', value: 38, noShow: 5 },
-  { name: 'Instagram Org', value: 25, noShow: 2 },
-  { name: 'Indicação', value: 15, noShow: 1 },
-]
-
-const reasonsData = [
-  { name: 'Esquecimento', value: 40, color: '#f59e0b' },
-  { name: 'Imprevisto Trabalho', value: 25, color: '#6366f1' },
-  { name: 'Problema Financeiro', value: 20, color: '#ef4444' },
-  { name: 'Distância/Trânsito', value: 15, color: '#94a3b8' },
-]
+const REASON_COLORS = ['#f59e0b', '#6366f1', '#ef4444', '#94a3b8', '#10b981']
 
 function NoShowAnalytics() {
-  const [period, setPeriod] = useState('monthly')
-  const [unit, setUnit] = useState('all')
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly')
+  const [unit, setUnit] = useState<string>('all')
 
-  const noShowRate = 22.5
+  const fetchMetrics = useServerFn(getNoShowMetrics)
+  const fetchUnits = useServerFn(getTenantUnits)
+
+  const { data: units = [] } = useQuery({
+    queryKey: ['tenant-units'],
+    queryFn: () => fetchUnits({}),
+  })
+
+  const { data: metrics } = useQuery({
+    queryKey: ['noshow-metrics', period, unit],
+    queryFn: () =>
+      fetchMetrics({ data: { period, unitId: unit === 'all' ? null : unit } }),
+  })
+
+  const attendanceTrend = metrics?.attendanceTrend ?? []
+  const sourceData = metrics?.sourceData ?? []
+  const recovery = metrics?.recovery ?? []
+  const noShowRate = metrics?.kpis.noShowRate ?? 0
+  const attendanceRate = metrics?.kpis.attendanceRate ?? 0
+  const noShowValue = metrics?.kpis.noShowValue ?? 0
+  const totalAppts = metrics?.kpis.total ?? 0
   const isCritical = noShowRate > 20
+
+  // Reasons data — placeholder até existir tabela de motivos
+  const reasonsData: Array<{ name: string; value: number; color: string }> = []
+
 
   return (
     <div className="p-6 space-y-6">
