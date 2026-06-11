@@ -1,10 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
-import { DEV_TENANT_ID, getDevSupabase } from "./dev-tenant.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getTenantAiKey, logAiUsage } from "./ai-credentials.server";
 
-
-// TODO(auth): trocar DEV_TENANT_ID/supabaseAdmin por requireSupabaseAuth
-// + tenant_id real do profile quando Supabase Auth for implementado.
+async function getUserTenant(supabase: any, userId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("tenant_id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.tenant_id) throw new Error("Tenant não encontrado para o usuário");
+  return data.tenant_id as string;
+}
 
 const TOUCH_BRIEF: Record<string, string> = {
   followup_d1: "1 dia após a consulta — agradeça a visita e abra espaço para dúvidas, tom leve e acolhedor.",
@@ -103,20 +110,22 @@ function buildPrompt(args: {
 }
 
 export const generateFollowupMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
     const i = input as { followupId: string };
     if (!i?.followupId) throw new Error("followupId obrigatório");
     return i;
   })
-  .handler(async ({ data }) => {
-    const supabase = await getDevSupabase();
+  .handler(async ({ data, context }) => {
+    const tenantId = await getUserTenant(context.supabase, context.userId);
+    const supabase = context.supabase;
 
     // 1) Follow-up
     const { data: followup, error: fErr } = await supabase
       .from("lead_followups")
       .select("id, lead_id, template_key, channel, day_offset")
       .eq("id", data.followupId)
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
     if (fErr) throw new Error(fErr.message);
     if (!followup) throw new Error("Follow-up não encontrado");
@@ -126,7 +135,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       .from("leads")
       .select("id, full_name, phone")
       .eq("id", (followup as any).lead_id)
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
     if (lErr) throw new Error(lErr.message);
     if (!lead) throw new Error("Lead não encontrado");
@@ -136,7 +145,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       .from("lead_consultation_summary")
       .select("*")
       .eq("lead_id", (followup as any).lead_id)
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false })
       .limit(1);
     const summary = (summaryRows ?? [])[0] ?? null;
@@ -145,7 +154,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
     const { data: cfg } = await supabase
       .from("ai_configs")
       .select("scheduling_link, prompt_system, model_temperature")
-      .eq("tenant_id", DEV_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
 
     const { system, user } = buildPrompt({
@@ -157,7 +166,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
       schedulingLink: (cfg as any)?.scheduling_link ?? null,
     });
 
-    const cred = await getTenantAiKey(DEV_TENANT_ID, "openai");
+    const cred = await getTenantAiKey(tenantId, "openai");
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -187,7 +196,7 @@ export const generateFollowupMessage = createServerFn({ method: "POST" })
 
     const usage = json?.usage ?? {};
     await logAiUsage({
-      tenantId: DEV_TENANT_ID,
+      tenantId: tenantId,
       provider: "openai",
       model: cred.model,
       tokensInput: Number(usage.prompt_tokens) || 0,

@@ -1,14 +1,26 @@
 // Server fns para gerenciar credenciais IA por tenant (Super Admin).
-// TODO(auth): proteger com requireSupabaseAuth + check super_admin quando
-// o Supabase Auth real entrar. Hoje validamos via RPC upsert_ai_credential
-// que já checa is_super_admin().
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const ProviderEnum = z.enum(["openai", "anthropic", "gemini", "lovable"]);
 
-export const listTenantAiCredentials = createServerFn({ method: "GET" }).handler(
-  async () => {
+async function assertSuperAdmin(supabase: any, userId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || data.role !== "super_admin") {
+    throw new Error("Forbidden: super admin required");
+  }
+}
+
+export const listTenantAiCredentials = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: tenants, error: tErr } = await supabaseAdmin
@@ -34,10 +46,10 @@ export const listTenantAiCredentials = createServerFn({ method: "GET" }).handler
       if (byTenant[u.tenant_id]) byTenant[u.tenant_id].usage = u;
     }
     return { tenants: Object.values(byTenant) };
-  },
-);
+  });
 
 export const upsertTenantAiCredential = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -49,7 +61,8 @@ export const upsertTenantAiCredential = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: id, error } = await supabaseAdmin.rpc("upsert_ai_credential", {
       _tenant_id: data.tenantId,
@@ -63,10 +76,12 @@ export const upsertTenantAiCredential = createServerFn({ method: "POST" })
   });
 
 export const toggleTenantAiCredential = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ id: z.string().uuid(), isActive: z.boolean() }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("tenant_ai_credentials")
@@ -77,10 +92,12 @@ export const toggleTenantAiCredential = createServerFn({ method: "POST" })
   });
 
 export const testTenantAiCredential = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ tenantId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
     const { getTenantAiKey } = await import("./ai-credentials.server");
     try {
       const resolved = await getTenantAiKey(data.tenantId, "openai");
