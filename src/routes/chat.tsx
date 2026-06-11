@@ -81,28 +81,8 @@ function Chat() {
     if (el) el.scrollTop = el.scrollHeight
   }, [selectedConv?.messages.length, selectedPhone])
 
-  const [isOcrProcessing, setIsOcrProcessing] = useState(false)
+  // OCR real agora vive no painel do lead (aba "Lead" / Kanban).
 
-  const handleSimulateOCR = () => {
-    setIsOcrProcessing(true)
-    toast.loading("Processando receita via OCR...")
-    setTimeout(() => {
-      if (currentLead) {
-        updateLeadMutation.mutate({
-          id: currentLead.id,
-          updates: {
-            ia_receita_validade: '2027-05-20',
-            ia_receita_grau: 'OD: -2.00 / OE: -1.75',
-            ia_interesses: [...(currentLead.ia_interesses ?? []), 'Lentes com Filtro Azul'],
-            ia_tags: [...(currentLead.ia_tags ?? []), 'Receita Digitalizada'],
-          },
-        })
-        toast.dismiss()
-        toast.success("Receita processada com sucesso!")
-      }
-      setIsOcrProcessing(false)
-    }, 2000)
-  }
 
   const handleRecalibrateIA = () => {
     toast.promise(new Promise(resolve => setTimeout(resolve, 1500)), {
@@ -654,18 +634,14 @@ function Chat() {
                     </div>
 
                     <div className="pt-4 space-y-3">
-                      <Button onClick={handleSimulateOCR} disabled={isOcrProcessing} className="w-full h-12 text-xs font-bold bg-white hover:bg-gray-50 text-ink border border-gray-200 rounded-xl transition-all shadow-sm">
-                        {isOcrProcessing ? (
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin text-primary" />
-                        ) : (
-                          <FileText className="w-4 h-4 mr-2 text-primary" />
-                        )}
-                        {currentLead.ia_receita_grau ? "Recarregar Receita" : "Simular OCR Receita"}
-                      </Button>
                       <Button onClick={handleRecalibrateIA} variant="ghost" className="w-full h-12 text-xs font-bold text-gray-400 hover:text-primary transition-colors">
                         <Zap className="w-4 h-4 mr-2" /> Recalibrar Modelo IA
                       </Button>
+                      <p className="text-[10px] text-gray-400 text-center font-medium">
+                        Para tirar foto da receita e rodar o OCR, abra a aba <span className="font-bold text-ink">Lead</span>.
+                      </p>
                     </div>
+
                   </>
                 ) : (
                   <div className="text-center py-20 opacity-20">

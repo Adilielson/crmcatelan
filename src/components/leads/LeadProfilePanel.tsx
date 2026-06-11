@@ -179,6 +179,9 @@ export function LeadProfilePanel({ lead, compact = false }: { lead: DBLead; comp
         </div>
       )}
 
+      {/* Receita (foto + OCR) */}
+      <PrescriptionCard lead={lead} />
+
       {/* Histórico de etapas */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 px-1">
