@@ -369,6 +369,48 @@ Deno.serve(async (req) => {
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
 
+        // ── Lead: localiza/cria e captura nome do contato quando possível ─
+        let leadId: string | null = null;
+        let leadName: string | null = null;
+        try {
+          const { data: existingLead } = await adminClient
+            .from("leads")
+            .select("id, full_name")
+            .eq("tenant_id", tenantId)
+            .eq("phone", senderPhone)
+            .maybeSingle();
+
+          if (existingLead) {
+            leadId = existingLead.id as string;
+            leadName = (existingLead.full_name as string | null) ?? null;
+          } else {
+            const initialName = isValidContactName(senderName, senderPhone) ? senderName : null;
+            const { data: newLead } = await adminClient
+              .from("leads")
+              .insert({
+                tenant_id: tenantId,
+                phone: senderPhone,
+                full_name: initialName,
+                status: "open",
+                source: "whatsapp",
+              })
+              .select("id, full_name")
+              .single();
+            if (newLead) {
+              leadId = newLead.id as string;
+              leadName = (newLead.full_name as string | null) ?? null;
+            }
+          }
+
+          // Se o lead existe mas ainda não tem nome, e o WhatsApp trouxe um nome válido, grava
+          if (leadId && !leadName && isValidContactName(senderName, senderPhone)) {
+            await adminClient.from("leads").update({ full_name: senderName }).eq("id", leadId);
+            leadName = senderName;
+          }
+        } catch (e) {
+          console.error("[lead] erro localizar/criar:", e instanceof Error ? e.message : String(e));
+        }
+
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
           try {
@@ -399,6 +441,16 @@ Deno.serve(async (req) => {
                   content: m.error_message as string,
                 }));
 
+              // 2b) Se ainda não temos nome, tenta extrair da mensagem atual do lead
+              if (leadId && !leadName) {
+                const extracted = await extractNameFromMessage(text);
+                if (extracted && isValidContactName(extracted, senderPhone)) {
+                  await adminClient.from("leads").update({ full_name: extracted }).eq("id", leadId);
+                  leadName = extracted;
+                  console.log(`[lead] nome capturado da mensagem: ${extracted}`);
+                }
+              }
+
               // 3) Carrega ai_configs + documentos
               const { data: aiCfg } = await adminClient
                 .from("ai_configs")
@@ -416,12 +468,16 @@ Deno.serve(async (req) => {
               const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts);
               const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
 
-              // 4) Chama Lovable AI Gateway
+              // 4) Monta contexto de horário + nome do lead
               const hoursCtx = buildHoursContext(
                 (cfg as any).business_hours as BusinessHours | null,
                 ((cfg as any).timezone as string) || "America/Sao_Paulo",
               );
-              const reply = await generateSdrReply(systemPrompt, history, hoursCtx || undefined, temperature);
+              const nameCtx = leadName
+                ? `O cliente se chama ${leadName}. Use o primeiro nome dele (${firstName(leadName)}) naturalmente nas respostas, sem repetir em toda mensagem.`
+                : `Você ainda NÃO sabe o nome do cliente. Antes de qualquer qualificação, pergunte o nome dele de forma curta e cordial (uma frase). Quando ele responder, use o primeiro nome dele nas próximas mensagens.`;
+              const contextNote = [hoursCtx, nameCtx].filter(Boolean).join("\n\n");
+              const reply = await generateSdrReply(systemPrompt, history, contextNote || undefined, temperature);
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
