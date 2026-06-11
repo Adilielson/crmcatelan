@@ -63,6 +63,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Dedup: se já carregamos esse user, ignora (TOKEN_REFRESHED, INITIAL_SESSION etc.)
       const currentId = get().user?.id;
       if (currentId === session.user.id || _loadingUserId === session.user.id) return;
+      // Marca loading para o guard do layout não redirecionar para /login
+      // durante a janela entre SIGNED_IN e o profile carregado.
+      set({ loading: true });
       loadProfile(session.user.id, session.user.email ?? '', set, get);
     });
   },
