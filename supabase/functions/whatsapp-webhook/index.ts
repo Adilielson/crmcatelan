@@ -185,6 +185,36 @@ function extractText(msg: Record<string, unknown>): string | null {
   );
 }
 
+function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown>): { url: string | null; mime: string | null; kind: string | null } {
+  const m = asObject(msg.message);
+  const url = pickString(
+    msg.mediaUrl, msg.media_url, msg.fileUrl, msg.file_url, msg.url,
+    (msg as any).imageUrl, (msg as any).audioUrl, (msg as any).videoUrl,
+    root.mediaUrl, root.media_url, root.fileUrl, root.file_url,
+    (m as any).url, (m as any).mediaUrl,
+    (asObject(m.imageMessage) as any).url,
+    (asObject(m.audioMessage) as any).url,
+    (asObject(m.videoMessage) as any).url,
+    (asObject(m.documentMessage) as any).url,
+  );
+  const mime = pickString(
+    msg.mimetype, msg.mime, msg.mediaType, msg.contentType,
+    root.mimetype, root.mime,
+    (asObject(m.imageMessage) as any).mimetype,
+    (asObject(m.audioMessage) as any).mimetype,
+    (asObject(m.videoMessage) as any).mimetype,
+    (asObject(m.documentMessage) as any).mimetype,
+  );
+  let kind: string | null = null;
+  if (mime) {
+    if (mime.startsWith('image/')) kind = 'image';
+    else if (mime.startsWith('audio/')) kind = 'audio';
+    else if (mime.startsWith('video/')) kind = 'video';
+    else kind = 'document';
+  }
+  return { url, mime, kind };
+}
+
 // Limpa um identificador de WhatsApp (JID ou telefone) e devolve apenas o número.
 // Retorna null se não for um telefone individual válido (10-13 dígitos).
 function cleanPhone(raw: string | null): string | null {
@@ -353,9 +383,10 @@ Deno.serve(async (req) => {
       );
 
       const text = extractText(message) || extractText(b);
-      const msgType = pickString(message.type, message.messageType, b.messageType) || "text";
+      const media = extractMedia(message, b);
+      const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
-      console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} avatar=${senderAvatarUrl ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
+      console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} type=${msgType} media=${media.url ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
 
       if (!fromMe && senderPhone) {
         const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
@@ -366,6 +397,8 @@ Deno.serve(async (req) => {
           error_message: text ? text.slice(0, 500) : null,
           sender_name: senderName,
           sender_avatar_url: senderAvatarUrl,
+          media_url: media.url,
+          media_mime: media.mime,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
 

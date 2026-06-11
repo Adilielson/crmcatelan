@@ -235,6 +235,18 @@ Deno.serve(async (req) => {
       return json(data);
     }
 
+    // ── Enviar áudio (voice note) ──────────────────────────────────────────
+    if (action === "send-audio") {
+      const { phone, audioUrl } = body;
+      if (!phone || !audioUrl) return json({ error: "phone e audioUrl são obrigatórios" }, 400);
+      const data = await uazapiPost("/send/media", token, {
+        number: phone,
+        type: "ptt",
+        file: audioUrl,
+      });
+      return json(data);
+    }
+
     return json({ error: `Ação desconhecida: ${action}` }, 400);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

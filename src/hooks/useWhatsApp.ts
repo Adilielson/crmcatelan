@@ -175,7 +175,7 @@ export function useWhatsApp() {
   );
 
   const sendImage = useCallback(
-    async (phone: string, imageUrl: string, caption?: string): Promise<void> => {
+    async (phone: string, imageUrl: string, caption?: string, mime?: string): Promise<void> => {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
       try {
         await callManage('send-image', tenant.id, { phone, imageUrl, caption });
@@ -184,13 +184,43 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'image',
           status: 'sent',
-          error_message: null,
+          error_message: caption ?? null,
+          media_url: imageUrl,
+          media_mime: mime ?? 'image/jpeg',
         });
       } catch (err) {
         await db.from('whatsapp_message_logs').insert({
           tenant_id: tenant.id,
           recipient_phone: phone,
           message_type: 'image',
+          status: 'failed',
+          error_message: String(err),
+        });
+        throw err;
+      }
+    },
+    [tenant?.id]
+  );
+
+  const sendAudio = useCallback(
+    async (phone: string, audioUrl: string, mime?: string): Promise<void> => {
+      if (!tenant?.id) throw new Error('Sem tenant ativo.');
+      try {
+        await callManage('send-audio', tenant.id, { phone, audioUrl });
+        await db.from('whatsapp_message_logs').insert({
+          tenant_id: tenant.id,
+          recipient_phone: phone,
+          message_type: 'audio',
+          status: 'sent',
+          error_message: null,
+          media_url: audioUrl,
+          media_mime: mime ?? 'audio/ogg',
+        });
+      } catch (err) {
+        await db.from('whatsapp_message_logs').insert({
+          tenant_id: tenant.id,
+          recipient_phone: phone,
+          message_type: 'audio',
           status: 'failed',
           error_message: String(err),
         });
@@ -214,5 +244,6 @@ export function useWhatsApp() {
     disconnect,
     sendText,
     sendImage,
+    sendAudio,
   };
 }

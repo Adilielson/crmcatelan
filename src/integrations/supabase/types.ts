@@ -1803,6 +1803,8 @@ export type Database = {
         Row: {
           error_message: string | null
           id: string
+          media_mime: string | null
+          media_url: string | null
           message_type: string
           recipient_phone: string
           sender_avatar_url: string | null
@@ -1814,6 +1816,8 @@ export type Database = {
         Insert: {
           error_message?: string | null
           id?: string
+          media_mime?: string | null
+          media_url?: string | null
           message_type: string
           recipient_phone: string
           sender_avatar_url?: string | null
@@ -1825,6 +1829,8 @@ export type Database = {
         Update: {
           error_message?: string | null
           id?: string
+          media_mime?: string | null
+          media_url?: string | null
           message_type?: string
           recipient_phone?: string
           sender_avatar_url?: string | null
