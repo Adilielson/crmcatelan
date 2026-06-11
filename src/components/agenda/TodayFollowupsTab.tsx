@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { format, isToday, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Phone, MessageSquare, Clock, AlertCircle, User } from 'lucide-react';
+import { Phone, MessageSquare, Clock, AlertCircle, User, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useTodayFollowups } from '@/hooks/use-followups';
+import { useTodayFollowups, useRespondToFollowup } from '@/hooks/use-followups';
 import { useLeads } from '@/hooks/use-leads';
 import { toast } from 'sonner';
 
