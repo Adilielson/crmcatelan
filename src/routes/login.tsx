@@ -55,7 +55,7 @@ function LoginPage() {
             </div>
             <div>
               <h1 className="text-white font-black text-lg uppercase tracking-tight">Ótica Catelan</h1>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">CRM Plataforma — TESTE BUILD</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">CRM Plataforma</p>
             </div>
           </div>
 
