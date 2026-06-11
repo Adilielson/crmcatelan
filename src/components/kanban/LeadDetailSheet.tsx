@@ -7,9 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { DBLead, STAGES, useDeleteLead, useUpdateLead } from '@/hooks/use-leads';
-import { Trash2, Brain, ClipboardList } from 'lucide-react';
-import { FollowupContextBlock } from '@/components/agenda/FollowupContextBlock';
+import { Trash2, ClipboardList } from 'lucide-react';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
+import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel';
 
 export function LeadDetailSheet({
   lead,
