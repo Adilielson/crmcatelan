@@ -216,7 +216,7 @@ function MobileChat() {
               conv={conv}
               lead={matchLead(conv.phone)}
               onOpen={() =>
-                navigate({ to: '/chat', search: { phone: conv.phone } })
+                navigate({ to: '/m/chat/$phone', params: { phone: conv.phone } })
               }
               onCheckin={handleCheckin}
             />

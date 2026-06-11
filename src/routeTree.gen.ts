@@ -26,6 +26,7 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MChatRouteImport } from './routes/m.chat'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
+import { Route as MChatPhoneRouteImport } from './routes/m.chat.$phone'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 
 const WhatsappRoute = WhatsappRouteImport.update({
@@ -113,6 +114,11 @@ const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
   path: '/analytics/no-show',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MChatPhoneRoute = MChatPhoneRouteImport.update({
+  id: '/$phone',
+  path: '/$phone',
+  getParentRoute: () => MChatRoute,
+} as any)
 const ApiPublicHooksProcessFollowupsRoute =
   ApiPublicHooksProcessFollowupsRouteImport.update({
     id: '/api/public/hooks/process-followups',
@@ -137,7 +143,8 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
-  '/m/chat': typeof MChatRoute
+  '/m/chat': typeof MChatRouteWithChildren
+  '/m/chat/$phone': typeof MChatPhoneRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesByTo {
@@ -157,7 +164,8 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
-  '/m/chat': typeof MChatRoute
+  '/m/chat': typeof MChatRouteWithChildren
+  '/m/chat/$phone': typeof MChatPhoneRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesById {
@@ -178,7 +186,8 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
-  '/m/chat': typeof MChatRoute
+  '/m/chat': typeof MChatRouteWithChildren
+  '/m/chat/$phone': typeof MChatPhoneRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRouteTypes {
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/analytics/no-show'
     | '/m/chat'
+    | '/m/chat/$phone'
     | '/api/public/hooks/process-followups'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/analytics/no-show'
     | '/m/chat'
+    | '/m/chat/$phone'
     | '/api/public/hooks/process-followups'
   id:
     | '__root__'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/analytics/no-show'
     | '/m/chat'
+    | '/m/chat/$phone'
     | '/api/public/hooks/process-followups'
   fileRoutesById: FileRoutesById
 }
@@ -261,7 +273,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
-  MChatRoute: typeof MChatRoute
+  MChatRoute: typeof MChatRouteWithChildren
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
 }
 
@@ -386,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsNoShowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/m/chat/$phone': {
+      id: '/m/chat/$phone'
+      path: '/$phone'
+      fullPath: '/m/chat/$phone'
+      preLoaderRoute: typeof MChatPhoneRouteImport
+      parentRoute: typeof MChatRoute
+    }
     '/api/public/hooks/process-followups': {
       id: '/api/public/hooks/process-followups'
       path: '/api/public/hooks/process-followups'
@@ -395,6 +414,16 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface MChatRouteChildren {
+  MChatPhoneRoute: typeof MChatPhoneRoute
+}
+
+const MChatRouteChildren: MChatRouteChildren = {
+  MChatPhoneRoute: MChatPhoneRoute,
+}
+
+const MChatRouteWithChildren = MChatRoute._addFileChildren(MChatRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -413,7 +442,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
-  MChatRoute: MChatRoute,
+  MChatRoute: MChatRouteWithChildren,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,
 }
 export const routeTree = rootRouteImport
