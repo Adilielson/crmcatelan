@@ -15,6 +15,8 @@ export interface WhatsAppMessage {
   fromMe: boolean;
   senderName: string | null;
   senderAvatarUrl: string | null;
+  mediaUrl: string | null;
+  mediaMime: string | null;
 }
 
 export interface WhatsAppConversation {
@@ -36,6 +38,8 @@ interface LogRow {
   sent_at: string;
   sender_name: string | null;
   sender_avatar_url: string | null;
+  media_url: string | null;
+  media_mime: string | null;
 }
 
 function mapRow(row: LogRow): WhatsAppMessage {
@@ -49,6 +53,8 @@ function mapRow(row: LogRow): WhatsAppMessage {
     fromMe: row.status === 'sent',
     senderName: row.sender_name,
     senderAvatarUrl: row.sender_avatar_url,
+    mediaUrl: row.media_url,
+    mediaMime: row.media_mime,
   };
 }
 
@@ -102,7 +108,7 @@ export function useWhatsAppChat() {
     setLoading(true);
     const { data, error } = await db
       .from('whatsapp_message_logs')
-      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url')
+      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime')
       .eq('tenant_id', tenant.id)
       .order('sent_at', { ascending: true })
       .limit(500);
