@@ -187,7 +187,9 @@ function extractText(msg: Record<string, unknown>): string | null {
 
 function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown>): { url: string | null; mime: string | null; kind: string | null } {
   const m = asObject(msg.message);
+  const content = asObject(msg.content); // uazapi: message.content.{URL,mimetype}
   const url = pickString(
+    (content as any).URL, (content as any).url,
     msg.mediaUrl, msg.media_url, msg.fileUrl, msg.file_url, msg.url,
     (msg as any).imageUrl, (msg as any).audioUrl, (msg as any).videoUrl,
     root.mediaUrl, root.media_url, root.fileUrl, root.file_url,
@@ -198,21 +200,54 @@ function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown
     (asObject(m.documentMessage) as any).url,
   );
   const mime = pickString(
-    msg.mimetype, msg.mime, msg.mediaType, msg.contentType,
+    (content as any).mimetype,
+    msg.mimetype, msg.mime, msg.contentType,
     root.mimetype, root.mime,
     (asObject(m.imageMessage) as any).mimetype,
     (asObject(m.audioMessage) as any).mimetype,
     (asObject(m.videoMessage) as any).mimetype,
     (asObject(m.documentMessage) as any).mimetype,
   );
+  // uazapi: mediaType = "image" | "ptt" | "audio" | "video" | "document" | "sticker"
+  const mediaType = (pickString(msg.mediaType, msg.messageType) || "").toLowerCase();
   let kind: string | null = null;
-  if (mime) {
-    if (mime.startsWith('image/')) kind = 'image';
-    else if (mime.startsWith('audio/')) kind = 'audio';
-    else if (mime.startsWith('video/')) kind = 'video';
+  if (mediaType.includes("ptt") || mediaType.includes("audio")) kind = "audio";
+  else if (mediaType.includes("sticker") || mediaType.includes("image")) kind = "image";
+  else if (mediaType.includes("video")) kind = "video";
+  else if (mediaType.includes("document")) kind = "document";
+  if (!kind && mime) {
+    const base = mime.split(";")[0].trim();
+    if (base.startsWith('image/')) kind = 'image';
+    else if (base.startsWith('audio/')) kind = 'audio';
+    else if (base.startsWith('video/')) kind = 'video';
     else kind = 'document';
   }
   return { url, mime, kind };
+}
+
+// Baixa/descriptografa mídia via uazapi (URLs mmg.whatsapp.net são criptografadas
+// e não abrem no navegador). Retorna uma URL pública utilizável ou null.
+async function downloadMediaViaUazapi(instanceToken: string, messageId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${UAZAPI_BASE_URL}/message/download`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token: instanceToken },
+      body: JSON.stringify({ id: messageId, return_base64: false }),
+    });
+    if (!res.ok) {
+      console.error(`[media] download ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      return null;
+    }
+    const data = asObject(await res.json().catch(() => ({})));
+    return pickString(
+      (data as any).fileURL, (data as any).fileUrl, (data as any).url,
+      (data as any).link, (data as any).mediaUrl,
+      (asObject((data as any).file) as any).url,
+    );
+  } catch (e) {
+    console.error("[media] download erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
 }
 
 // Limpa um identificador de WhatsApp (JID ou telefone) e devolve apenas o número.
@@ -387,8 +422,21 @@ Deno.serve(async (req) => {
       const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
       console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} type=${msgType} media=${media.url ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
-      if (!fromMe && (!media.url || msgType === "document")) {
-        console.log(`[webhook][debug] raw body keys=${JSON.stringify(Object.keys(b))} message=${JSON.stringify(message).slice(0, 1500)} root=${JSON.stringify(b).slice(0, 1500)}`);
+
+      // URLs do WhatsApp (mmg.whatsapp.net) são criptografadas — baixa via uazapi
+      let mediaUrl = media.url;
+      if (mediaUrl && /whatsapp\.net/.test(mediaUrl)) {
+        const instanceToken = pickString(b.token);
+        const messageId = pickString(message.messageid, message.id);
+        if (instanceToken && messageId) {
+          const downloaded = await downloadMediaViaUazapi(instanceToken, messageId);
+          if (downloaded) {
+            mediaUrl = downloaded;
+            console.log(`[media] download ok: ${downloaded.slice(0, 120)}`);
+          } else {
+            console.warn("[media] download falhou, mantendo URL original");
+          }
+        }
       }
 
       if (!fromMe && senderPhone) {
@@ -400,7 +448,7 @@ Deno.serve(async (req) => {
           error_message: text ? text.slice(0, 500) : null,
           sender_name: senderName,
           sender_avatar_url: senderAvatarUrl,
-          media_url: media.url,
+          media_url: mediaUrl,
           media_mime: media.mime,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
