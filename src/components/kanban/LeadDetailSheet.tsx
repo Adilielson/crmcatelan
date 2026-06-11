@@ -22,6 +22,7 @@ export function LeadDetailSheet({
 }) {
   const update = useUpdateLead();
   const del = useDeleteLead();
+  const [showConsultationDialog, setShowConsultationDialog] = useState(false);
   const [form, setForm] = useState({
     full_name: '',
     phone: '',
