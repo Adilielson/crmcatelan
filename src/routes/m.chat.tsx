@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
 import {
   Search,
@@ -6,46 +6,66 @@ import {
   Camera,
   MoreHorizontal,
   Archive,
-  Pin,
-  Check,
   CheckCheck,
-  Image as ImageIcon,
-  Mic,
-  FileText,
   RefreshCw,
   MessageSquare,
   Phone,
   Users,
-  Bell,
   User,
+  Brain,
+  CalendarCheck,
+  LogIn,
 } from 'lucide-react'
 import {
   useWhatsAppChat,
   formatChatTime,
   formatPhoneDisplay,
   getContactInitials,
+  type WhatsAppConversation,
 } from '@/hooks/use-whatsapp-chat'
+import { useLeads, useUpdateLead, type DBLead as Lead } from '@/hooks/use-leads'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/m/chat')({
   component: MobileChat,
 })
 
-type FilterKey = 'all' | 'unread' | 'favorites' | 'groups'
+type FilterKey = 'all' | 'unread' | 'ia' | 'agenda'
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'Todas' },
   { key: 'unread', label: 'Não lidas' },
-  { key: 'favorites', label: 'Favoritos' },
-  { key: 'groups', label: 'Grupos' },
+  { key: 'ia', label: 'IA' },
+  { key: 'agenda', label: 'Agenda' },
 ]
+
+const onlyDigits = (s: string) => s.replace(/\D+/g, '')
 
 function MobileChat() {
   const navigate = useNavigate()
   const { conversations, loading } = useWhatsAppChat()
+  const { data: leads = [] } = useLeads()
+  const updateLead = useUpdateLead()
   const [filter, setFilter] = useState<FilterKey>('all')
   const [search, setSearch] = useState('')
+
+  // Map: digits-only phone -> lead (last 10-11 digits compare)
+  const leadByPhone = useMemo(() => {
+    const m = new Map<string, Lead>()
+    for (const l of leads) {
+      if (!l.phone) continue
+      const d = onlyDigits(l.phone)
+      m.set(d.slice(-11), l)
+    }
+    return m
+  }, [leads])
+
+  const matchLead = (phone: string): Lead | undefined => {
+    const d = onlyDigits(phone).slice(-11)
+    return leadByPhone.get(d) ?? leadByPhone.get(d.slice(-10))
+  }
 
   const totalUnread = useMemo(
     () => conversations.reduce((sum, c) => sum + c.unread, 0),
@@ -56,6 +76,18 @@ function MobileChat() {
     const q = search.trim().toLowerCase()
     let list = conversations
     if (filter === 'unread') list = list.filter((c) => c.unread > 0)
+    if (filter === 'ia') {
+      list = list.filter((c) => {
+        const l = matchLead(c.phone)
+        return !!l && (l.score_ia != null || !!l.ia_summary)
+      })
+    }
+    if (filter === 'agenda') {
+      list = list.filter((c) => {
+        const l = matchLead(c.phone)
+        return !!l && (l.status === 'scheduled' || l.status === 'checked_in')
+      })
+    }
     if (q) {
       list = list.filter(
         (c) =>
@@ -65,7 +97,18 @@ function MobileChat() {
       )
     }
     return list
-  }, [conversations, filter, search])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations, filter, search, leadByPhone])
+
+  const handleCheckin = async (e: React.MouseEvent, lead: Lead) => {
+    e.stopPropagation()
+    try {
+      await updateLead.mutateAsync({ id: lead.id, updates: { status: 'checked_in' } })
+      toast.success('Check-in registrado')
+    } catch (err) {
+      toast.error('Não foi possível registrar o check-in')
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
@@ -87,13 +130,13 @@ function MobileChat() {
             >
               <Camera className="h-5 w-5" />
             </button>
-            <button
-              type="button"
+            <Link
+              to="/kanban"
               className="grid place-items-center h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(255,196,0,0.35)]"
               aria-label="Nova conversa"
             >
               <Plus className="h-5 w-5" strokeWidth={2.5} />
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -117,27 +160,22 @@ function MobileChat() {
         <div className="mt-3 -mx-5 px-5 flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {FILTERS.map((f) => {
             const active = filter === f.key
-            const count =
-              f.key === 'unread'
-                ? totalUnread
-                : f.key === 'all'
-                ? conversations.length
-                : 0
-            const showCount = f.key === 'unread' && count > 0
+            const Icon =
+              f.key === 'ia' ? Brain : f.key === 'agenda' ? CalendarCheck : null
             return (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
                 type="button"
                 className={cn(
-                  'shrink-0 h-9 px-4 rounded-full text-[13px] font-bold border transition-all',
+                  'shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-bold border transition-all',
                   active
                     ? 'bg-primary/15 border-primary text-ink'
                     : 'bg-white border-[#E3E6EB] text-gray-600',
                 )}
               >
+                {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
                 {f.label}
-                {showCount && ` ${count}`}
               </button>
             )
           })}
@@ -172,96 +210,155 @@ function MobileChat() {
         )}
 
         <ul className="divide-y divide-[#F0F1F4]">
-          {filtered.map((conv) => {
-            const initials = getContactInitials(conv.name, conv.phone)
-            const displayName = conv.name || formatPhoneDisplay(conv.phone)
-            const lastMsg = conv.messages[conv.messages.length - 1]
-            const isOutgoing = lastMsg?.fromMe
-            const preview = previewText(conv.lastText, lastMsg?.type)
-            return (
-              <li key={conv.phone}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate({ to: '/chat', search: { phone: conv.phone } })
-                  }
-                  className="w-full flex items-center gap-3 px-5 py-3 active:bg-gray-50 transition-colors"
-                >
-                  <Avatar className="h-14 w-14 shrink-0 rounded-full border border-[#E8EAEE]">
-                    {conv.avatarUrl && (
-                      <AvatarImage src={conv.avatarUrl} alt={displayName} />
-                    )}
-                    <AvatarFallback className="bg-gradient-to-br from-[#FFF4CC] to-[#FFE07A] text-[#8a6900] font-black uppercase">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="truncate font-bold text-[16px] text-ink">
-                        {displayName}
-                      </h3>
-                      <span
-                        className={cn(
-                          'shrink-0 text-[12px] tabular-nums font-semibold',
-                          conv.unread > 0 ? 'text-primary' : 'text-gray-400',
-                        )}
-                      >
-                        {formatChatTime(conv.lastAt)}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-2">
-                      {isOutgoing && (
-                        <CheckCheck className="h-4 w-4 shrink-0 text-[#1FA463]" />
-                      )}
-                      <p
-                        className={cn(
-                          'flex-1 min-w-0 truncate text-[13.5px]',
-                          conv.unread > 0
-                            ? 'text-ink font-semibold'
-                            : 'text-gray-500 font-medium',
-                        )}
-                      >
-                        {preview}
-                      </p>
-                      {conv.unread > 0 ? (
-                        <span className="shrink-0 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-black tabular-nums shadow-[0_2px_6px_rgba(255,196,0,0.45)]">
-                          {conv.unread > 99 ? '99+' : conv.unread}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </button>
-              </li>
-            )
-          })}
+          {filtered.map((conv) => (
+            <ConversationRow
+              key={conv.phone}
+              conv={conv}
+              lead={matchLead(conv.phone)}
+              onOpen={() =>
+                navigate({ to: '/chat', search: { phone: conv.phone } })
+              }
+              onCheckin={handleCheckin}
+            />
+          ))}
         </ul>
       </div>
 
       {/* Bottom Nav */}
       <nav className="border-t border-[#E8EAEE] bg-white/95 backdrop-blur-md pb-[max(env(safe-area-inset-bottom),12px)] pt-2">
         <ul className="grid grid-cols-5 px-2">
-          <BottomItem icon={<RefreshCw className="h-5 w-5" />} label="Atualizações" />
-          <BottomItem icon={<Phone className="h-5 w-5" />} label="Ligações" />
-          <BottomItem icon={<Users className="h-5 w-5" />} label="Comunidades" />
           <BottomItem
+            to="/"
+            icon={<RefreshCw className="h-5 w-5" />}
+            label="Início"
+          />
+          <BottomItem
+            to="/fila"
+            icon={<Phone className="h-5 w-5" />}
+            label="Fila"
+          />
+          <BottomItem
+            to="/agenda"
+            icon={<CalendarCheck className="h-5 w-5" />}
+            label="Agenda"
+          />
+          <BottomItem
+            to="/m/chat"
             icon={<MessageSquare className="h-5 w-5" />}
             label="Conversas"
             active
             badge={totalUnread}
           />
-          <BottomItem icon={<User className="h-5 w-5" />} label="Você" />
+          <BottomItem
+            to="/equipe"
+            icon={<User className="h-5 w-5" />}
+            label="Equipe"
+          />
         </ul>
       </nav>
     </div>
   )
 }
 
+function ConversationRow({
+  conv,
+  lead,
+  onOpen,
+  onCheckin,
+}: {
+  conv: WhatsAppConversation
+  lead?: Lead
+  onOpen: () => void
+  onCheckin: (e: React.MouseEvent, lead: Lead) => void
+}) {
+  const initials = getContactInitials(conv.name, conv.phone)
+  const displayName = lead?.full_name || conv.name || formatPhoneDisplay(conv.phone)
+  const lastMsg = conv.messages[conv.messages.length - 1]
+  const isOutgoing = lastMsg?.fromMe
+  const preview = previewText(conv.lastText, lastMsg?.type)
+  const isScheduled = lead?.status === 'scheduled'
+  const hasAi = !!(lead && (lead.score_ia != null || lead.ia_summary))
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="w-full flex items-center gap-3 px-5 py-3 active:bg-gray-50 transition-colors"
+      >
+        <Avatar className="h-14 w-14 shrink-0 rounded-full border border-[#E8EAEE]">
+          {conv.avatarUrl && (
+            <AvatarImage src={conv.avatarUrl} alt={displayName} />
+          )}
+          <AvatarFallback className="bg-gradient-to-br from-[#FFF4CC] to-[#FFE07A] text-[#8a6900] font-black uppercase">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <h3 className="truncate font-bold text-[16px] text-ink">
+                {displayName}
+              </h3>
+              {hasAi && (
+                <Brain className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Atendido pela IA" />
+              )}
+            </div>
+            <span
+              className={cn(
+                'shrink-0 text-[12px] tabular-nums font-semibold',
+                conv.unread > 0 ? 'text-primary' : 'text-gray-400',
+              )}
+            >
+              {formatChatTime(conv.lastAt)}
+            </span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-2">
+            {isOutgoing && (
+              <CheckCheck className="h-4 w-4 shrink-0 text-[#1FA463]" />
+            )}
+            <p
+              className={cn(
+                'flex-1 min-w-0 truncate text-[13.5px]',
+                conv.unread > 0
+                  ? 'text-ink font-semibold'
+                  : 'text-gray-500 font-medium',
+              )}
+            >
+              {preview}
+            </p>
+            {isScheduled && lead ? (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => onCheckin(e, lead)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') onCheckin(e as unknown as React.MouseEvent, lead)
+                }}
+                className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-[#1FA463]/10 text-[#1FA463] text-[11px] font-black border border-[#1FA463]/30 active:scale-95 transition"
+              >
+                <LogIn className="h-3 w-3" /> Check-in
+              </span>
+            ) : conv.unread > 0 ? (
+              <span className="shrink-0 inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-black tabular-nums shadow-[0_2px_6px_rgba(255,196,0,0.45)]">
+                {conv.unread > 99 ? '99+' : conv.unread}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </button>
+    </li>
+  )
+}
+
 function BottomItem({
+  to,
   icon,
   label,
   active,
   badge,
 }: {
+  to: string
   icon: React.ReactNode
   label: string
   active?: boolean
@@ -269,8 +366,8 @@ function BottomItem({
 }) {
   return (
     <li>
-      <button
-        type="button"
+      <Link
+        to={to}
         className={cn(
           'w-full flex flex-col items-center gap-1 py-1.5 rounded-2xl transition-colors',
           active ? 'text-ink' : 'text-gray-400',
@@ -290,7 +387,7 @@ function BottomItem({
           ) : null}
         </span>
         <span className="text-[10px] font-bold tracking-wide">{label}</span>
-      </button>
+      </Link>
     </li>
   )
 }
