@@ -387,6 +387,9 @@ Deno.serve(async (req) => {
       const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
       console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} type=${msgType} media=${media.url ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
+      if (!fromMe && (!media.url || msgType === "document")) {
+        console.log(`[webhook][debug] raw body keys=${JSON.stringify(Object.keys(b))} message=${JSON.stringify(message).slice(0, 1500)} root=${JSON.stringify(b).slice(0, 1500)}`);
+      }
 
       if (!fromMe && senderPhone) {
         const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
