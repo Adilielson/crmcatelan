@@ -23,7 +23,7 @@ import {
   getContactInitials,
   type WhatsAppConversation,
 } from '@/hooks/use-whatsapp-chat'
-import { useLeads, useUpdateLead, type Lead } from '@/hooks/use-leads'
+import { useLeads, useUpdateLead, type DBLead as Lead } from '@/hooks/use-leads'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -103,7 +103,7 @@ function MobileChat() {
   const handleCheckin = async (e: React.MouseEvent, lead: Lead) => {
     e.stopPropagation()
     try {
-      await updateLead.mutateAsync({ id: lead.id, status: 'checked_in' })
+      await updateLead.mutateAsync({ id: lead.id, updates: { status: 'checked_in' } })
       toast.success('Check-in registrado')
     } catch (err) {
       toast.error('Não foi possível registrar o check-in')
