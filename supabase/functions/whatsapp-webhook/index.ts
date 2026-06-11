@@ -198,6 +198,65 @@ function cleanPhone(raw: string | null): string | null {
   return d;
 }
 
+// Valida se um "nome" enviado pelo WhatsApp parece um nome real
+// (não é só dígitos, não é o próprio telefone, não é JID).
+function isValidContactName(name: string | null, phone: string | null): boolean {
+  if (!name) return false;
+  const n = name.trim();
+  if (n.length < 2 || n.length > 80) return false;
+  if (/^\d+$/.test(n)) return false;
+  if (n.includes("@")) return false;
+  if (phone && n.replace(/\D+/g, "") === phone) return false;
+  return true;
+}
+
+// Extrai o primeiro nome de uma string completa
+function firstName(full: string | null | undefined): string | null {
+  if (!full) return null;
+  const t = full.trim().split(/\s+/)[0];
+  return t || null;
+}
+
+// Pede para a IA extrair o nome de uma mensagem curta do lead.
+// Retorna null se não conseguir identificar com confiança.
+async function extractNameFromMessage(message: string): Promise<string | null> {
+  if (!LOVABLE_API_KEY) return null;
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": LOVABLE_API_KEY,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          {
+            role: "system",
+            content:
+              'Extraia o nome próprio do remetente da mensagem. Responda APENAS com JSON no formato {"name": "Fulano"} ou {"name": null} se não houver nome claro. Não inclua sobrenomes inventados, saudações ou texto extra.',
+          },
+          { role: "user", content: message.slice(0, 300) },
+        ],
+        temperature: 0,
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const raw = data?.choices?.[0]?.message?.content;
+    if (typeof raw !== "string") return null;
+    const parsed = JSON.parse(raw);
+    const name = typeof parsed?.name === "string" ? parsed.name.trim() : null;
+    if (!name || name.length < 2 || name.length > 60) return null;
+    if (/^\d+$/.test(name)) return null;
+    return name;
+  } catch (e) {
+    console.error("[sdr] extractNameFromMessage erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method === "GET") {
@@ -310,6 +369,48 @@ Deno.serve(async (req) => {
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
 
+        // ── Lead: localiza/cria e captura nome do contato quando possível ─
+        let leadId: string | null = null;
+        let leadName: string | null = null;
+        try {
+          const { data: existingLead } = await adminClient
+            .from("leads")
+            .select("id, full_name")
+            .eq("tenant_id", tenantId)
+            .eq("phone", senderPhone)
+            .maybeSingle();
+
+          if (existingLead) {
+            leadId = existingLead.id as string;
+            leadName = (existingLead.full_name as string | null) ?? null;
+          } else {
+            const initialName = isValidContactName(senderName, senderPhone) ? senderName : null;
+            const { data: newLead } = await adminClient
+              .from("leads")
+              .insert({
+                tenant_id: tenantId,
+                phone: senderPhone,
+                full_name: initialName,
+                status: "open",
+                source: "whatsapp",
+              })
+              .select("id, full_name")
+              .single();
+            if (newLead) {
+              leadId = newLead.id as string;
+              leadName = (newLead.full_name as string | null) ?? null;
+            }
+          }
+
+          // Se o lead existe mas ainda não tem nome, e o WhatsApp trouxe um nome válido, grava
+          if (leadId && !leadName && isValidContactName(senderName, senderPhone)) {
+            await adminClient.from("leads").update({ full_name: senderName }).eq("id", leadId);
+            leadName = senderName;
+          }
+        } catch (e) {
+          console.error("[lead] erro localizar/criar:", e instanceof Error ? e.message : String(e));
+        }
+
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
           try {
@@ -340,6 +441,16 @@ Deno.serve(async (req) => {
                   content: m.error_message as string,
                 }));
 
+              // 2b) Se ainda não temos nome, tenta extrair da mensagem atual do lead
+              if (leadId && !leadName) {
+                const extracted = await extractNameFromMessage(text);
+                if (extracted && isValidContactName(extracted, senderPhone)) {
+                  await adminClient.from("leads").update({ full_name: extracted }).eq("id", leadId);
+                  leadName = extracted;
+                  console.log(`[lead] nome capturado da mensagem: ${extracted}`);
+                }
+              }
+
               // 3) Carrega ai_configs + documentos
               const { data: aiCfg } = await adminClient
                 .from("ai_configs")
@@ -357,12 +468,16 @@ Deno.serve(async (req) => {
               const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts);
               const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
 
-              // 4) Chama Lovable AI Gateway
+              // 4) Monta contexto de horário + nome do lead
               const hoursCtx = buildHoursContext(
                 (cfg as any).business_hours as BusinessHours | null,
                 ((cfg as any).timezone as string) || "America/Sao_Paulo",
               );
-              const reply = await generateSdrReply(systemPrompt, history, hoursCtx || undefined, temperature);
+              const nameCtx = leadName
+                ? `O cliente se chama ${leadName}. Use o primeiro nome dele (${firstName(leadName)}) naturalmente nas respostas, sem repetir em toda mensagem.`
+                : `Você ainda NÃO sabe o nome do cliente. Antes de qualquer qualificação, pergunte o nome dele de forma curta e cordial (uma frase). Quando ele responder, use o primeiro nome dele nas próximas mensagens.`;
+              const contextNote = [hoursCtx, nameCtx].filter(Boolean).join("\n\n");
+              const reply = await generateSdrReply(systemPrompt, history, contextNote || undefined, temperature);
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
