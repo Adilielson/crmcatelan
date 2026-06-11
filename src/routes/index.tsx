@@ -125,23 +125,23 @@ function Dashboard() {
         <StatCard 
           title="Total de Leads" 
           value={stats.totalLeads.toString()} 
-          change="+12.5%" 
-          changeDesc="vs semana anterior"
+          change={fmtDelta(kpis?.leadsDelta ?? 0)} 
+          changeDesc="vs 30 dias anteriores"
           icon={<Users className="w-5 h-5" />}
           link="/kanban"
         />
         <StatCard 
           title="Valor em Pipeline" 
           value={stats.totalValue} 
-          change="R$ 12k" 
-          changeDesc="leads ativos no funil"
+          change={fmtDelta(kpis?.valueDelta ?? 0)} 
+          changeDesc="vs 30 dias anteriores"
           icon={<DollarSign className="w-5 h-5" />}
           link="/kanban"
         />
         <StatCard 
           title="Consultas Agendadas" 
           value={stats.confirmedAppts.toString()} 
-          change="+8" 
+          change={`${stats.confirmedAppts}`} 
           changeDesc="próximos 7 dias"
           icon={<Calendar className="w-5 h-5" />}
           link="/agenda"
@@ -149,8 +149,8 @@ function Dashboard() {
         <StatCard 
           title="Qualificação IA" 
           value={stats.qualRate} 
-          change="92%" 
-          changeDesc="performance SDR"
+          change={`${kpis?.qualRate?.toFixed(0) ?? 0}%`} 
+          changeDesc="leads com score ≥ 70"
           icon={<Brain className="w-5 h-5" />}
           highlight
           link="/performance"
