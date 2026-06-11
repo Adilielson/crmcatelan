@@ -64,9 +64,9 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     // ---- Period split (current 30d vs previous 30d) for deltas ----
     const now = Date.now()
     const D30 = 30 * 24 * 60 * 60 * 1000
-    const cur = allLeads.filter((l) => new Date(l.created_at).getTime() > now - D30)
+    const cur = allLeads.filter((l) => new Date(l.created_at ?? 0).getTime() > now - D30)
     const prev = allLeads.filter((l) => {
-      const t = new Date(l.created_at).getTime()
+      const t = new Date(l.created_at ?? 0).getTime()
       return t <= now - D30 && t > now - 2 * D30
     })
 
@@ -85,13 +85,16 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
 
     // ---- Funnel by status ----
     const counts: Record<string, number> = {}
-    for (const l of allLeads) counts[l.status] = (counts[l.status] ?? 0) + 1
+    for (const l of allLeads) {
+      const k = l.status ?? 'open'
+      counts[k] = (counts[k] ?? 0) + 1
+    }
     const funnelData = (cols ?? [])
-      .filter((c) => (counts[c.system_key] ?? 0) > 0)
+      .filter((c) => (counts[c.system_key ?? ''] ?? 0) > 0)
       .map((c) => ({
         name: c.name,
-        value: counts[c.system_key] ?? 0,
-        color: LEAD_COLORS[c.system_key] ?? '#94a3b8',
+        value: counts[c.system_key ?? ''] ?? 0,
+        color: LEAD_COLORS[c.system_key ?? ''] ?? '#94a3b8',
       }))
 
     // ---- Sources ----
@@ -112,15 +115,15 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     // ---- SLA alerts (parado há >4h em open/in_progress) ----
     const FOUR_H = 4 * 60 * 60 * 1000
     const slaAlerts = allLeads
-      .filter((l) => ['open', 'in_progress'].includes(l.status))
-      .filter((l) => now - new Date(l.updated_at).getTime() > FOUR_H)
-      .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime())
+      .filter((l) => l.status === 'open' || l.status === 'in_progress')
+      .filter((l) => now - new Date(l.updated_at ?? 0).getTime() > FOUR_H)
+      .sort((a, b) => new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime())
       .slice(0, 5)
       .map((l) => {
-        const waitH = Math.floor((now - new Date(l.updated_at).getTime()) / (60 * 60 * 1000))
+        const waitH = Math.floor((now - new Date(l.updated_at ?? 0).getTime()) / (60 * 60 * 1000))
         return {
           id: l.id,
-          name: l.full_name,
+          name: l.full_name ?? 'Sem nome',
           stage: l.status === 'open' ? 'Leads Prontos' : 'Em Atendimento',
           waitHours: waitH,
           priority: waitH > 24 ? 'Alta' : 'Normal',
@@ -130,11 +133,11 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     // ---- Recent AI activity ----
     const recentAi = allLeads
       .filter((l) => l.ia_summary || (l.score_ia ?? 0) > 0)
-      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .sort((a, b) => new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime())
       .slice(0, 3)
       .map((l) => ({
         id: l.id,
-        full_name: l.full_name,
+        full_name: l.full_name ?? 'Sem nome',
         ia_summary: l.ia_summary,
         score_ia: l.score_ia ?? 0,
       }))
