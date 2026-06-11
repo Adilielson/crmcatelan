@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTodayFollowups, useRespondToFollowup } from '@/hooks/use-followups';
 import { useLeads } from '@/hooks/use-leads';
+import { FollowupContextBlock } from './FollowupContextBlock';
 import { toast } from 'sonner';
 
 const TEMPLATE_LABEL: Record<string, string> = {
@@ -127,6 +128,7 @@ export function TodayFollowupsTab() {
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> RESPONDIDO
                     </Button>
                   </div>
+                  {lead && <FollowupContextBlock leadId={lead.id} />}
                 </div>
               );
             })
@@ -183,6 +185,7 @@ export function TodayFollowupsTab() {
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> RESPONDIDO
                     </Button>
                   </div>
+                  {lead && <FollowupContextBlock leadId={lead.id} />}
                 </div>
               );
             })

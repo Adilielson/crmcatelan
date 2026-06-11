@@ -21,6 +21,7 @@ import { LeadValueDialog } from './LeadValueDialog';
 import { LeadLocationDialog } from './LeadLocationDialog';
 import { KanbanColumnDialog } from './KanbanColumnDialog';
 import { CloseLeadDialog } from './CloseLeadDialog';
+import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
 
 const InstagramIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -62,6 +63,7 @@ export function KanbanBoard() {
   const [editingColumn, setEditingColumn] = useState<KanbanColumn | null>(null);
   const [deletingColumn, setDeletingColumn] = useState<KanbanColumn | null>(null);
   const [closingLead, setClosingLead] = useState<DBLead | null>(null);
+  const [followupLead, setFollowupLead] = useState<DBLead | null>(null);
 
   const leadsForColumn = (col: KanbanColumn): DBLead[] => {
     if (col.is_system && col.system_key) {
@@ -95,6 +97,10 @@ export function KanbanBoard() {
     }
     if (newStage === 'showed_up') {
       setClosingLead(lead);
+      return;
+    }
+    if (newStage === 'followup') {
+      setFollowupLead(lead);
       return;
     }
     await updateLead.mutateAsync({ id: leadId, updates: { status: newStage, custom_column_id: null } });
@@ -277,6 +283,12 @@ export function KanbanBoard() {
       <LeadValueDialog lead={valueLead} open={!!valueLead} onOpenChange={(v) => !v && setValueLead(null)} />
       <LeadLocationDialog lead={locationLead} open={!!locationLead} onOpenChange={(v) => !v && setLocationLead(null)} />
       <CloseLeadDialog lead={closingLead} open={!!closingLead} onOpenChange={(v) => !v && setClosingLead(null)} />
+      <ConsultationSummaryDialog
+        lead={followupLead}
+        open={!!followupLead}
+        onOpenChange={(v) => !v && setFollowupLead(null)}
+        moveToFollowupOnSave
+      />
 
       {/* Agenda dialog */}
       <Dialog open={!!scheduleLead} onOpenChange={(v) => !v && setScheduleLead(null)}>

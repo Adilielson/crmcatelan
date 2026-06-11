@@ -637,6 +637,109 @@ export type Database = {
           },
         ]
       }
+      lead_consultation_summary: {
+        Row: {
+          created_at: string
+          filled_by: string | null
+          frame_recommendation: string | null
+          id: string
+          lead_id: string
+          lens_type: string | null
+          needs_glasses: string | null
+          no_close_reason: string | null
+          no_close_reason_detail: string | null
+          od_addition: number | null
+          od_axis: number | null
+          od_cylindrical: number | null
+          od_spherical: number | null
+          oe_addition: number | null
+          oe_axis: number | null
+          oe_cylindrical: number | null
+          oe_spherical: number | null
+          prescription_valid_until: string | null
+          price_range_presented: string | null
+          products_shown: string | null
+          professional_notes: string | null
+          tenant_id: string
+          treatments: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          filled_by?: string | null
+          frame_recommendation?: string | null
+          id?: string
+          lead_id: string
+          lens_type?: string | null
+          needs_glasses?: string | null
+          no_close_reason?: string | null
+          no_close_reason_detail?: string | null
+          od_addition?: number | null
+          od_axis?: number | null
+          od_cylindrical?: number | null
+          od_spherical?: number | null
+          oe_addition?: number | null
+          oe_axis?: number | null
+          oe_cylindrical?: number | null
+          oe_spherical?: number | null
+          prescription_valid_until?: string | null
+          price_range_presented?: string | null
+          products_shown?: string | null
+          professional_notes?: string | null
+          tenant_id: string
+          treatments?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          filled_by?: string | null
+          frame_recommendation?: string | null
+          id?: string
+          lead_id?: string
+          lens_type?: string | null
+          needs_glasses?: string | null
+          no_close_reason?: string | null
+          no_close_reason_detail?: string | null
+          od_addition?: number | null
+          od_axis?: number | null
+          od_cylindrical?: number | null
+          od_spherical?: number | null
+          oe_addition?: number | null
+          oe_axis?: number | null
+          oe_cylindrical?: number | null
+          oe_spherical?: number | null
+          prescription_valid_until?: string | null
+          price_range_presented?: string | null
+          products_shown?: string | null
+          professional_notes?: string | null
+          tenant_id?: string
+          treatments?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_consultation_summary_filled_by_fkey"
+            columns: ["filled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_consultation_summary_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_consultation_summary_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_followups: {
         Row: {
           channel: string
