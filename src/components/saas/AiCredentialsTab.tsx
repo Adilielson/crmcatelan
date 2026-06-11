@@ -2,11 +2,22 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { KeyRound, Plus, Loader2, AlertTriangle } from "lucide-react";
+import {
+  KeyRound,
+  Plus,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  PlugZap,
+  Clock,
+  Cpu,
+} from "lucide-react";
 import {
   listTenantAiCredentials,
   upsertTenantAiCredential,
   toggleTenantAiCredential,
+  testTenantAiCredential,
 } from "@/lib/ai-credentials.functions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +33,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -31,26 +42,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type Credential = {
+  id: string;
+  provider: string;
+  key_hint: string;
+  model_default: string;
+  monthly_budget_usd: number;
+  is_active: boolean;
+  last_used_at: string | null;
+};
+
 type TenantRow = {
   id: string;
   name: string;
-  credentials: Array<{
-    id: string;
-    provider: string;
-    key_hint: string;
-    model_default: string;
-    monthly_budget_usd: number;
-    is_active: boolean;
-    last_used_at: string | null;
-  }>;
-  usage: { total_tokens: number; total_cost_usd: number; calls: number } | null;
+  credentials: Credential[];
+  usage: { total_tokens: number; total_cost_usd: number; total_calls: number } | null;
 };
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export function AiCredentialsTab() {
   const qc = useQueryClient();
   const listFn = useServerFn(listTenantAiCredentials);
   const upsertFn = useServerFn(upsertTenantAiCredential);
   const toggleFn = useServerFn(toggleTenantAiCredential);
+  const testFn = useServerFn(testTenantAiCredential);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tenant-ai-credentials"],
@@ -58,6 +87,7 @@ export function AiCredentialsTab() {
   });
 
   const [openTenant, setOpenTenant] = useState<TenantRow | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
 
   const toggleMut = useMutation({
     mutationFn: (v: { id: string; isActive: boolean }) => toggleFn({ data: v }),
@@ -67,6 +97,24 @@ export function AiCredentialsTab() {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const handleTest = async (tenant: TenantRow) => {
+    setTestingId(tenant.id);
+    try {
+      const res = await testFn({ data: { tenantId: tenant.id } });
+      if (res.ok) {
+        toast.success(
+          `${tenant.name}: conexão OK${res.source === "master" ? " (via chave master)" : ""}`,
+        );
+      } else {
+        toast.error(`${tenant.name}: ${res.message}`);
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha no teste");
+    } finally {
+      setTestingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -92,74 +140,157 @@ export function AiCredentialsTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-lg overflow-x-auto">
-            <table className="w-full text-left min-w-[800px] text-sm">
-              <thead className="bg-muted/50 text-[10px] text-muted-foreground uppercase font-bold">
-                <tr>
-                  <th className="px-4 py-3">Ótica</th>
-                  <th className="px-4 py-3">Chave OpenAI</th>
-                  <th className="px-4 py-3">Modelo</th>
-                  <th className="px-4 py-3">Orçamento/mês</th>
-                  <th className="px-4 py-3">Consumo no mês</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {tenants.map((t) => {
-                  const cred = t.credentials.find((c) => c.provider === "openai");
-                  const usedUsd = Number(t.usage?.total_cost_usd ?? 0);
-                  const tokens = Number(t.usage?.total_tokens ?? 0);
-                  const budget = cred?.monthly_budget_usd ?? 0;
-                  const pct = budget > 0 ? Math.round((usedUsd / budget) * 100) : 0;
-                  const over = budget > 0 && usedUsd >= budget;
-                  return (
-                    <tr key={t.id}>
-                      <td className="px-4 py-3 font-medium">{t.name}</td>
-                      <td className="px-4 py-3 font-mono text-xs">
-                        {cred ? cred.key_hint : <span className="text-muted-foreground italic">— usa master —</span>}
-                      </td>
-                      <td className="px-4 py-3 text-xs">{cred?.model_default ?? "gpt-4o-mini"}</td>
-                      <td className="px-4 py-3 text-xs">{cred ? `US$ ${budget.toFixed(2)}` : "—"}</td>
-                      <td className="px-4 py-3 text-xs">
-                        <div className="flex flex-col">
-                          <span>US$ {usedUsd.toFixed(4)}</span>
-                          <span className="text-muted-foreground">{tokens.toLocaleString()} tokens</span>
-                          {cred && (
-                            <span className={over ? "text-red-500" : "text-muted-foreground"}>{pct}%</span>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {tenants.map((t) => {
+              const cred = t.credentials.find((c) => c.provider === "openai");
+              const usedUsd = Number(t.usage?.total_cost_usd ?? 0);
+              const tokens = Number(t.usage?.total_tokens ?? 0);
+              const calls = Number(t.usage?.total_calls ?? 0);
+              const budget = Number(cred?.monthly_budget_usd ?? 0);
+              const pct = budget > 0 ? Math.min(100, Math.round((usedUsd / budget) * 100)) : 0;
+              const over = budget > 0 && usedUsd >= budget;
+
+              // Status conexão:
+              // - sem chave: vermelho
+              // - desativada: cinza
+              // - ativa + estourada: âmbar (cai pro master)
+              // - ativa: verde
+              let statusBadge;
+              if (!cred) {
+                statusBadge = (
+                  <Badge variant="destructive" className="gap-1">
+                    <XCircle className="w-3 h-3" /> Sem chave
+                  </Badge>
+                );
+              } else if (!cred.is_active) {
+                statusBadge = (
+                  <Badge variant="secondary" className="gap-1">
+                    <XCircle className="w-3 h-3" /> Desativada
+                  </Badge>
+                );
+              } else if (over) {
+                statusBadge = (
+                  <Badge variant="outline" className="gap-1 text-amber-600 border-amber-300">
+                    <AlertTriangle className="w-3 h-3" /> Orçamento estourado
+                  </Badge>
+                );
+              } else {
+                statusBadge = (
+                  <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-300">
+                    <CheckCircle2 className="w-3 h-3" /> Conectada
+                  </Badge>
+                );
+              }
+
+              return (
+                <div
+                  key={t.id}
+                  className="border rounded-lg p-4 flex flex-col gap-3 bg-card"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-sm">{t.name}</div>
+                      <div className="mt-1">{statusBadge}</div>
+                    </div>
+                    {cred && (
+                      <Switch
+                        checked={cred.is_active}
+                        onCheckedChange={(v) => toggleMut.mutate({ id: cred.id, isActive: v })}
+                      />
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <div className="text-muted-foreground">Chave</div>
+                      <div className="font-mono">{cred?.key_hint ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <Cpu className="w-3 h-3" /> Modelo
+                      </div>
+                      <div>{cred?.model_default ?? "gpt-4o-mini (master)"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Consumo no mês</div>
+                      <div className="font-medium">US$ {usedUsd.toFixed(4)}</div>
+                      <div className="text-muted-foreground">
+                        {tokens.toLocaleString("pt-BR")} tokens · {calls} chamadas
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Orçamento</div>
+                      <div className="font-medium">
+                        {cred ? `US$ ${budget.toFixed(2)}` : "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {cred && budget > 0 && (
+                    <div className="space-y-1">
+                      <Progress
+                        value={pct}
+                        className={over ? "[&>div]:bg-red-500" : pct > 80 ? "[&>div]:bg-amber-500" : ""}
+                      />
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{pct}% usado</span>
+                        <span>
+                          US$ {usedUsd.toFixed(2)} / US$ {budget.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    Último uso: {formatDateTime(cred?.last_used_at ?? null)}
+                  </div>
+
+                  <div className="flex gap-2 pt-1 mt-auto">
+                    {cred ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          disabled={testingId === t.id}
+                          onClick={() => handleTest(t)}
+                        >
+                          {testingId === t.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <PlugZap className="w-3 h-3" />
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {cred ? (
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={cred.is_active}
-                              onCheckedChange={(v) =>
-                                toggleMut.mutate({ id: cred.id, isActive: v })
-                              }
-                            />
-                            {over && (
-                              <Badge variant="outline" className="text-red-500 border-red-300 gap-1">
-                                <AlertTriangle className="w-3 h-3" /> estourado
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <Badge variant="outline">sem chave</Badge>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button variant="outline" size="sm" onClick={() => setOpenTenant(t)}>
-                          {cred ? "Editar" : <><Plus className="w-3 h-3 mr-1" /> Adicionar</>}
+                          Testar
                         </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => setOpenTenant(t)}
+                        >
+                          Editar
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setOpenTenant(t)}
+                      >
+                        <Plus className="w-3 h-3" /> Adicionar chave
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
+          {tenants.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhuma ótica cadastrada.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -209,7 +340,12 @@ function CredentialDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label>Chave da API OpenAI {existing && <span className="text-xs text-muted-foreground">(atual: {existing.key_hint})</span>}</Label>
+            <Label>
+              Chave da API OpenAI{" "}
+              {existing && (
+                <span className="text-xs text-muted-foreground">(atual: {existing.key_hint})</span>
+              )}
+            </Label>
             <Input
               type="password"
               placeholder="sk-..."
@@ -225,7 +361,9 @@ function CredentialDialog({
             <div className="space-y-2">
               <Label>Modelo padrão</Label>
               <Select value={model} onValueChange={setModel}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="gpt-4o-mini">gpt-4o-mini (recomendado)</SelectItem>
                   <SelectItem value="gpt-4.1-mini">gpt-4.1-mini</SelectItem>
@@ -246,7 +384,9 @@ function CredentialDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button
             disabled={saving || apiKey.length < 20}
             onClick={async () => {
