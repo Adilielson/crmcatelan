@@ -34,11 +34,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (_initialized) return;
     _initialized = true;
 
-    // Safety net: nunca deixa o spinner infinito — se em 10s o auth não
-    // resolver (rede, rebuild do servidor, sessão corrompida), libera a UI.
-    setTimeout(() => {
-      if (get().loading) {
-        console.warn('[auth] ⏱️ timeout de inicialização — forçando loading=false');
+    // Safety net: nunca deixa o spinner infinito. Mas NUNCA derruba a sessão:
+    // se existir sessão válida, monta um user mínimo a partir dela em vez de
+    // deixar user=null (que faria o guard redirecionar para /login).
+    setTimeout(async () => {
+      if (!get().loading) return;
+      console.warn('[auth] ⏱️ timeout de inicialização — aplicando fallback');
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user && !get().user) {
+        set({ user: buildFallbackUser(data.session.user.id, data.session.user.email ?? ''), loading: false });
+      } else {
         set({ loading: false });
       }
     }, 10000);
@@ -56,8 +61,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     supabase.auth.onAuthStateChange((event, session) => {
       if (!session?.user) {
-        _loadingUserId = null;
-        set({ user: null, tenant: null, loading: false });
+        // Só limpa o estado em SIGNED_OUT explícito. Eventos com sessão nula
+        // transitória (ex.: INITIAL_SESSION durante hidratação) não devem
+        // derrubar um user já carregado.
+        if (event === 'SIGNED_OUT') {
+          _loadingUserId = null;
+          set({ user: null, tenant: null, loading: false });
+        } else if (!get().user) {
+          set({ loading: false });
+        }
         return;
       }
       // Dedup: se já carregamos esse user, ignora (TOKEN_REFRESHED, INITIAL_SESSION etc.)
@@ -66,10 +78,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Marca loading para o guard do layout não redirecionar para /login
       // durante a janela entre SIGNED_IN e o profile carregado.
       set({ loading: true });
-      loadProfile(session.user.id, session.user.email ?? '', set, get);
+      const uid = session.user.id;
+      const email = session.user.email ?? '';
+      // IMPORTANTE: nunca fazer await de queries Supabase DENTRO do callback
+      // do onAuthStateChange — isso deadlocka o auto-refresh do token e causa
+      // logout "do nada". Deferimos para o próximo tick.
+      setTimeout(() => loadProfile(uid, email, set, get), 0);
     });
   },
 }));
+
+function buildFallbackUser(userId: string, email: string): User {
+  return {
+    id: userId,
+    email,
+    name: email || 'Usuário',
+    role: 'attendant',
+    tenant_id: DEV_TENANT_ID,
+  } as User;
+}
 
 async function loadProfile(
   userId: string,
@@ -87,8 +114,18 @@ async function loadProfile(
       .single();
 
     if (error || !data) {
-      console.warn('[auth] loadProfile sem profile', error?.message);
-      set({ loading: false });
+      // Falha transitória (rede, rebuild do sandbox) NÃO pode derrubar a
+      // sessão. Mantém o user logado com dados mínimos e tenta de novo.
+      console.warn('[auth] loadProfile falhou — mantendo sessão com fallback', error?.message);
+      if (!get().user) {
+        set({ user: buildFallbackUser(userId, email), loading: false });
+      } else {
+        set({ loading: false });
+      }
+      // Retry silencioso em 5s para recuperar role/tenant reais.
+      setTimeout(() => {
+        if (get().user?.id === userId) loadProfile(userId, email, set, get);
+      }, 5000);
       return;
     }
 
@@ -106,7 +143,11 @@ async function loadProfile(
     set({ user, tenant, loading: false });
   } catch (e) {
     console.error('[auth] loadProfile EXCEÇÃO', e);
-    set({ loading: false });
+    if (!get().user) {
+      set({ user: buildFallbackUser(userId, email), loading: false });
+    } else {
+      set({ loading: false });
+    }
   } finally {
     _loadingUserId = null;
   }
