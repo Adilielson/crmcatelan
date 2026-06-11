@@ -111,7 +111,7 @@ function NoShowAnalytics() {
           <Filter className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">Filtros:</span>
         </div>
-        <Select value={period} onValueChange={setPeriod}>
+        <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Período" />
           </SelectTrigger>
@@ -129,8 +129,9 @@ function NoShowAnalytics() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as Unidades</SelectItem>
-            <SelectItem value="sul">Unidade Sul</SelectItem>
-            <SelectItem value="norte">Unidade Norte</SelectItem>
+            {units.map((u) => (
+              <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
