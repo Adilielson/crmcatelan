@@ -138,6 +138,8 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
               recipient_phone: lead.phone,
               message_type: 'text',
               status: 'sent',
+              error_message: text.slice(0, 500),
+              sender_name: 'Follow-up',
             });
             sent++;
           } catch (e: any) {
