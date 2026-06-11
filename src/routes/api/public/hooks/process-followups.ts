@@ -28,7 +28,12 @@ function render(template: string, data: { nome: string; telefone: string }) {
 export const Route = createFileRoute('/api/public/hooks/process-followups')({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const secret = request.headers.get('x-cron-secret');
+        if (!secret || secret !== process.env.FOLLOWUPS_CRON_SECRET) {
+          return new Response('Unauthorized', { status: 401 });
+        }
+
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
         // Fetch due followups
