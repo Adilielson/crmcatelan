@@ -45,7 +45,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <HeadContent />
-      <AppLayout />
+      <div className="flex flex-col h-screen">
+        <SecurityReviewBanner />
+        <div className="flex-1 overflow-hidden">
+          <AppLayout />
+        </div>
+      </div>
       <ScrollRestoration />
       <Scripts />
     </QueryClientProvider>
