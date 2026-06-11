@@ -23,13 +23,11 @@ import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { NotificationCenter } from './NotificationCenter';
 import { toast } from 'sonner';
 
-const SecurityReviewBanner = () => {
-  const [dismissed, setDismissed] = useState(false);
-
+const SecurityReviewBanner = ({ dismissed, onDismiss, onRestore }: { dismissed: boolean; onDismiss: () => void; onRestore: () => void }) => {
   if (dismissed) {
     return (
       <button
-        onClick={() => setDismissed(false)}
+        onClick={onRestore}
         className="fixed top-4 right-4 z-[100] bg-amber-500 hover:bg-amber-400 text-black rounded-full p-2 shadow-lg transition-all"
         title="Modo Security Review ativo"
       >
@@ -39,7 +37,7 @@ const SecurityReviewBanner = () => {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg">
+    <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shrink-0">
       <div className="flex items-center justify-between px-6 py-3 max-w-[1600px] mx-auto">
         <div className="flex items-center gap-3">
           <ShieldAlert className="w-5 h-5 shrink-0" />
@@ -66,7 +64,7 @@ const SecurityReviewBanner = () => {
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => setDismissed(true)}
+            onClick={onDismiss}
             className="bg-black/20 hover:bg-black/30 text-black font-black text-xs uppercase tracking-wider px-3 py-2 rounded-lg transition-all"
             title="Minimizar"
           >
@@ -77,6 +75,7 @@ const SecurityReviewBanner = () => {
     </div>
   );
 };
+
 
 
 const AppLayout = () => {
