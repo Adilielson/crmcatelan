@@ -253,9 +253,22 @@ const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
       </button>
       {open && (
         <div className="absolute top-full right-0 mt-2 min-w-[200px] bg-[#1e293b] rounded-xl shadow-xl ring-1 ring-black/5 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="px-3 py-2 border-b border-white/5 mb-1">
-            <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider">{user.role}</p>
+          <div className="flex items-center gap-3 px-3 py-2 border-b border-white/5 mb-1">
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-[#f5c518]/40"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f5c518] to-[#d4a900] flex items-center justify-center text-[#0f172a] font-bold text-xs">
+                {user.name?.charAt(0)?.toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider">{user.role}</p>
+            </div>
           </div>
           <Link
             to="/settings"
