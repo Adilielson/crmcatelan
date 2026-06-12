@@ -120,5 +120,11 @@
   .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
   .thin-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
   .thin-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+  /* Hide scrollbar on mobile only (< 768px), keep thin scrollbar on desktop */
+  @media (max-width: 767px) {
+    .mobile-no-scrollbar { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    .mobile-no-scrollbar::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+  }
 }
 

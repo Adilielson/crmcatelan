@@ -383,8 +383,8 @@ function Chat() {
           </div>
         </div>
 
-        <ScrollArea className="flex-1 [&_[data-radix-scroll-area-scrollbar]]:hidden md:[&_[data-radix-scroll-area-scrollbar]]:flex">
-          <div className="flex flex-col">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mobile-no-scrollbar thin-scrollbar">
+          <div className="flex flex-col w-full max-w-full">
             {loading && (
               <div className="p-8 text-center text-xs text-gray-400 font-bold">Carregando conversas...</div>
             )}
@@ -452,7 +452,7 @@ function Chat() {
               )
             })}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Coluna 2: Chat principal */}
@@ -526,7 +526,7 @@ function Chat() {
             )}
 
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50 no-scrollbar md:thin-scrollbar md:[scrollbar-width:thin]">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50/50 mobile-no-scrollbar thin-scrollbar">
               <div className="p-8 space-y-4 min-h-full">
                 {displayConv.messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center text-center py-16 opacity-70">
