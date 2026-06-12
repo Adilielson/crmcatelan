@@ -46,8 +46,12 @@ export const getMyPermissions = createServerFn({ method: 'GET' })
         .eq('user_id', context.userId),
     ]);
 
-    const result: Record<string, boolean> = {};
-    for (const k of ALL_MODULE_KEYS) result[k] = false;
+    // Fallback: se o tenant ainda não configurou defaults para este papel,
+    // usa o catálogo padrão por papel em vez de bloquear tudo.
+    const hasRoleConfig = (roleRows ?? []).length > 0;
+    const result: Record<string, boolean> = hasRoleConfig
+      ? Object.fromEntries(ALL_MODULE_KEYS.map((k) => [k, false]))
+      : defaultsForRole(role);
     for (const r of roleRows ?? []) result[r.module_key] = r.allowed;
     for (const o of overrideRows ?? []) result[o.module_key] = o.allowed;
     return result as Record<ModuleKey, boolean>;
