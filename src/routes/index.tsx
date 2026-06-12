@@ -101,20 +101,22 @@ function Dashboard() {
             Visão consolidada da performance comercial e operacional de suas unidades com inteligência preditiva.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 relative z-10 w-full md:w-auto">
-           <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-full md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
-               <Store className="w-4 h-4 mr-3 text-primary shrink-0" />
-               <SelectValue placeholder="Todas as Unidades" />
-             </SelectTrigger>
-             <SelectContent className="bg-white border-[#E3E6EB] text-ink rounded-[16px]">
-               <SelectItem value="all" className="font-bold">Todas as Unidades</SelectItem>
-               {pipelines.map(p => (
-                 <SelectItem key={p.id} value={p.id} className="font-bold">{p.name}</SelectItem>
-               ))}
-             </SelectContent>
-           </Select>
-        </div>
+        {pipelines.length > 1 && (
+          <div className="flex flex-wrap items-center gap-4 relative z-10 w-full md:w-auto">
+            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
+              <SelectTrigger className="w-full md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+                <Store className="w-4 h-4 mr-3 text-primary shrink-0" />
+                <SelectValue placeholder="Todas as Unidades" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-[#E3E6EB] text-ink rounded-[16px]">
+                <SelectItem value="all" className="font-bold">Todas as Unidades</SelectItem>
+                {pipelines.map(p => (
+                  <SelectItem key={p.id} value={p.id} className="font-bold">{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards */}
