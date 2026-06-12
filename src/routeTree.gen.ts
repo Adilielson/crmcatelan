@@ -36,6 +36,7 @@ import { Route as MBuscarRouteImport } from './routes/m.buscar'
 import { Route as MAlertasRouteImport } from './routes/m.alertas'
 import { Route as MAgendaRouteImport } from './routes/m.agenda'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
+import { Route as MLeadsIdRouteImport } from './routes/m.leads.$id'
 import { Route as MChatPhoneRouteImport } from './routes/m.chat.$phone'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 
@@ -174,6 +175,11 @@ const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
   path: '/analytics/no-show',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MLeadsIdRoute = MLeadsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => MLeadsRoute,
+} as any)
 const MChatPhoneRoute = MChatPhoneRouteImport.update({
   id: '/$phone',
   path: '/$phone',
@@ -212,9 +218,10 @@ export interface FileRoutesByFullPath {
   '/m/equipe': typeof MEquipeRoute
   '/m/eu': typeof MEuRoute
   '/m/funil': typeof MFunilRoute
-  '/m/leads': typeof MLeadsRoute
+  '/m/leads': typeof MLeadsRouteWithChildren
   '/m/': typeof MIndexRoute
   '/m/chat/$phone': typeof MChatPhoneRoute
+  '/m/leads/$id': typeof MLeadsIdRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesByTo {
@@ -242,9 +249,10 @@ export interface FileRoutesByTo {
   '/m/equipe': typeof MEquipeRoute
   '/m/eu': typeof MEuRoute
   '/m/funil': typeof MFunilRoute
-  '/m/leads': typeof MLeadsRoute
+  '/m/leads': typeof MLeadsRouteWithChildren
   '/m': typeof MIndexRoute
   '/m/chat/$phone': typeof MChatPhoneRoute
+  '/m/leads/$id': typeof MLeadsIdRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesById {
@@ -274,9 +282,10 @@ export interface FileRoutesById {
   '/m/equipe': typeof MEquipeRoute
   '/m/eu': typeof MEuRoute
   '/m/funil': typeof MFunilRoute
-  '/m/leads': typeof MLeadsRoute
+  '/m/leads': typeof MLeadsRouteWithChildren
   '/m/': typeof MIndexRoute
   '/m/chat/$phone': typeof MChatPhoneRoute
+  '/m/leads/$id': typeof MLeadsIdRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRouteTypes {
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/m/leads'
     | '/m/'
     | '/m/chat/$phone'
+    | '/m/leads/$id'
     | '/api/public/hooks/process-followups'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -340,6 +350,7 @@ export interface FileRouteTypes {
     | '/m/leads'
     | '/m'
     | '/m/chat/$phone'
+    | '/m/leads/$id'
     | '/api/public/hooks/process-followups'
   id:
     | '__root__'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/m/leads'
     | '/m/'
     | '/m/chat/$phone'
+    | '/m/leads/$id'
     | '/api/public/hooks/process-followups'
   fileRoutesById: FileRoutesById
 }
@@ -586,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsNoShowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/m/leads/$id': {
+      id: '/m/leads/$id'
+      path: '/$id'
+      fullPath: '/m/leads/$id'
+      preLoaderRoute: typeof MLeadsIdRouteImport
+      parentRoute: typeof MLeadsRoute
+    }
     '/m/chat/$phone': {
       id: '/m/chat/$phone'
       path: '/$phone'
@@ -613,6 +632,17 @@ const MChatRouteChildren: MChatRouteChildren = {
 
 const MChatRouteWithChildren = MChatRoute._addFileChildren(MChatRouteChildren)
 
+interface MLeadsRouteChildren {
+  MLeadsIdRoute: typeof MLeadsIdRoute
+}
+
+const MLeadsRouteChildren: MLeadsRouteChildren = {
+  MLeadsIdRoute: MLeadsIdRoute,
+}
+
+const MLeadsRouteWithChildren =
+  MLeadsRoute._addFileChildren(MLeadsRouteChildren)
+
 interface MRouteChildren {
   MAgendaRoute: typeof MAgendaRoute
   MAlertasRoute: typeof MAlertasRoute
@@ -622,7 +652,7 @@ interface MRouteChildren {
   MEquipeRoute: typeof MEquipeRoute
   MEuRoute: typeof MEuRoute
   MFunilRoute: typeof MFunilRoute
-  MLeadsRoute: typeof MLeadsRoute
+  MLeadsRoute: typeof MLeadsRouteWithChildren
   MIndexRoute: typeof MIndexRoute
 }
 
@@ -635,7 +665,7 @@ const MRouteChildren: MRouteChildren = {
   MEquipeRoute: MEquipeRoute,
   MEuRoute: MEuRoute,
   MFunilRoute: MFunilRoute,
-  MLeadsRoute: MLeadsRoute,
+  MLeadsRoute: MLeadsRouteWithChildren,
   MIndexRoute: MIndexRoute,
 }
 
