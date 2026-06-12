@@ -212,8 +212,96 @@ function Chat() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const hasSelection = !!selectedPhone
 
+  const insightsPanel = (
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
+      <TabsList className="w-full justify-start rounded-none border-b border-gray-100 bg-white h-[73px] px-4 gap-2">
+        <TabsTrigger value="ia" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+          <Brain className="w-4 h-4 mr-2" /> SDR Insight
+        </TabsTrigger>
+        <TabsTrigger value="lead" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+          <User className="w-4 h-4 mr-2" /> Perfil
+        </TabsTrigger>
+      </TabsList>
+
+      <ScrollArea className="flex-1">
+        <div className="p-6">
+          <TabsContent value="ia" className="m-0 space-y-8 outline-none">
+            {currentLead ? (
+              <>
+                <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Temperatura Lead</span>
+                    <Badge className={cn(
+                      "px-2.5 py-1 rounded-lg border-none text-[11px] font-bold",
+                      (currentLead.score_ia ?? 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
+                    )}>
+                      {currentLead.score_ia ?? 0}/100
+                    </Badge>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-gray-500">Sentimento: <span className="text-ink capitalize">{currentLead.ia_sentimento || 'Neutro'}</span></span>
+                      <span className="text-gray-500">Urgência: <span className="text-danger capitalize">{currentLead.ia_urgencia || 'Média'}</span></span>
+                    </div>
+                    <Progress value={currentLead.score_ia ?? 0} className="h-2 bg-gray-200" />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Brain className="w-4 h-4" />
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Resumo da IA SDR</h3>
+                  </div>
+                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm relative overflow-hidden group">
+                    <p className="text-sm text-ink leading-relaxed font-medium relative z-10">
+                      {currentLead.ia_summary || 'Analisando conversa em tempo real...'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-1">Gatilhos Detectados</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(currentLead.ia_interesses || ['Óculos de Grau', 'Exame']).map((tag, i) => (
+                      <Badge key={i} variant="secondary" className="bg-gray-50 text-ink border border-gray-100 font-bold px-3 py-1.5 rounded-xl text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 space-y-3">
+                  <Button onClick={handleRecalibrateIA} variant="ghost" className="w-full h-12 text-xs font-bold text-gray-400 hover:text-primary transition-colors">
+                    <Zap className="w-4 h-4 mr-2" /> Recalibrar Modelo IA
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-20 opacity-20">
+                <Brain className="w-12 h-12 mx-auto mb-4" />
+                <p className="font-bold text-sm">Selecione um lead para ver insights</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="lead" className="m-0 outline-none">
+            {currentLead ? (
+              <LeadProfilePanel lead={currentLead} compact hideChat />
+            ) : (
+              <div className="text-center py-20 opacity-30">
+                <User className="w-12 h-12 mx-auto mb-4" />
+                <p className="font-bold text-sm">Nenhum lead vinculado a esta conversa</p>
+              </div>
+            )}
+          </TabsContent>
+        </div>
+      </ScrollArea>
+    </Tabs>
+  )
+
   return (
     <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-160px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
+
 
 
       {/* Coluna 1: Lista de Sessões */}
