@@ -97,7 +97,13 @@ function MobileLeadsPage() {
             <li key={l.id}>
               <button
                 type="button"
-                onClick={() => navigate({ to: '/m/leads/$id', params: { id: l.id } })}
+                onClick={() => {
+                  if (l.phone) {
+                    navigate({ to: '/m/chat/$phone', params: { phone: l.phone } })
+                  } else {
+                    navigate({ to: '/m/leads/$id', params: { id: l.id } })
+                  }
+                }}
                 className="w-full flex items-center gap-3 px-5 py-3.5 active:bg-gray-50 transition text-left"
               >
                 <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-br from-[#FFF4CC] to-[#FFE07A] grid place-items-center font-black text-[#8a6900]">
