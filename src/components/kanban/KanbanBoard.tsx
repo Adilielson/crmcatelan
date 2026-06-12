@@ -15,6 +15,8 @@ import { DBLead, LeadStage, useLeads, useSeedSampleLeads, useUpdateLead } from '
 import { useAgenda } from '@/hooks/use-agenda';
 import { useAuthStore } from '@/hooks/use-auth';
 import { useKanbanColumns, useDeleteKanbanColumn, KanbanColumn } from '@/hooks/use-kanban-columns';
+import { useTenantProfiles, firstName } from '@/hooks/use-tenant-profiles';
+
 import { LeadFormDialog } from './LeadFormDialog';
 import { LeadDetailSheet } from './LeadDetailSheet';
 import { LeadValueDialog } from './LeadValueDialog';
