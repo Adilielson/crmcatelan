@@ -21,6 +21,23 @@ export type ModuleKey = (typeof MODULE_CATALOG)[number]['key'];
 
 export const ALL_MODULE_KEYS = MODULE_CATALOG.map((m) => m.key) as ModuleKey[];
 
+// Defaults por papel — usados quando o tenant ainda não tem linhas em module_permissions.
+// Evita que o menu apareça vazio enquanto o admin não configurou nada.
+export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
+  admin: [...ALL_MODULE_KEYS],
+  manager: ALL_MODULE_KEYS.filter((k) => k !== 'saas'),
+  seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes'],
+  marketing_partner: ['home', 'marketing', 'performance', 'no_show', 'reports'],
+  super_admin: [...ALL_MODULE_KEYS],
+};
+
+export function defaultsForRole(role: string): Record<ModuleKey, boolean> {
+  const allowed = new Set(ROLE_DEFAULTS[role] ?? ['home']);
+  const out = {} as Record<ModuleKey, boolean>;
+  for (const k of ALL_MODULE_KEYS) out[k] = allowed.has(k);
+  return out;
+}
+
 // Mapa de path -> moduleKey, para guard de rotas.
 export const PATH_TO_MODULE: Record<string, ModuleKey> = MODULE_CATALOG.reduce(
   (acc, m) => {
