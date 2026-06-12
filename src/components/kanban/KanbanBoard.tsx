@@ -15,6 +15,8 @@ import { DBLead, LeadStage, useLeads, useSeedSampleLeads, useUpdateLead } from '
 import { useAgenda } from '@/hooks/use-agenda';
 import { useAuthStore } from '@/hooks/use-auth';
 import { useKanbanColumns, useDeleteKanbanColumn, KanbanColumn } from '@/hooks/use-kanban-columns';
+import { useTenantProfiles, firstName } from '@/hooks/use-tenant-profiles';
+
 import { LeadFormDialog } from './LeadFormDialog';
 import { LeadDetailSheet } from './LeadDetailSheet';
 import { LeadValueDialog } from './LeadValueDialog';
@@ -44,12 +46,19 @@ export function KanbanBoard() {
   const navigate = useNavigate();
   const { data: leads = [], isLoading } = useLeads();
   const { data: columns = [] } = useKanbanColumns();
+  const { data: profiles = [] } = useTenantProfiles();
+  const profileMap = useMemo(() => {
+    const m = new Map<string, string>();
+    profiles.forEach((p) => m.set(p.id, p.full_name ?? ''));
+    return m;
+  }, [profiles]);
   const updateLead = useUpdateLead();
   const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
   const { addAppointment } = useAgenda();
   const userRole = useAuthStore((s) => s.user?.role ?? null);
   const canManageColumns = userRole === 'admin' || userRole === 'super_admin' || userRole === 'manager';
+
 
   const [newOpen, setNewOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<DBLead | null>(null);
@@ -267,6 +276,7 @@ export function KanbanBoard() {
                     <LeadCard
                       key={lead.id}
                       lead={lead}
+                      assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
                       onClick={() => setDetailLead(lead)}
                       onCalendar={() => openAgenda(lead)}
                       onChat={() => openChat(lead)}
@@ -274,6 +284,7 @@ export function KanbanBoard() {
                       onValue={() => setValueLead(lead)}
                     />
                   ))}
+
                 </div>
               </div>
             );
@@ -372,6 +383,7 @@ export function KanbanBoard() {
 
 function LeadCard({
   lead,
+  assigneeName,
   onClick,
   onCalendar,
   onChat,
@@ -379,6 +391,7 @@ function LeadCard({
   onValue,
 }: {
   lead: DBLead;
+  assigneeName: string | null;
   onClick: () => void;
   onCalendar: () => void;
   onChat: () => void;
@@ -393,12 +406,17 @@ function LeadCard({
     : daysInStage >= 3 ? 'bg-amber-50 text-amber-700 border-amber-200'
     : 'bg-emerald-50 text-emerald-700 border-emerald-200';
 
-  const actions = [
-    { icon: Calendar, title: 'Agendar', onClick: onCalendar },
+  const isScheduled = lead.status === 'scheduled';
+  const isAi = !lead.assigned_user_id;
+  const attendantLabel = isAi ? 'SDR' : firstName(assigneeName) || 'Vendedor';
+
+  const actions: Array<{ icon: typeof Calendar; title: string; onClick: () => void; highlight?: boolean }> = [
+    { icon: Calendar, title: 'Agendar', onClick: onCalendar, highlight: isScheduled },
     { icon: MessageSquare, title: 'Abrir conversa', onClick: onChat },
     { icon: MapPin, title: 'Unidade', onClick: onLocation },
     { icon: DollarSign, title: 'Editar valor', onClick: onValue },
   ];
+
 
   return (
     <div
@@ -432,9 +450,23 @@ function LeadCard({
             <span className="text-[12px] font-black text-ink">R$ {(lead.sales_value ?? 0).toLocaleString('pt-BR')}</span>
           </div>
           {lead.phone && <p className="text-[10px] text-gray-400 font-medium truncate">{lead.phone}</p>}
-          <span className={cn('inline-block mt-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide', slaTone)}>
-            {daysInStage === 0 ? 'Hoje' : `${daysInStage}d na etapa`}
-          </span>
+          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+            <span className={cn('inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide', slaTone)}>
+              {daysInStage === 0 ? 'Hoje' : `${daysInStage}d na etapa`}
+            </span>
+            <span
+              title={isAi ? 'Em atendimento pela IA (SDR)' : `Em atendimento por ${assigneeName ?? attendantLabel}`}
+              className={cn(
+                'inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide max-w-[120px] truncate',
+                isAi
+                  ? 'bg-violet-50 text-violet-700 border-violet-200'
+                  : 'bg-sky-50 text-sky-700 border-sky-200',
+              )}
+            >
+              <span className={cn('w-1.5 h-1.5 rounded-full', isAi ? 'bg-violet-500' : 'bg-sky-500')} />
+              <span className="truncate">{attendantLabel}</span>
+            </span>
+          </div>
         </div>
         <div className="p-2 rounded-[12px] border bg-white border-[#E3E6EB]">
           {sourceIcon(lead.source)}
@@ -442,17 +474,27 @@ function LeadCard({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {actions.map((action) => (
-          <button
-            key={action.title}
-            onClick={stop(action.onClick)}
-            title={action.title}
-            className="p-2.5 rounded-[12px] transition-all border bg-white text-gray-500 hover:text-[#FFC400] hover:border-[#FFC400]/30 border-[#E3E6EB]"
-          >
-            <action.icon className="w-3.5 h-3.5" />
-          </button>
-        ))}
+        {actions.map((action) => {
+          const Icon = action.icon;
+          const highlight = action.highlight;
+          return (
+            <button
+              key={action.title}
+              onClick={stop(action.onClick)}
+              title={highlight ? `${action.title} (agendado)` : action.title}
+              className={cn(
+                'p-2.5 rounded-[12px] transition-all border bg-white',
+                highlight
+                  ? 'text-blue-600 border-blue-300 shadow-[0_0_0_2px_rgba(59,130,246,0.12)] animate-pulse-soft'
+                  : 'text-gray-500 hover:text-[#FFC400] hover:border-[#FFC400]/30 border-[#E3E6EB]',
+              )}
+            >
+              <Icon className={cn('w-3.5 h-3.5', highlight && 'text-blue-600')} />
+            </button>
+          );
+        })}
       </div>
+
     </div>
   );
 }

@@ -132,4 +132,12 @@
 *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; background: transparent !important; }
 * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
 
+/* Soft pulse used for scheduled lead calendar icon */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.35); }
+  50% { opacity: 0.85; box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
+.animate-pulse-soft { animation: pulse-soft 1.8s ease-in-out infinite; }
+
+
 
