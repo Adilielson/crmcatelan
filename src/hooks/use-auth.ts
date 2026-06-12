@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
+import { readLocalSession } from '@/lib/local-session';
 import { User, Tenant } from '../types/database.types';
+
+/** Promise com timeout — getSession() pode travar para sempre (navigator.locks). */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | 'timeout'> {
+  return Promise.race([
+    p,
+    new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), ms)),
+  ]);
+}
 
 export const DEV_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
