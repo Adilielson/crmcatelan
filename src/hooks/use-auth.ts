@@ -138,7 +138,7 @@ function writeProfileCache(user: User) {
   }
 }
 
-function buildFallbackUser(userId: string, email: string): User {
+export function buildFallbackUser(userId: string, email: string): User {
   // Usa o último perfil conhecido deste usuário (role/tenant reais) em vez de
   // assumir 'seller' — isso evitava que admins perdessem o menu após um F5
   // quando o carregamento do perfil falhava transitoriamente.
