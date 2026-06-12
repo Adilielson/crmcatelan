@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 
 export const Route = createFileRoute('/m/chat/$phone')({
   component: MobileConversation,
