@@ -179,7 +179,7 @@ const NavDropdown = ({
         className={cn(
           'flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all duration-150 ease-in-out',
           active
-            ? 'bg-[#f5c518] text-[#0f172a]'
+            ? 'bg-[#1e293b] text-[#f5c518]'
             : 'text-slate-400 hover:text-white',
         )}
       >
@@ -341,7 +341,7 @@ const MobileDrawer = ({
                             className={cn(
                               'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-150',
                               active
-                                ? 'bg-[#f5c518] text-[#0f172a] font-semibold'
+                                ? 'bg-[#1e293b] text-[#f5c518] font-semibold [&_svg]:text-[#f5c518]'
                                 : 'text-slate-400 hover:bg-white/5 hover:text-white',
                             )}
                           >
@@ -365,7 +365,7 @@ const MobileDrawer = ({
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150',
                   active
-                    ? 'bg-[#f5c518] text-[#0f172a]'
+                    ? 'bg-[#1e293b] text-[#f5c518] [&_svg]:text-[#f5c518]'
                     : 'text-slate-300 hover:bg-white/5 hover:text-white',
                 )}
               >
@@ -513,7 +513,7 @@ const AppLayout = () => {
                     wrapHidden,
                     'items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-all duration-150 ease-in-out',
                     active
-                      ? 'bg-[#f5c518] text-[#0f172a]'
+                      ? 'bg-[#1e293b] text-[#f5c518] [&_svg]:text-[#f5c518]'
                       : 'text-slate-400 hover:text-white',
                   )}
                 >
