@@ -8,8 +8,5 @@ export default defineConfig({
     build: {
       rollupOptions: {}
     }
-  },
-  nitro: {
-    preset: "vercel"
   }
 });
