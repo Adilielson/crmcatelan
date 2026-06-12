@@ -88,7 +88,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }));
 
+const PROFILE_CACHE_KEY = 'crm_profile_cache_v1';
+
+function readProfileCache(userId: string): User | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as User;
+    // só usa o cache se for do MESMO usuário — nunca herda role de outra conta
+    if (cached?.id !== userId) return null;
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function writeProfileCache(user: User) {
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(user));
+  } catch {
+    /* ignore */
+  }
+}
+
 function buildFallbackUser(userId: string, email: string): User {
+  // Usa o último perfil conhecido deste usuário (role/tenant reais) em vez de
+  // assumir 'seller' — isso evitava que admins perdessem o menu após um F5
+  // quando o carregamento do perfil falhava transitoriamente.
+  const cached = readProfileCache(userId);
+  if (cached) return { ...cached, email: email || cached.email };
   return {
     id: userId,
     email,
