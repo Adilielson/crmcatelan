@@ -549,7 +549,7 @@ const AppLayout = () => {
       <main
         className="pt-14 min-h-screen pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0"
       >
-        <div className="max-w-[1600px] mx-auto w-full p-4 md:p-6 lg:p-8">
+        <div className="max-w-[1600px] mx-auto w-full p-3 sm:p-4 md:p-6 lg:p-8">
           <Outlet />
         </div>
       </main>
