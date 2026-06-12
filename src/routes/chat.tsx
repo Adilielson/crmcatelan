@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Wifi, WifiOff, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { useLeads } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
@@ -25,6 +26,8 @@ export const Route = createFileRoute('/chat')({
 
 function Chat() {
   const { phone: phoneFromUrl } = Route.useSearch()
+  const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const { conversations, loading } = useWhatsAppChat()
   const { sendText, sendImage, sendAudio, isConnected: waConnected } = useWhatsApp()
   const { data: leads = [] } = useLeads()
@@ -49,10 +52,25 @@ function Chat() {
       setSelectedPhone(phoneFromUrl)
       return
     }
+    // No mobile, NUNCA auto-seleciona: precisa mostrar a lista primeiro.
+    if (isMobile) return
     if (!selectedPhone && conversations.length > 0) {
       setSelectedPhone(conversations[0].phone)
     }
-  }, [phoneFromUrl, conversations, selectedPhone])
+  }, [phoneFromUrl, conversations, selectedPhone, isMobile])
+
+  // Quando a URL perde o param `phone` (ex: clique no "voltar"), no mobile
+  // limpa a seleção para reexibir a lista.
+  useEffect(() => {
+    if (isMobile && !phoneFromUrl) {
+      setSelectedPhone(null)
+    }
+  }, [isMobile, phoneFromUrl])
+
+  const handleBackToList = () => {
+    setSelectedPhone(null)
+    navigate({ to: '/chat', search: {} })
+  }
 
   // Match tolerante: o WhatsApp grava só dígitos (5511…) e o lead pode estar como
   // "+55 11 …". Normaliza ambos os lados e aceita sufixo (mínimo 8 dígitos).
@@ -341,8 +359,8 @@ function Chat() {
 
       {/* Coluna 1: Lista de Sessões */}
       <div className={cn(
-        "w-full lg:w-[360px] lg:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
-        hasSelection ? "hidden lg:flex" : "flex",
+        "w-full md:w-[360px] md:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
+        hasSelection ? "hidden md:flex" : "flex",
       )}>
 
         <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
@@ -440,7 +458,7 @@ function Chat() {
       {/* Coluna 2: Chat principal */}
       <div className={cn(
         "flex-1 flex-col bg-white relative min-w-0",
-        hasSelection ? "flex" : "hidden lg:flex",
+        hasSelection ? "flex" : "hidden md:flex",
       )}>
         {displayConv ? (
           <>
@@ -449,8 +467,8 @@ function Chat() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-xl lg:hidden flex-shrink-0"
-                  onClick={() => setSelectedPhone(null)}
+                  className="h-10 w-10 rounded-xl md:hidden flex-shrink-0"
+                  onClick={handleBackToList}
                   title="Voltar"
                 >
                   <ChevronLeft className="w-5 h-5" />
