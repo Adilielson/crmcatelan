@@ -141,6 +141,7 @@ function Settings() {
           <TabsTrigger value="automations" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Zap className="w-4 h-4" /> Automações</TabsTrigger>
           <TabsTrigger value="notifications" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Bell className="w-4 h-4" /> Notificações</TabsTrigger>
           <TabsTrigger value="chat" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><MessageSquare className="w-4 h-4" /> WhatsApp</TabsTrigger>
+          <TabsTrigger value="account" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><KeyRound className="w-4 h-4" /> Conta</TabsTrigger>
         </TabsList>
 
 
