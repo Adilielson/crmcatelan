@@ -40,17 +40,35 @@ function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Auto-seleciona a primeira conversa ou a que vier pela URL
-  useEffect(() => {
-    if (selectedPhone) return
-    if (phoneFromUrl) { setSelectedPhone(phoneFromUrl); return }
-    if (conversations.length > 0) setSelectedPhone(conversations[0].phone)
-  }, [conversations, phoneFromUrl, selectedPhone])
+  const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
 
-  const selectedConv = useMemo(
-    () => conversations.find((c) => c.phone === selectedPhone) ?? null,
-    [conversations, selectedPhone]
-  )
+  // Sempre que a URL mudar (?phone=...), reespelha em selectedPhone — isso garante
+  // que clicar em outro lead na Fila enquanto o chat já está aberto troca a conversa.
+  useEffect(() => {
+    if (phoneFromUrl) {
+      setSelectedPhone(phoneFromUrl)
+      return
+    }
+    if (!selectedPhone && conversations.length > 0) {
+      setSelectedPhone(conversations[0].phone)
+    }
+  }, [phoneFromUrl, conversations, selectedPhone])
+
+  // Match tolerante: o WhatsApp grava só dígitos (5511…) e o lead pode estar como
+  // "+55 11 …". Normaliza ambos os lados e aceita sufixo (mínimo 8 dígitos).
+  const selectedConv = useMemo(() => {
+    if (!selectedPhone) return null
+    const target = onlyDigits(selectedPhone)
+    if (!target) return null
+    return (
+      conversations.find((c) => onlyDigits(c.phone) === target) ||
+      conversations.find((c) => {
+        const d = onlyDigits(c.phone)
+        return d.length >= 8 && (target.endsWith(d) || d.endsWith(target))
+      }) ||
+      null
+    )
+  }, [conversations, selectedPhone])
 
   const filteredConvs = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -62,10 +80,10 @@ function Chat() {
     )
   }, [conversations, search])
 
-  // Casar o lead com o telefone da conversa selecionada (normalizando dígitos)
+  // Casar o lead com o telefone selecionado (normalizando dígitos).
+  // Se veio pela Fila (lead novo, sem conversa ainda), ainda assim achamos o lead.
   const currentLead = useMemo(() => {
     if (!selectedPhone) return leads[0]
-    const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
     const target = onlyDigits(selectedPhone)
     return (
       leads.find((l) => onlyDigits(l.phone) === target) ||
@@ -74,11 +92,28 @@ function Chat() {
     )
   }, [leads, selectedPhone])
 
+
+  // Conversa "virtual" para leads vindos da Fila sem histórico de WhatsApp ainda:
+  // garante que o chat abre com header + composer mesmo sem mensagens.
+  const displayConv = useMemo(() => {
+    if (selectedConv) return selectedConv
+    if (!selectedPhone) return null
+    return {
+      phone: selectedPhone,
+      name: currentLead?.full_name ?? null,
+      avatarUrl: null,
+      lastText: '',
+      lastAt: new Date().toISOString(),
+      unread: 0,
+      messages: [],
+    }
+  }, [selectedConv, selectedPhone, currentLead])
+
   // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
   useEffect(() => {
     const el = scrollRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [selectedConv?.messages.length, selectedPhone])
+  }, [displayConv?.messages.length, selectedPhone])
 
   // OCR real agora vive no painel do lead (aba "Lead" / Kanban).
 
@@ -407,7 +442,7 @@ function Chat() {
         "flex-1 flex-col bg-white relative min-w-0",
         hasSelection ? "flex" : "hidden lg:flex",
       )}>
-        {selectedConv ? (
+        {displayConv ? (
           <>
             <div className="p-4 sm:p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20 gap-2">
               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -421,18 +456,18 @@ function Chat() {
                   <ChevronLeft className="w-5 h-5" />
                 </Button>
                 <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px] flex-shrink-0">
-                  {selectedConv.avatarUrl && <AvatarImage src={selectedConv.avatarUrl} alt={selectedConv.name ?? selectedConv.phone} />}
+                  {displayConv.avatarUrl && <AvatarImage src={displayConv.avatarUrl} alt={displayConv.name ?? displayConv.phone} />}
 
                   <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
-                    {getContactInitials(selectedConv.name, selectedConv.phone)}
+                    {getContactInitials(displayConv.name, displayConv.phone)}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">
-                    {selectedConv.name || formatPhoneDisplay(selectedConv.phone)}
+                <div className="min-w-0">
+                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight truncate">
+                    {displayConv.name || formatPhoneDisplay(displayConv.phone)}
                   </h3>
-                  {selectedConv.name && (
-                    <p className="text-[11px] text-gray-400 font-semibold">{formatPhoneDisplay(selectedConv.phone)}</p>
+                  {displayConv.name && (
+                    <p className="text-[11px] text-gray-400 font-semibold truncate">{formatPhoneDisplay(displayConv.phone)}</p>
                   )}
                   <div className="flex items-center gap-2">
                     {waConnected ? (
@@ -475,7 +510,18 @@ function Chat() {
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50">
               <div className="p-8 space-y-4 min-h-full">
-                {selectedConv.messages.map((m) => {
+                {displayConv.messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center text-center py-16 opacity-70">
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+                      <MessageSquare className="w-7 h-7 text-primary/40" />
+                    </div>
+                    <p className="text-sm font-bold text-ink mb-1">Nenhuma mensagem ainda</p>
+                    <p className="text-xs text-gray-500 max-w-xs">
+                      Envie a primeira mensagem para iniciar a conversa com este lead.
+                    </p>
+                  </div>
+                )}
+                {displayConv.messages.map((m) => {
                   const isImage = m.mediaUrl && (m.mediaMime?.startsWith('image/') || m.type === 'image')
                   const isAudio = m.mediaUrl && (m.mediaMime?.startsWith('audio/') || m.type === 'audio' || m.type === 'ptt')
                   const isVideo = m.mediaUrl && (m.mediaMime?.startsWith('video/') || m.type === 'video')
