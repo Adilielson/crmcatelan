@@ -280,6 +280,7 @@ export function KanbanBoard() {
                       key={lead.id}
                       lead={lead}
                       assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
+                      reminders={remindersByLead?.get(lead.id) ?? []}
                       onClick={() => setDetailLead(lead)}
                       onCalendar={() => openAgenda(lead)}
                       onChat={() => openChat(lead)}
