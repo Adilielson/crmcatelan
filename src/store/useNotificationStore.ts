@@ -53,7 +53,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
       ),
     }))
     if (isUuid(id)) {
-      void supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id)
+      void (supabase.from('notifications') as any).update({ read_at: new Date().toISOString() }).eq('id', id)
     }
   },
 
@@ -64,7 +64,8 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
       notifications: state.notifications.map(n => ({ ...n, read_at: n.read_at ?? now })),
     }))
     if (ids.length) {
-      void supabase.from('notifications').update({ read_at: now }).in('id', ids)
+      void (supabase.from('notifications') as any).update({ read_at: now }).in('id', ids)
     }
   },
+
 }))
