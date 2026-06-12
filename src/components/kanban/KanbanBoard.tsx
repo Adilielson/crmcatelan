@@ -49,6 +49,7 @@ export function KanbanBoard() {
   const { data: leads = [], isLoading } = useLeads();
   const { data: columns = [] } = useKanbanColumns();
   const { data: profiles = [] } = useTenantProfiles();
+  const { data: remindersByLead } = useLeadReminders();
   const profileMap = useMemo(() => {
     const m = new Map<string, string>();
     profiles.forEach((p) => m.set(p.id, p.full_name ?? ''));
