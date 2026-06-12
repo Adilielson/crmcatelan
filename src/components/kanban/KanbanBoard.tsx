@@ -403,7 +403,8 @@ function LeadCard({
   onChat: () => void;
   onLocation: () => void;
   onValue: () => void;
-const [showAllReminders, setShowAllReminders] = useState(false);
+}) {
+  const [showAllReminders, setShowAllReminders] = useState(false);
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 
   const daysInStage = Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / 86400000);
