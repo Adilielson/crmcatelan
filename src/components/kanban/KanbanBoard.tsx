@@ -1,9 +1,10 @@
 /** @jsxImportSource react */
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus } from 'lucide-react';
+import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus, Bell, Check, Clock, X as XIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import { useAgenda } from '@/hooks/use-agenda';
 import { useAuthStore } from '@/hooks/use-auth';
 import { useKanbanColumns, useDeleteKanbanColumn, KanbanColumn } from '@/hooks/use-kanban-columns';
 import { useTenantProfiles, firstName } from '@/hooks/use-tenant-profiles';
+import { useLeadReminders, LeadReminder, REMINDER_LABEL, REMINDER_STATUS_LABEL } from '@/hooks/use-lead-reminders';
 
 import { LeadFormDialog } from './LeadFormDialog';
 import { LeadDetailSheet } from './LeadDetailSheet';
@@ -47,6 +49,7 @@ export function KanbanBoard() {
   const { data: leads = [], isLoading } = useLeads();
   const { data: columns = [] } = useKanbanColumns();
   const { data: profiles = [] } = useTenantProfiles();
+  const { data: remindersByLead } = useLeadReminders();
   const profileMap = useMemo(() => {
     const m = new Map<string, string>();
     profiles.forEach((p) => m.set(p.id, p.full_name ?? ''));
@@ -277,6 +280,7 @@ export function KanbanBoard() {
                       key={lead.id}
                       lead={lead}
                       assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
+                      reminders={remindersByLead?.get(lead.id) ?? []}
                       onClick={() => setDetailLead(lead)}
                       onCalendar={() => openAgenda(lead)}
                       onChat={() => openChat(lead)}
@@ -384,6 +388,7 @@ export function KanbanBoard() {
 function LeadCard({
   lead,
   assigneeName,
+  reminders,
   onClick,
   onCalendar,
   onChat,
@@ -392,6 +397,7 @@ function LeadCard({
 }: {
   lead: DBLead;
   assigneeName: string | null;
+  reminders: LeadReminder[];
   onClick: () => void;
   onCalendar: () => void;
   onChat: () => void;
@@ -409,6 +415,15 @@ function LeadCard({
   const isScheduled = lead.status === 'scheduled';
   const isAi = !lead.assigned_user_id;
   const attendantLabel = isAi ? 'SDR' : firstName(assigneeName) || 'Vendedor';
+
+  const hasReminders = reminders.length > 0;
+  const wasConfirmed = reminders.some((r) => r.status === 'confirmed');
+  const hasPending = reminders.some((r) => r.status === 'pending');
+  const reminderTone = wasConfirmed
+    ? 'text-emerald-600 border-emerald-300 bg-emerald-50'
+    : hasPending
+    ? 'text-amber-600 border-amber-300 bg-amber-50'
+    : 'text-gray-500 border-[#E3E6EB] bg-white';
 
   const actions: Array<{ icon: typeof Calendar; title: string; onClick: () => void; highlight?: boolean }> = [
     { icon: Calendar, title: 'Agendar', onClick: onCalendar, highlight: isScheduled },
@@ -493,6 +508,76 @@ function LeadCard({
             </button>
           );
         })}
+
+        {hasReminders && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                title="Histórico de lembretes"
+                className={cn(
+                  'relative p-2.5 rounded-[12px] transition-all border',
+                  reminderTone,
+                  hasPending && !wasConfirmed && 'animate-pulse-soft',
+                )}
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {wasConfirmed && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border border-white flex items-center justify-center">
+                    <Check className="w-2 h-2 text-white" strokeWidth={3} />
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-72 p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-3 py-2 border-b bg-gray-50/60">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-gray-700">Lembretes do agendamento</p>
+                <p className="text-[10px] text-gray-500">
+                  {wasConfirmed ? 'Lead confirmou a presença' : hasPending ? 'Aguardando envio/resposta' : 'Histórico recente'}
+                </p>
+              </div>
+              <ul className="max-h-72 overflow-y-auto scrollbar-hide divide-y">
+                {reminders.map((r) => {
+                  const when = r.sent_at ?? r.scheduled_at;
+                  const dt = new Date(when);
+                  const tone =
+                    r.status === 'confirmed' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                    : r.status === 'sent' ? 'text-sky-700 bg-sky-50 border-sky-200'
+                    : r.status === 'pending' ? 'text-amber-700 bg-amber-50 border-amber-200'
+                    : r.status === 'failed' ? 'text-red-700 bg-red-50 border-red-200'
+                    : 'text-gray-600 bg-gray-50 border-gray-200';
+                  const Icon = r.status === 'confirmed' ? Check : r.status === 'sent' ? Check : r.status === 'failed' ? XIcon : Clock;
+                  return (
+                    <li key={r.id} className="px-3 py-2 flex items-start gap-2">
+                      <span className={cn('mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full border', tone)}>
+                        <Icon className="w-3 h-3" strokeWidth={2.5} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] font-bold text-gray-800 truncate">{REMINDER_LABEL[r.kind]}</p>
+                          <span className={cn('text-[9px] font-black uppercase px-1.5 py-0.5 rounded border', tone)}>
+                            {REMINDER_STATUS_LABEL[r.status]}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-0.5">
+                          {dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          {r.status === 'pending' && ' (programado)'}
+                        </p>
+                        {r.error_message && r.status === 'failed' && (
+                          <p className="text-[10px] text-red-600 mt-0.5 line-clamp-2">{r.error_message}</p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
     </div>
