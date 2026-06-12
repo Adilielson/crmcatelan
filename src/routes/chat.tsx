@@ -93,6 +93,22 @@ function Chat() {
   }, [leads, selectedPhone])
 
 
+  // Conversa "virtual" para leads vindos da Fila sem histórico de WhatsApp ainda:
+  // garante que o chat abre com header + composer mesmo sem mensagens.
+  const displayConv = useMemo(() => {
+    if (selectedConv) return selectedConv
+    if (!selectedPhone) return null
+    return {
+      phone: selectedPhone,
+      name: currentLead?.full_name ?? null,
+      avatarUrl: null,
+      lastText: '',
+      lastAt: new Date().toISOString(),
+      unread: 0,
+      messages: [],
+    }
+  }, [selectedConv, selectedPhone, currentLead])
+
   // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
   useEffect(() => {
     const el = scrollRef.current
