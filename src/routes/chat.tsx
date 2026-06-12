@@ -442,7 +442,7 @@ function Chat() {
         "flex-1 flex-col bg-white relative min-w-0",
         hasSelection ? "flex" : "hidden lg:flex",
       )}>
-        {selectedConv ? (
+        {displayConv ? (
           <>
             <div className="p-4 sm:p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20 gap-2">
               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -456,18 +456,18 @@ function Chat() {
                   <ChevronLeft className="w-5 h-5" />
                 </Button>
                 <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px] flex-shrink-0">
-                  {selectedConv.avatarUrl && <AvatarImage src={selectedConv.avatarUrl} alt={selectedConv.name ?? selectedConv.phone} />}
+                  {displayConv.avatarUrl && <AvatarImage src={displayConv.avatarUrl} alt={displayConv.name ?? displayConv.phone} />}
 
                   <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
-                    {getContactInitials(selectedConv.name, selectedConv.phone)}
+                    {getContactInitials(displayConv.name, displayConv.phone)}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight">
-                    {selectedConv.name || formatPhoneDisplay(selectedConv.phone)}
+                <div className="min-w-0">
+                  <h3 className="font-jakarta font-black text-base text-ink tracking-tight truncate">
+                    {displayConv.name || formatPhoneDisplay(displayConv.phone)}
                   </h3>
-                  {selectedConv.name && (
-                    <p className="text-[11px] text-gray-400 font-semibold">{formatPhoneDisplay(selectedConv.phone)}</p>
+                  {displayConv.name && (
+                    <p className="text-[11px] text-gray-400 font-semibold truncate">{formatPhoneDisplay(displayConv.phone)}</p>
                   )}
                   <div className="flex items-center gap-2">
                     {waConnected ? (
