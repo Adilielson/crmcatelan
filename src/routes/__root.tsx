@@ -36,17 +36,30 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap' },
     ],
   }),
+  shellComponent: RootDocument,
   component: RootComponent,
 });
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="pt-BR">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <HeadContent />
       <AppLayout />
-      <ScrollRestoration />
-      <Scripts />
     </QueryClientProvider>
   );
 }
