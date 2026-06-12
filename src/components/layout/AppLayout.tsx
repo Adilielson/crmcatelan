@@ -508,7 +508,7 @@ const AppLayout = () => {
     );
 
   if (!user) return <Outlet />;
-  if (location.pathname.startsWith('/m')) return <Outlet />;
+  
 
   // Items priorizados para tablet (esconder Marketing e itens menos prioritários)
   const tabletHide = new Set(['Marketing']);
