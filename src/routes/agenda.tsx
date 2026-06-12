@@ -327,13 +327,13 @@ function Agenda() {
         <TabsList className="mb-6 mx-4 md:mx-0 bg-transparent md:bg-[#F6F7F9] border-0 md:border h-auto md:h-9 p-0 md:p-1 gap-2 md:gap-0">
           <TabsTrigger
             value="agenda"
-            className="rounded-full md:rounded-[6px] px-3 py-1.5 text-sm data-[state=active]:bg-[#2563eb] md:data-[state=active]:bg-white data-[state=active]:text-white md:data-[state=active]:text-[#1A1A1A] text-[#64748b] md:text-inherit"
+            className="rounded-full md:rounded-[6px] px-3 py-1.5 text-sm data-[state=active]:bg-[#FFC400] md:data-[state=active]:bg-white data-[state=active]:text-[#1a1500] md:data-[state=active]:text-[#1A1A1A] text-[#6C727C] md:text-inherit"
           >
             📅 Agenda do dia
           </TabsTrigger>
           <TabsTrigger
             value="followups"
-            className="rounded-full md:rounded-[6px] px-3 py-1.5 text-sm data-[state=active]:bg-[#2563eb] md:data-[state=active]:bg-white data-[state=active]:text-white md:data-[state=active]:text-[#1A1A1A] text-[#64748b] md:text-inherit"
+            className="rounded-full md:rounded-[6px] px-3 py-1.5 text-sm data-[state=active]:bg-[#FFC400] md:data-[state=active]:bg-white data-[state=active]:text-[#1a1500] md:data-[state=active]:text-[#1A1A1A] text-[#6C727C] md:text-inherit"
           >
             🔔 Follow-ups
             <FollowupsCountBadge />
