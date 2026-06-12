@@ -388,6 +388,7 @@ export function KanbanBoard() {
 function LeadCard({
   lead,
   assigneeName,
+  reminders,
   onClick,
   onCalendar,
   onChat,
@@ -396,6 +397,7 @@ function LeadCard({
 }: {
   lead: DBLead;
   assigneeName: string | null;
+  reminders: LeadReminder[];
   onClick: () => void;
   onCalendar: () => void;
   onChat: () => void;
@@ -413,6 +415,15 @@ function LeadCard({
   const isScheduled = lead.status === 'scheduled';
   const isAi = !lead.assigned_user_id;
   const attendantLabel = isAi ? 'SDR' : firstName(assigneeName) || 'Vendedor';
+
+  const hasReminders = reminders.length > 0;
+  const wasConfirmed = reminders.some((r) => r.status === 'confirmed');
+  const hasPending = reminders.some((r) => r.status === 'pending');
+  const reminderTone = wasConfirmed
+    ? 'text-emerald-600 border-emerald-300 bg-emerald-50'
+    : hasPending
+    ? 'text-amber-600 border-amber-300 bg-amber-50'
+    : 'text-gray-500 border-[#E3E6EB] bg-white';
 
   const actions: Array<{ icon: typeof Calendar; title: string; onClick: () => void; highlight?: boolean }> = [
     { icon: Calendar, title: 'Agendar', onClick: onCalendar, highlight: isScheduled },
