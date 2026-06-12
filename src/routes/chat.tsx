@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff, Mic, Square, Image as ImageIcon, X } from 'lucide-react'
+import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Wifi, WifiOff, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useLeads } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
@@ -7,15 +7,14 @@ import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
+import { ChatQuickActionsBar } from '@/components/chat/ChatQuickActionsBar'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
