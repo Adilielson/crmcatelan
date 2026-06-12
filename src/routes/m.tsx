@@ -65,7 +65,9 @@ function MobileShell() {
   const nav = isManagerRole(user.role) ? GERENTE_NAV : ATENDENTE_NAV
 
   // Esconde a bottom nav em telas full-screen (conversa aberta)
-  const hideBottomNav = /^\/m\/chat\/[^/]+/.test(location.pathname)
+  const hideBottomNav =
+    /^\/m\/chat\/[^/]+/.test(location.pathname) ||
+    /^\/m\/leads\/[^/]+/.test(location.pathname)
 
   return (
     <div className="min-h-screen bg-[#F6F7F9] text-ink font-jakarta flex flex-col">
