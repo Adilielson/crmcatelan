@@ -26,6 +26,7 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
+import { Route as ApiPublicHooksProcessAppointmentRemindersRouteImport } from './routes/api/public/hooks/process-appointment-reminders'
 
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
@@ -113,6 +114,12 @@ const ApiPublicHooksProcessFollowupsRoute =
     path: '/api/public/hooks/process-followups',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksProcessAppointmentRemindersRoute =
+  ApiPublicHooksProcessAppointmentRemindersRouteImport.update({
+    id: '/api/public/hooks/process-appointment-reminders',
+    path: '/api/public/hooks/process-appointment-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesByTo {
@@ -150,6 +158,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRoutesById {
@@ -170,6 +179,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
 export interface FileRouteTypes {
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
   id:
     | '__root__'
@@ -229,6 +241,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
   fileRoutesById: FileRoutesById
 }
@@ -249,6 +262,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
+  ApiPublicHooksProcessAppointmentRemindersRoute: typeof ApiPublicHooksProcessAppointmentRemindersRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
 }
 
@@ -373,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessFollowupsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/process-appointment-reminders': {
+      id: '/api/public/hooks/process-appointment-reminders'
+      path: '/api/public/hooks/process-appointment-reminders'
+      fullPath: '/api/public/hooks/process-appointment-reminders'
+      preLoaderRoute: typeof ApiPublicHooksProcessAppointmentRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -393,6 +414,8 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
+  ApiPublicHooksProcessAppointmentRemindersRoute:
+    ApiPublicHooksProcessAppointmentRemindersRoute,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,
 }
 export const routeTree = rootRouteImport

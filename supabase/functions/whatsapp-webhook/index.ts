@@ -577,6 +577,48 @@ Deno.serve(async (req) => {
           console.error("[lead] erro localizar/criar:", e instanceof Error ? e.message : String(e));
         }
 
+        // ── Detecta resposta de confirmação de agendamento ───────────────
+        try {
+          if (leadId && text && text.trim()) {
+            const norm = text.toLowerCase().trim();
+            const isConfirm = /\b(sim|confirmo|confirmado|confirmada|ok|okay|pode\s*ser|t[áa]|tudo\s*certo|claro|com\s*certeza|👍|✅)\b/i.test(norm);
+            const isCancel = /\b(n[aã]o\s*posso|cancelar|desmarcar|remarcar|n[aã]o\s*vou|n[aã]o\s*consigo)\b/i.test(norm);
+
+            if (isConfirm || isCancel) {
+              const { data: nextAppt } = await adminClient
+                .from("appointments")
+                .select("id, status, scheduled_at")
+                .eq("lead_id", leadId)
+                .in("status", ["pending", "confirmed"])
+                .gt("scheduled_at", new Date().toISOString())
+                .order("scheduled_at", { ascending: true })
+                .limit(1)
+                .maybeSingle();
+
+              if (nextAppt) {
+                if (isConfirm && nextAppt.status !== "confirmed") {
+                  await adminClient
+                    .from("appointments")
+                    .update({ status: "confirmed", updated_at: new Date().toISOString() })
+                    .eq("id", nextAppt.id);
+                  console.log(`[appt] lead ${leadId} confirmou agendamento ${nextAppt.id}`);
+                } else if (isCancel) {
+                  // Não cancela automaticamente — gera notificação para o atendente
+                  await adminClient.from("notifications").insert({
+                    tenant_id: tenantId,
+                    title: "Lead pediu para remarcar/cancelar",
+                    body: `Mensagem: "${text.slice(0, 140)}"`,
+                    type: "appointment_attention",
+                  }).then(() => {}, () => {});
+                  console.log(`[appt] lead ${leadId} sinalizou cancelamento — atenção do atendente`);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("[appt-confirm] erro:", e instanceof Error ? e.message : String(e));
+        }
+
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
           try {
