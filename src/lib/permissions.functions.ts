@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { ALL_MODULE_KEYS, type ModuleKey } from './permissions';
+import { ALL_MODULE_KEYS, defaultsForRole, type ModuleKey } from './permissions';
 
 const ModuleKeyEnum = z.enum(ALL_MODULE_KEYS as [ModuleKey, ...ModuleKey[]]);
 const RoleEnum = z.enum(['admin', 'manager', 'seller', 'marketing_partner', 'super_admin']);
