@@ -1,12 +1,13 @@
-import React from 'react';
-import { 
-  Bell, 
-  CheckCheck, 
-  Info, 
-  AlertTriangle, 
-  Brain, 
+import React, { useEffect } from 'react';
+import {
+  Bell,
+  CheckCheck,
+  Info,
+  AlertTriangle,
+  Brain,
   TrendingDown,
-  Circle
+  Circle,
+  Clock
 } from 'lucide-react';
 import {
   Popover,
@@ -17,20 +18,57 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useNotificationStore, Notification } from '@/store/useNotificationStore';
+import { useAuthStore } from '@/hooks/use-auth';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Link } from '@tanstack/react-router';
 
 export const NotificationCenter = () => {
-  const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
+  const { notifications, markAsRead, markAllAsRead, setNotifications, upsertNotification } = useNotificationStore();
+  const user = useAuthStore((s) => s.user);
   const unreadCount = notifications.filter(n => !n.read_at).length;
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    (async () => {
+      const { data } = await (supabase.from('notifications') as any)
+        .select('id, title, message, category, read_at, created_at, link')
+        .eq('profile_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (!cancelled && data) {
+        setNotifications(data as unknown as Notification[]);
+      }
+    })();
+
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `profile_id=eq.${user.id}` },
+        (payload) => {
+          upsertNotification(payload.new as unknown as Notification);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, setNotifications, upsertNotification]);
 
   const getIcon = (category: Notification['category']) => {
     switch (category) {
       case 'ai_training': return <Brain className="w-4 h-4 text-blue-500" />;
       case 'performance': return <TrendingDown className="w-4 h-4 text-amber-500" />;
       case 'system_error': return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      case 'lead_alert':
+      case 'sla_warning': return <Clock className="w-4 h-4 text-amber-500" />;
       default: return <Info className="w-4 h-4 text-slate-500" />;
     }
   };
