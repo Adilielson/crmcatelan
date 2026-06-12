@@ -217,7 +217,11 @@ function Chat() {
 
 
       {/* Coluna 1: Lista de Sessões */}
-      <div className="w-[360px] border-r border-[#E3E6EB] flex flex-col bg-gray-50/50">
+      <div className={cn(
+        "w-full lg:w-[360px] lg:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
+        hasSelection ? "hidden lg:flex" : "flex",
+      )}>
+
         <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
           <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
           <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-gray-50 hover:bg-[#FFC400]/10 hover:text-[#FFC400] transition-all">
