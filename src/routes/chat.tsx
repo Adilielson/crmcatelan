@@ -526,7 +526,7 @@ function Chat() {
             )}
 
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50 no-scrollbar md:thin-scrollbar md:[scrollbar-width:thin]">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50/50 mobile-no-scrollbar thin-scrollbar">
               <div className="p-8 space-y-4 min-h-full">
                 {displayConv.messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center text-center py-16 opacity-70">
