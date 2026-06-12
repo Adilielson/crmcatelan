@@ -63,7 +63,12 @@ function FilaAtendimento() {
       qc.invalidateQueries({ queryKey });
       qc.invalidateQueries({ queryKey: ['leads', tenantId] });
       toast.success('Lead atribuído a você');
-      navigate({ to: '/chat', search: { phone: lead.phone ?? undefined } });
+      const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
+      if (isMobile && lead.phone) {
+        navigate({ to: '/m/chat/$phone', params: { phone: lead.phone } });
+      } else {
+        navigate({ to: '/chat', search: { phone: lead.phone ?? undefined } });
+      }
     },
     onError: (e: any) => toast.error(`Erro ao pegar lead: ${e.message}`),
   });
