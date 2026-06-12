@@ -412,9 +412,9 @@ function Chat() {
                     <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-[#FFC400] rounded-r-full shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
                   )}
                   <div className="relative flex-shrink-0">
-                    <Avatar className="h-14 w-14 border-2 border-white shadow-md rounded-[18px]">
+                    <Avatar className="h-14 w-14 rounded-full shadow-sm">
                       {conv.avatarUrl && <AvatarImage src={conv.avatarUrl} alt={displayName} />}
-                      <AvatarFallback className="bg-gradient-to-br from-[#F6F7F9] to-[#E3E6EB] text-[#A7ADB8] font-black uppercase text-base">
+                      <AvatarFallback className="bg-gradient-to-br from-[#F6F7F9] to-[#E3E6EB] text-[#A7ADB8] font-black uppercase text-base rounded-full">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
