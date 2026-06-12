@@ -512,7 +512,7 @@ function LeadCard({
           );
         })}
 
-        {hasReminders && (
+        {hasReminders && (<>
           <Popover>
             <PopoverTrigger asChild>
               <button
