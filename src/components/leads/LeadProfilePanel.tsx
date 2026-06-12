@@ -1,10 +1,12 @@
 import { Badge } from '@/components/ui/badge';
 import { Brain, History, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag, Activity } from 'lucide-react';
-import { DBLead, stageLabel } from '@/hooks/use-leads';
+import { DBLead } from '@/hooks/use-leads';
 import { useLeadHistory } from '@/hooks/use-lead-history';
 import { useConsultationSummary } from '@/hooks/use-consultation-summary';
 import { PrescriptionCard } from '@/components/leads/PrescriptionCard';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
+import { StageBadge } from '@/components/leads/StageBadge';
+import { StageStepper } from '@/components/leads/StageStepper';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -16,15 +18,6 @@ function fmtDateTime(s: string | null) {
   } catch {
     return s;
   }
-}
-
-function StageBadge({ stage }: { stage: string | null }) {
-  if (!stage) return <span className="text-gray-400">—</span>;
-  return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-ink text-[10px] font-bold uppercase tracking-wide">
-      {stageLabel(stage)}
-    </span>
-  );
 }
 
 /**
