@@ -1,9 +1,10 @@
 /** @jsxImportSource react */
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus } from 'lucide-react';
+import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus, Bell, Check, Clock, X as XIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import { useAgenda } from '@/hooks/use-agenda';
 import { useAuthStore } from '@/hooks/use-auth';
 import { useKanbanColumns, useDeleteKanbanColumn, KanbanColumn } from '@/hooks/use-kanban-columns';
 import { useTenantProfiles, firstName } from '@/hooks/use-tenant-profiles';
+import { useLeadReminders, LeadReminder, REMINDER_LABEL, REMINDER_STATUS_LABEL } from '@/hooks/use-lead-reminders';
 
 import { LeadFormDialog } from './LeadFormDialog';
 import { LeadDetailSheet } from './LeadDetailSheet';
