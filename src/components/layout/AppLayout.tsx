@@ -21,6 +21,45 @@ import {
   UserCog,
   Bell,
 } from 'lucide-react';
+
+/* ============ MOBILE BOTTOM NAV ============ */
+const MobileBottomNav = ({ pathname }: { pathname: string }) => {
+  const items = [
+    { label: 'Início', icon: Home, href: '/' },
+    { label: 'Atendimento', icon: MessageSquare, href: '/chat' },
+    { label: 'Agenda', icon: Calendar, href: '/agenda' },
+    { label: 'Clientes', icon: Contact, href: '/clientes' },
+  ];
+  return (
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0f172a] border-t border-white/5"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <ul className="flex items-stretch justify-around h-[60px]">
+        {items.map((it) => {
+          const Icon = it.icon;
+          const active = pathname === it.href;
+          return (
+            <li key={it.href} className="flex-1 flex items-center justify-center">
+              <Link
+                to={it.href}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-xl min-w-[64px] transition-colors duration-150',
+                  active ? 'bg-[#1e293b] text-white' : 'text-[#64748b] hover:text-white',
+                )}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[10px] font-semibold leading-none truncate max-w-[72px]">
+                  {it.label}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+};
 import { cn } from '@/lib/utils';
 import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { NotificationCenter } from './NotificationCenter';
@@ -507,11 +546,16 @@ const AppLayout = () => {
       />
 
       {/* Conteúdo */}
-      <main className="pt-14 min-h-screen">
+      <main
+        className="pt-14 min-h-screen pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0"
+      >
         <div className="max-w-[1600px] mx-auto w-full p-4 md:p-6 lg:p-8">
           <Outlet />
         </div>
       </main>
+
+      {/* Bottom nav mobile */}
+      <MobileBottomNav pathname={location.pathname} />
     </div>
   );
 };
