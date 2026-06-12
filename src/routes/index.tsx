@@ -114,9 +114,6 @@ function Dashboard() {
                ))}
              </SelectContent>
            </Select>
-           <Button className="bg-primary hover:bg-yellow-bright text-[#1a1500] shadow-xl shadow-primary/20 font-black text-[11px] h-14 px-10 rounded-[16px] transition-all hover:scale-[1.05] active:scale-95 uppercase tracking-widest border-none">
-             GERAR RELATÓRIO
-           </Button>
         </div>
       </div>
 
