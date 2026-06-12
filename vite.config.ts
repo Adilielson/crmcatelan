@@ -4,9 +4,7 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  vite: {
-    build: {
-      rollupOptions: {}
-    }
-  }
+  nitro: {
+    preset: "vercel",
+  },
 });
