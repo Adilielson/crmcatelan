@@ -86,25 +86,25 @@ function Dashboard() {
 
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-1000">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8 bg-white p-5 md:p-10 rounded-[18px] md:rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-1 h-1 rounded-full bg-primary" />
-            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Relatório em Tempo Real</span>
+        <div className="relative z-10 min-w-0">
+          <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+            <div className="w-6 md:w-10 h-1 rounded-full bg-primary shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-primary truncate">Relatório em Tempo Real</span>
           </div>
-          <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">
+          <h1 className="text-[26px] md:text-[44px] font-black text-ink tracking-tight font-jakarta leading-[1.05] md:leading-none mb-2 md:mb-4">
             Dashboard Executivo
           </h1>
-          <p className="text-gray-500 font-medium text-[15px] max-w-xl">
+          <p className="text-gray-500 font-medium text-[13px] md:text-[15px] max-w-xl">
             Visão consolidada da performance comercial e operacional de suas unidades com inteligência preditiva.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 relative z-10">
+        <div className="flex flex-wrap items-center gap-4 relative z-10 w-full md:w-auto">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-14 text-ink rounded-[16px] px-6 uppercase tracking-wider transition-all hover:border-primary/50">
-               <Store className="w-4 h-4 mr-3 text-primary" />
+             <SelectTrigger className="w-full md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+               <Store className="w-4 h-4 mr-3 text-primary shrink-0" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
              <SelectContent className="bg-white border-[#E3E6EB] text-ink rounded-[16px]">
