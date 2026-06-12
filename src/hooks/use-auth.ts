@@ -124,6 +124,7 @@ function buildFallbackUser(userId: string, email: string): User {
     name: email || 'Usuário',
     role: 'seller',
     tenant_id: DEV_TENANT_ID,
+    avatar_url: null,
   };
 }
 
@@ -165,6 +166,7 @@ async function loadProfile(
       name: profile.full_name || email,
       role: profile.role,
       tenant_id: profile.tenant_id,
+      avatar_url: profile.avatar_url || null,
     };
 
     const tenant = (profile.tenants as Tenant | null) ?? null;
