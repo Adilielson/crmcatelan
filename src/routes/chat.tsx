@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 import { ChatQuickActionsBar } from '@/components/chat/ChatQuickActionsBar'
+import { StageBadge } from '@/components/leads/StageBadge'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -399,6 +400,11 @@ function Chat() {
               const initials = getContactInitials(conv.name, conv.phone)
               const isActive = selectedPhone === conv.phone
               const displayName = conv.name || formatPhoneDisplay(conv.phone)
+              const convDigits = conv.phone.replace(/\D/g, '')
+              const convLead = leads.find((l) => {
+                const ld = (l.phone ?? '').replace(/\D/g, '')
+                return ld.length >= 8 && (ld === convDigits || convDigits.endsWith(ld) || ld.endsWith(convDigits))
+              })
               return (
                 <div
                   key={conv.phone}
@@ -433,6 +439,11 @@ function Chat() {
                       <p className="text-[10px] font-semibold text-gray-400 truncate mb-0.5">
                         {formatPhoneDisplay(conv.phone)}
                       </p>
+                    )}
+                    {convLead?.status && (
+                      <div className="mb-1">
+                        <StageBadge stage={convLead.status} size="xs" />
+                      </div>
                     )}
                     <div className="flex justify-between items-center gap-2">
                       <p className={cn(
