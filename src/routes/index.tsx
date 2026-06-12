@@ -314,27 +314,27 @@ function StatCard({ title, value, change, changeDesc, icon, highlight, link }: {
   return (
     <Link to={link} className="block group">
       <Card className={cn(
-        "transition-all duration-500 cursor-pointer border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 group-active:scale-[0.98] overflow-hidden relative rounded-[24px]",
+        "transition-all duration-500 cursor-pointer border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 group-active:scale-[0.98] overflow-hidden relative rounded-[18px] md:rounded-[24px]",
         highlight
           ? "bg-gradient-to-br from-[#FFC400] via-[#FFD60A] to-[#E0A500] border-none" 
           : "bg-white"
       )}>
         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("w-20 h-20", highlight ? "text-[#1a1500]" : "text-ink") })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("w-16 h-16 md:w-20 md:h-20", highlight ? "text-[#1a1500]" : "text-ink") })}
         </div>
         
         {highlight && (
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/20 rounded-full blur-2xl" />
         )}
 
-        <CardContent className="p-8 relative z-10">
-          <div className="flex items-center justify-between mb-6">
+        <CardContent className="p-4 md:p-8 relative z-10">
+          <div className="flex items-center justify-between mb-3 md:mb-6 gap-2">
             <p className={cn(
-              "text-[10px] font-black uppercase tracking-[0.2em] font-jakarta",
+              "text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] md:tracking-[0.2em] font-jakarta min-w-0 truncate",
               highlight ? "text-[#5a4900]/60" : "text-gray-400"
             )}>{title}</p>
             <div className={cn(
-              "p-3 rounded-[16px] transition-all duration-500",
+              "p-2 md:p-3 rounded-[12px] md:rounded-[16px] transition-all duration-500 shrink-0",
               highlight 
                 ? "bg-white/20 text-[#1a1500] backdrop-blur-md" 
                 : "bg-gray-50 text-ink border border-[#E3E6EB] group-hover:bg-[#FFC400] group-hover:text-[#1a1500] group-hover:border-[#FFC400] group-hover:scale-110"
@@ -345,11 +345,11 @@ function StatCard({ title, value, change, changeDesc, icon, highlight, link }: {
           
           <div className="space-y-1">
             <h3 className={cn(
-              "text-[48px] font-black tracking-tight font-jakarta leading-none",
+              "text-[30px] md:text-[48px] font-black tracking-tight font-jakarta leading-none",
               highlight ? "text-[#1a1500]" : "text-ink"
             )}>{value}</h3>
             
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 mt-2 md:mt-4 flex-wrap">
               <div className={cn(
                 "px-2 py-0.5 rounded-full text-[10px] font-black",
                 highlight 
@@ -359,7 +359,7 @@ function StatCard({ title, value, change, changeDesc, icon, highlight, link }: {
                 {change}
               </div>
               <p className={cn(
-                "text-[11px] font-bold",
+                "text-[10px] md:text-[11px] font-bold",
                 highlight ? "text-[#5a4900]/70" : "text-gray-400"
               )}>{changeDesc}</p>
             </div>
