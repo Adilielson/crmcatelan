@@ -348,17 +348,25 @@ function Chat() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"
-                  onClick={() => setIsRoutingOpen(true)}
-                  title="Encaminhar para Equipe"
+                  className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all xl:hidden"
+                  onClick={() => setDetailsOpen(true)}
+                  title="Ver ficha do lead"
                 >
-                  <Users className="w-5 h-5" />
+                  <PanelRight className="w-5 h-5" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"><Phone className="w-5 h-5" /></Button>
                 <div className="h-6 w-[1px] bg-[#E3E6EB] mx-1" />
                 <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
               </div>
             </div>
+
+            {currentLead && (
+              <ChatQuickActionsBar
+                lead={currentLead}
+                onOpenDetails={() => setDetailsOpen(true)}
+              />
+            )}
+
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50">
               <div className="p-8 space-y-4 min-h-full">
