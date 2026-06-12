@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useAuthStore } from '@/hooks/use-auth';
+import { useAuthStore, buildFallbackUser } from '@/hooks/use-auth';
+import { readLocalSession } from '@/lib/local-session';
 import {
   Home,
   Users,
@@ -468,14 +469,17 @@ const AppLayout = () => {
 
   useEffect(() => {
     if (loading || user || location.pathname === '/login') return;
-    let cancelled = false;
-    import('@/integrations/supabase/client').then(({ supabase }) =>
-      supabase.auth.getSession().then(({ data }) => {
-        if (cancelled) return;
-        if (!data.session) navigate({ to: '/login' });
-      }),
-    );
-    return () => { cancelled = true; };
+    // Decisão 100% síncrona (sem getSession(), que pode travar após F5 por
+    // causa do lock de auth do navegador):
+    //  - sem sessão salva no localStorage → /login
+    //  - com sessão salva mas sem user no store → monta user fallback para
+    //    nunca deixar o spinner infinito.
+    const local = readLocalSession();
+    if (!local) {
+      navigate({ to: '/login' });
+    } else {
+      useAuthStore.getState().setUser(buildFallbackUser(local.userId, local.email));
+    }
   }, [loading, user, location.pathname]);
 
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
