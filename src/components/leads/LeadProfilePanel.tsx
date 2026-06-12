@@ -93,6 +93,13 @@ export function LeadProfilePanel({
         </div>
       </div>
 
+      {/* Atalhos rápidos — unificados em todas as visões */}
+      {showActions && (
+        <LeadQuickActions lead={lead} variant="labeled" hideChat={hideChat} onOpenChat={onOpenChat} />
+      )}
+
+
+
       {/* IA Insights */}
       {(lead.ia_summary || lead.score_ia != null || (lead.ia_tags && lead.ia_tags.length > 0)) && (
         <div className="space-y-2">
