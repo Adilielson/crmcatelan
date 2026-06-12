@@ -57,17 +57,6 @@ const QUICK_REPLIES = [
   'Pode me enviar uma foto da receita? 📄',
 ]
 
-const STAGE_COLORS: Record<LeadStage, string> = {
-  open: 'bg-blue-100 text-blue-700 border-blue-300',
-  in_progress: 'bg-amber-100 text-amber-700 border-amber-300',
-  scheduled: 'bg-purple-100 text-purple-700 border-purple-300',
-  checked_in: 'bg-emerald-100 text-emerald-700 border-emerald-300',
-  negotiating: 'bg-cyan-100 text-cyan-700 border-cyan-300',
-  showed_up: 'bg-green-100 text-green-700 border-green-300',
-  followup: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-  no_show: 'bg-gray-200 text-gray-700 border-gray-300',
-  lost: 'bg-red-100 text-red-700 border-red-300',
-}
 
 function MobileConversation() {
   const { phone } = Route.useParams()
