@@ -500,7 +500,12 @@ const AppLayout = () => {
     if (moduleForPath && !can(moduleForPath)) navigate({ to: '/' });
   }, [location.pathname, user, loading]);
 
-  if (loading)
+  // Mostra spinner enquanto:
+  //  - a auth ainda está inicializando (loading), OU
+  //  - não há user mas estamos numa rota protegida (evita renderizar o conteúdo
+  //    sem o header/menu durante a janela entre Ctrl+Shift+R e o restore da sessão).
+  // O effect acima cuida de redirecionar p/ /login se realmente não há sessão.
+  if (loading || (!user && location.pathname !== '/login'))
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin" />
@@ -508,6 +513,7 @@ const AppLayout = () => {
     );
 
   if (!user) return <Outlet />;
+  
   
 
   // Items priorizados para tablet (esconder Marketing e itens menos prioritários)
