@@ -335,8 +335,86 @@ function Settings() {
         <TabsContent value="chat">
           <WhatsAppConfig />
         </TabsContent>
+
+        <TabsContent value="account">
+          <ChangePasswordSection />
+        </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+function ChangePasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword.length < 8) {
+      toast.error('A nova senha deve ter pelo menos 8 caracteres.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('A confirmação não confere com a nova senha.')
+      return
+    }
+    setSaving(true)
+    try {
+      const { data: userData, error: userErr } = await supabase.auth.getUser()
+      if (userErr || !userData.user?.email) {
+        throw new Error('Sessão inválida. Faça login novamente.')
+      }
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: userData.user.email,
+        password: currentPassword,
+      })
+      if (signInErr) {
+        throw new Error('Senha atual incorreta.')
+      }
+      const { error: updErr } = await supabase.auth.updateUser({ password: newPassword })
+      if (updErr) throw updErr
+      toast.success('Senha alterada com sucesso!')
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao alterar senha.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="bg-white border border-border rounded-[14px] p-8 shadow-card max-w-xl">
+      <h3 className="text-sm font-black text-ink flex items-center gap-3 uppercase tracking-widest mb-2">
+        <div className="p-2 bg-primary/10 rounded-xl">
+          <KeyRound className="w-5 h-5 text-primary" />
+        </div>
+        Alterar Senha
+      </h3>
+      <p className="text-[11px] text-gray-500 mb-6">
+        Mínimo de 8 caracteres. Você precisará informar a senha atual para confirmar.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="current-password" className="text-xs font-black uppercase tracking-widest text-gray-600">Senha atual</Label>
+          <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required autoComplete="current-password" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="new-password" className="text-xs font-black uppercase tracking-widest text-gray-600">Nova senha</Label>
+          <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm-password" className="text-xs font-black uppercase tracking-widest text-gray-600">Confirmar nova senha</Label>
+          <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
+        </div>
+        <Button type="submit" disabled={saving} className="h-10 text-[10px] font-black uppercase tracking-widest">
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Alterar senha'}
+        </Button>
+      </form>
+    </section>
   )
 }
 
