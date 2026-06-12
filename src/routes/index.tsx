@@ -244,20 +244,20 @@ function Dashboard() {
                 <p className="text-xs text-gray-400 italic p-4 text-center">Sem atividade da IA ainda.</p>
               )}
               {recentAi.map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-4 border border-border rounded-[14px] bg-background/50 hover:border-primary/30 transition-all cursor-pointer group/item">
-                  <div className="flex items-center gap-3">
+                <div key={i} className="flex items-center justify-between gap-3 p-3 md:p-4 border border-border rounded-[14px] bg-background/50 hover:border-primary/30 transition-all cursor-pointer group/item">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Badge className={cn(
-                      "text-[10px] uppercase font-bold",
+                      "text-[10px] uppercase font-bold shrink-0",
                       (lead.score_ia ?? 0) >= 70 ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
                     )}>
                       {(lead.score_ia ?? 0) >= 70 ? 'qualificado' : 'em análise'}
                     </Badge>
-                    <div>
-                      <p className="text-sm font-bold text-ink font-jakarta">{lead.full_name}</p>
-                      <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_summary ?? '—'}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-ink font-jakarta truncate">{lead.full_name}</p>
+                      <p className="text-[10px] text-[#6C727C] truncate">{lead.ia_summary ?? '—'}</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px] font-bold border-slate-200">
+                  <Badge variant="outline" className="text-[10px] font-bold border-slate-200 shrink-0">
                     {lead.score_ia ?? 0}%
                   </Badge>
                 </div>
