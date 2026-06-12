@@ -202,7 +202,10 @@ export function KanbanBoard() {
       {isLoading ? (
         <div className="text-center py-20 text-gray-400 font-bold">Carregando leads...</div>
       ) : (
-        <div className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none">
+        <div
+          className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {columns.map((col) => {
             const colLeads = leadsForColumn(col);
             const isCheckedIn = col.system_key === 'checked_in';
