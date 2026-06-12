@@ -383,7 +383,7 @@ function Chat() {
           </div>
         </div>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 [&_[data-radix-scroll-area-scrollbar]]:hidden md:[&_[data-radix-scroll-area-scrollbar]]:flex">
           <div className="flex flex-col">
             {loading && (
               <div className="p-8 text-center text-xs text-gray-400 font-bold">Carregando conversas...</div>
@@ -404,7 +404,7 @@ function Chat() {
                   key={conv.phone}
                   onClick={() => setSelectedPhone(conv.phone)}
                   className={cn(
-                    "p-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
+                    "p-5 pr-6 md:pr-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
                     isActive ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100"
                   )}
                 >
