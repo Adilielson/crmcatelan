@@ -209,81 +209,12 @@ function Chat() {
     setRecording(false)
   }
 
-  const [isRoutingOpen, setIsRoutingOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const hasSelection = !!selectedPhone
 
   return (
     <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-160px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
-      <Dialog open={isRoutingOpen} onOpenChange={setIsRoutingOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-primary" />
-              Encaminhar Conversa
-            </DialogTitle>
-            <DialogDescription>
-              Selecione o destino ou aplique uma regra de roteamento automático.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Regras de Roteamento</h4>
-              <div className="grid grid-cols-1 gap-2">
-                <Button 
-                  variant="outline" 
-                  className="justify-start h-auto py-3 px-4 border-gray-100 hover:border-primary/30 hover:bg-primary/5 group"
-                  onClick={() => {
-                    toast.success("Regra 'Fila Circular' aplicada")
-                    setIsRoutingOpen(false)
-                  }}
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-ink group-hover:text-primary">Próximo Disponível (Fila)</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Distribuição igualitária entre vendedores online.</p>
-                  </div>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="justify-start h-auto py-3 px-4 border-gray-100 hover:border-primary/30 hover:bg-primary/5 group"
-                  onClick={() => {
-                    toast.success("Encaminhado por Especialidade: Lentes")
-                    setIsRoutingOpen(false)
-                  }}
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-ink group-hover:text-primary">Especialista em Lentes</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Encaminhar para equipe técnica de laboratório.</p>
-                  </div>
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Encaminhamento Direto</h4>
-              <div className="space-y-2">
-                <Select>
-                  <SelectTrigger className="w-full h-12 rounded-xl border-gray-100 font-bold text-xs">
-                    <SelectValue placeholder="Selecionar Atendente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vendedor-1">Carlos (Vendas Sul)</SelectItem>
-                    <SelectItem value="vendedor-2">Ana (Vendas Centro)</SelectItem>
-                    <SelectItem value="gerente">Roberto (Gerente)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  className="w-full h-12 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs rounded-xl shadow-lg shadow-primary/20"
-                  onClick={() => {
-                    toast.success("Conversa encaminhada com sucesso")
-                    setIsRoutingOpen(false)
-                  }}
-                >
-                  CONFIRMAR TRANSFERÊNCIA
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Coluna 1: Lista de Sessões */}
       <div className="w-[360px] border-r border-[#E3E6EB] flex flex-col bg-gray-50/50">
