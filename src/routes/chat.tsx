@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Wifi, WifiOff, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { useLeads } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
