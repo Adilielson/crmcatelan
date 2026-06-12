@@ -234,9 +234,17 @@ const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-white/5 transition-colors duration-150"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f5c518] to-[#d4a900] flex items-center justify-center text-[#0f172a] font-bold text-xs">
-          {user.name?.charAt(0)?.toUpperCase()}
-        </div>
+        {user.avatar_url ? (
+          <img
+            src={user.avatar_url}
+            alt={user.name}
+            className="w-8 h-8 rounded-full object-cover ring-2 ring-[#f5c518]/40"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f5c518] to-[#d4a900] flex items-center justify-center text-[#0f172a] font-bold text-xs">
+            {user.name?.charAt(0)?.toUpperCase()}
+          </div>
+        )}
         <div className="hidden md:flex flex-col items-start leading-tight">
           <span className="text-xs font-semibold text-white truncate max-w-[120px]">{user.name}</span>
           <span className="text-[10px] text-slate-400 uppercase tracking-wider">{user.role}</span>
