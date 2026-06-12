@@ -46,12 +46,19 @@ export function KanbanBoard() {
   const navigate = useNavigate();
   const { data: leads = [], isLoading } = useLeads();
   const { data: columns = [] } = useKanbanColumns();
+  const { data: profiles = [] } = useTenantProfiles();
+  const profileMap = useMemo(() => {
+    const m = new Map<string, string>();
+    profiles.forEach((p) => m.set(p.id, p.full_name ?? ''));
+    return m;
+  }, [profiles]);
   const updateLead = useUpdateLead();
   const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
   const { addAppointment } = useAgenda();
   const userRole = useAuthStore((s) => s.user?.role ?? null);
   const canManageColumns = userRole === 'admin' || userRole === 'super_admin' || userRole === 'manager';
+
 
   const [newOpen, setNewOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<DBLead | null>(null);
