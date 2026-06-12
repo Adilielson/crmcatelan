@@ -34,7 +34,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { TodayFollowupsTab } from '@/components/agenda/TodayFollowupsTab'
@@ -185,9 +185,124 @@ function Agenda() {
   }
 
 
+  // Mobile weekly strip: 5 dias (seg-sex) da semana de selectedDay
+  const weekStartMon = startOfWeek(selectedDay, { weekStartsOn: 1 })
+  const weekDaysMobile = useMemo(
+    () => Array.from({ length: 5 }, (_, i) => addDays(weekStartMon, i)),
+    [weekStartMon]
+  )
+
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+    <div className="space-y-4 md:space-y-10 animate-in fade-in duration-700">
+      {/* MOBILE HEADER */}
+      <div className="md:hidden -mx-4 -mt-4 px-4 pt-5 pb-4 bg-[#0f172a]">
+        <h1 className="text-xl font-bold text-white">Agenda de exames</h1>
+        <p className="text-sm text-[#94a3b8] mt-0.5">Exames de vista e retornos da semana</p>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="mt-3 inline-flex items-center gap-1.5 bg-[#2563eb] text-white rounded-full text-sm font-semibold px-4 py-2 active:scale-95 transition"
+        >
+          <Plus className="w-4 h-4" /> Nova consulta
+        </button>
+      </div>
+
+      {/* MOBILE WEEK STRIP */}
+      <div className="md:hidden mx-4 bg-[#1e293b] rounded-2xl p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <button
+            onClick={() => setSelectedDay(subWeeks(selectedDay, 1))}
+            className="text-white/80 p-1"
+            aria-label="Semana anterior"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setSelectedDay(new Date())}
+            className="text-white text-sm font-medium"
+          >
+            Hoje
+          </button>
+          <button
+            onClick={() => setSelectedDay(addWeeks(selectedDay, 1))}
+            className="text-white/80 p-1"
+            aria-label="Próxima semana"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <span className="text-white font-bold text-sm capitalize ml-1">
+            {format(selectedDay, 'MMMM yyyy', { locale: ptBR })}
+          </span>
+          <button
+            onClick={() => { setCurrentDate(selectedDay); setView('month') }}
+            className="ml-auto border border-white/20 text-white rounded-full text-xs px-3 py-1"
+          >
+            Ver mês
+          </button>
+        </div>
+        <div className="flex justify-between gap-1">
+          {weekDaysMobile.map((day) => {
+            const isSelected = isSameDay(day, selectedDay)
+            const isToday = isSameDay(day, new Date())
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => {
+                  setSelectedDay(day)
+                  setFormData(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }))
+                }}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition",
+                  isSelected ? "bg-[#2563eb] text-white" : "text-[#94a3b8]"
+                )}
+              >
+                <span className="text-xs uppercase">
+                  {format(day, 'EEE', { locale: ptBR }).slice(0, 3)}
+                </span>
+                <span className={cn("text-lg font-semibold", isSelected ? "text-white" : "text-white/90")}>
+                  {format(day, 'd')}
+                </span>
+                {isToday && !isSelected && (
+                  <span className="w-1 h-1 rounded-full bg-[#f5c518]" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* MOBILE DAY CARD */}
+      <div className="md:hidden mx-4 bg-[#1e293b] rounded-2xl p-4">
+        <h3 className="text-white font-semibold text-sm capitalize mb-3">
+          {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
+        </h3>
+        {dayAppointments.length === 0 ? (
+          <p className="text-center text-[#64748b] py-6 text-sm">Nenhuma consulta nesse dia.</p>
+        ) : (
+          <div className="space-y-2">
+            {dayAppointments.map(appt => (
+              <div key={appt.id} className="bg-[#0f172a] border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                <div className="bg-[#2563eb]/20 text-[#60a5fa] text-xs font-bold px-2.5 py-1 rounded-lg">
+                  {appt.startTime}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
+                  <p className="text-[#94a3b8] text-xs truncate">{appt.examType}</p>
+                </div>
+                <button
+                  onClick={() => handleOpenChat(appt)}
+                  className="text-[#60a5fa] p-2 rounded-lg active:bg-white/5"
+                  aria-label="Abrir WhatsApp"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* DESKTOP HERO */}
+      <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
@@ -208,16 +323,24 @@ function Agenda() {
       </div>
 
       <Tabs defaultValue="agenda" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="agenda">📅 Agenda do dia</TabsTrigger>
-          <TabsTrigger value="followups">
-            🔔 Follow-ups de hoje
+        <TabsList className="mb-6 mx-4 md:mx-0 bg-transparent md:bg-[#F6F7F9] border-0 md:border h-auto md:h-9 p-0 md:p-1 gap-2 md:gap-0">
+          <TabsTrigger
+            value="agenda"
+            className="rounded-full md:rounded-[6px] px-3 py-1.5 text-sm data-[state=active]:bg-[#2563eb] md:data-[state=active]:bg-white data-[state=active]:text-white md:data-[state=active]:text-[#1A1A1A] text-[#64748b] md:text-inherit"
+          >
+            📅 Agenda do dia
+          </TabsTrigger>
+          <TabsTrigger
+            value="followups"
+            className="rounded-full md:rounded-[6px] px-3 py-1.5 text-sm data-[state=active]:bg-[#2563eb] md:data-[state=active]:bg-white data-[state=active]:text-white md:data-[state=active]:text-[#1A1A1A] text-[#64748b] md:text-inherit"
+          >
+            🔔 Follow-ups
             <FollowupsCountBadge />
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="agenda">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="hidden md:grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendário */}
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white border border-[#E3E6EB] rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-hidden">
