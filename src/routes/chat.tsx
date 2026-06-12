@@ -113,7 +113,7 @@ function Chat() {
   useEffect(() => {
     const el = scrollRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [selectedConv?.messages.length, selectedPhone])
+  }, [displayConv?.messages.length, selectedPhone])
 
   // OCR real agora vive no painel do lead (aba "Lead" / Kanban).
 
