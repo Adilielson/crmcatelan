@@ -315,13 +315,26 @@ function Chat() {
       </div>
 
       {/* Coluna 2: Chat principal */}
-      <div className="flex-1 flex flex-col bg-white relative">
+      <div className={cn(
+        "flex-1 flex-col bg-white relative min-w-0",
+        hasSelection ? "flex" : "hidden lg:flex",
+      )}>
         {selectedConv ? (
           <>
-            <div className="p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px]">
+            <div className="p-4 sm:p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20 gap-2">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl lg:hidden flex-shrink-0"
+                  onClick={() => setSelectedPhone(null)}
+                  title="Voltar"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px] flex-shrink-0">
                   {selectedConv.avatarUrl && <AvatarImage src={selectedConv.avatarUrl} alt={selectedConv.name ?? selectedConv.phone} />}
+
                   <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
                     {getContactInitials(selectedConv.name, selectedConv.phone)}
                   </AvatarFallback>
