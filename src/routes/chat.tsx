@@ -40,17 +40,35 @@ function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Auto-seleciona a primeira conversa ou a que vier pela URL
-  useEffect(() => {
-    if (selectedPhone) return
-    if (phoneFromUrl) { setSelectedPhone(phoneFromUrl); return }
-    if (conversations.length > 0) setSelectedPhone(conversations[0].phone)
-  }, [conversations, phoneFromUrl, selectedPhone])
+  const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
 
-  const selectedConv = useMemo(
-    () => conversations.find((c) => c.phone === selectedPhone) ?? null,
-    [conversations, selectedPhone]
-  )
+  // Sempre que a URL mudar (?phone=...), reespelha em selectedPhone — isso garante
+  // que clicar em outro lead na Fila enquanto o chat já está aberto troca a conversa.
+  useEffect(() => {
+    if (phoneFromUrl) {
+      setSelectedPhone(phoneFromUrl)
+      return
+    }
+    if (!selectedPhone && conversations.length > 0) {
+      setSelectedPhone(conversations[0].phone)
+    }
+  }, [phoneFromUrl, conversations, selectedPhone])
+
+  // Match tolerante: o WhatsApp grava só dígitos (5511…) e o lead pode estar como
+  // "+55 11 …". Normaliza ambos os lados e aceita sufixo (mínimo 8 dígitos).
+  const selectedConv = useMemo(() => {
+    if (!selectedPhone) return null
+    const target = onlyDigits(selectedPhone)
+    if (!target) return null
+    return (
+      conversations.find((c) => onlyDigits(c.phone) === target) ||
+      conversations.find((c) => {
+        const d = onlyDigits(c.phone)
+        return d.length >= 8 && (target.endsWith(d) || d.endsWith(target))
+      }) ||
+      null
+    )
+  }, [conversations, selectedPhone])
 
   const filteredConvs = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -62,10 +80,10 @@ function Chat() {
     )
   }, [conversations, search])
 
-  // Casar o lead com o telefone da conversa selecionada (normalizando dígitos)
+  // Casar o lead com o telefone selecionado (normalizando dígitos).
+  // Se veio pela Fila (lead novo, sem conversa ainda), ainda assim achamos o lead.
   const currentLead = useMemo(() => {
     if (!selectedPhone) return leads[0]
-    const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
     const target = onlyDigits(selectedPhone)
     return (
       leads.find((l) => onlyDigits(l.phone) === target) ||
@@ -73,6 +91,7 @@ function Chat() {
       leads[0]
     )
   }, [leads, selectedPhone])
+
 
   // Scroll para o fim quando mudar de conversa ou chegar nova mensagem
   useEffect(() => {
