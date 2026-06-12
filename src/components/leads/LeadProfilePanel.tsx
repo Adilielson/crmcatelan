@@ -28,10 +28,22 @@ function StageBadge({ stage }: { stage: string | null }) {
 }
 
 /**
- * Painel unificado do lead — usado no Kanban (LeadDetailSheet) e no Chat.
+ * Painel unificado do lead — usado no Kanban (LeadDetailSheet), Chat e mobile.
  * Mostra dados, IA, resumo da consulta e histórico completo de etapas.
  */
-export function LeadProfilePanel({ lead, compact = false }: { lead: DBLead; compact?: boolean }) {
+export function LeadProfilePanel({
+  lead,
+  compact = false,
+  showActions = true,
+  hideChat = false,
+  onOpenChat,
+}: {
+  lead: DBLead;
+  compact?: boolean;
+  showActions?: boolean;
+  hideChat?: boolean;
+  onOpenChat?: () => void;
+}) {
   const { data: history = [] } = useLeadHistory(lead.id);
   const { data: summary } = useConsultationSummary(lead.id);
 
