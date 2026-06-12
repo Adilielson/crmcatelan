@@ -359,8 +359,8 @@ function Chat() {
 
       {/* Coluna 1: Lista de Sessões */}
       <div className={cn(
-        "w-full lg:w-[360px] lg:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
-        hasSelection ? "hidden lg:flex" : "flex",
+        "w-full md:w-[360px] md:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
+        hasSelection ? "hidden md:flex" : "flex",
       )}>
 
         <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
