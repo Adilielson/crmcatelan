@@ -510,7 +510,18 @@ function Chat() {
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50">
               <div className="p-8 space-y-4 min-h-full">
-                {selectedConv.messages.map((m) => {
+                {displayConv.messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center text-center py-16 opacity-70">
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+                      <MessageSquare className="w-7 h-7 text-primary/40" />
+                    </div>
+                    <p className="text-sm font-bold text-ink mb-1">Nenhuma mensagem ainda</p>
+                    <p className="text-xs text-gray-500 max-w-xs">
+                      Envie a primeira mensagem para iniciar a conversa com este lead.
+                    </p>
+                  </div>
+                )}
+                {displayConv.messages.map((m) => {
                   const isImage = m.mediaUrl && (m.mediaMime?.startsWith('image/') || m.type === 'image')
                   const isAudio = m.mediaUrl && (m.mediaMime?.startsWith('audio/') || m.type === 'audio' || m.type === 'ptt')
                   const isVideo = m.mediaUrl && (m.mediaMime?.startsWith('video/') || m.type === 'video')
