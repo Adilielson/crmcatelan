@@ -168,6 +168,7 @@ async function loadProfile(
 
     const tenant = (profile.tenants as Tenant | null) ?? null;
 
+    writeProfileCache(user);
     set({ user, tenant, loading: false });
   } catch (e) {
     console.error('[auth] loadProfile EXCEÇÃO', e);
