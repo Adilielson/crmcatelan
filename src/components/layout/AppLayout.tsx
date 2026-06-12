@@ -20,7 +20,6 @@ import {
   Megaphone,
   UserCog,
   Bell,
-  Inbox as InboxIcon,
 } from 'lucide-react';
 
 /* ============ MOBILE BOTTOM NAV ============ */
