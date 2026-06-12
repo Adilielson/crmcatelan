@@ -450,9 +450,23 @@ function LeadCard({
             <span className="text-[12px] font-black text-ink">R$ {(lead.sales_value ?? 0).toLocaleString('pt-BR')}</span>
           </div>
           {lead.phone && <p className="text-[10px] text-gray-400 font-medium truncate">{lead.phone}</p>}
-          <span className={cn('inline-block mt-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide', slaTone)}>
-            {daysInStage === 0 ? 'Hoje' : `${daysInStage}d na etapa`}
-          </span>
+          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+            <span className={cn('inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide', slaTone)}>
+              {daysInStage === 0 ? 'Hoje' : `${daysInStage}d na etapa`}
+            </span>
+            <span
+              title={isAi ? 'Em atendimento pela IA (SDR)' : `Em atendimento por ${assigneeName ?? attendantLabel}`}
+              className={cn(
+                'inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide max-w-[120px] truncate',
+                isAi
+                  ? 'bg-violet-50 text-violet-700 border-violet-200'
+                  : 'bg-sky-50 text-sky-700 border-sky-200',
+              )}
+            >
+              <span className={cn('w-1.5 h-1.5 rounded-full', isAi ? 'bg-violet-500' : 'bg-sky-500')} />
+              <span className="truncate">{attendantLabel}</span>
+            </span>
+          </div>
         </div>
         <div className="p-2 rounded-[12px] border bg-white border-[#E3E6EB]">
           {sourceIcon(lead.source)}
@@ -460,17 +474,27 @@ function LeadCard({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {actions.map((action) => (
-          <button
-            key={action.title}
-            onClick={stop(action.onClick)}
-            title={action.title}
-            className="p-2.5 rounded-[12px] transition-all border bg-white text-gray-500 hover:text-[#FFC400] hover:border-[#FFC400]/30 border-[#E3E6EB]"
-          >
-            <action.icon className="w-3.5 h-3.5" />
-          </button>
-        ))}
+        {actions.map((action) => {
+          const Icon = action.icon;
+          const highlight = action.highlight;
+          return (
+            <button
+              key={action.title}
+              onClick={stop(action.onClick)}
+              title={highlight ? `${action.title} (agendado)` : action.title}
+              className={cn(
+                'p-2.5 rounded-[12px] transition-all border bg-white',
+                highlight
+                  ? 'text-blue-600 border-blue-300 shadow-[0_0_0_2px_rgba(59,130,246,0.12)] animate-pulse-soft'
+                  : 'text-gray-500 hover:text-[#FFC400] hover:border-[#FFC400]/30 border-[#E3E6EB]',
+              )}
+            >
+              <Icon className={cn('w-3.5 h-3.5', highlight && 'text-blue-600')} />
+            </button>
+          );
+        })}
       </div>
+
     </div>
   );
 }
