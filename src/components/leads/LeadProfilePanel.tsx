@@ -91,6 +91,8 @@ export function LeadProfilePanel({
         <LeadQuickActions lead={lead} variant="labeled" hideChat={hideChat} onOpenChat={onOpenChat} />
       )}
 
+      {/* Trilha visual do funil */}
+      <StageStepper stage={lead.status} />
 
 
       {/* IA Insights */}
