@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 
 export const Route = createFileRoute('/m/chat/$phone')({
   component: MobileConversation,
@@ -56,17 +57,6 @@ const QUICK_REPLIES = [
   'Pode me enviar uma foto da receita? 📄',
 ]
 
-const STAGE_COLORS: Record<LeadStage, string> = {
-  open: 'bg-blue-100 text-blue-700 border-blue-300',
-  in_progress: 'bg-amber-100 text-amber-700 border-amber-300',
-  scheduled: 'bg-purple-100 text-purple-700 border-purple-300',
-  checked_in: 'bg-emerald-100 text-emerald-700 border-emerald-300',
-  negotiating: 'bg-cyan-100 text-cyan-700 border-cyan-300',
-  showed_up: 'bg-green-100 text-green-700 border-green-300',
-  followup: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-  no_show: 'bg-gray-200 text-gray-700 border-gray-300',
-  lost: 'bg-red-100 text-red-700 border-red-300',
-}
 
 function MobileConversation() {
   const { phone } = Route.useParams()
@@ -581,47 +571,8 @@ function LeadInfoSheet({
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
-          <Field label="Status">
-            <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black border', STAGE_COLORS[lead.status])}>
-              {STAGES.find((s) => s.value === lead.status)?.label}
-            </span>
-          </Field>
-          {lead.sales_value != null && (
-            <Field label="Valor" value={`R$ ${lead.sales_value.toLocaleString('pt-BR')}`} />
-          )}
-          {lead.source && <Field label="Origem" value={lead.source} />}
-          {lead.score_ia != null && <Field label="Score IA" value={`${lead.score_ia}`} />}
-          {lead.ia_sentimento && <Field label="Sentimento" value={lead.ia_sentimento} />}
-          {lead.ia_urgencia && <Field label="Urgência" value={lead.ia_urgencia} />}
-          {lead.ia_summary && (
-            <Field label="Resumo da IA">
-              <p className="text-sm text-ink whitespace-pre-wrap">{lead.ia_summary}</p>
-            </Field>
-          )}
-          {lead.ia_tags && lead.ia_tags.length > 0 && (
-            <Field label="Tags">
-              <div className="flex flex-wrap gap-1.5">
-                {lead.ia_tags.map((t) => (
-                  <span key={t} className="px-2 py-0.5 bg-primary/15 text-ink rounded-full text-xs font-bold">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </Field>
-          )}
-          {lead.notes && <Field label="Notas"><p className="text-sm text-ink whitespace-pre-wrap">{lead.notes}</p></Field>}
-        </div>
+        <LeadProfilePanel lead={lead} compact hideChat />
       )}
-    </div>
-  )
-}
-
-function Field({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl bg-gray-50 border border-gray-100 p-3">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{label}</p>
-      {children ?? <p className="text-sm font-semibold text-ink">{value}</p>}
     </div>
   )
 }

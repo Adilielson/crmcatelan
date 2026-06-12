@@ -653,7 +653,7 @@ function Chat() {
 
               <TabsContent value="lead" className="m-0 outline-none">
                 {currentLead ? (
-                  <LeadProfilePanel lead={currentLead} compact />
+                  <LeadProfilePanel lead={currentLead} compact hideChat />
                 ) : (
                   <div className="text-center py-20 opacity-30">
                     <User className="w-12 h-12 mx-auto mb-4" />

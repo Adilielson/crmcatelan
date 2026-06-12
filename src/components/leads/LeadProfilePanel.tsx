@@ -4,6 +4,7 @@ import { DBLead, stageLabel } from '@/hooks/use-leads';
 import { useLeadHistory } from '@/hooks/use-lead-history';
 import { useConsultationSummary } from '@/hooks/use-consultation-summary';
 import { PrescriptionCard } from '@/components/leads/PrescriptionCard';
+import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -27,10 +28,22 @@ function StageBadge({ stage }: { stage: string | null }) {
 }
 
 /**
- * Painel unificado do lead — usado no Kanban (LeadDetailSheet) e no Chat.
+ * Painel unificado do lead — usado no Kanban (LeadDetailSheet), Chat e mobile.
  * Mostra dados, IA, resumo da consulta e histórico completo de etapas.
  */
-export function LeadProfilePanel({ lead, compact = false }: { lead: DBLead; compact?: boolean }) {
+export function LeadProfilePanel({
+  lead,
+  compact = false,
+  showActions = true,
+  hideChat = false,
+  onOpenChat,
+}: {
+  lead: DBLead;
+  compact?: boolean;
+  showActions?: boolean;
+  hideChat?: boolean;
+  onOpenChat?: () => void;
+}) {
   const { data: history = [] } = useLeadHistory(lead.id);
   const { data: summary } = useConsultationSummary(lead.id);
 
@@ -79,6 +92,13 @@ export function LeadProfilePanel({ lead, compact = false }: { lead: DBLead; comp
           )}
         </div>
       </div>
+
+      {/* Atalhos rápidos — unificados em todas as visões */}
+      {showActions && (
+        <LeadQuickActions lead={lead} variant="labeled" hideChat={hideChat} onOpenChat={onOpenChat} />
+      )}
+
+
 
       {/* IA Insights */}
       {(lead.ia_summary || lead.score_ia != null || (lead.ia_tags && lead.ia_tags.length > 0)) && (
