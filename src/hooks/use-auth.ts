@@ -27,6 +27,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await supabase.auth.signOut();
     _loadingUserId = null;
+    try { localStorage.removeItem('crm_profile_cache_v1'); } catch { /* ignore */ }
     set({ user: null, tenant: null });
   },
 
