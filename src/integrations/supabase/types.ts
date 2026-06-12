@@ -2143,6 +2143,7 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
       }
+      notify_stale_leads: { Args: never; Returns: undefined }
       upsert_ai_credential: {
         Args: {
           _api_key: string
