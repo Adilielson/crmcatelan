@@ -418,6 +418,8 @@ function LeadCard({
   const attendantLabel = isAi ? 'SDR' : firstName(assigneeName) || 'Vendedor';
 
   const hasReminders = reminders.length > 0;
+  const recentReminders = reminders.slice(-5).reverse();
+  const hasMore = reminders.length > 5;
   const wasConfirmed = reminders.some((r) => r.status === 'confirmed');
   const hasPending = reminders.some((r) => r.status === 'pending');
   const reminderTone = wasConfirmed
