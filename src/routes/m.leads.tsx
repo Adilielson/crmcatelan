@@ -1,10 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Search, ChevronRight, Brain, DollarSign } from 'lucide-react'
-import { useLeads, stageLabel, type DBLead } from '@/hooks/use-leads'
+import { useLeads, stageLabel } from '@/hooks/use-leads'
 import { useAuthStore } from '@/hooks/use-auth'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 import { cn } from '@/lib/utils'
 import { useNavigate } from '@tanstack/react-router'
 
