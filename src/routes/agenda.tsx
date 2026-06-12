@@ -195,19 +195,19 @@ function Agenda() {
   return (
     <div className="space-y-4 md:space-y-10 animate-in fade-in duration-700">
       {/* MOBILE HEADER */}
-      <div className="md:hidden -mx-4 -mt-4 px-4 pt-5 pb-4 bg-[#0f172a]">
+      <div className="md:hidden -mx-4 -mt-4 px-4 pt-5 pb-4 bg-[#0E0E11]">
         <h1 className="text-xl font-bold text-white">Agenda de exames</h1>
-        <p className="text-sm text-[#94a3b8] mt-0.5">Exames de vista e retornos da semana</p>
+        <p className="text-sm text-white/60 mt-0.5">Exames de vista e retornos da semana</p>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="mt-3 inline-flex items-center gap-1.5 bg-[#2563eb] text-white rounded-full text-sm font-semibold px-4 py-2 active:scale-95 transition"
+          className="mt-3 inline-flex items-center gap-1.5 bg-[#FFC400] text-[#1a1500] rounded-full text-sm font-semibold px-4 py-2 active:scale-95 transition"
         >
           <Plus className="w-4 h-4" /> Nova consulta
         </button>
       </div>
 
       {/* MOBILE WEEK STRIP */}
-      <div className="md:hidden mx-4 bg-[#1e293b] rounded-2xl p-4">
+      <div className="md:hidden mx-4 bg-[#17171B] rounded-2xl p-4">
         <div className="flex items-center gap-3 mb-3">
           <button
             onClick={() => setSelectedDay(subWeeks(selectedDay, 1))}
@@ -252,17 +252,17 @@ function Agenda() {
                 }}
                 className={cn(
                   "flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition",
-                  isSelected ? "bg-[#2563eb] text-white" : "text-[#94a3b8]"
+                  isSelected ? "bg-[#FFC400] text-[#1a1500]" : "text-white/60"
                 )}
               >
-                <span className="text-xs uppercase">
+                <span className={cn("text-xs uppercase", isSelected ? "text-[#1a1500]/80" : "")}>
                   {format(day, 'EEE', { locale: ptBR }).slice(0, 3)}
                 </span>
-                <span className={cn("text-lg font-semibold", isSelected ? "text-white" : "text-white/90")}>
+                <span className={cn("text-lg font-semibold", isSelected ? "text-[#1a1500]" : "text-white/90")}>
                   {format(day, 'd')}
                 </span>
                 {isToday && !isSelected && (
-                  <span className="w-1 h-1 rounded-full bg-[#f5c518]" />
+                  <span className="w-1 h-1 rounded-full bg-[#FFC400]" />
                 )}
               </button>
             )
@@ -271,26 +271,26 @@ function Agenda() {
       </div>
 
       {/* MOBILE DAY CARD */}
-      <div className="md:hidden mx-4 bg-[#1e293b] rounded-2xl p-4">
+      <div className="md:hidden mx-4 bg-[#17171B] rounded-2xl p-4">
         <h3 className="text-white font-semibold text-sm capitalize mb-3">
           {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
         </h3>
         {dayAppointments.length === 0 ? (
-          <p className="text-center text-[#64748b] py-6 text-sm">Nenhuma consulta nesse dia.</p>
+          <p className="text-center text-white/40 py-6 text-sm">Nenhuma consulta nesse dia.</p>
         ) : (
           <div className="space-y-2">
             {dayAppointments.map(appt => (
-              <div key={appt.id} className="bg-[#0f172a] border border-white/5 rounded-xl p-3 flex items-center gap-3">
-                <div className="bg-[#2563eb]/20 text-[#60a5fa] text-xs font-bold px-2.5 py-1 rounded-lg">
+              <div key={appt.id} className="bg-[#0E0E11] border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                <div className="bg-[#FFC400]/15 text-[#FFC400] text-xs font-bold px-2.5 py-1 rounded-lg">
                   {appt.startTime}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
-                  <p className="text-[#94a3b8] text-xs truncate">{appt.examType}</p>
+                  <p className="text-white/50 text-xs truncate">{appt.examType}</p>
                 </div>
                 <button
                   onClick={() => handleOpenChat(appt)}
-                  className="text-[#60a5fa] p-2 rounded-lg active:bg-white/5"
+                  className="text-[#FFC400] p-2 rounded-lg active:bg-white/5"
                   aria-label="Abrir WhatsApp"
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -298,6 +298,7 @@ function Agenda() {
               </div>
             ))}
           </div>
+
         )}
       </div>
 
