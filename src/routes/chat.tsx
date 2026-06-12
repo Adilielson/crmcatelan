@@ -52,10 +52,25 @@ function Chat() {
       setSelectedPhone(phoneFromUrl)
       return
     }
+    // No mobile, NUNCA auto-seleciona: precisa mostrar a lista primeiro.
+    if (isMobile) return
     if (!selectedPhone && conversations.length > 0) {
       setSelectedPhone(conversations[0].phone)
     }
-  }, [phoneFromUrl, conversations, selectedPhone])
+  }, [phoneFromUrl, conversations, selectedPhone, isMobile])
+
+  // Quando a URL perde o param `phone` (ex: clique no "voltar"), no mobile
+  // limpa a seleção para reexibir a lista.
+  useEffect(() => {
+    if (isMobile && !phoneFromUrl) {
+      setSelectedPhone(null)
+    }
+  }, [isMobile, phoneFromUrl])
+
+  const handleBackToList = () => {
+    setSelectedPhone(null)
+    navigate({ to: '/chat', search: {} })
+  }
 
   // Match tolerante: o WhatsApp grava só dígitos (5511…) e o lead pode estar como
   // "+55 11 …". Normaliza ambos os lados e aceita sufixo (mínimo 8 dígitos).
