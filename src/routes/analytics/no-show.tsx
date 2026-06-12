@@ -123,17 +123,19 @@ function NoShowAnalytics() {
           </SelectContent>
         </Select>
 
-        <Select value={unit} onValueChange={setUnit}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Unidade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Unidades</SelectItem>
-            {units.map((u) => (
-              <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {units.length > 1 && (
+          <Select value={unit} onValueChange={setUnit}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Unidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Unidades</SelectItem>
+              {units.map((u) => (
+                <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-ink">
