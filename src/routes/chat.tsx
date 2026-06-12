@@ -526,7 +526,7 @@ function Chat() {
             )}
 
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50 no-scrollbar md:thin-scrollbar md:[scrollbar-width:thin]">
               <div className="p-8 space-y-4 min-h-full">
                 {displayConv.messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center text-center py-16 opacity-70">
@@ -565,7 +565,7 @@ function Chat() {
                         )}
                         {(m.text || (!isImage && !isAudio && !isVideo)) && (
                           <p className={cn(
-                            "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words px-2 py-1.5",
+                            "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words pl-2.5 pr-3.5 py-1.5",
                             m.fromMe ? "text-primary-foreground font-bold" : "text-ink"
                           )}>
                             {m.text || <span className="italic opacity-60">[{m.type}]</span>}
