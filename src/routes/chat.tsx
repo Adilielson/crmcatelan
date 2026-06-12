@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, Paperclip, MoreVertical, Smile, Users, UserPlus, Wifi, WifiOff, Mic, Square, Image as ImageIcon, X } from 'lucide-react'
+import { CheckCircle2, User, Send, Phone, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Wifi, WifiOff, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useLeads } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
@@ -7,15 +7,14 @@ import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
+import { ChatQuickActionsBar } from '@/components/chat/ChatQuickActionsBar'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -210,84 +209,107 @@ function Chat() {
     setRecording(false)
   }
 
-  const [isRoutingOpen, setIsRoutingOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const hasSelection = !!selectedPhone
+
+  const insightsPanel = (
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
+      <TabsList className="w-full justify-start rounded-none border-b border-gray-100 bg-white h-[73px] px-4 gap-2">
+        <TabsTrigger value="ia" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+          <Brain className="w-4 h-4 mr-2" /> SDR Insight
+        </TabsTrigger>
+        <TabsTrigger value="lead" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+          <User className="w-4 h-4 mr-2" /> Perfil
+        </TabsTrigger>
+      </TabsList>
+
+      <ScrollArea className="flex-1">
+        <div className="p-6">
+          <TabsContent value="ia" className="m-0 space-y-8 outline-none">
+            {currentLead ? (
+              <>
+                <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Temperatura Lead</span>
+                    <Badge className={cn(
+                      "px-2.5 py-1 rounded-lg border-none text-[11px] font-bold",
+                      (currentLead.score_ia ?? 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
+                    )}>
+                      {currentLead.score_ia ?? 0}/100
+                    </Badge>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-gray-500">Sentimento: <span className="text-ink capitalize">{currentLead.ia_sentimento || 'Neutro'}</span></span>
+                      <span className="text-gray-500">Urgência: <span className="text-danger capitalize">{currentLead.ia_urgencia || 'Média'}</span></span>
+                    </div>
+                    <Progress value={currentLead.score_ia ?? 0} className="h-2 bg-gray-200" />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Brain className="w-4 h-4" />
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Resumo da IA SDR</h3>
+                  </div>
+                  <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm relative overflow-hidden group">
+                    <p className="text-sm text-ink leading-relaxed font-medium relative z-10">
+                      {currentLead.ia_summary || 'Analisando conversa em tempo real...'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-1">Gatilhos Detectados</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {(currentLead.ia_interesses || ['Óculos de Grau', 'Exame']).map((tag, i) => (
+                      <Badge key={i} variant="secondary" className="bg-gray-50 text-ink border border-gray-100 font-bold px-3 py-1.5 rounded-xl text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 space-y-3">
+                  <Button onClick={handleRecalibrateIA} variant="ghost" className="w-full h-12 text-xs font-bold text-gray-400 hover:text-primary transition-colors">
+                    <Zap className="w-4 h-4 mr-2" /> Recalibrar Modelo IA
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-20 opacity-20">
+                <Brain className="w-12 h-12 mx-auto mb-4" />
+                <p className="font-bold text-sm">Selecione um lead para ver insights</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="lead" className="m-0 outline-none">
+            {currentLead ? (
+              <LeadProfilePanel lead={currentLead} compact hideChat />
+            ) : (
+              <div className="text-center py-20 opacity-30">
+                <User className="w-12 h-12 mx-auto mb-4" />
+                <p className="font-bold text-sm">Nenhum lead vinculado a esta conversa</p>
+              </div>
+            )}
+          </TabsContent>
+        </div>
+      </ScrollArea>
+    </Tabs>
+  )
 
   return (
     <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-160px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
-      <Dialog open={isRoutingOpen} onOpenChange={setIsRoutingOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-primary" />
-              Encaminhar Conversa
-            </DialogTitle>
-            <DialogDescription>
-              Selecione o destino ou aplique uma regra de roteamento automático.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Regras de Roteamento</h4>
-              <div className="grid grid-cols-1 gap-2">
-                <Button 
-                  variant="outline" 
-                  className="justify-start h-auto py-3 px-4 border-gray-100 hover:border-primary/30 hover:bg-primary/5 group"
-                  onClick={() => {
-                    toast.success("Regra 'Fila Circular' aplicada")
-                    setIsRoutingOpen(false)
-                  }}
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-ink group-hover:text-primary">Próximo Disponível (Fila)</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Distribuição igualitária entre vendedores online.</p>
-                  </div>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="justify-start h-auto py-3 px-4 border-gray-100 hover:border-primary/30 hover:bg-primary/5 group"
-                  onClick={() => {
-                    toast.success("Encaminhado por Especialidade: Lentes")
-                    setIsRoutingOpen(false)
-                  }}
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-ink group-hover:text-primary">Especialista em Lentes</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Encaminhar para equipe técnica de laboratório.</p>
-                  </div>
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Encaminhamento Direto</h4>
-              <div className="space-y-2">
-                <Select>
-                  <SelectTrigger className="w-full h-12 rounded-xl border-gray-100 font-bold text-xs">
-                    <SelectValue placeholder="Selecionar Atendente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vendedor-1">Carlos (Vendas Sul)</SelectItem>
-                    <SelectItem value="vendedor-2">Ana (Vendas Centro)</SelectItem>
-                    <SelectItem value="gerente">Roberto (Gerente)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  className="w-full h-12 bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs rounded-xl shadow-lg shadow-primary/20"
-                  onClick={() => {
-                    toast.success("Conversa encaminhada com sucesso")
-                    setIsRoutingOpen(false)
-                  }}
-                >
-                  CONFIRMAR TRANSFERÊNCIA
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
+
 
       {/* Coluna 1: Lista de Sessões */}
-      <div className="w-[360px] border-r border-[#E3E6EB] flex flex-col bg-gray-50/50">
+      <div className={cn(
+        "w-full lg:w-[360px] lg:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
+        hasSelection ? "hidden lg:flex" : "flex",
+      )}>
+
         <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
           <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
           <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-gray-50 hover:bg-[#FFC400]/10 hover:text-[#FFC400] transition-all">
@@ -381,13 +403,26 @@ function Chat() {
       </div>
 
       {/* Coluna 2: Chat principal */}
-      <div className="flex-1 flex flex-col bg-white relative">
+      <div className={cn(
+        "flex-1 flex-col bg-white relative min-w-0",
+        hasSelection ? "flex" : "hidden lg:flex",
+      )}>
         {selectedConv ? (
           <>
-            <div className="p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px]">
+            <div className="p-4 sm:p-6 border-b border-[#E3E6EB] flex justify-between items-center bg-white/90 backdrop-blur-xl z-20 h-20 gap-2">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl lg:hidden flex-shrink-0"
+                  onClick={() => setSelectedPhone(null)}
+                  title="Voltar"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <Avatar className="h-12 w-12 border-2 border-[#F6F7F9] shadow-sm rounded-[16px] flex-shrink-0">
                   {selectedConv.avatarUrl && <AvatarImage src={selectedConv.avatarUrl} alt={selectedConv.name ?? selectedConv.phone} />}
+
                   <AvatarFallback className="bg-[#F6F7F9] text-[#A7ADB8] font-black">
                     {getContactInitials(selectedConv.name, selectedConv.phone)}
                   </AvatarFallback>
@@ -418,17 +453,25 @@ function Chat() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"
-                  onClick={() => setIsRoutingOpen(true)}
-                  title="Encaminhar para Equipe"
+                  className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all xl:hidden"
+                  onClick={() => setDetailsOpen(true)}
+                  title="Ver ficha do lead"
                 >
-                  <Users className="w-5 h-5" />
+                  <PanelRight className="w-5 h-5" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"><Phone className="w-5 h-5" /></Button>
                 <div className="h-6 w-[1px] bg-[#E3E6EB] mx-1" />
                 <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
               </div>
             </div>
+
+            {currentLead && (
+              <ChatQuickActionsBar
+                lead={currentLead}
+                onOpenDetails={() => setDetailsOpen(true)}
+              />
+            )}
+
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto bg-gray-50/50">
               <div className="p-8 space-y-4 min-h-full">
@@ -571,100 +614,22 @@ function Chat() {
         )}
       </div>
 
-      {/* Coluna 3: SDR Insights */}
-      <div className="w-85 border-l border-gray-100 bg-white overflow-hidden flex flex-col">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="w-full justify-start rounded-none border-b border-gray-100 bg-white h-[73px] px-4 gap-2">
-            <TabsTrigger value="ia" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
-              <Brain className="w-4 h-4 mr-2" /> SDR Insight
-            </TabsTrigger>
-            <TabsTrigger value="lead" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
-              <User className="w-4 h-4 mr-2" /> Perfil
-            </TabsTrigger>
-          </TabsList>
-          
-          <ScrollArea className="flex-1">
-            <div className="p-6">
-              <TabsContent value="ia" className="m-0 space-y-8 outline-none">
-                {currentLead ? (
-                  <>
-                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Temperatura Lead</span>
-                        <Badge className={cn(
-                          "px-2.5 py-1 rounded-lg border-none text-[11px] font-bold",
-                          (currentLead.score_ia ?? 0) > 70 ? "bg-success text-white" : "bg-primary text-primary-foreground"
-                        )}>
-                          {currentLead.score_ia ?? 0}/100
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span className="text-gray-500">Sentimento: <span className="text-ink capitalize">{currentLead.ia_sentimento || 'Neutro'}</span></span>
-                          <span className="text-gray-500">Urgência: <span className="text-danger capitalize">{currentLead.ia_urgencia || 'Média'}</span></span>
-                        </div>
-                        <Progress value={currentLead.score_ia ?? 0} className="h-2 bg-gray-200" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-primary">
-                        <Brain className="w-4 h-4" />
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Resumo da IA SDR</h3>
-                      </div>
-                      <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm relative overflow-hidden group">
-                        <div className="absolute -right-2 -top-2 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <Brain className="w-16 h-16 text-primary" />
-                        </div>
-                        <p className="text-sm text-ink leading-relaxed font-medium relative z-10">
-                          {currentLead.ia_summary || 'Analisando conversa em tempo real...'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-1">Gatilhos Detectados</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {(currentLead.ia_interesses || ['Óculos de Grau', 'Exame']).map((tag, i) => (
-                          <Badge key={i} variant="secondary" className="bg-gray-50 hover:bg-primary/5 text-ink hover:text-primary border border-gray-100 hover:border-primary/20 font-bold px-3 py-1.5 rounded-xl transition-all cursor-default text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-4 space-y-3">
-                      <Button onClick={handleRecalibrateIA} variant="ghost" className="w-full h-12 text-xs font-bold text-gray-400 hover:text-primary transition-colors">
-                        <Zap className="w-4 h-4 mr-2" /> Recalibrar Modelo IA
-                      </Button>
-                      <p className="text-[10px] text-gray-400 text-center font-medium">
-                        Para tirar foto da receita e rodar o OCR, abra a aba <span className="font-bold text-ink">Lead</span>.
-                      </p>
-                    </div>
-
-                  </>
-                ) : (
-                  <div className="text-center py-20 opacity-20">
-                    <Brain className="w-12 h-12 mx-auto mb-4" />
-                    <p className="font-bold text-sm">Selecione um lead para ver insights</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="lead" className="m-0 outline-none">
-                {currentLead ? (
-                  <LeadProfilePanel lead={currentLead} compact hideChat />
-                ) : (
-                  <div className="text-center py-20 opacity-30">
-                    <User className="w-12 h-12 mx-auto mb-4" />
-                    <p className="font-bold text-sm">Nenhum lead vinculado a esta conversa</p>
-                  </div>
-                )}
-              </TabsContent>
-            </div>
-          </ScrollArea>
-        </Tabs>
+      {/* Coluna 3: SDR Insights — visível só em xl+ */}
+      <div className="hidden xl:flex w-[340px] flex-shrink-0 border-l border-gray-100 bg-white overflow-hidden flex-col">
+        {insightsPanel}
       </div>
+
+      {/* Sheet de detalhes em < xl */}
+      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6">
+            <SheetTitle>Ficha do Lead</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 min-h-0 flex flex-col">
+            {insightsPanel}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
