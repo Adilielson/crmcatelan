@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
+import { readLocalSession } from '@/lib/local-session';
 import { User, Tenant } from '../types/database.types';
+
+/** Promise com timeout — getSession() pode travar para sempre (navigator.locks). */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | 'timeout'> {
+  return Promise.race([
+    p,
+    new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), ms)),
+  ]);
+}
 
 export const DEV_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -35,23 +44,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (_initialized) return;
     _initialized = true;
 
-    // Safety net: nunca deixa o spinner infinito. Mas NUNCA derruba a sessão:
-    // se existir sessão válida, monta um user mínimo a partir dela em vez de
-    // deixar user=null (que faria o guard redirecionar para /login).
-    setTimeout(async () => {
+    // Safety net 100% SÍNCRONA: nunca deixa o spinner infinito.
+    // IMPORTANTE: não pode usar getSession() aqui — se o lock de auth do
+    // navegador estiver travado (causa raiz do loop após F5), getSession()
+    // nunca resolve e a própria rede de segurança ficaria pendurada.
+    setTimeout(() => {
       if (!get().loading) return;
-      console.warn('[auth] ⏱️ timeout de inicialização — aplicando fallback');
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user && !get().user) {
-        set({ user: buildFallbackUser(data.session.user.id, data.session.user.email ?? ''), loading: false });
+      console.warn('[auth] ⏱️ timeout de inicialização — aplicando fallback local');
+      const local = readLocalSession();
+      if (local && !get().user) {
+        set({ user: buildFallbackUser(local.userId, local.email), loading: false });
       } else {
         set({ loading: false });
       }
-    }, 10000);
+    }, 6000);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // getSession() com timeout: se travar, usa a sessão lida do localStorage.
+    withTimeout(supabase.auth.getSession(), 4000).then((res) => {
+      if (res === 'timeout') {
+        console.warn('[auth] ⚠️ getSession() travou — usando sessão do localStorage');
+        const local = readLocalSession();
+        if (local && !get().user) {
+          set({ user: buildFallbackUser(local.userId, local.email), loading: false });
+          // Tenta carregar o perfil real em paralelo (pode destravar depois).
+          setTimeout(() => loadProfile(local.userId, local.email, set, get), 0);
+        } else if (!get().user) {
+          set({ loading: false });
+        }
+        return;
+      }
+      const session = res.data.session;
       if (session?.user) {
-        loadProfile(session.user.id, session.user.email ?? '', set, get);
+        if (get().user?.id !== session.user.id && _loadingUserId !== session.user.id) {
+          loadProfile(session.user.id, session.user.email ?? '', set, get);
+        }
       } else {
         set({ loading: false });
       }
@@ -112,7 +138,7 @@ function writeProfileCache(user: User) {
   }
 }
 
-function buildFallbackUser(userId: string, email: string): User {
+export function buildFallbackUser(userId: string, email: string): User {
   // Usa o último perfil conhecido deste usuário (role/tenant reais) em vez de
   // assumir 'seller' — isso evitava que admins perdessem o menu após um F5
   // quando o carregamento do perfil falhava transitoriamente.
