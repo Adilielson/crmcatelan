@@ -544,7 +544,7 @@ function LeadCard({
                 </p>
               </div>
               <ul className="max-h-72 overflow-y-auto scrollbar-hide divide-y">
-                {reminders.map((r) => {
+                {recentReminders.map((r) => {
                   const when = r.sent_at ?? r.scheduled_at;
                   const dt = new Date(when);
                   const tone =
@@ -578,8 +578,59 @@ function LeadCard({
                   );
                 })}
               </ul>
+              {hasMore && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAllReminders(true); }}
+                  className="w-full text-center py-2 text-[10px] font-bold text-primary hover:bg-gray-50 border-t transition-colors"
+                >
+                  Ver todos {reminders.length} lembretes
+                </button>
+              )}
             </PopoverContent>
           </Popover>
+
+          <Dialog open={showAllReminders} onOpenChange={(v) => { setShowAllReminders(v); }}>
+            <DialogContent className="sm:max-w-md p-0" onClick={(e) => e.stopPropagation()}>
+              <DialogHeader className="px-4 py-3 border-b">
+                <DialogTitle className="text-sm font-bold">Histórico completo — {lead.full_name}</DialogTitle>
+              </DialogHeader>
+              <ul className="max-h-[60vh] overflow-y-auto scrollbar-hide divide-y">
+                {[...reminders].reverse().map((r) => {
+                  const when = r.sent_at ?? r.scheduled_at;
+                  const dt = new Date(when);
+                  const tone =
+                    r.status === 'confirmed' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                    : r.status === 'sent' ? 'text-sky-700 bg-sky-50 border-sky-200'
+                    : r.status === 'pending' ? 'text-amber-700 bg-amber-50 border-amber-200'
+                    : r.status === 'failed' ? 'text-red-700 bg-red-50 border-red-200'
+                    : 'text-gray-600 bg-gray-50 border-gray-200';
+                  const Icon = r.status === 'confirmed' ? Check : r.status === 'sent' ? Check : r.status === 'failed' ? XIcon : Clock;
+                  return (
+                    <li key={r.id} className="px-3 py-2 flex items-start gap-2">
+                      <span className={cn('mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full border', tone)}>
+                        <Icon className="w-3 h-3" strokeWidth={2.5} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] font-bold text-gray-800 truncate">{REMINDER_LABEL[r.kind]}</p>
+                          <span className={cn('text-[9px] font-black uppercase px-1.5 py-0.5 rounded border', tone)}>
+                            {REMINDER_STATUS_LABEL[r.status]}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-0.5">
+                          {dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          {r.status === 'pending' && ' (programado)'}
+                        </p>
+                        {r.error_message && r.status === 'failed' && (
+                          <p className="text-[10px] text-red-600 mt-0.5 line-clamp-2">{r.error_message}</p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
 
