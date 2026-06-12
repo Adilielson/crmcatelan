@@ -383,6 +383,7 @@ export function KanbanBoard() {
 
 function LeadCard({
   lead,
+  assigneeName,
   onClick,
   onCalendar,
   onChat,
@@ -390,6 +391,7 @@ function LeadCard({
   onValue,
 }: {
   lead: DBLead;
+  assigneeName: string | null;
   onClick: () => void;
   onCalendar: () => void;
   onChat: () => void;
@@ -404,12 +406,17 @@ function LeadCard({
     : daysInStage >= 3 ? 'bg-amber-50 text-amber-700 border-amber-200'
     : 'bg-emerald-50 text-emerald-700 border-emerald-200';
 
-  const actions = [
-    { icon: Calendar, title: 'Agendar', onClick: onCalendar },
+  const isScheduled = lead.status === 'scheduled';
+  const isAi = !lead.assigned_user_id;
+  const attendantLabel = isAi ? 'SDR' : firstName(assigneeName) || 'Vendedor';
+
+  const actions: Array<{ icon: typeof Calendar; title: string; onClick: () => void; highlight?: boolean }> = [
+    { icon: Calendar, title: 'Agendar', onClick: onCalendar, highlight: isScheduled },
     { icon: MessageSquare, title: 'Abrir conversa', onClick: onChat },
     { icon: MapPin, title: 'Unidade', onClick: onLocation },
     { icon: DollarSign, title: 'Editar valor', onClick: onValue },
   ];
+
 
   return (
     <div
