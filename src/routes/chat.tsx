@@ -565,7 +565,7 @@ function Chat() {
                         )}
                         {(m.text || (!isImage && !isAudio && !isVideo)) && (
                           <p className={cn(
-                            "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words px-2 py-1.5",
+                            "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words pl-2.5 pr-3.5 py-1.5",
                             m.fromMe ? "text-primary-foreground font-bold" : "text-ink"
                           )}>
                             {m.text || <span className="italic opacity-60">[{m.type}]</span>}
