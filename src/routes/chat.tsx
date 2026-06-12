@@ -458,7 +458,7 @@ function Chat() {
       {/* Coluna 2: Chat principal */}
       <div className={cn(
         "flex-1 flex-col bg-white relative min-w-0",
-        hasSelection ? "flex" : "hidden lg:flex",
+        hasSelection ? "flex" : "hidden md:flex",
       )}>
         {displayConv ? (
           <>
@@ -467,8 +467,8 @@ function Chat() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-xl lg:hidden flex-shrink-0"
-                  onClick={() => setSelectedPhone(null)}
+                  className="h-10 w-10 rounded-xl md:hidden flex-shrink-0"
+                  onClick={handleBackToList}
                   title="Voltar"
                 >
                   <ChevronLeft className="w-5 h-5" />
