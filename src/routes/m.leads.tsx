@@ -27,7 +27,6 @@ function MobileLeadsPage() {
   const navigate = useNavigate()
   const { data: leads = [], isLoading } = useLeads()
   const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<DBLead | null>(null)
   const [filter, setFilter] = useState<'meus' | 'todos'>('meus')
 
   const visible = useMemo(() => {
@@ -50,7 +49,7 @@ function MobileLeadsPage() {
       <header className="px-5 pt-5 pb-3 bg-white border-b border-[#EEF0F3]">
         <h1 className="text-2xl font-black text-ink font-jakarta">Meus Leads</h1>
         <p className="text-xs text-gray-500 mt-0.5 font-medium">
-          Toque em um lead para ver detalhes e ações rápidas.
+          Toque em um lead para ver a ficha completa.
         </p>
 
         <div className="mt-4 relative">
@@ -98,7 +97,7 @@ function MobileLeadsPage() {
             <li key={l.id}>
               <button
                 type="button"
-                onClick={() => setSelected(l)}
+                onClick={() => navigate({ to: '/m/leads/$id', params: { id: l.id } })}
                 className="w-full flex items-center gap-3 px-5 py-3.5 active:bg-gray-50 transition text-left"
               >
                 <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-br from-[#FFF4CC] to-[#FFE07A] grid place-items-center font-black text-[#8a6900]">
@@ -139,29 +138,6 @@ function MobileLeadsPage() {
           ))}
         </ul>
       </div>
-
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto p-0">
-          {selected && (
-            <div className="px-5 pt-3 pb-8">
-              <div className="mx-auto w-12 h-1 rounded-full bg-gray-300 mb-4" />
-              <SheetHeader className="text-left mb-4">
-                <SheetTitle className="text-xl font-black">{selected.full_name}</SheetTitle>
-              </SheetHeader>
-              <LeadProfilePanel
-                lead={selected}
-                compact
-                onOpenChat={() => {
-                  if (selected.phone) {
-                    navigate({ to: '/m/chat/$phone', params: { phone: selected.phone } })
-                    setSelected(null)
-                  }
-                }}
-              />
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   )
 }
