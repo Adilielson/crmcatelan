@@ -512,7 +512,7 @@ function LeadCard({
           );
         })}
 
-        {hasReminders && (<>
+        {hasReminders && (
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -588,7 +588,8 @@ function LeadCard({
               )}
             </PopoverContent>
           </Popover>
-
+        )}
+        {hasReminders && (
           <Dialog open={showAllReminders} onOpenChange={(v) => { setShowAllReminders(v); }}>
             <DialogContent className="sm:max-w-md p-0" onClick={(e) => e.stopPropagation()}>
               <DialogHeader className="px-4 py-3 border-b">
