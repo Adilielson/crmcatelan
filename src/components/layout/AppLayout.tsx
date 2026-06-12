@@ -398,9 +398,17 @@ const MobileDrawer = ({
 
         <div className="p-3 border-t border-white/5 space-y-2">
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#f5c518] to-[#d4a900] flex items-center justify-center text-[#0f172a] font-bold text-sm">
-              {user.name?.charAt(0)?.toUpperCase()}
-            </div>
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-[#f5c518]/40"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#f5c518] to-[#d4a900] flex items-center justify-center text-[#0f172a] font-bold text-sm">
+                {user.name?.charAt(0)?.toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{user.name}</p>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider truncate">{user.role}</p>
