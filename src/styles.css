@@ -128,3 +128,8 @@
   }
 }
 
+/* Global: hide all scrollbars across the CRM for a cleaner look */
+*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; background: transparent !important; }
+* { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+
+
