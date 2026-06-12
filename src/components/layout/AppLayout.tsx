@@ -27,12 +27,12 @@ const MobileBottomNav = ({ pathname }: { pathname: string }) => {
   const items = [
     { label: 'Início', icon: Home, href: '/' },
     { label: 'Atendimento', icon: MessageSquare, href: '/chat' },
-    { label: 'Agenda', icon: Calendar, href: '/agenda' },
+    { label: 'Exames', icon: Calendar, href: '/agenda' },
     { label: 'Clientes', icon: Contact, href: '/clientes' },
   ];
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0f172a] border-t border-white/5"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0f172a] border-t border-[#1e293b]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="flex items-stretch justify-around h-[60px]">
@@ -44,12 +44,26 @@ const MobileBottomNav = ({ pathname }: { pathname: string }) => {
               <Link
                 to={it.href}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-xl min-w-[64px] transition-colors duration-150',
-                  active ? 'bg-[#1e293b] text-white' : 'text-[#64748b] hover:text-white',
+                  'flex flex-col items-center justify-center gap-1 min-w-[64px] transition-colors duration-150',
+                  active ? 'text-white' : 'text-[#64748b]',
                 )}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-semibold leading-none truncate max-w-[72px]">
+                <span
+                  className={cn(
+                    'flex items-center justify-center transition-all duration-150',
+                    active
+                      ? 'bg-[#1e293b] rounded-2xl px-3 py-1'
+                      : 'px-3 py-1',
+                  )}
+                >
+                  <Icon className={cn('w-5 h-5', active ? 'text-white' : 'text-[#64748b]')} />
+                </span>
+                <span
+                  className={cn(
+                    'text-[11px] leading-none truncate max-w-[80px]',
+                    active ? 'text-white font-semibold' : 'text-[#64748b]',
+                  )}
+                >
                   {it.label}
                 </span>
               </Link>
