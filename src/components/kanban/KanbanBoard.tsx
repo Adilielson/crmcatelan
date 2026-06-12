@@ -276,6 +276,7 @@ export function KanbanBoard() {
                     <LeadCard
                       key={lead.id}
                       lead={lead}
+                      assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
                       onClick={() => setDetailLead(lead)}
                       onCalendar={() => openAgenda(lead)}
                       onChat={() => openChat(lead)}
@@ -283,6 +284,7 @@ export function KanbanBoard() {
                       onValue={() => setValueLead(lead)}
                     />
                   ))}
+
                 </div>
               </div>
             );
