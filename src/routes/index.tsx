@@ -86,25 +86,25 @@ function Dashboard() {
 
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-1000">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8 bg-white p-5 md:p-10 rounded-[18px] md:rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-1 h-1 rounded-full bg-primary" />
-            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Relatório em Tempo Real</span>
+        <div className="relative z-10 min-w-0">
+          <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+            <div className="w-6 md:w-10 h-1 rounded-full bg-primary shrink-0" />
+            <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-primary truncate">Relatório em Tempo Real</span>
           </div>
-          <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">
+          <h1 className="text-[26px] md:text-[44px] font-black text-ink tracking-tight font-jakarta leading-[1.05] md:leading-none mb-2 md:mb-4">
             Dashboard Executivo
           </h1>
-          <p className="text-gray-500 font-medium text-[15px] max-w-xl">
+          <p className="text-gray-500 font-medium text-[13px] md:text-[15px] max-w-xl">
             Visão consolidada da performance comercial e operacional de suas unidades com inteligência preditiva.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 relative z-10">
+        <div className="flex flex-wrap items-center gap-4 relative z-10 w-full md:w-auto">
            <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-             <SelectTrigger className="w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-14 text-ink rounded-[16px] px-6 uppercase tracking-wider transition-all hover:border-primary/50">
-               <Store className="w-4 h-4 mr-3 text-primary" />
+             <SelectTrigger className="w-full md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+               <Store className="w-4 h-4 mr-3 text-primary shrink-0" />
                <SelectValue placeholder="Todas as Unidades" />
              </SelectTrigger>
              <SelectContent className="bg-white border-[#E3E6EB] text-ink rounded-[16px]">
@@ -154,7 +154,7 @@ function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Funil de Vendas */}
         <Card className="lg:col-span-2 shadow-card border-border bg-card rounded-[14px] overflow-hidden">
           <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
@@ -224,7 +224,7 @@ function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Atividade da IA SDR */}
         <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
@@ -244,20 +244,20 @@ function Dashboard() {
                 <p className="text-xs text-gray-400 italic p-4 text-center">Sem atividade da IA ainda.</p>
               )}
               {recentAi.map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-4 border border-border rounded-[14px] bg-background/50 hover:border-primary/30 transition-all cursor-pointer group/item">
-                  <div className="flex items-center gap-3">
+                <div key={i} className="flex items-center justify-between gap-3 p-3 md:p-4 border border-border rounded-[14px] bg-background/50 hover:border-primary/30 transition-all cursor-pointer group/item">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Badge className={cn(
-                      "text-[10px] uppercase font-bold",
+                      "text-[10px] uppercase font-bold shrink-0",
                       (lead.score_ia ?? 0) >= 70 ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
                     )}>
                       {(lead.score_ia ?? 0) >= 70 ? 'qualificado' : 'em análise'}
                     </Badge>
-                    <div>
-                      <p className="text-sm font-bold text-ink font-jakarta">{lead.full_name}</p>
-                      <p className="text-[10px] text-[#6C727C] truncate max-w-[200px]">{lead.ia_summary ?? '—'}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-ink font-jakarta truncate">{lead.full_name}</p>
+                      <p className="text-[10px] text-[#6C727C] truncate">{lead.ia_summary ?? '—'}</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px] font-bold border-slate-200">
+                  <Badge variant="outline" className="text-[10px] font-bold border-slate-200 shrink-0">
                     {lead.score_ia ?? 0}%
                   </Badge>
                 </div>
@@ -314,27 +314,27 @@ function StatCard({ title, value, change, changeDesc, icon, highlight, link }: {
   return (
     <Link to={link} className="block group">
       <Card className={cn(
-        "transition-all duration-500 cursor-pointer border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 group-active:scale-[0.98] overflow-hidden relative rounded-[24px]",
+        "transition-all duration-500 cursor-pointer border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 group-active:scale-[0.98] overflow-hidden relative rounded-[18px] md:rounded-[24px]",
         highlight
           ? "bg-gradient-to-br from-[#FFC400] via-[#FFD60A] to-[#E0A500] border-none" 
           : "bg-white"
       )}>
         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("w-20 h-20", highlight ? "text-[#1a1500]" : "text-ink") })}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("w-16 h-16 md:w-20 md:h-20", highlight ? "text-[#1a1500]" : "text-ink") })}
         </div>
         
         {highlight && (
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/20 rounded-full blur-2xl" />
         )}
 
-        <CardContent className="p-8 relative z-10">
-          <div className="flex items-center justify-between mb-6">
+        <CardContent className="p-4 md:p-8 relative z-10">
+          <div className="flex items-center justify-between mb-3 md:mb-6 gap-2">
             <p className={cn(
-              "text-[10px] font-black uppercase tracking-[0.2em] font-jakarta",
+              "text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] md:tracking-[0.2em] font-jakarta min-w-0 truncate",
               highlight ? "text-[#5a4900]/60" : "text-gray-400"
             )}>{title}</p>
             <div className={cn(
-              "p-3 rounded-[16px] transition-all duration-500",
+              "p-2 md:p-3 rounded-[12px] md:rounded-[16px] transition-all duration-500 shrink-0",
               highlight 
                 ? "bg-white/20 text-[#1a1500] backdrop-blur-md" 
                 : "bg-gray-50 text-ink border border-[#E3E6EB] group-hover:bg-[#FFC400] group-hover:text-[#1a1500] group-hover:border-[#FFC400] group-hover:scale-110"
@@ -345,11 +345,11 @@ function StatCard({ title, value, change, changeDesc, icon, highlight, link }: {
           
           <div className="space-y-1">
             <h3 className={cn(
-              "text-[48px] font-black tracking-tight font-jakarta leading-none",
+              "text-[30px] md:text-[48px] font-black tracking-tight font-jakarta leading-none",
               highlight ? "text-[#1a1500]" : "text-ink"
             )}>{value}</h3>
             
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 mt-2 md:mt-4 flex-wrap">
               <div className={cn(
                 "px-2 py-0.5 rounded-full text-[10px] font-black",
                 highlight 
@@ -359,7 +359,7 @@ function StatCard({ title, value, change, changeDesc, icon, highlight, link }: {
                 {change}
               </div>
               <p className={cn(
-                "text-[11px] font-bold",
+                "text-[10px] md:text-[11px] font-bold",
                 highlight ? "text-[#5a4900]/70" : "text-gray-400"
               )}>{changeDesc}</p>
             </div>
