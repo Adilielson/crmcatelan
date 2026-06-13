@@ -3,13 +3,20 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, UserCheck, Eye } from 'lucide-react';
+import { Search, UserCheck, Eye, AlertTriangle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -62,6 +69,22 @@ const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 
   lost: 'destructive',
 };
 
+const ACTIVE_STATUSES = new Set([
+  'open',
+  'in_progress',
+  'negotiating',
+  'scheduled',
+  'checked_in',
+  'followup',
+]);
+
+// SLA: alerta se lead ativo está parado há mais de X horas
+const STALE_HOURS = 4;
+
+// Pseudo-id usado como filtro para leads atendidos pela IA (assigned_user_id null)
+const AI_FILTER_ID = '__ai__';
+const FREE_FILTER_ID = '__free__';
+
 function initials(name: string | null | undefined, fallback = '?') {
   const n = (name || '').trim();
   if (!n) return fallback;
@@ -72,12 +95,17 @@ function initials(name: string | null | undefined, fallback = '?') {
     .join('');
 }
 
+function hoursSince(iso: string) {
+  return (Date.now() - new Date(iso).getTime()) / 3_600_000;
+}
+
 function Equipe() {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
 
   const profilesQ = useQuery({
     queryKey: ['equipe-profiles', tenantId],
@@ -115,20 +143,40 @@ function Equipe() {
     return m;
   }, [profiles]);
 
+  // Agrega carga de trabalho por atendente + IA
+  const workload = useMemo(() => {
+    const active = leads.filter((l) => ACTIVE_STATUSES.has(l.status));
+    const byUser = new Map<string, { count: number; stale: number; oldestHrs: number }>();
+    let aiCount = 0;
+    let aiStale = 0;
+    let aiOldest = 0;
+    for (const l of active) {
+      const hrs = hoursSince(l.updated_at);
+      if (!l.assigned_user_id) {
+        aiCount += 1;
+        if (hrs >= STALE_HOURS) aiStale += 1;
+        if (hrs > aiOldest) aiOldest = hrs;
+        continue;
+      }
+      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0 };
+      cur.count += 1;
+      if (hrs >= STALE_HOURS) cur.stale += 1;
+      if (hrs > cur.oldestHrs) cur.oldestHrs = hrs;
+      byUser.set(l.assigned_user_id, cur);
+    }
+    return { byUser, aiCount, aiStale, aiOldest, totalActive: active.length };
+  }, [leads]);
+
   const kpis = useMemo(() => {
-    const active = leads.filter((l) => l.status !== 'showed_up' && l.status !== 'lost');
-    const inProgress = active.filter((l) => l.status === 'in_progress');
-    const busyUserIds = new Set(
-      inProgress.map((l) => l.assigned_user_id).filter(Boolean) as string[],
-    );
+    const busyUserIds = new Set(workload.byUser.keys());
     const free = profiles.filter((p) => !busyUserIds.has(p.id)).length;
     return {
       total: profiles.length,
       inProgress: busyUserIds.size,
       free,
-      active: active.length,
+      active: workload.totalActive,
     };
-  }, [leads, profiles]);
+  }, [workload, profiles]);
 
   const assignMutation = useMutation({
     mutationFn: async (lead: TeamLead) => {
@@ -151,16 +199,35 @@ function Equipe() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return leads;
     return leads.filter((l) => {
+      // filtro por atendente
+      if (assigneeFilter !== 'all') {
+        if (assigneeFilter === AI_FILTER_ID) {
+          if (l.assigned_user_id !== null) return false;
+        } else if (assigneeFilter === FREE_FILTER_ID) {
+          if (l.assigned_user_id !== null || !ACTIVE_STATUSES.has(l.status)) return false;
+        } else {
+          if (l.assigned_user_id !== assigneeFilter) return false;
+        }
+      }
+      if (!q) return true;
       const seller = l.assigned_user_id
         ? profileById.get(l.assigned_user_id)?.full_name ?? ''
-        : '';
+        : 'IA';
       return [l.full_name, l.phone, seller]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
-  }, [leads, search, profileById]);
+  }, [leads, search, profileById, assigneeFilter]);
+
+  const filterLabel =
+    assigneeFilter === 'all'
+      ? null
+      : assigneeFilter === AI_FILTER_ID
+        ? 'IA'
+        : assigneeFilter === FREE_FILTER_ID
+          ? 'Livres'
+          : profileById.get(assigneeFilter)?.full_name ?? 'Atendente';
 
   return (
     <div className="space-y-6">
@@ -179,46 +246,143 @@ function Equipe() {
       </div>
 
       <Card className="p-6">
-        <h2 className="mb-4 text-lg font-black text-ink">Equipe</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-black text-ink">Carga por atendente</h2>
+            <p className="text-xs text-[#6B7280]">
+              Clique em um card para filtrar a lista abaixo.
+            </p>
+          </div>
+        </div>
         {profilesQ.isLoading ? (
           <p className="text-sm text-[#6B7280]">Carregando equipe…</p>
         ) : profiles.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum membro encontrado.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {profiles.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-3 rounded-[12px] border border-[#E3E6EB] bg-white p-3"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFC400]/15 text-sm font-black text-[#1a1500]">
-                  {initials(p.full_name)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-ink">
-                    {p.full_name || 'Sem nome'}
-                  </p>
-                  <p className="text-xs uppercase tracking-wider text-[#6B7280]">
-                    {ROLE_LABELS[p.role] || p.role}
-                  </p>
+            {profiles.map((p) => {
+              const w = workload.byUser.get(p.id) ?? { count: 0, stale: 0, oldestHrs: 0 };
+              const isActive = assigneeFilter === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() =>
+                    setAssigneeFilter((cur) => (cur === p.id ? 'all' : p.id))
+                  }
+                  className={`flex items-start gap-3 rounded-[12px] border bg-white p-3 text-left transition hover:border-[#FFC400] hover:shadow-sm ${
+                    isActive ? 'border-[#FFC400] ring-2 ring-[#FFC400]/30' : 'border-[#E3E6EB]'
+                  }`}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFC400]/15 text-sm font-black text-[#1a1500]">
+                    {initials(p.full_name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-ink">
+                      {p.full_name || 'Sem nome'}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-[#6B7280]">
+                      {ROLE_LABELS[p.role] || p.role}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-bold text-ink">
+                        {w.count} <span className="font-normal text-[#6B7280]">ativos</span>
+                      </span>
+                      {w.stale > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-700">
+                          <AlertTriangle className="h-3 w-3" />
+                          {w.stale} parado{w.stale > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {w.count === 0 && (
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700">
+                          Livre
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Card IA */}
+            <button
+              type="button"
+              onClick={() =>
+                setAssigneeFilter((cur) => (cur === AI_FILTER_ID ? 'all' : AI_FILTER_ID))
+              }
+              className={`flex items-start gap-3 rounded-[12px] border bg-white p-3 text-left transition hover:border-[#FFC400] hover:shadow-sm ${
+                assigneeFilter === AI_FILTER_ID
+                  ? 'border-[#FFC400] ring-2 ring-[#FFC400]/30'
+                  : 'border-[#E3E6EB]'
+              }`}
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-black text-violet-700">
+                IA
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-ink">Atendimento IA</p>
+                <p className="text-[10px] uppercase tracking-wider text-[#6B7280]">
+                  Automático
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-bold text-ink">
+                    {workload.aiCount}{' '}
+                    <span className="font-normal text-[#6B7280]">ativos</span>
+                  </span>
+                  {workload.aiStale > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-700">
+                      <AlertTriangle className="h-3 w-3" />
+                      {workload.aiStale} parado{workload.aiStale > 1 ? 's' : ''}
+                    </span>
+                  )}
                 </div>
               </div>
-            ))}
+            </button>
           </div>
         )}
       </Card>
 
       <Card className="p-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-black text-ink">Atendimentos</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar cliente, telefone ou vendedor"
-              className="w-full pl-9 sm:w-80"
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-black text-ink">Atendimentos</h2>
+            {filterLabel && (
+              <Badge
+                variant="outline"
+                className="cursor-pointer gap-1 border-[#FFC400] bg-[#FFC400]/10 text-ink"
+                onClick={() => setAssigneeFilter('all')}
+              >
+                Filtro: {filterLabel}
+                <X className="h-3 w-3" />
+              </Badge>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+              <SelectTrigger className="w-full sm:w-56">
+                <SelectValue placeholder="Filtrar por atendente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os atendentes</SelectItem>
+                <SelectItem value={FREE_FILTER_ID}>Livres (sem atendente)</SelectItem>
+                <SelectItem value={AI_FILTER_ID}>Atendimento IA</SelectItem>
+                {profiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.full_name || 'Sem nome'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar cliente, telefone ou vendedor"
+                className="w-full pl-9 sm:w-80"
+              />
+            </div>
           </div>
         </div>
 
@@ -232,7 +396,7 @@ function Equipe() {
               <TableRow>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Última interação</TableHead>
+                <TableHead>Tempo parado</TableHead>
                 <TableHead>Vendedor</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -242,6 +406,9 @@ function Equipe() {
                 const seller = l.assigned_user_id
                   ? profileById.get(l.assigned_user_id)
                   : null;
+                const hrs = hoursSince(l.updated_at);
+                const isActive = ACTIVE_STATUSES.has(l.status);
+                const isStale = isActive && hrs >= STALE_HOURS;
                 return (
                   <TableRow key={l.id}>
                     <TableCell>
@@ -257,14 +424,29 @@ function Equipe() {
                         {stageLabel(l.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-[#6B7280]">
-                      {formatDistanceToNow(new Date(l.updated_at), {
-                        addSuffix: true,
-                        locale: ptBR,
-                      })}
+                    <TableCell className="text-sm">
+                      <span
+                        className={
+                          isStale
+                            ? 'inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-700'
+                            : 'text-[#6B7280]'
+                        }
+                      >
+                        {isStale && <AlertTriangle className="h-3 w-3" />}
+                        {formatDistanceToNow(new Date(l.updated_at), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </span>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {seller?.full_name || (
+                      {seller?.full_name ? (
+                        <span className="font-medium text-ink">{seller.full_name}</span>
+                      ) : l.assigned_user_id === null && isActive ? (
+                        <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
+                          IA
+                        </span>
+                      ) : (
                         <span className="text-[#9CA3AF] italic">Livre</span>
                       )}
                     </TableCell>
