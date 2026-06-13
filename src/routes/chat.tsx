@@ -602,7 +602,53 @@ function Chat() {
                 >
                   <PanelRight className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all">
+                      <MoreVertical className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onClick={() => toggleAi.mutate(isAiHandling)}
+                      disabled={!currentLead || toggleAi.isPending}
+                    >
+                      {isAiHandling ? (
+                        <>
+                          <Hand className="mr-2 h-4 w-4 text-primary" />
+                          <span>Assumir conversa</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="mr-2 h-4 w-4 text-amber-500" />
+                          <span>Devolver para IA</span>
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setTransferOpen(true)}
+                      disabled={!currentLead}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4 text-primary" />
+                      <span>Transferir atendimento</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => moveToStatus.mutate('closed_won')}
+                      disabled={!currentLead || moveToStatus.isPending}
+                    >
+                      <Flag className="mr-2 h-4 w-4 text-emerald-500" />
+                      <span>Marcar como Venda Fechada</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => moveToStatus.mutate('lost')}
+                      disabled={!currentLead || moveToStatus.isPending}
+                    >
+                      <XCircle className="mr-2 h-4 w-4 text-red-500" />
+                      <span>Marcar como Perdido</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
