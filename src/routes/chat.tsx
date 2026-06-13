@@ -95,13 +95,33 @@ function Chat() {
 
   const filteredConvs = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return conversations
-    return conversations.filter((c) =>
-      c.phone.toLowerCase().includes(q) ||
-      (c.name ?? '').toLowerCase().includes(q) ||
-      c.lastText.toLowerCase().includes(q)
-    )
-  }, [conversations, search])
+    const onlyD = (s: string) => s.replace(/\D/g, '')
+    return conversations.filter((c) => {
+      if (q) {
+        const matchSearch =
+          c.phone.toLowerCase().includes(q) ||
+          (c.name ?? '').toLowerCase().includes(q) ||
+          c.lastText.toLowerCase().includes(q)
+        if (!matchSearch) return false
+      }
+      if (statusFilter !== 'all') {
+        const convDigits = onlyD(c.phone)
+        const lead = leads.find((l) => {
+          const ld = onlyD(l.phone ?? '')
+          return ld.length >= 8 && (ld === convDigits || convDigits.endsWith(ld) || ld.endsWith(convDigits))
+        })
+        if (!lead) return false
+        const col = kanbanColumns.find((k) => k.id === statusFilter)
+        if (!col) return false
+        if (col.is_system && col.system_key) {
+          if (!(lead.custom_column_id == null && lead.status === col.system_key)) return false
+        } else {
+          if (lead.custom_column_id !== col.id) return false
+        }
+      }
+      return true
+    })
+  }, [conversations, search, statusFilter, leads, kanbanColumns])
 
   // Casar o lead com o telefone selecionado (normalizando dígitos).
   // Se veio pela Fila (lead novo, sem conversa ainda), ainda assim achamos o lead.
