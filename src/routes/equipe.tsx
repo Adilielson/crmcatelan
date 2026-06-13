@@ -46,6 +46,7 @@ interface TeamLead {
   status: string;
   assigned_user_id: string | null;
   updated_at: string;
+  sales_value: number | null;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -99,6 +100,12 @@ function hoursSince(iso: string) {
   return (Date.now() - new Date(iso).getTime()) / 3_600_000;
 }
 
+const BRL = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  maximumFractionDigits: 0,
+});
+
 const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner']);
 
 function Equipe() {
@@ -144,7 +151,7 @@ function Equipe() {
     queryFn: async (): Promise<TeamLead[]> => {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, full_name, phone, status, assigned_user_id, updated_at')
+        .select('id, full_name, phone, status, assigned_user_id, updated_at, sales_value')
         .eq('tenant_id', tenantId!)
         .order('updated_at', { ascending: false });
       if (error) throw error;
@@ -164,10 +171,12 @@ function Equipe() {
   // Agrega carga de trabalho por atendente + IA
   const workload = useMemo(() => {
     const active = leads.filter((l) => ACTIVE_STATUSES.has(l.status));
-    const byUser = new Map<string, { count: number; stale: number; oldestHrs: number }>();
+    const byUser = new Map<string, { count: number; stale: number; oldestHrs: number; sales: number; salesCount: number }>();
     let aiCount = 0;
     let aiStale = 0;
     let aiOldest = 0;
+    let aiSales = 0;
+    let aiSalesCount = 0;
     for (const l of active) {
       const hrs = hoursSince(l.updated_at);
       if (!l.assigned_user_id) {
@@ -176,13 +185,27 @@ function Equipe() {
         if (hrs > aiOldest) aiOldest = hrs;
         continue;
       }
-      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0 };
+      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
       cur.count += 1;
       if (hrs >= STALE_HOURS) cur.stale += 1;
       if (hrs > cur.oldestHrs) cur.oldestHrs = hrs;
       byUser.set(l.assigned_user_id, cur);
     }
-    return { byUser, aiCount, aiStale, aiOldest, totalActive: active.length };
+    // Soma vendas fechadas (status = showed_up) por atendente, com base no valor da ficha
+    for (const l of leads) {
+      if (l.status !== 'showed_up') continue;
+      const val = Number(l.sales_value ?? 0) || 0;
+      if (!l.assigned_user_id) {
+        aiSales += val;
+        aiSalesCount += 1;
+        continue;
+      }
+      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
+      cur.sales += val;
+      cur.salesCount += 1;
+      byUser.set(l.assigned_user_id, cur);
+    }
+    return { byUser, aiCount, aiStale, aiOldest, aiSales, aiSalesCount, totalActive: active.length };
   }, [leads]);
 
   const kpis = useMemo(() => {
@@ -279,7 +302,7 @@ function Equipe() {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {profiles.map((p) => {
-              const w = workload.byUser.get(p.id) ?? { count: 0, stale: 0, oldestHrs: 0 };
+              const w = workload.byUser.get(p.id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
               const isActive = assigneeFilter === p.id;
               return (
                 <button
@@ -318,6 +341,17 @@ function Equipe() {
                         </span>
                       )}
                     </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-md bg-emerald-50 px-2 py-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                        Vendas
+                      </span>
+                      <span className="text-sm font-black text-emerald-800">
+                        {BRL.format(w.sales)}
+                        <span className="ml-1 text-[10px] font-normal text-emerald-700">
+                          ({w.salesCount})
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </button>
               );
@@ -354,6 +388,17 @@ function Equipe() {
                       {workload.aiStale} parado{workload.aiStale > 1 ? 's' : ''}
                     </span>
                   )}
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 rounded-md bg-emerald-50 px-2 py-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                    Vendas
+                  </span>
+                  <span className="text-sm font-black text-emerald-800">
+                    {BRL.format(workload.aiSales)}
+                    <span className="ml-1 text-[10px] font-normal text-emerald-700">
+                      ({workload.aiSalesCount})
+                    </span>
+                  </span>
                 </div>
               </div>
             </button>
