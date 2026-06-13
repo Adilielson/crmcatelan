@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -99,13 +99,31 @@ function hoursSince(iso: string) {
   return (Date.now() - new Date(iso).getTime()) / 3_600_000;
 }
 
+const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner']);
+
 function Equipe() {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
   const userId = useAuthStore((s) => s.user?.id ?? null);
+  const role = useAuthStore((s) => s.user?.role ?? null);
+  const isManager = role ? MANAGER_ROLES.has(role) : false;
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  // Atendente comum entra já filtrado nos próprios leads; gerentes/admins veem todos
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(
+    !isManager && userId ? userId : 'all',
+  );
+
+  // Quando o auth carrega depois do mount, aplica o filtro padrão uma única vez
+  const appliedDefaultRef = useRef(false);
+  useEffect(() => {
+    if (appliedDefaultRef.current) return;
+    if (!userId || role === null) return;
+    appliedDefaultRef.current = true;
+    if (!isManager) setAssigneeFilter(userId);
+  }, [userId, role, isManager]);
+
+
 
   const profilesQ = useQuery({
     queryKey: ['equipe-profiles', tenantId],
