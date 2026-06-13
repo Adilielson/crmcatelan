@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight } from 'lucide-react'
+import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight, Hand, Bot, UserPlus, Flag, XCircle } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useLeads } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
@@ -14,11 +15,22 @@ import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 import { ChatQuickActionsBar } from '@/components/chat/ChatQuickActionsBar'
 import { StageBadge } from '@/components/leads/StageBadge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useKanbanColumns } from '@/hooks/use-kanban-columns'
+import { useAuthStore } from '@/hooks/use-auth'
+import { supabase } from '@/integrations/supabase/client'
+import { TransferLeadDialog } from '@/components/chat/TransferLeadDialog'
+
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -34,15 +46,20 @@ function Chat() {
   const { conversations, loading } = useWhatsAppChat()
   const { sendText, sendImage, sendAudio, isConnected: waConnected } = useWhatsApp()
   const { data: leads = [] } = useLeads()
-  
+  const qc = useQueryClient()
+  const tenantId = useAuthStore((s) => s.tenant?.id ?? null)
+  const currentUserId = useAuthStore((s) => s.user?.id ?? null)
+  const { data: kanbanColumns = [] } = useKanbanColumns()
+
   const [activeTab, setActiveTab] = useState('ia')
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const { data: kanbanColumns = [] } = useKanbanColumns()
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [recording, setRecording] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [transferOpen, setTransferOpen] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -134,6 +151,44 @@ function Chat() {
       leads[0]
     )
   }, [leads, selectedPhone])
+  const isAiHandling = currentLead ? !currentLead.assigned_user_id : false
+
+  const toggleAi = useMutation({
+    mutationFn: async (takeOver: boolean) => {
+      if (!currentLead) throw new Error('Lead não encontrado')
+      const updates: Record<string, unknown> = takeOver
+        ? { assigned_user_id: currentUserId, status: 'in_progress' }
+        : { assigned_user_id: null }
+      const { error } = await (supabase as any)
+        .from('leads')
+        .update(updates)
+        .eq('id', currentLead.id)
+      if (error) throw error
+      return takeOver
+    },
+    onSuccess: (takeOver) => {
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] })
+      toast.success(takeOver ? 'Você assumiu a conversa — IA pausada' : 'Conversa devolvida para a IA')
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao alternar atendimento'),
+  })
+
+  const moveToStatus = useMutation({
+    mutationFn: async (systemKey: string) => {
+      if (!currentLead) throw new Error('Lead não encontrado')
+      const { error } = await (supabase as any)
+        .from('leads')
+        .update({ status: systemKey, custom_column_id: null })
+        .eq('id', currentLead.id)
+      if (error) throw error
+      return systemKey
+    },
+    onSuccess: (key) => {
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] })
+      toast.success(key === 'closed_won' ? 'Venda fechada!' : 'Lead movido')
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao mover lead'),
+  })
 
 
   // Conversa "virtual" para leads vindos da Fila sem histórico de WhatsApp ainda:
@@ -287,7 +342,6 @@ function Chat() {
     setRecording(false)
   }
 
-  const [detailsOpen, setDetailsOpen] = useState(false)
   const hasSelection = !!selectedPhone
 
   const insightsPanel = (
@@ -548,7 +602,53 @@ function Chat() {
                 >
                   <PanelRight className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all">
+                      <MoreVertical className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onClick={() => toggleAi.mutate(isAiHandling)}
+                      disabled={!currentLead || toggleAi.isPending}
+                    >
+                      {isAiHandling ? (
+                        <>
+                          <Hand className="mr-2 h-4 w-4 text-primary" />
+                          <span>Assumir conversa</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="mr-2 h-4 w-4 text-amber-500" />
+                          <span>Devolver para IA</span>
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setTransferOpen(true)}
+                      disabled={!currentLead}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4 text-primary" />
+                      <span>Transferir atendimento</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => moveToStatus.mutate('closed_won')}
+                      disabled={!currentLead || moveToStatus.isPending}
+                    >
+                      <Flag className="mr-2 h-4 w-4 text-emerald-500" />
+                      <span>Marcar como Venda Fechada</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => moveToStatus.mutate('lost')}
+                      disabled={!currentLead || moveToStatus.isPending}
+                    >
+                      <XCircle className="mr-2 h-4 w-4 text-red-500" />
+                      <span>Marcar como Perdido</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -725,6 +825,13 @@ function Chat() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Transferir atendimento */}
+      <TransferLeadDialog
+        lead={transferOpen && currentLead ? currentLead : null}
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+      />
     </div>
   )
 }
