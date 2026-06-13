@@ -825,6 +825,13 @@ function Chat() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Transferir atendimento */}
+      <TransferLeadDialog
+        lead={transferOpen && currentLead ? currentLead : null}
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+      />
     </div>
   )
 }
