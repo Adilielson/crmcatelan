@@ -906,6 +906,7 @@ export type Database = {
           created_at: string | null
           custom_column_id: string | null
           email: string | null
+          first_contact_at: string | null
           full_name: string
           ia_disqualified_reason: string | null
           ia_interesses: string[] | null
@@ -919,6 +920,7 @@ export type Database = {
           ia_urgencia: string | null
           ia_urgency: string | null
           id: string
+          last_reactivated_at: string | null
           next_contact_at: string | null
           notes: string | null
           payment_method: string | null
@@ -927,6 +929,7 @@ export type Database = {
           prescription_ocr_at: string | null
           priority: string | null
           products_sold: string | null
+          reactivation_count: number
           sales_value: number | null
           score_ia: number | null
           source: string | null
@@ -945,6 +948,7 @@ export type Database = {
           created_at?: string | null
           custom_column_id?: string | null
           email?: string | null
+          first_contact_at?: string | null
           full_name: string
           ia_disqualified_reason?: string | null
           ia_interesses?: string[] | null
@@ -958,6 +962,7 @@ export type Database = {
           ia_urgencia?: string | null
           ia_urgency?: string | null
           id?: string
+          last_reactivated_at?: string | null
           next_contact_at?: string | null
           notes?: string | null
           payment_method?: string | null
@@ -966,6 +971,7 @@ export type Database = {
           prescription_ocr_at?: string | null
           priority?: string | null
           products_sold?: string | null
+          reactivation_count?: number
           sales_value?: number | null
           score_ia?: number | null
           source?: string | null
@@ -984,6 +990,7 @@ export type Database = {
           created_at?: string | null
           custom_column_id?: string | null
           email?: string | null
+          first_contact_at?: string | null
           full_name?: string
           ia_disqualified_reason?: string | null
           ia_interesses?: string[] | null
@@ -997,6 +1004,7 @@ export type Database = {
           ia_urgencia?: string | null
           ia_urgency?: string | null
           id?: string
+          last_reactivated_at?: string | null
           next_contact_at?: string | null
           notes?: string | null
           payment_method?: string | null
@@ -1005,6 +1013,7 @@ export type Database = {
           prescription_ocr_at?: string | null
           priority?: string | null
           products_sold?: string | null
+          reactivation_count?: number
           sales_value?: number | null
           score_ia?: number | null
           source?: string | null
@@ -2144,6 +2153,10 @@ export type Database = {
         Returns: boolean
       }
       notify_stale_leads: { Args: never; Returns: undefined }
+      reactivate_lead_if_stale: {
+        Args: { _lead_id: string; _stale_days?: number }
+        Returns: boolean
+      }
       upsert_ai_credential: {
         Args: {
           _api_key: string
