@@ -388,13 +388,26 @@ function Chat() {
         hasSelection ? "hidden md:flex" : "flex",
       )}>
 
-        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
+        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20 gap-3">
           <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
-          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-gray-50 hover:bg-[#FFC400]/10 hover:text-[#FFC400] transition-all">
-            <PlusCircle className="w-5 h-5" />
-          </Button>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-10 w-[150px] rounded-xl bg-gray-50 border-transparent text-xs font-bold uppercase">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {kanbanColumns.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                    {c.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        
+
         <div className="p-5 bg-white">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
@@ -407,6 +420,7 @@ function Chat() {
             />
           </div>
         </div>
+
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mobile-no-scrollbar thin-scrollbar">
           <div className="flex flex-col w-full max-w-full">
