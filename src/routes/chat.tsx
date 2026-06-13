@@ -304,7 +304,6 @@ function Chat() {
     setRecording(false)
   }
 
-  const [detailsOpen, setDetailsOpen] = useState(false)
   const hasSelection = !!selectedPhone
 
   const insightsPanel = (
