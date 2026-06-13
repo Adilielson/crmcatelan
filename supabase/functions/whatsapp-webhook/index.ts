@@ -547,7 +547,7 @@ Deno.serve(async (req) => {
         try {
           const { data: existingLead } = await adminClient
             .from("leads")
-            .select("id, full_name, assigned_user_id")
+            .select("id, full_name, assigned_user_id, status, updated_at")
             .eq("tenant_id", tenantId)
             .eq("phone", senderPhone)
             .maybeSingle();
@@ -556,6 +556,26 @@ Deno.serve(async (req) => {
             leadId = existingLead.id as string;
             leadName = (existingLead.full_name as string | null) ?? null;
             leadAssignedUserId = (existingLead.assigned_user_id as string | null) ?? null;
+
+            // ── REATIVAÇÃO AUTOMÁTICA (30 dias) ──────────────────────────
+            // Se o lead está em status terminal (lost/showed_up) e o cliente
+            // voltou a falar após +30 dias, reabre preservando 100% do histórico.
+            const status = existingLead.status as string | null;
+            const updatedAt = existingLead.updated_at as string | null;
+            if (status && updatedAt && (status === "lost" || status === "showed_up")) {
+              const daysInactive = Math.floor(
+                (Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              if (daysInactive >= 30) {
+                const { data: reactivated, error: reactErr } = await adminClient
+                  .rpc("reactivate_lead_if_stale", { _lead_id: leadId, _stale_days: 30 });
+                if (reactErr) {
+                  console.error("[lead] erro reativação:", reactErr.message);
+                } else if (reactivated) {
+                  console.log(`[lead] ${leadId} reativado após ${daysInactive} dias`);
+                }
+              }
+            }
           } else {
             const initialName = isValidContactName(senderName, senderPhone) ? senderName : null;
             const { data: newLead } = await adminClient
@@ -566,6 +586,7 @@ Deno.serve(async (req) => {
                 full_name: initialName,
                 status: "open",
                 source: "whatsapp",
+                first_contact_at: new Date().toISOString(),
               })
               .select("id, full_name, assigned_user_id")
               .single();
@@ -584,6 +605,7 @@ Deno.serve(async (req) => {
         } catch (e) {
           console.error("[lead] erro localizar/criar:", e instanceof Error ? e.message : String(e));
         }
+
 
         // ── Detecta resposta de confirmação de agendamento ───────────────
         try {
