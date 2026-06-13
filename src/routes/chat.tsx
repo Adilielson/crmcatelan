@@ -38,6 +38,8 @@ function Chat() {
   const [activeTab, setActiveTab] = useState('ia')
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const { data: kanbanColumns = [] } = useKanbanColumns()
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [recording, setRecording] = useState(false)
