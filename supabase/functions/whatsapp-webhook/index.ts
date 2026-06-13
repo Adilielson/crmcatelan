@@ -624,6 +624,10 @@ Deno.serve(async (req) => {
 
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
+          // Guard: se um atendente humano assumiu o lead, NÃO responde
+          if (leadAssignedUserId) {
+            console.log(`[sdr] pulado: lead ${leadId} atribuído a atendente humano (${leadAssignedUserId})`);
+          } else
           try {
             // 1) Busca token da instância
             const { data: cfg } = await adminClient
