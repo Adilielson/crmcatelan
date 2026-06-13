@@ -189,6 +189,60 @@ function Agenda() {
   }
 
 
+  // === No-show / Reagendar (MVP manual) ===
+  // Tolerância de 2h após o horário de início — antes disso, nada de "atrasado".
+  const NO_SHOW_TOLERANCE_MIN = 120
+  const isOverdue = (appt: Appointment) => {
+    if (appt.checkinAt) return false
+    if (appt.status === 'realizado' || appt.status === 'cancelado' || appt.status === 'no-show') return false
+    const start = new Date(`${appt.date}T${appt.startTime}:00`).getTime()
+    return Date.now() - start > NO_SHOW_TOLERANCE_MIN * 60_000
+  }
+
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
+  const [rescheduleData, setRescheduleData] = useState({ date: '', startTime: '', endTime: '' })
+
+  const openReschedule = (appt: Appointment) => {
+    setRescheduleAppt(appt)
+    setRescheduleData({ date: appt.date, startTime: appt.startTime, endTime: appt.endTime })
+  }
+
+  const confirmReschedule = async () => {
+    if (!rescheduleAppt) return
+    const { date, startTime, endTime } = rescheduleData
+    if (!date || !startTime || !endTime) {
+      toast.error('Preencha data, início e fim')
+      return
+    }
+    const avail = checkAvailability(date, startTime, endTime, businessHours, blockedDates)
+    if (!avail.ok) { toast.error(avail.reason ?? 'Horário indisponível'); return }
+    await updateAppointment(rescheduleAppt.id, {
+      date, startTime, endTime,
+      status: 'pendente',
+      rescheduleCount: (rescheduleAppt.rescheduleCount ?? 0) + 1,
+      reminderSent: false,
+    })
+    toast.success('Agendamento remarcado!')
+    setRescheduleAppt(null)
+  }
+
+  const handleNoShow = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { status: 'no-show' })
+    // Move o lead pra coluna de follow-up para retomar contato
+    try {
+      await (supabase as any).from('leads').update({ status: 'followup' }).eq('id', appt.leadId)
+      qc.invalidateQueries({ queryKey: ['leads'] })
+    } catch { /* não bloqueia */ }
+    toast.warning(`${appt.leadName} marcado como no-show. Lead movido para Follow-up.`)
+  }
+
+  const handleAttendedLate = async (appt: Appointment) => {
+    if (appt.status === 'pendente') {
+      await updateAppointment(appt.id, { status: 'confirmado', reminderSent: true })
+    }
+    await handleCheckin(appt)
+  }
+
   // Mobile weekly strip: 5 dias (seg-sex) da semana de selectedDay
   const weekStartMon = startOfWeek(selectedDay, { weekStartsOn: 1 })
   const weekDaysMobile = useMemo(
