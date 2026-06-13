@@ -145,7 +145,7 @@ function Equipe() {
     queryFn: async (): Promise<TeamLead[]> => {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, full_name, phone, status, assigned_user_id, updated_at')
+        .select('id, full_name, phone, status, assigned_user_id, updated_at, sales_value')
         .eq('tenant_id', tenantId!)
         .order('updated_at', { ascending: false });
       if (error) throw error;
