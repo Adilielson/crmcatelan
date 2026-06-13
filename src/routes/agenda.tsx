@@ -18,8 +18,12 @@ import {
   Settings,
   XCircle,
   CheckCircle,
-  History
+  History,
+  UserX,
+  CalendarClock,
+  MoreHorizontal
 } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 import { useState, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
