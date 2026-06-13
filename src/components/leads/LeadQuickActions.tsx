@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { DBLead, useUpdateLead } from '@/hooks/use-leads';
 import { useAgenda } from '@/hooks/use-agenda';
 import { LeadValueDialog } from '@/components/kanban/LeadValueDialog';
-import { LeadLocationDialog } from '@/components/kanban/LeadLocationDialog';
+
 
 /**
  * Atalhos rápidos do lead — Agendar, Conversar, Localização, Valor.
