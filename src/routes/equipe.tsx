@@ -100,6 +100,12 @@ function hoursSince(iso: string) {
   return (Date.now() - new Date(iso).getTime()) / 3_600_000;
 }
 
+const BRL = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  maximumFractionDigits: 0,
+});
+
 const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner']);
 
 function Equipe() {
