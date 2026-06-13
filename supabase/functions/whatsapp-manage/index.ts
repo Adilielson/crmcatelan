@@ -197,8 +197,15 @@ Deno.serve(async (req) => {
           enabled: true,
           addUrlEvents: false,
           addUrlTypesMessages: false,
-          events: ["connection", "messages", "qrcode"],
-          excludeMessages: [],
+          events: [
+            "connection",
+            "messages",
+            "messages_upsert",
+            "messages.upsert",
+            "message",
+            "qrcode",
+          ],
+          excludeMessages: ["wasSentByApi"],
         });
         await adminClient
           .from("whatsapp_config")
