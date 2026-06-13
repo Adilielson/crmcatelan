@@ -99,13 +99,20 @@ function hoursSince(iso: string) {
   return (Date.now() - new Date(iso).getTime()) / 3_600_000;
 }
 
+const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner']);
+
 function Equipe() {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
   const userId = useAuthStore((s) => s.user?.id ?? null);
+  const role = useAuthStore((s) => s.user?.role ?? null);
+  const isManager = role ? MANAGER_ROLES.has(role) : false;
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  // Atendente comum entra já filtrado nos próprios leads; gerentes/admins veem todos
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(
+    !isManager && userId ? userId : 'all',
+  );
 
   const profilesQ = useQuery({
     queryKey: ['equipe-profiles', tenantId],
