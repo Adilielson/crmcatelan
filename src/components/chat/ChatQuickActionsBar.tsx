@@ -35,9 +35,30 @@ export function ChatQuickActionsBar({
   className?: string;
 }) {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
+  const currentUserId = useAuthStore((s) => s.user?.id ?? null);
   const qc = useQueryClient();
   const { data: columns = [] } = useKanbanColumns();
   const [transferOpen, setTransferOpen] = useState(false);
+  const isAiHandling = !lead.assigned_user_id;
+
+  const toggleAi = useMutation({
+    mutationFn: async (takeOver: boolean) => {
+      const updates: Record<string, unknown> = takeOver
+        ? { assigned_user_id: currentUserId, status: 'in_progress' }
+        : { assigned_user_id: null };
+      const { error } = await (supabase as any)
+        .from('leads')
+        .update(updates)
+        .eq('id', lead.id);
+      if (error) throw error;
+      return takeOver;
+    },
+    onSuccess: (takeOver) => {
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] });
+      toast.success(takeOver ? 'Você assumiu a conversa — IA pausada' : 'Conversa devolvida para a IA');
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao alternar atendimento'),
+  });
 
   // Valor atual do select: id da coluna custom OU system_key
   const currentValue =
