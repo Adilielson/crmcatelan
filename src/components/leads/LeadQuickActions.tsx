@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Calendar, MessageSquare, MapPin, DollarSign } from 'lucide-react';
+import { Calendar, MessageSquare, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { DBLead, useUpdateLead } from '@/hooks/use-leads';
 import { useAgenda } from '@/hooks/use-agenda';
 import { LeadValueDialog } from '@/components/kanban/LeadValueDialog';
-import { LeadLocationDialog } from '@/components/kanban/LeadLocationDialog';
+
 
 /**
  * Atalhos rápidos do lead — Agendar, Conversar, Localização, Valor.
@@ -39,7 +39,6 @@ export function LeadQuickActions({
   const { addAppointment } = useAgenda();
 
   const [valueOpen, setValueOpen] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
 
@@ -88,7 +87,6 @@ export function LeadQuickActions({
       label: 'Conversar',
       onClick: openChat,
     },
-    { key: 'location', icon: MapPin, label: 'Local', onClick: () => setLocationOpen(true) },
     { key: 'value', icon: DollarSign, label: 'Valor', onClick: () => setValueOpen(true) },
   ].filter(Boolean) as { key: string; icon: typeof Calendar; label: string; onClick: () => void }[];
 
@@ -126,11 +124,6 @@ export function LeadQuickActions({
 
       {/* Diálogos owned */}
       <LeadValueDialog lead={valueOpen ? lead : null} open={valueOpen} onOpenChange={setValueOpen} />
-      <LeadLocationDialog
-        lead={locationOpen ? lead : null}
-        open={locationOpen}
-        onOpenChange={setLocationOpen}
-      />
 
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
         <DialogContent className="sm:max-w-[425px]">

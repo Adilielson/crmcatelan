@@ -48,10 +48,9 @@ export function TransferLeadDialog({
         .from('profiles')
         .select('id, full_name, role')
         .eq('tenant_id', tenantId!)
-        .eq('status', 'active')
         .order('full_name', { ascending: true });
       if (error) throw error;
-      return (data ?? []) as TeamMember[];
+      return (data ?? []).filter((m: TeamMember) => !!m.full_name) as TeamMember[];
     },
   });
 
