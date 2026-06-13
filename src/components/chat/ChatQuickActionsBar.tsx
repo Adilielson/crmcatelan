@@ -101,14 +101,14 @@ export function ChatQuickActionsBar({
     <>
       <div
         className={cn(
-          'flex flex-wrap items-center gap-2 border-b border-[#E3E6EB] bg-white/90 px-4 py-2.5 backdrop-blur-xl',
+          'flex items-center gap-1.5 border-b border-[#E3E6EB] bg-white/90 px-3 py-2 backdrop-blur-xl overflow-x-auto no-scrollbar',
           className,
         )}
       >
         {/* Status */}
         <Select value={String(currentValue)} onValueChange={handleStatusChange}>
-          <SelectTrigger className="h-9 w-[180px] rounded-xl border-gray-100 bg-gray-50 text-xs font-bold">
-            <ChevronsUpDown className="mr-1 h-3.5 w-3.5 text-gray-400" />
+          <SelectTrigger className="h-9 w-[130px] sm:w-[170px] shrink-0 rounded-xl border-gray-100 bg-gray-50 text-xs font-bold">
+            <ChevronsUpDown className="mr-1 h-3.5 w-3.5 text-gray-400 shrink-0" />
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -136,7 +136,7 @@ export function ChatQuickActionsBar({
           disabled={toggleAi.isPending}
           onClick={() => toggleAi.mutate(isAiHandling)}
           className={cn(
-            'h-9 rounded-xl border-gray-100 bg-gray-50 text-xs font-bold',
+            'h-9 shrink-0 rounded-xl border-gray-100 bg-gray-50 px-2.5 sm:px-3 text-xs font-bold',
             isAiHandling
               ? 'hover:border-primary/30 hover:text-primary'
               : 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300',
@@ -145,13 +145,13 @@ export function ChatQuickActionsBar({
         >
           {isAiHandling ? (
             <>
-              <Hand className="mr-1.5 h-4 w-4" />
-              Assumir
+              <Hand className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Assumir</span>
             </>
           ) : (
             <>
-              <Bot className="mr-1.5 h-4 w-4" />
-              Devolver p/ IA
+              <Bot className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Devolver p/ IA</span>
             </>
           )}
         </Button>
@@ -160,28 +160,16 @@ export function ChatQuickActionsBar({
         <Button
           variant="outline"
           size="sm"
-          className="h-9 rounded-xl border-gray-100 bg-gray-50 text-xs font-bold hover:border-primary/30 hover:text-primary"
+          className="h-9 shrink-0 rounded-xl border-gray-100 bg-gray-50 px-2.5 sm:px-3 text-xs font-bold hover:border-primary/30 hover:text-primary"
           onClick={() => setTransferOpen(true)}
+          title="Transferir atendimento"
         >
-          <UserPlus className="mr-1.5 h-4 w-4" />
-          Transferir
+          <UserPlus className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">Transferir</span>
         </Button>
 
-        {/* Agendar / Local / Valor (Conversar oculto) */}
-        <LeadQuickActions lead={lead} variant="compact" hideChat className="!gap-1.5" />
-
-        {/* Ver ficha (só aparece quando há handler – telas em que o painel direito é Sheet) */}
-        {onOpenDetails && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto h-9 rounded-xl border-gray-100 bg-gray-50 text-xs font-bold hover:border-primary/30 hover:text-primary"
-            onClick={onOpenDetails}
-          >
-            <PanelRight className="mr-1.5 h-4 w-4" />
-            Ficha
-          </Button>
-        )}
+        {/* Agendar / Local / Valor */}
+        <LeadQuickActions lead={lead} variant="compact" hideChat className="!gap-1.5 shrink-0" />
       </div>
 
       <TransferLeadDialog
