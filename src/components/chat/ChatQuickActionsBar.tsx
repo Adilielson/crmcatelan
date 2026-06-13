@@ -27,11 +27,9 @@ import { TransferLeadDialog } from './TransferLeadDialog';
  */
 export function ChatQuickActionsBar({
   lead,
-  onOpenDetails,
   className,
 }: {
   lead: DBLead;
-  onOpenDetails?: () => void;
   className?: string;
 }) {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
