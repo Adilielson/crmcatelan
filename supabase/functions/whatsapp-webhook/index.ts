@@ -537,7 +537,6 @@ Deno.serve(async (req) => {
 
         // ── Lead: localiza/cria e captura nome do contato quando possível ─
         let leadId: string | null = null;
-        let leadId: string | null = null;
         let leadName: string | null = null;
         let leadAssignedUserId: string | null = null;
         try {
