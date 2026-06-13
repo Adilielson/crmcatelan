@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, PanelRight, ChevronsUpDown } from 'lucide-react';
+import { UserPlus, PanelRight, ChevronsUpDown, Bot, Hand } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/hooks/use-auth';
