@@ -39,7 +39,6 @@ export function LeadQuickActions({
   const { addAppointment } = useAgenda();
 
   const [valueOpen, setValueOpen] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
 
