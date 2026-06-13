@@ -175,6 +175,10 @@ function Settings() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Email de Contato</Label>
                     <Input type="email" defaultValue="contato@oticacatelan.com" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Endereço da Loja</Label>
+                    <Input placeholder="Rua, número, bairro, cidade - UF" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
+                  </div>
                 </div>
               </section>
 
