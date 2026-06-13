@@ -530,10 +530,7 @@ function Chat() {
             </div>
 
             {currentLead && (
-              <ChatQuickActionsBar
-                lead={currentLead}
-                onOpenDetails={() => setDetailsOpen(true)}
-              />
+              <ChatQuickActionsBar lead={currentLead} />
             )}
 
 
