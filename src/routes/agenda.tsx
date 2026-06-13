@@ -18,8 +18,12 @@ import {
   Settings,
   XCircle,
   CheckCircle,
-  History
+  History,
+  UserX,
+  CalendarClock,
+  MoreHorizontal
 } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 import { useState, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
@@ -185,6 +189,60 @@ function Agenda() {
   }
 
 
+  // === No-show / Reagendar (MVP manual) ===
+  // Tolerância de 2h após o horário de início — antes disso, nada de "atrasado".
+  const NO_SHOW_TOLERANCE_MIN = 120
+  const isOverdue = (appt: Appointment) => {
+    if (appt.checkinAt) return false
+    if (appt.status === 'realizado' || appt.status === 'cancelado' || appt.status === 'no-show') return false
+    const start = new Date(`${appt.date}T${appt.startTime}:00`).getTime()
+    return Date.now() - start > NO_SHOW_TOLERANCE_MIN * 60_000
+  }
+
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
+  const [rescheduleData, setRescheduleData] = useState({ date: '', startTime: '', endTime: '' })
+
+  const openReschedule = (appt: Appointment) => {
+    setRescheduleAppt(appt)
+    setRescheduleData({ date: appt.date, startTime: appt.startTime, endTime: appt.endTime })
+  }
+
+  const confirmReschedule = async () => {
+    if (!rescheduleAppt) return
+    const { date, startTime, endTime } = rescheduleData
+    if (!date || !startTime || !endTime) {
+      toast.error('Preencha data, início e fim')
+      return
+    }
+    const avail = checkAvailability(date, startTime, endTime, businessHours, blockedDates)
+    if (!avail.ok) { toast.error(avail.reason ?? 'Horário indisponível'); return }
+    await updateAppointment(rescheduleAppt.id, {
+      date, startTime, endTime,
+      status: 'pendente',
+      rescheduleCount: (rescheduleAppt.rescheduleCount ?? 0) + 1,
+      reminderSent: false,
+    })
+    toast.success('Agendamento remarcado!')
+    setRescheduleAppt(null)
+  }
+
+  const handleNoShow = async (appt: Appointment) => {
+    await updateAppointment(appt.id, { status: 'no-show' })
+    // Move o lead pra coluna de follow-up para retomar contato
+    try {
+      await (supabase as any).from('leads').update({ status: 'followup' }).eq('id', appt.leadId)
+      qc.invalidateQueries({ queryKey: ['leads'] })
+    } catch { /* não bloqueia */ }
+    toast.warning(`${appt.leadName} marcado como no-show. Lead movido para Follow-up.`)
+  }
+
+  const handleAttendedLate = async (appt: Appointment) => {
+    if (appt.status === 'pendente') {
+      await updateAppointment(appt.id, { status: 'confirmado', reminderSent: true })
+    }
+    await handleCheckin(appt)
+  }
+
   // Mobile weekly strip: 5 dias (seg-sex) da semana de selectedDay
   const weekStartMon = startOfWeek(selectedDay, { weekStartsOn: 1 })
   const weekDaysMobile = useMemo(
@@ -279,24 +337,73 @@ function Agenda() {
           <p className="text-center text-white/40 py-6 text-sm">Nenhuma consulta nesse dia.</p>
         ) : (
           <div className="space-y-2">
-            {dayAppointments.map(appt => (
-              <div key={appt.id} className="bg-[#0E0E11] border border-white/5 rounded-xl p-3 flex items-center gap-3">
-                <div className="bg-[#FFC400]/15 text-[#FFC400] text-xs font-bold px-2.5 py-1 rounded-lg">
-                  {appt.startTime}
+            {dayAppointments.map(appt => {
+              const overdue = isOverdue(appt)
+              return (
+                <div key={appt.id} className={cn(
+                  "bg-[#0E0E11] border rounded-xl p-3 flex items-center gap-3",
+                  overdue ? "border-[#D64545]/40" : "border-white/5"
+                )}>
+                  <div className={cn(
+                    "text-xs font-bold px-2.5 py-1 rounded-lg shrink-0",
+                    overdue ? "bg-[#D64545]/15 text-[#FF8A8A]" : "bg-[#FFC400]/15 text-[#FFC400]"
+                  )}>
+                    {appt.startTime}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {overdue ? (
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-[#FF8A8A]">Atrasado</span>
+                      ) : (
+                        <p className="text-white/50 text-xs truncate">{appt.examType}</p>
+                      )}
+                      {appt.status === 'no-show' && (
+                        <span className="text-[10px] font-bold uppercase text-[#FF8A8A]">No-show</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {overdue ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="text-white p-2 rounded-lg bg-white/5 active:bg-white/10 shrink-0" aria-label="Ações">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="text-xs">Lead não compareceu?</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleAttendedLate(appt)}>
+                          <CheckCircle className="w-4 h-4 mr-2 text-success" />
+                          Compareceu (atrasado)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openReschedule(appt)}>
+                          <CalendarClock className="w-4 h-4 mr-2 text-primary" />
+                          Reagendar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleNoShow(appt)} className="text-[#D64545] focus:text-[#D64545]">
+                          <UserX className="w-4 h-4 mr-2" />
+                          Marcar No-show
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleOpenChat(appt)}>
+                          <MessageSquare className="w-4 h-4 mr-2 text-primary" />
+                          WhatsApp
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <button
+                      onClick={() => handleOpenChat(appt)}
+                      className="text-[#FFC400] p-2 rounded-lg active:bg-white/5 shrink-0"
+                      aria-label="Abrir WhatsApp"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
-                  <p className="text-white/50 text-xs truncate">{appt.examType}</p>
-                </div>
-                <button
-                  onClick={() => handleOpenChat(appt)}
-                  className="text-[#FFC400] p-2 rounded-lg active:bg-white/5"
-                  aria-label="Abrir WhatsApp"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
         )}
@@ -478,10 +585,15 @@ function Agenda() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <Badge className="text-[9px] h-4" variant={appt.status === 'confirmado' ? 'default' : 'secondary'}>
                         {appt.status.toUpperCase()}
                       </Badge>
+                      {isOverdue(appt) && (
+                        <Badge className="text-[9px] h-4 bg-[#FBEBEB] text-[#D64545] border border-[#D64545]/30">
+                          ATRASADO &gt; 2h
+                        </Badge>
+                      )}
                       {appt.propensityScore > 0.8 && (
                         <Badge variant="outline" className="text-[9px] h-4 bg-green-50 text-green-700 border-green-200">
                           Alta Propensão
@@ -489,51 +601,93 @@ function Agenda() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
-                      {appt.status === 'pendente' && (
+                    {isOverdue(appt) ? (
+                      <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border/50">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                          onClick={() => handleConfirm(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink rounded-xl"
+                          onClick={() => handleAttendedLate(appt)}
                         >
-                          <CheckCircle className="w-4 h-4 mr-2 text-success" /> CONFIRMAR
+                          <CheckCircle className="w-4 h-4 mr-1.5 text-success" /> COMPARECEU
                         </Button>
-                      )}
-                      {appt.status === 'confirmado' && !appt.checkinAt && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                          onClick={() => handleCheckin(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink rounded-xl"
+                          onClick={() => openReschedule(appt)}
                         >
-                          <LogIn className="w-4 h-4 mr-2 text-primary" /> CHECK-IN
+                          <CalendarClock className="w-4 h-4 mr-1.5 text-primary" /> REAGENDAR
                         </Button>
-                      )}
-                      {appt.status === 'confirmado' && appt.checkinAt && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                          onClick={() => handleCheckout(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-[#FBEBEB]/60 border-[#D64545]/30 text-[#D64545] hover:bg-[#FBEBEB] rounded-xl"
+                          onClick={() => handleNoShow(appt)}
                         >
-                          <LogOut className="w-4 h-4 mr-2 text-success" /> CHECK-OUT
+                          <UserX className="w-4 h-4 mr-1.5" /> NO-SHOW
                         </Button>
-                      )}
-                      {appt.status === 'realizado' && (
-                        <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-success/10 border-success/30 text-success rounded-xl">
-                          <CheckCircle className="w-4 h-4 mr-2" /> CONCLUÍDO
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenChat(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink rounded-xl"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-1.5 text-primary" /> WHATSAPP
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenChat(appt)}
-                        className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                      >
-                        <MessageSquare className="w-4 h-4 mr-2 text-primary" /> WHATSAPP
-                      </Button>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
+                        {appt.status === 'pendente' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                            onClick={() => handleConfirm(appt)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2 text-success" /> CONFIRMAR
+                          </Button>
+                        )}
+                        {appt.status === 'confirmado' && !appt.checkinAt && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                            onClick={() => handleCheckin(appt)}
+                          >
+                            <LogIn className="w-4 h-4 mr-2 text-primary" /> CHECK-IN
+                          </Button>
+                        )}
+                        {appt.status === 'confirmado' && appt.checkinAt && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                            onClick={() => handleCheckout(appt)}
+                          >
+                            <LogOut className="w-4 h-4 mr-2 text-success" /> CHECK-OUT
+                          </Button>
+                        )}
+                        {appt.status === 'realizado' && (
+                          <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-success/10 border-success/30 text-success rounded-xl">
+                            <CheckCircle className="w-4 h-4 mr-2" /> CONCLUÍDO
+                          </Button>
+                        )}
+                        {appt.status === 'no-show' && (
+                          <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-[#FBEBEB] border-[#D64545]/30 text-[#D64545] rounded-xl">
+                            <UserX className="w-4 h-4 mr-2" /> NO-SHOW
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenChat(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2 text-primary" /> WHATSAPP
+                        </Button>
+                      </div>
+                    )}
 
                   </div>
                 ))
@@ -637,6 +791,50 @@ function Agenda() {
       </Dialog>
 
       <AgendaSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+
+      {/* Reagendar Dialog */}
+      <Dialog open={!!rescheduleAppt} onOpenChange={(o) => !o && setRescheduleAppt(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Reagendar — {rescheduleAppt?.leadName}</DialogTitle>
+            <DialogDescription>
+              Escolha um novo horário. O contador de no-show é zerado e o status volta para pendente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label>Nova data</Label>
+              <Input
+                type="date"
+                value={rescheduleData.date}
+                onChange={(e) => setRescheduleData(p => ({ ...p, date: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Início</Label>
+                <Input
+                  type="time"
+                  value={rescheduleData.startTime}
+                  onChange={(e) => setRescheduleData(p => ({ ...p, startTime: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fim</Label>
+                <Input
+                  type="time"
+                  value={rescheduleData.endTime}
+                  onChange={(e) => setRescheduleData(p => ({ ...p, endTime: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleAppt(null)}>Cancelar</Button>
+            <Button onClick={confirmReschedule}>Confirmar reagendamento</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
