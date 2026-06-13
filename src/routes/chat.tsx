@@ -536,19 +536,6 @@ function Chat() {
                   {displayConv.name && (
                     <p className="text-[11px] text-gray-400 font-semibold truncate">{formatPhoneDisplay(displayConv.phone)}</p>
                   )}
-                  <div className="flex items-center gap-2">
-                    {waConnected ? (
-                      <>
-                        <div className="relative flex h-2 w-2">
-                          <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1FA463] opacity-40"></div>
-                          <div className="relative inline-flex rounded-full h-2 w-2 bg-[#1FA463]"></div>
-                        </div>
-                        <span className="text-[10px] text-[#1FA463] font-black uppercase tracking-[0.1em] flex items-center gap-1"><Wifi className="w-3 h-3" /> WhatsApp Conectado</span>
-                      </>
-                    ) : (
-                      <span className="text-[10px] text-red-500 font-black uppercase tracking-[0.1em] flex items-center gap-1"><WifiOff className="w-3 h-3" /> Desconectado</span>
-                    )}
-                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -561,8 +548,6 @@ function Chat() {
                 >
                   <PanelRight className="w-5 h-5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all"><Phone className="w-5 h-5" /></Button>
-                <div className="h-6 w-[1px] bg-[#E3E6EB] mx-1" />
                 <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all"><MoreVertical className="w-5 h-5" /></Button>
               </div>
             </div>
