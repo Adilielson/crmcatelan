@@ -102,8 +102,8 @@ export const runPrescriptionOcr = createServerFn({ method: "POST" })
     return { leadId: x.leadId };
   })
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY não configurada");
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY não configurada");
 
     const tenantId = await getUserTenant(context.supabase, context.userId);
     const lead = await assertLeadInTenant(context.supabase, data.leadId, tenantId);
@@ -124,14 +124,14 @@ export const runPrescriptionOcr = createServerFn({ method: "POST" })
       "Para o grau, simplifique omitindo cilindro/eixo se forem 0/ausentes (ex: 'OD: -2.00 / OE: -1.75'). " +
       "A validade no Brasil costuma ser 1 ano após a data do exame se não estiver explícita — nesse caso retorne validade null.";
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -147,9 +147,9 @@ export const runPrescriptionOcr = createServerFn({ method: "POST" })
 
     if (!aiRes.ok) {
       const txt = await aiRes.text();
-      if (aiRes.status === 429) throw new Error("Limite de requisições da IA atingido. Tente novamente em alguns instantes.");
-      if (aiRes.status === 402) throw new Error("Créditos da IA esgotados no workspace Lovable.");
-      throw new Error(`IA ${aiRes.status}: ${txt.slice(0, 200)}`);
+      if (aiRes.status === 429) throw new Error("Limite de requisições da OpenAI atingido. Tente novamente em alguns instantes.");
+      if (aiRes.status === 401) throw new Error("OPENAI_API_KEY inválida.");
+      throw new Error(`OpenAI ${aiRes.status}: ${txt.slice(0, 200)}`);
     }
     const json = await aiRes.json();
     const raw: string | undefined = json?.choices?.[0]?.message?.content;

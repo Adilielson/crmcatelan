@@ -166,18 +166,17 @@ export const simulateChat = createServerFn({ method: "POST" })
 
     const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts);
 
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("LOVABLE_API_KEY ausente");
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) throw new Error("OPENAI_API_KEY ausente");
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": key,
-        "X-Lovable-AIG-SDK": "tanstack-server-fn",
+        Authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [{ role: "system", content: systemPrompt }, ...data.messages],
         temperature: Number((cfg as any).model_temperature) || 0.7,
       }),
@@ -185,8 +184,8 @@ export const simulateChat = createServerFn({ method: "POST" })
     if (!res.ok) {
       const txt = await res.text();
       if (res.status === 429) throw new Error("Limite de requisições atingido. Tente novamente em alguns segundos.");
-      if (res.status === 402) throw new Error("Créditos da IA esgotados. Adicione créditos nas configurações do workspace.");
-      throw new Error(`Gateway ${res.status}: ${txt.slice(0, 200)}`);
+      if (res.status === 401) throw new Error("OPENAI_API_KEY inválida.");
+      throw new Error(`OpenAI ${res.status}: ${txt.slice(0, 200)}`);
     }
     const json = await res.json();
     const reply = json?.choices?.[0]?.message?.content;
