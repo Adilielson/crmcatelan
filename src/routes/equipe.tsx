@@ -341,6 +341,17 @@ function Equipe() {
                         </span>
                       )}
                     </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-md bg-emerald-50 px-2 py-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                        Vendas
+                      </span>
+                      <span className="text-sm font-black text-emerald-800">
+                        {BRL.format(w.sales)}
+                        <span className="ml-1 text-[10px] font-normal text-emerald-700">
+                          ({w.salesCount})
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </button>
               );
