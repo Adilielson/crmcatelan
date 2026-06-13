@@ -177,7 +177,7 @@ function Settings() {
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Endereço da Loja</Label>
-                    <Input placeholder="Rua, número, bairro, cidade - UF" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
+                    <Input placeholder="Rua, número, bairro, cidade - UF" defaultValue="R. Jorn. Valdir Lago, 1288 - Conj. Aero Rancho, Campo Grande - MS, 79083-570" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
                 </div>
               </section>
