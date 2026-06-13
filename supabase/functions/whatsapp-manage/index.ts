@@ -190,7 +190,11 @@ Deno.serve(async (req) => {
 
     // ── Registrar webhook ──────────────────────────────────────────────────
     if (action === "register-webhook") {
-      const webhookUrl = `${SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=${tenant_id}`;
+      const webhookSecret = Deno.env.get("WHATSAPP_WEBHOOK_SECRET") ?? "";
+      if (!webhookSecret) {
+        return json({ success: false, error: "WHATSAPP_WEBHOOK_SECRET não configurado no servidor." }, 500);
+      }
+      const webhookUrl = `${SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=${tenant_id}&secret=${encodeURIComponent(webhookSecret)}`;
       try {
         await uazapiPost("/webhook", token, {
           url: webhookUrl,
