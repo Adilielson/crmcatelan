@@ -125,11 +125,6 @@ export function LeadQuickActions({
 
       {/* Diálogos owned */}
       <LeadValueDialog lead={valueOpen ? lead : null} open={valueOpen} onOpenChange={setValueOpen} />
-      <LeadLocationDialog
-        lead={locationOpen ? lead : null}
-        open={locationOpen}
-        onOpenChange={setLocationOpen}
-      />
 
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
         <DialogContent className="sm:max-w-[425px]">
