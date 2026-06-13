@@ -791,6 +791,50 @@ function Agenda() {
       </Dialog>
 
       <AgendaSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+
+      {/* Reagendar Dialog */}
+      <Dialog open={!!rescheduleAppt} onOpenChange={(o) => !o && setRescheduleAppt(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Reagendar — {rescheduleAppt?.leadName}</DialogTitle>
+            <DialogDescription>
+              Escolha um novo horário. O contador de no-show é zerado e o status volta para pendente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label>Nova data</Label>
+              <Input
+                type="date"
+                value={rescheduleData.date}
+                onChange={(e) => setRescheduleData(p => ({ ...p, date: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Início</Label>
+                <Input
+                  type="time"
+                  value={rescheduleData.startTime}
+                  onChange={(e) => setRescheduleData(p => ({ ...p, startTime: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fim</Label>
+                <Input
+                  type="time"
+                  value={rescheduleData.endTime}
+                  onChange={(e) => setRescheduleData(p => ({ ...p, endTime: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleAppt(null)}>Cancelar</Button>
+            <Button onClick={confirmReschedule}>Confirmar reagendamento</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
