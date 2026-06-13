@@ -538,10 +538,11 @@ Deno.serve(async (req) => {
         // ── Lead: localiza/cria e captura nome do contato quando possível ─
         let leadId: string | null = null;
         let leadName: string | null = null;
+        let leadAssignedUserId: string | null = null;
         try {
           const { data: existingLead } = await adminClient
             .from("leads")
-            .select("id, full_name")
+            .select("id, full_name, assigned_user_id")
             .eq("tenant_id", tenantId)
             .eq("phone", senderPhone)
             .maybeSingle();
@@ -549,6 +550,7 @@ Deno.serve(async (req) => {
           if (existingLead) {
             leadId = existingLead.id as string;
             leadName = (existingLead.full_name as string | null) ?? null;
+            leadAssignedUserId = (existingLead.assigned_user_id as string | null) ?? null;
           } else {
             const initialName = isValidContactName(senderName, senderPhone) ? senderName : null;
             const { data: newLead } = await adminClient
@@ -560,11 +562,12 @@ Deno.serve(async (req) => {
                 status: "open",
                 source: "whatsapp",
               })
-              .select("id, full_name")
+              .select("id, full_name, assigned_user_id")
               .single();
             if (newLead) {
               leadId = newLead.id as string;
               leadName = (newLead.full_name as string | null) ?? null;
+              leadAssignedUserId = (newLead.assigned_user_id as string | null) ?? null;
             }
           }
 
@@ -621,6 +624,10 @@ Deno.serve(async (req) => {
 
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
+          // Guard: se um atendente humano assumiu o lead, NÃO responde
+          if (leadAssignedUserId) {
+            console.log(`[sdr] pulado: lead ${leadId} atribuído a atendente humano (${leadAssignedUserId})`);
+          } else
           try {
             // 1) Busca token da instância
             const { data: cfg } = await adminClient
