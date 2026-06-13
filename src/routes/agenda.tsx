@@ -585,10 +585,15 @@ function Agenda() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <Badge className="text-[9px] h-4" variant={appt.status === 'confirmado' ? 'default' : 'secondary'}>
                         {appt.status.toUpperCase()}
                       </Badge>
+                      {isOverdue(appt) && (
+                        <Badge className="text-[9px] h-4 bg-[#FBEBEB] text-[#D64545] border border-[#D64545]/30">
+                          ATRASADO &gt; 2h
+                        </Badge>
+                      )}
                       {appt.propensityScore > 0.8 && (
                         <Badge variant="outline" className="text-[9px] h-4 bg-green-50 text-green-700 border-green-200">
                           Alta Propensão
@@ -596,51 +601,93 @@ function Agenda() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
-                      {appt.status === 'pendente' && (
+                    {isOverdue(appt) ? (
+                      <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border/50">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                          onClick={() => handleConfirm(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink rounded-xl"
+                          onClick={() => handleAttendedLate(appt)}
                         >
-                          <CheckCircle className="w-4 h-4 mr-2 text-success" /> CONFIRMAR
+                          <CheckCircle className="w-4 h-4 mr-1.5 text-success" /> COMPARECEU
                         </Button>
-                      )}
-                      {appt.status === 'confirmado' && !appt.checkinAt && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                          onClick={() => handleCheckin(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink rounded-xl"
+                          onClick={() => openReschedule(appt)}
                         >
-                          <LogIn className="w-4 h-4 mr-2 text-primary" /> CHECK-IN
+                          <CalendarClock className="w-4 h-4 mr-1.5 text-primary" /> REAGENDAR
                         </Button>
-                      )}
-                      {appt.status === 'confirmado' && appt.checkinAt && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                          onClick={() => handleCheckout(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-[#FBEBEB]/60 border-[#D64545]/30 text-[#D64545] hover:bg-[#FBEBEB] rounded-xl"
+                          onClick={() => handleNoShow(appt)}
                         >
-                          <LogOut className="w-4 h-4 mr-2 text-success" /> CHECK-OUT
+                          <UserX className="w-4 h-4 mr-1.5" /> NO-SHOW
                         </Button>
-                      )}
-                      {appt.status === 'realizado' && (
-                        <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-success/10 border-success/30 text-success rounded-xl">
-                          <CheckCircle className="w-4 h-4 mr-2" /> CONCLUÍDO
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenChat(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink rounded-xl"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-1.5 text-primary" /> WHATSAPP
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenChat(appt)}
-                        className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
-                      >
-                        <MessageSquare className="w-4 h-4 mr-2 text-primary" /> WHATSAPP
-                      </Button>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
+                        {appt.status === 'pendente' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                            onClick={() => handleConfirm(appt)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2 text-success" /> CONFIRMAR
+                          </Button>
+                        )}
+                        {appt.status === 'confirmado' && !appt.checkinAt && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                            onClick={() => handleCheckin(appt)}
+                          >
+                            <LogIn className="w-4 h-4 mr-2 text-primary" /> CHECK-IN
+                          </Button>
+                        )}
+                        {appt.status === 'confirmado' && appt.checkinAt && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                            onClick={() => handleCheckout(appt)}
+                          >
+                            <LogOut className="w-4 h-4 mr-2 text-success" /> CHECK-OUT
+                          </Button>
+                        )}
+                        {appt.status === 'realizado' && (
+                          <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-success/10 border-success/30 text-success rounded-xl">
+                            <CheckCircle className="w-4 h-4 mr-2" /> CONCLUÍDO
+                          </Button>
+                        )}
+                        {appt.status === 'no-show' && (
+                          <Button variant="outline" size="sm" disabled className="h-10 text-[10px] font-black uppercase tracking-widest bg-[#FBEBEB] border-[#D64545]/30 text-[#D64545] rounded-xl">
+                            <UserX className="w-4 h-4 mr-2" /> NO-SHOW
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenChat(appt)}
+                          className="h-10 text-[10px] font-black uppercase tracking-widest bg-gray-50 border-border hover:bg-gray-100 text-ink transition-all rounded-xl"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2 text-primary" /> WHATSAPP
+                        </Button>
+                      </div>
+                    )}
 
                   </div>
                 ))
