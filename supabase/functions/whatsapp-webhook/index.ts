@@ -328,8 +328,13 @@ function cleanPhone(raw: string | null): string | null {
   if (raw.includes("@g.us") || raw.includes("broadcast") || raw.includes("status@")) return null;
   // Remove sufixos JID e device-id: "5527...@s.whatsapp.net", "5527...:1@..."
   const noSuffix = raw.split("@")[0].split(":")[0];
-  const d = noSuffix.replace(/\D+/g, "");
+  let d = noSuffix.replace(/\D+/g, "");
   if (d.length < 10 || d.length > 13) return null;
+  // Normaliza para sempre ter DDI 55 (BR) quando o número vier sem código de país.
+  // 10 dígitos = DDD + fixo; 11 dígitos = DDD + celular. Ambos sem DDI → prepend 55.
+  if ((d.length === 10 || d.length === 11) && !d.startsWith("55")) {
+    d = "55" + d;
+  }
   return d;
 }
 
