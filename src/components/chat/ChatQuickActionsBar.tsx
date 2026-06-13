@@ -129,6 +129,33 @@ export function ChatQuickActionsBar({
           </SelectContent>
         </Select>
 
+        {/* Assumir / Devolver IA */}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={toggleAi.isPending}
+          onClick={() => toggleAi.mutate(isAiHandling)}
+          className={cn(
+            'h-9 rounded-xl border-gray-100 bg-gray-50 text-xs font-bold',
+            isAiHandling
+              ? 'hover:border-primary/30 hover:text-primary'
+              : 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300',
+          )}
+          title={isAiHandling ? 'Assumir conversa (pausa a IA)' : 'Devolver atendimento para a IA'}
+        >
+          {isAiHandling ? (
+            <>
+              <Hand className="mr-1.5 h-4 w-4" />
+              Assumir
+            </>
+          ) : (
+            <>
+              <Bot className="mr-1.5 h-4 w-4" />
+              Devolver p/ IA
+            </>
+          )}
+        </Button>
+
         {/* Transferir */}
         <Button
           variant="outline"
