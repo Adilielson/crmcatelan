@@ -302,7 +302,7 @@ function Equipe() {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {profiles.map((p) => {
-              const w = workload.byUser.get(p.id) ?? { count: 0, stale: 0, oldestHrs: 0 };
+              const w = workload.byUser.get(p.id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
               const isActive = assigneeFilter === p.id;
               return (
                 <button
