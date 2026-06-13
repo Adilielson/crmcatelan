@@ -46,6 +46,7 @@ interface TeamLead {
   status: string;
   assigned_user_id: string | null;
   updated_at: string;
+  sales_value: number | null;
 }
 
 const ROLE_LABELS: Record<string, string> = {
