@@ -165,10 +165,12 @@ function Equipe() {
   // Agrega carga de trabalho por atendente + IA
   const workload = useMemo(() => {
     const active = leads.filter((l) => ACTIVE_STATUSES.has(l.status));
-    const byUser = new Map<string, { count: number; stale: number; oldestHrs: number }>();
+    const byUser = new Map<string, { count: number; stale: number; oldestHrs: number; sales: number; salesCount: number }>();
     let aiCount = 0;
     let aiStale = 0;
     let aiOldest = 0;
+    let aiSales = 0;
+    let aiSalesCount = 0;
     for (const l of active) {
       const hrs = hoursSince(l.updated_at);
       if (!l.assigned_user_id) {
@@ -177,13 +179,27 @@ function Equipe() {
         if (hrs > aiOldest) aiOldest = hrs;
         continue;
       }
-      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0 };
+      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
       cur.count += 1;
       if (hrs >= STALE_HOURS) cur.stale += 1;
       if (hrs > cur.oldestHrs) cur.oldestHrs = hrs;
       byUser.set(l.assigned_user_id, cur);
     }
-    return { byUser, aiCount, aiStale, aiOldest, totalActive: active.length };
+    // Soma vendas fechadas (status = showed_up) por atendente, com base no valor da ficha
+    for (const l of leads) {
+      if (l.status !== 'showed_up') continue;
+      const val = Number(l.sales_value ?? 0) || 0;
+      if (!l.assigned_user_id) {
+        aiSales += val;
+        aiSalesCount += 1;
+        continue;
+      }
+      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
+      cur.sales += val;
+      cur.salesCount += 1;
+      byUser.set(l.assigned_user_id, cur);
+    }
+    return { byUser, aiCount, aiStale, aiOldest, aiSales, aiSalesCount, totalActive: active.length };
   }, [leads]);
 
   const kpis = useMemo(() => {
