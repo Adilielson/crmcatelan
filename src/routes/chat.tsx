@@ -151,6 +151,44 @@ function Chat() {
       leads[0]
     )
   }, [leads, selectedPhone])
+  const isAiHandling = currentLead ? !currentLead.assigned_user_id : false
+
+  const toggleAi = useMutation({
+    mutationFn: async (takeOver: boolean) => {
+      if (!currentLead) throw new Error('Lead não encontrado')
+      const updates: Record<string, unknown> = takeOver
+        ? { assigned_user_id: currentUserId, status: 'in_progress' }
+        : { assigned_user_id: null }
+      const { error } = await (supabase as any)
+        .from('leads')
+        .update(updates)
+        .eq('id', currentLead.id)
+      if (error) throw error
+      return takeOver
+    },
+    onSuccess: (takeOver) => {
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] })
+      toast.success(takeOver ? 'Você assumiu a conversa — IA pausada' : 'Conversa devolvida para a IA')
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao alternar atendimento'),
+  })
+
+  const moveToStatus = useMutation({
+    mutationFn: async (systemKey: string) => {
+      if (!currentLead) throw new Error('Lead não encontrado')
+      const { error } = await (supabase as any)
+        .from('leads')
+        .update({ status: systemKey, custom_column_id: null })
+        .eq('id', currentLead.id)
+      if (error) throw error
+      return systemKey
+    },
+    onSuccess: (key) => {
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] })
+      toast.success(key === 'closed_won' ? 'Venda fechada!' : 'Lead movido')
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao mover lead'),
+  })
 
 
   // Conversa "virtual" para leads vindos da Fila sem histórico de WhatsApp ainda:
