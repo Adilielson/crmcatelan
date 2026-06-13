@@ -114,6 +114,17 @@ function Equipe() {
     !isManager && userId ? userId : 'all',
   );
 
+  // Quando o auth carrega depois do mount, aplica o filtro padrão uma única vez
+  const appliedDefaultRef = useRef(false);
+  useEffect(() => {
+    if (appliedDefaultRef.current) return;
+    if (!userId || role === null) return;
+    appliedDefaultRef.current = true;
+    if (!isManager) setAssigneeFilter(userId);
+  }, [userId, role, isManager]);
+
+
+
   const profilesQ = useQuery({
     queryKey: ['equipe-profiles', tenantId],
     enabled: !!tenantId,
