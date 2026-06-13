@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight } from 'lucide-react'
+import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight, Hand, Bot, UserPlus, Flag, XCircle } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useLeads } from '@/hooks/use-leads'
 import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
@@ -14,11 +15,22 @@ import { toast } from 'sonner'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 import { ChatQuickActionsBar } from '@/components/chat/ChatQuickActionsBar'
 import { StageBadge } from '@/components/leads/StageBadge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useKanbanColumns } from '@/hooks/use-kanban-columns'
+import { useAuthStore } from '@/hooks/use-auth'
+import { supabase } from '@/integrations/supabase/client'
+import { TransferLeadDialog } from '@/components/chat/TransferLeadDialog'
+
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
