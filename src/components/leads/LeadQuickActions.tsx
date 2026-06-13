@@ -88,7 +88,6 @@ export function LeadQuickActions({
       label: 'Conversar',
       onClick: openChat,
     },
-    { key: 'location', icon: MapPin, label: 'Local', onClick: () => setLocationOpen(true) },
     { key: 'value', icon: DollarSign, label: 'Valor', onClick: () => setValueOpen(true) },
   ].filter(Boolean) as { key: string; icon: typeof Calendar; label: string; onClick: () => void }[];
 
