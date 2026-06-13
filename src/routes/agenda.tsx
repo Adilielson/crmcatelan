@@ -337,24 +337,73 @@ function Agenda() {
           <p className="text-center text-white/40 py-6 text-sm">Nenhuma consulta nesse dia.</p>
         ) : (
           <div className="space-y-2">
-            {dayAppointments.map(appt => (
-              <div key={appt.id} className="bg-[#0E0E11] border border-white/5 rounded-xl p-3 flex items-center gap-3">
-                <div className="bg-[#FFC400]/15 text-[#FFC400] text-xs font-bold px-2.5 py-1 rounded-lg">
-                  {appt.startTime}
+            {dayAppointments.map(appt => {
+              const overdue = isOverdue(appt)
+              return (
+                <div key={appt.id} className={cn(
+                  "bg-[#0E0E11] border rounded-xl p-3 flex items-center gap-3",
+                  overdue ? "border-[#D64545]/40" : "border-white/5"
+                )}>
+                  <div className={cn(
+                    "text-xs font-bold px-2.5 py-1 rounded-lg shrink-0",
+                    overdue ? "bg-[#D64545]/15 text-[#FF8A8A]" : "bg-[#FFC400]/15 text-[#FFC400]"
+                  )}>
+                    {appt.startTime}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {overdue ? (
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-[#FF8A8A]">Atrasado</span>
+                      ) : (
+                        <p className="text-white/50 text-xs truncate">{appt.examType}</p>
+                      )}
+                      {appt.status === 'no-show' && (
+                        <span className="text-[10px] font-bold uppercase text-[#FF8A8A]">No-show</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {overdue ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="text-white p-2 rounded-lg bg-white/5 active:bg-white/10 shrink-0" aria-label="Ações">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="text-xs">Lead não compareceu?</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleAttendedLate(appt)}>
+                          <CheckCircle className="w-4 h-4 mr-2 text-success" />
+                          Compareceu (atrasado)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openReschedule(appt)}>
+                          <CalendarClock className="w-4 h-4 mr-2 text-primary" />
+                          Reagendar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleNoShow(appt)} className="text-[#D64545] focus:text-[#D64545]">
+                          <UserX className="w-4 h-4 mr-2" />
+                          Marcar No-show
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleOpenChat(appt)}>
+                          <MessageSquare className="w-4 h-4 mr-2 text-primary" />
+                          WhatsApp
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <button
+                      onClick={() => handleOpenChat(appt)}
+                      className="text-[#FFC400] p-2 rounded-lg active:bg-white/5 shrink-0"
+                      aria-label="Abrir WhatsApp"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
-                  <p className="text-white/50 text-xs truncate">{appt.examType}</p>
-                </div>
-                <button
-                  onClick={() => handleOpenChat(appt)}
-                  className="text-[#FFC400] p-2 rounded-lg active:bg-white/5"
-                  aria-label="Abrir WhatsApp"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
         )}
