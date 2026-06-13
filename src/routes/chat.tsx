@@ -17,6 +17,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 import { ChatQuickActionsBar } from '@/components/chat/ChatQuickActionsBar'
 import { StageBadge } from '@/components/leads/StageBadge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useKanbanColumns } from '@/hooks/use-kanban-columns'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
