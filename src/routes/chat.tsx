@@ -17,6 +17,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { LeadProfilePanel } from '@/components/leads/LeadProfilePanel'
 import { ChatQuickActionsBar } from '@/components/chat/ChatQuickActionsBar'
 import { StageBadge } from '@/components/leads/StageBadge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useKanbanColumns } from '@/hooks/use-kanban-columns'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -36,6 +38,8 @@ function Chat() {
   const [activeTab, setActiveTab] = useState('ia')
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const { data: kanbanColumns = [] } = useKanbanColumns()
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -91,13 +95,33 @@ function Chat() {
 
   const filteredConvs = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return conversations
-    return conversations.filter((c) =>
-      c.phone.toLowerCase().includes(q) ||
-      (c.name ?? '').toLowerCase().includes(q) ||
-      c.lastText.toLowerCase().includes(q)
-    )
-  }, [conversations, search])
+    const onlyD = (s: string) => s.replace(/\D/g, '')
+    return conversations.filter((c) => {
+      if (q) {
+        const matchSearch =
+          c.phone.toLowerCase().includes(q) ||
+          (c.name ?? '').toLowerCase().includes(q) ||
+          c.lastText.toLowerCase().includes(q)
+        if (!matchSearch) return false
+      }
+      if (statusFilter !== 'all') {
+        const convDigits = onlyD(c.phone)
+        const lead = leads.find((l) => {
+          const ld = onlyD(l.phone ?? '')
+          return ld.length >= 8 && (ld === convDigits || convDigits.endsWith(ld) || ld.endsWith(convDigits))
+        })
+        if (!lead) return false
+        const col = kanbanColumns.find((k) => k.id === statusFilter)
+        if (!col) return false
+        if (col.is_system && col.system_key) {
+          if (!(lead.custom_column_id == null && lead.status === col.system_key)) return false
+        } else {
+          if (lead.custom_column_id !== col.id) return false
+        }
+      }
+      return true
+    })
+  }, [conversations, search, statusFilter, leads, kanbanColumns])
 
   // Casar o lead com o telefone selecionado (normalizando dígitos).
   // Se veio pela Fila (lead novo, sem conversa ainda), ainda assim achamos o lead.
@@ -364,13 +388,26 @@ function Chat() {
         hasSelection ? "hidden md:flex" : "flex",
       )}>
 
-        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20">
+        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20 gap-3">
           <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
-          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-gray-50 hover:bg-[#FFC400]/10 hover:text-[#FFC400] transition-all">
-            <PlusCircle className="w-5 h-5" />
-          </Button>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-10 w-[150px] rounded-xl bg-gray-50 border-transparent text-xs font-bold uppercase">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {kanbanColumns.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                    {c.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        
+
         <div className="p-5 bg-white">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-primary" />
@@ -383,6 +420,7 @@ function Chat() {
             />
           </div>
         </div>
+
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 mobile-no-scrollbar thin-scrollbar">
           <div className="flex flex-col w-full max-w-full">
