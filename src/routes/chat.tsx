@@ -659,6 +659,14 @@ function Chat() {
                       <XCircle className="mr-2 h-4 w-4 text-red-500" />
                       <span>Marcar como Perdido</span>
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => analyzeConv.mutate()}
+                      disabled={!currentLead || analyzeConv.isPending}
+                    >
+                      <Sparkles className="mr-2 h-4 w-4 text-violet-500" />
+                      <span>{analyzeConv.isPending ? 'Analisando…' : 'Analisar com IA (sombra)'}</span>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
