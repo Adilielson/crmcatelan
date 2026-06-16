@@ -13,6 +13,7 @@ export const MODULE_CATALOG = [
   { key: 'marketing', label: 'Marketing', path: '/marketing' },
   { key: 'settings', label: 'Configurações', path: '/settings' },
   { key: 'ai_training', label: 'Treinamento IA', path: '/ai-training' },
+  { key: 'ai_insights', label: 'Inteligência de Atendimento', path: '/ai-insights' },
   { key: 'users', label: 'Usuários', path: '/users' },
   { key: 'saas', label: 'Admin SaaS', path: '/saas' },
 ] as const;
@@ -27,7 +28,7 @@ export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   admin: [...ALL_MODULE_KEYS],
   manager: ALL_MODULE_KEYS.filter((k) => k !== 'saas'),
   seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes'],
-  marketing_partner: ['home', 'marketing', 'performance', 'no_show', 'reports'],
+  marketing_partner: ['home', 'marketing', 'performance', 'no_show', 'reports', 'ai_insights'],
   super_admin: [...ALL_MODULE_KEYS],
 };
 

@@ -128,6 +128,7 @@ const useNavItems = (isSuperAdmin: boolean): NavItem[] => {
       children: [
         { label: 'Dashboard', icon: BarChart3, href: '/performance', module: 'performance' },
         { label: 'Métricas No-Show', icon: TrendingDown, href: '/analytics/no-show', module: 'no_show' },
+        { label: 'Inteligência IA', icon: Brain, href: '/ai-insights', module: 'ai_insights' },
         { label: 'Relatórios', icon: FileBarChart, href: '/performance', module: 'reports' },
       ],
     },

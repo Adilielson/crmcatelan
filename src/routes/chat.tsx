@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight, Hand, Bot, UserPlus, Flag, XCircle } from 'lucide-react'
+import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight, Hand, Bot, UserPlus, Flag, XCircle, Sparkles } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -30,6 +30,8 @@ import { useKanbanColumns } from '@/hooks/use-kanban-columns'
 import { useAuthStore } from '@/hooks/use-auth'
 import { supabase } from '@/integrations/supabase/client'
 import { TransferLeadDialog } from '@/components/chat/TransferLeadDialog'
+import { useServerFn } from '@tanstack/react-start'
+import { analyzeLeadConversation } from '@/lib/ai-insights.functions'
 
 
 export const Route = createFileRoute('/chat')({
@@ -188,6 +190,16 @@ function Chat() {
       toast.success(key === 'closed_won' ? 'Venda fechada!' : 'Lead movido')
     },
     onError: (e: any) => toast.error(e.message ?? 'Erro ao mover lead'),
+  })
+
+  const analyzeFn = useServerFn(analyzeLeadConversation)
+  const analyzeConv = useMutation({
+    mutationFn: async () => {
+      if (!currentLead) throw new Error('Lead não encontrado')
+      return analyzeFn({ data: { leadId: currentLead.id } })
+    },
+    onSuccess: () => toast.success('Conversa analisada pela IA Sombra ✨'),
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao analisar conversa'),
   })
 
 
@@ -646,6 +658,14 @@ function Chat() {
                     >
                       <XCircle className="mr-2 h-4 w-4 text-red-500" />
                       <span>Marcar como Perdido</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => analyzeConv.mutate()}
+                      disabled={!currentLead || analyzeConv.isPending}
+                    >
+                      <Sparkles className="mr-2 h-4 w-4 text-violet-500" />
+                      <span>{analyzeConv.isPending ? 'Analisando…' : 'Analisar com IA (sombra)'}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
