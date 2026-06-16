@@ -313,6 +313,145 @@ export type Database = {
           },
         ]
       }
+      ai_knowledge_patterns: {
+        Row: {
+          content: string
+          conversion_rate: number | null
+          created_at: string
+          id: string
+          last_seen_at: string
+          occurrences: number
+          pattern_type: string
+          related_outcome: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          occurrences?: number
+          pattern_type: string
+          related_outcome?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          occurrences?: number
+          pattern_type?: string
+          related_outcome?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_knowledge_patterns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_learning_insights: {
+        Row: {
+          agent_id: string | null
+          conversation_id: string | null
+          created_at: string
+          frequent_questions: Json | null
+          id: string
+          intent: string | null
+          keywords: Json | null
+          lead_id: string | null
+          message_count: number | null
+          model: string | null
+          objections: Json | null
+          outcome: string | null
+          sentiment: string | null
+          successful_responses: Json | null
+          summary: string | null
+          tenant_id: string
+          tokens_used: number | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          frequent_questions?: Json | null
+          id?: string
+          intent?: string | null
+          keywords?: Json | null
+          lead_id?: string | null
+          message_count?: number | null
+          model?: string | null
+          objections?: Json | null
+          outcome?: string | null
+          sentiment?: string | null
+          successful_responses?: Json | null
+          summary?: string | null
+          tenant_id: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          frequent_questions?: Json | null
+          id?: string
+          intent?: string | null
+          keywords?: Json | null
+          lead_id?: string | null
+          message_count?: number | null
+          model?: string | null
+          objections?: Json | null
+          outcome?: string | null
+          sentiment?: string | null
+          successful_responses?: Json | null
+          summary?: string | null
+          tenant_id?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_learning_insights_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_learning_insights_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_learning_insights_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_learning_insights_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_reminders: {
         Row: {
           appointment_id: string
