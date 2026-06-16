@@ -796,12 +796,22 @@ function Chat() {
                     >
                       <ImageIcon className="w-5 h-5" />
                     </Button>
+                    <Button
+                      onClick={() => suggestReply.mutate()}
+                      disabled={!waConnected || sending || suggestReply.isPending || !currentLead}
+                      variant="ghost"
+                      size="icon"
+                      className="text-violet-500 h-9 w-9 hover:text-violet-600 hover:bg-violet-50 rounded-xl"
+                      title={draft.trim() ? 'Refinar com IA (usa seu texto como direcionamento)' : 'Sugerir resposta com IA'}
+                    >
+                      {suggestReply.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                    </Button>
                     <input
                       type="text"
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                      placeholder={waConnected ? 'Digite sua mensagem...' : 'WhatsApp desconectado'}
+                      placeholder={waConnected ? (suggestReply.isPending ? 'IA está pensando uma sugestão...' : 'Digite sua mensagem...') : 'WhatsApp desconectado'}
                       disabled={!waConnected || sending}
                       className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none disabled:opacity-50"
                     />
