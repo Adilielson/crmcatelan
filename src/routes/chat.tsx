@@ -30,6 +30,8 @@ import { useKanbanColumns } from '@/hooks/use-kanban-columns'
 import { useAuthStore } from '@/hooks/use-auth'
 import { supabase } from '@/integrations/supabase/client'
 import { TransferLeadDialog } from '@/components/chat/TransferLeadDialog'
+import { useServerFn } from '@tanstack/react-start'
+import { analyzeLeadConversation } from '@/lib/ai-insights.functions'
 
 
 export const Route = createFileRoute('/chat')({
