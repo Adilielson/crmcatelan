@@ -162,10 +162,12 @@ async function loadProfile(
 ) {
   _loadingUserId = userId;
   try {
-    // 1 round-trip: profile + tenant via join
+    // 1 round-trip: profile + tenant via join.
+    // IMPORTANTE: NÃO usar `tenants(*)` — a tabela `tenants` tem GRANT por
+    // colunas (token/CNPJ ficam protegidos). Selecionar apenas colunas seguras.
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, tenant_id, full_name, role, status, tenants(*)')
+      .select('id, tenant_id, full_name, role, status, tenants(id, name, slug, plan, status, logo_url, created_at, updated_at, settings)')
       .eq('id', userId)
       .single();
 
