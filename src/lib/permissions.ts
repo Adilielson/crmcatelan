@@ -13,6 +13,7 @@ export const MODULE_CATALOG = [
   { key: 'marketing', label: 'Marketing', path: '/marketing' },
   { key: 'settings', label: 'Configurações', path: '/settings' },
   { key: 'ai_training', label: 'Treinamento IA', path: '/ai-training' },
+  { key: 'ai_insights', label: 'Inteligência de Atendimento', path: '/ai-insights' },
   { key: 'users', label: 'Usuários', path: '/users' },
   { key: 'saas', label: 'Admin SaaS', path: '/saas' },
 ] as const;
