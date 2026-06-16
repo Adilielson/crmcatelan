@@ -47,21 +47,22 @@ export function useWhatsApp() {
   const [connectedName, setConnectedName] = useState<string | null>(null);
   const initDone = useRef(false);
 
-  // Carrega token e status persistido ao montar
+  // Carrega status persistido (token nunca é exposto ao navegador)
   useEffect(() => {
     if (!tenant?.id || initDone.current) return;
     initDone.current = true;
     (async () => {
-      const { data } = await db
-        .from('whatsapp_config')
-        .select('instance_token, is_connected, connected_phone, connected_name')
-        .eq('tenant_id', tenant.id)
-        .maybeSingle() as { data: { instance_token: string; is_connected: boolean; connected_phone: string | null; connected_name: string | null } | null };
-      if (data?.instance_token) {
+      const { data, error } = await db.rpc('get_whatsapp_config_status', { _tenant_id: tenant.id });
+      if (error) {
+        console.warn('[whatsapp] get_whatsapp_config_status:', error.message);
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row?.has_token) {
         setHasToken(true);
-        setIsConnected(!!data.is_connected);
-        setConnectedPhone(data.connected_phone ?? null);
-        setConnectedName(data.connected_name ?? null);
+        setIsConnected(!!row.is_connected);
+        setConnectedPhone(row.connected_phone ?? null);
+        setConnectedName(row.connected_name ?? null);
       }
     })();
   }, [tenant?.id]);
@@ -71,19 +72,15 @@ export function useWhatsApp() {
       if (!tenant?.id) throw new Error('Sem tenant ativo.');
       setIsLoading(true);
       try {
-        const { error } = await db.from('whatsapp_config').upsert(
-          {
-            tenant_id: tenant.id,
-            instance_token: rawToken,
-            is_active: true,
-            is_connected: false,
-            webhook_registered: false,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'tenant_id' }
-        ) as { error: { message: string; code: string } | null };
-        if (error) throw new Error(`Supabase: ${error.message} (${error.code})`);
+        const { error } = await db.rpc('upsert_whatsapp_instance_token', {
+          _tenant_id: tenant.id,
+          _instance_token: rawToken,
+        }) as { error: { message: string; code?: string } | null };
+        if (error) throw new Error(`Supabase: ${error.message}${error.code ? ` (${error.code})` : ''}`);
         setHasToken(true);
+        setIsConnected(false);
+        setConnectedPhone(null);
+        setConnectedName(null);
 
         // Registra webhook automaticamente após salvar
         try {
