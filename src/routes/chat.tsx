@@ -192,6 +192,16 @@ function Chat() {
     onError: (e: any) => toast.error(e.message ?? 'Erro ao mover lead'),
   })
 
+  const analyzeFn = useServerFn(analyzeLeadConversation)
+  const analyzeConv = useMutation({
+    mutationFn: async () => {
+      if (!currentLead) throw new Error('Lead não encontrado')
+      return analyzeFn({ data: { leadId: currentLead.id } })
+    },
+    onSuccess: () => toast.success('Conversa analisada pela IA Sombra ✨'),
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao analisar conversa'),
+  })
+
 
   // Conversa "virtual" para leads vindos da Fila sem histórico de WhatsApp ainda:
   // garante que o chat abre com header + composer mesmo sem mensagens.
