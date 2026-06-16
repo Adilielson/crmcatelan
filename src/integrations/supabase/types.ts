@@ -2293,6 +2293,16 @@ export type Database = {
         }[]
       }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
+      get_whatsapp_config_status: {
+        Args: { _tenant_id: string }
+        Returns: {
+          connected_name: string
+          connected_phone: string
+          has_token: boolean
+          is_connected: boolean
+          webhook_registered: boolean
+        }[]
+      }
       is_super_admin:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
@@ -2314,6 +2324,16 @@ export type Database = {
           _tenant_id: string
         }
         Returns: string
+      }
+      upsert_whatsapp_instance_token: {
+        Args: { _instance_token: string; _tenant_id: string }
+        Returns: {
+          connected_name: string
+          connected_phone: string
+          has_token: boolean
+          is_connected: boolean
+          webhook_registered: boolean
+        }[]
       }
     }
     Enums: {
