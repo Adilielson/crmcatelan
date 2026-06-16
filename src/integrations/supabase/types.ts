@@ -2283,6 +2283,15 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       get_current_user_tenant: { Args: never; Returns: string }
+      get_tenant_sensitive: {
+        Args: { _tenant_id: string }
+        Returns: {
+          cnpj: string
+          contato_responsavel: string
+          webhook_url_notificacoes: string
+          whatsapp_api_token: string
+        }[]
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       is_super_admin:
         | { Args: never; Returns: boolean }
