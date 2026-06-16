@@ -28,7 +28,7 @@ export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   admin: [...ALL_MODULE_KEYS],
   manager: ALL_MODULE_KEYS.filter((k) => k !== 'saas'),
   seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes'],
-  marketing_partner: ['home', 'marketing', 'performance', 'no_show', 'reports'],
+  marketing_partner: ['home', 'marketing', 'performance', 'no_show', 'reports', 'ai_insights'],
   super_admin: [...ALL_MODULE_KEYS],
 };
 
