@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight, Hand, Bot, UserPlus, Flag, XCircle } from 'lucide-react'
+import { CheckCircle2, User, Send, PlusCircle, MessageSquare, Brain, Zap, RefreshCw, Search, MoreVertical, Smile, Mic, Image as ImageIcon, X, ChevronLeft, PanelRight, Hand, Bot, UserPlus, Flag, XCircle, Sparkles } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useIsMobile } from '@/hooks/use-mobile'
