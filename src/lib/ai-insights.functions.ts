@@ -300,3 +300,120 @@ export const getLeadInsight = createServerFn({ method: "GET" })
       .maybeSingle();
     return row;
   });
+
+// =================== SUGERIR RESPOSTA (inline no composer) ===================
+export const suggestReplyForLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => {
+    const i = input as { leadId?: string; hint?: string };
+    if (!i?.leadId) throw new Error("leadId obrigatório");
+    return { leadId: i.leadId, hint: typeof i.hint === "string" ? i.hint : "" };
+  })
+  .handler(async ({ data, context }) => {
+    const { tenantId } = await getUserTenantAndRole(context.supabase, context.userId);
+
+    const { data: lead, error: leadErr } = await context.supabase
+      .from("leads")
+      .select("id, tenant_id, full_name, status")
+      .eq("id", data.leadId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    if (leadErr) throw new Error(leadErr.message);
+    if (!lead) throw new Error("Lead não encontrado");
+
+    const { data: conv } = await context.supabase
+      .from("conversations")
+      .select("id")
+      .eq("lead_id", lead.id)
+      .order("last_message_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!conv) throw new Error("Nenhuma conversa encontrada para este lead");
+
+    const { data: messages, error: msgErr } = await context.supabase
+      .from("messages")
+      .select("direction, content, created_at")
+      .eq("conversation_id", conv.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (msgErr) throw new Error(msgErr.message);
+    if (!messages || messages.length === 0) {
+      throw new Error("Sem mensagens para gerar sugestão");
+    }
+
+    const transcript = [...messages]
+      .reverse()
+      .map((m: any) => {
+        const who = m.direction === "incoming" ? "CLIENTE" : "ATENDENTE";
+        return `[${who}] ${m.content ?? "(sem texto)"}`;
+      })
+      .join("\n");
+
+    // Contexto extra: top objeções/perguntas frequentes do tenant para enriquecer sugestão
+    const { data: patterns } = await context.supabase
+      .from("ai_knowledge_patterns")
+      .select("pattern_type, content")
+      .eq("tenant_id", tenantId)
+      .in("pattern_type", ["winning_phrase", "objection"])
+      .order("occurrences", { ascending: false })
+      .limit(20);
+
+    const winning = (patterns || []).filter((p: any) => p.pattern_type === "winning_phrase").map((p: any) => `- ${p.content}`).join("\n");
+    const objections = (patterns || []).filter((p: any) => p.pattern_type === "objection").map((p: any) => `- ${p.content}`).join("\n");
+
+    const { getTenantAiKey, logAiUsage } = await import("./ai-credentials.server");
+    const cred = await getTenantAiKey(tenantId, "openai");
+
+    const systemPrompt = `Você é um atendente humano de uma ótica/clínica conversando via WhatsApp em português brasileiro. Gere UMA sugestão de resposta para a próxima mensagem do atendente, baseada na conversa abaixo.
+Regras:
+- Tom natural, humano, cordial, curto (até 2-3 frases).
+- Sem markdown, sem emojis exagerados (no máx 1).
+- Não invente preços, horários ou produtos que não foram mencionados.
+- Se o cliente fez pergunta, responda direto. Se está em dúvida, ajude a avançar.
+- Retorne APENAS o texto da mensagem sugerida, sem aspas, sem prefixos como "Atendente:".
+
+${winning ? `Frases que costumam funcionar bem com nossos clientes:\n${winning}\n` : ""}
+${objections ? `Objeções comuns para considerar:\n${objections}\n` : ""}
+${data.hint ? `Direcionamento do atendente: ${data.hint}` : ""}`;
+
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cred.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: cred.model || "gpt-4o-mini",
+        temperature: 0.6,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: transcript.slice(0, 8000) },
+        ],
+      }),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`OpenAI ${resp.status}: ${txt.slice(0, 200)}`);
+    }
+
+    const json = await resp.json();
+    const suggestion = (json?.choices?.[0]?.message?.content ?? "").trim();
+    const usage = json?.usage ?? {};
+    const tokensIn = Number(usage.prompt_tokens || 0);
+    const tokensOut = Number(usage.completion_tokens || 0);
+
+    await logAiUsage({
+      tenantId,
+      provider: "openai",
+      model: cred.model,
+      tokensInput: tokensIn,
+      tokensOutput: tokensOut,
+      usedFallback: cred.source === "master",
+      source: cred.source,
+      feature: "ai-suggest-reply",
+    });
+
+    if (!suggestion) throw new Error("IA não retornou sugestão");
+    return { suggestion, tokens: tokensIn + tokensOut };
+  });
