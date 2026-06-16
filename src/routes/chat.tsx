@@ -31,7 +31,7 @@ import { useAuthStore } from '@/hooks/use-auth'
 import { supabase } from '@/integrations/supabase/client'
 import { TransferLeadDialog } from '@/components/chat/TransferLeadDialog'
 import { useServerFn } from '@tanstack/react-start'
-import { analyzeLeadConversation } from '@/lib/ai-insights.functions'
+import { analyzeLeadConversation, suggestReplyForLead } from '@/lib/ai-insights.functions'
 
 
 export const Route = createFileRoute('/chat')({
