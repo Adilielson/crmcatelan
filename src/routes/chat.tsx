@@ -202,6 +202,21 @@ function Chat() {
     onError: (e: any) => toast.error(e.message ?? 'Erro ao analisar conversa'),
   })
 
+  const suggestFn = useServerFn(suggestReplyForLead)
+  const suggestReply = useMutation({
+    mutationFn: async () => {
+      if (!currentLead) throw new Error('Lead não encontrado')
+      return suggestFn({ data: { leadId: currentLead.id, hint: draft.trim() } })
+    },
+    onSuccess: (res: any) => {
+      if (res?.suggestion) {
+        setDraft(res.suggestion)
+        toast.success('Sugestão pronta — edite e envie 💡')
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Erro ao gerar sugestão'),
+  })
+
 
   // Conversa "virtual" para leads vindos da Fila sem histórico de WhatsApp ainda:
   // garante que o chat abre com header + composer mesmo sem mensagens.
