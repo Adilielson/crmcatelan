@@ -514,6 +514,40 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Mensagem ENVIADA manualmente pelo atendente humano (fromMe) ──
+      // Logamos para que a IA tenha visão completa da conversa quando o
+      // "Modo de Aprendizado" estiver ligado (observa atendimentos humanos).
+      if (fromMe && senderPhone && text && text.trim()) {
+        try {
+          // Confere se já temos um log idêntico nos últimos 30s
+          // (evita duplicação quando a própria IA SDR acabou de responder).
+          const { data: recent } = await adminClient
+            .from("whatsapp_message_logs")
+            .select("id, sender_name, error_message, sent_at")
+            .eq("tenant_id", tenantId)
+            .eq("recipient_phone", senderPhone)
+            .eq("status", "sent")
+            .gte("sent_at", new Date(Date.now() - 30_000).toISOString())
+            .order("sent_at", { ascending: false })
+            .limit(5);
+          const dup = (recent ?? []).some(
+            (r: any) => (r.error_message ?? "").trim() === text.trim(),
+          );
+          if (!dup) {
+            await adminClient.from("whatsapp_message_logs").insert({
+              tenant_id: tenantId,
+              recipient_phone: senderPhone,
+              message_type: msgType,
+              status: "sent",
+              error_message: text.slice(0, 500),
+              sender_name: "Atendente",
+            });
+          }
+        } catch (e) {
+          console.error("[webhook] log fromMe erro:", e instanceof Error ? e.message : String(e));
+        }
+      }
+
       if (!fromMe && senderPhone) {
         // Persiste a mídia no Storage (histórico permanente) ─────────────
         let mediaStoragePath: string | null = null;
@@ -539,6 +573,8 @@ Deno.serve(async (req) => {
           media_storage_path: mediaStoragePath,
         });
         if (logErr) console.error("[webhook] log insert error:", logErr.message);
+
+
 
         // ── Lead: localiza/cria e captura nome do contato quando possível ─
         let leadId: string | null = null;
