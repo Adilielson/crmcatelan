@@ -67,6 +67,14 @@ function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Tick a cada 60s para reavaliar o alerta de "aguardando atendente há 30min"
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+
   const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
 
   // Sempre que a URL mudar (?phone=...), reespelha em selectedPhone — isso garante
