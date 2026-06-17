@@ -166,6 +166,39 @@ function AITrainingSettings() {
         </div>
       </div>
 
+      {/* Painel: Modo de Aprendizado */}
+      {form.training_mode && (
+        <div className="bg-gradient-to-r from-[#FFC400]/10 to-transparent border border-[#FFC400]/30 rounded-[20px] p-6 flex flex-col md:flex-row md:items-center gap-4 justify-between">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-[#FFC400]/20 rounded-xl">
+              <Brain className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-1">Modo de Aprendizado ativo</div>
+              <h3 className="text-lg font-black text-ink mb-1">A IA está observando os atendimentos humanos</h3>
+              <p className="text-sm text-gray-600 max-w-2xl">
+                A cada conversa real entre atendente e cliente no WhatsApp, a IA extrai automaticamente: perguntas frequentes,
+                objeções, palavras-chave e respostas que funcionam. Esse aprendizado vira sugestões e melhora as próximas respostas.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => observeMut.mutate()}
+            disabled={observeMut.isPending}
+            variant="outline"
+            className="border-[#FFC400] text-ink font-bold hover:bg-[#FFC400]/10 h-11 px-6 rounded-xl whitespace-nowrap"
+          >
+            {observeMut.isPending ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analisando...</>
+            ) : (
+              <><Zap className="w-4 h-4 mr-2" /> Analisar conversas agora</>
+            )}
+          </Button>
+        </div>
+      )}
+
+
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white border border-border mb-8 w-full justify-start h-16 p-2 rounded-[14px] shadow-inner overflow-x-auto">
           <TabsTrigger value="personality" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
