@@ -112,23 +112,34 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
       color: SOURCE_COLORS[i % SOURCE_COLORS.length],
     }))
 
-    // ---- SLA alerts (parado há >4h em open/in_progress) ----
-    const FOUR_H = 4 * 60 * 60 * 1000
+    // ---- SLA alerts (alinhado com notify_stale_leads do banco) ----
+    // open: >1h | in_progress: >4h | negotiating: >4h
+    const HOUR = 60 * 60 * 1000
     const slaAlerts = allLeads
-      .filter((l) => l.status === 'open' || l.status === 'in_progress')
-      .filter((l) => now - new Date(l.updated_at ?? 0).getTime() > FOUR_H)
+      .filter((l) => l.status === 'open' || l.status === 'in_progress' || l.status === 'negotiating')
+      .filter((l) => {
+        const age = now - new Date(l.updated_at ?? 0).getTime()
+        if (l.status === 'open') return age > 1 * HOUR
+        return age > 4 * HOUR // in_progress / negotiating
+      })
       .sort((a, b) => new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime())
       .slice(0, 5)
       .map((l) => {
-        const waitH = Math.floor((now - new Date(l.updated_at ?? 0).getTime()) / (60 * 60 * 1000))
+        const waitH = Math.floor((now - new Date(l.updated_at ?? 0).getTime()) / HOUR)
+        const stageLabel =
+          l.status === 'open' ? 'Leads Prontos'
+          : l.status === 'in_progress' ? 'Em Atendimento'
+          : 'Em Negociação'
         return {
           id: l.id,
           name: l.full_name ?? 'Sem nome',
-          stage: l.status === 'open' ? 'Leads Prontos' : 'Em Atendimento',
+          phone: l.phone ?? null,
+          stage: stageLabel,
           waitHours: waitH,
           priority: waitH > 24 ? 'Alta' : 'Normal',
         }
       })
+
 
     // ---- Recent AI activity ----
     const recentAi = allLeads
