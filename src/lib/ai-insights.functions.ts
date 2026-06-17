@@ -22,7 +22,147 @@ function ensureCanRead(role: string) {
   }
 }
 
-// =================== ANALISAR CONVERSA ===================
+// ── Núcleo de análise (reutilizável: chamado manualmente ou pelo Modo Aprendizado) ──
+async function runLeadAnalysisCore(tenantId: string, leadId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Lead
+  const { data: lead, error: leadErr } = await supabaseAdmin
+    .from("leads")
+    .select("id, tenant_id, full_name, status, assigned_user_id, phone")
+    .eq("id", leadId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  if (leadErr) throw new Error(leadErr.message);
+  if (!lead) throw new Error("Lead não encontrado");
+  if (!lead.phone) throw new Error("Lead sem telefone — sem conversa para analisar");
+
+  // Mensagens (whatsapp_message_logs é a fonte real do sistema)
+  const { data: logs, error: logsErr } = await supabaseAdmin
+    .from("whatsapp_message_logs")
+    .select("status, sender_name, error_message, sent_at")
+    .eq("tenant_id", tenantId)
+    .eq("recipient_phone", lead.phone)
+    .order("sent_at", { ascending: true })
+    .limit(200);
+  if (logsErr) throw new Error(logsErr.message);
+
+  const filtered = (logs ?? []).filter(
+    (m: any) => typeof m.error_message === "string" && m.error_message.trim().length > 0,
+  );
+  if (filtered.length < 4) {
+    throw new Error("Conversa sem mensagens suficientes para análise (mínimo 4)");
+  }
+
+  // Precisamos de pelo menos uma mensagem do atendente HUMANO (não IA SDR)
+  const hasHuman = filtered.some(
+    (m: any) => m.status === "sent" && (m.sender_name ?? "") !== "IA SDR",
+  );
+
+  const transcript = filtered
+    .map((m: any) => {
+      const who =
+        m.status === "received"
+          ? "CLIENTE"
+          : (m.sender_name ?? "") === "IA SDR"
+          ? "IA"
+          : "ATENDENTE";
+      return `[${who}] ${m.error_message}`;
+    })
+    .join("\n");
+
+  const { getTenantAiKey, logAiUsage } = await import("./ai-credentials.server");
+  const cred = await getTenantAiKey(tenantId, "openai");
+
+  const systemPrompt = `Você é um analista de atendimento ao cliente. Analise a conversa abaixo entre um cliente e um atendente humano de uma ótica/clínica${
+    hasHuman ? "" : " (atendimento feito pela IA — analise mesmo assim)"
+  }. Extraia aprendizados em JSON puro (sem markdown). Responda APENAS com o objeto:
+{
+  "summary": "resumo em 1-2 frases",
+  "sentiment": "positive" | "neutral" | "negative",
+  "intent": "intenção principal em poucas palavras",
+  "frequent_questions": ["pergunta 1", "pergunta 2"],
+  "objections": ["objeção 1"],
+  "keywords": ["palavra1", "palavra2"],
+  "successful_responses": ["frase do atendente humano que funcionou bem"]
+}`;
+
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${cred.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: cred.model || "gpt-4o-mini",
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: transcript.slice(0, 12000) },
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`OpenAI ${resp.status}: ${txt.slice(0, 200)}`);
+  }
+
+  const json = await resp.json();
+  const content = json?.choices?.[0]?.message?.content ?? "{}";
+  let parsed: any = {};
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error("IA retornou JSON inválido");
+  }
+  const usage = json?.usage ?? {};
+  const tokensIn = Number(usage.prompt_tokens || 0);
+  const tokensOut = Number(usage.completion_tokens || 0);
+
+  await logAiUsage({
+    tenantId,
+    provider: "openai",
+    model: cred.model,
+    tokensInput: tokensIn,
+    tokensOutput: tokensOut,
+    usedFallback: cred.source === "master",
+    source: cred.source,
+    feature: "ai-insights",
+  });
+
+  const insightPayload = {
+    tenant_id: tenantId,
+    lead_id: lead.id,
+    conversation_id: null as any,
+    summary: parsed.summary ?? null,
+    sentiment: parsed.sentiment ?? null,
+    intent: parsed.intent ?? null,
+    frequent_questions: parsed.frequent_questions ?? [],
+    objections: parsed.objections ?? [],
+    keywords: parsed.keywords ?? [],
+    successful_responses: parsed.successful_responses ?? [],
+    outcome: lead.status,
+    agent_id: lead.assigned_user_id,
+    message_count: filtered.length,
+    tokens_used: tokensIn + tokensOut,
+    model: cred.model,
+    updated_at: new Date().toISOString(),
+  };
+
+  await supabaseAdmin.from("ai_learning_insights").delete().eq("lead_id", lead.id);
+  const { error: insErr } = await supabaseAdmin
+    .from("ai_learning_insights")
+    .insert(insightPayload);
+  if (insErr) throw new Error(insErr.message);
+
+  await aggregatePatterns(supabaseAdmin, tenantId, parsed, lead.status);
+
+  return { ok: true, insight: parsed, tokens: tokensIn + tokensOut, messageCount: filtered.length };
+}
+
+// =================== ANALISAR CONVERSA (manual via UI) ===================
 export const analyzeLeadConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
@@ -32,141 +172,75 @@ export const analyzeLeadConversation = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { tenantId } = await getUserTenantAndRole(context.supabase, context.userId);
+    return runLeadAnalysisCore(tenantId, data.leadId);
+  });
 
-    // Busca lead
-    const { data: lead, error: leadErr } = await context.supabase
-      .from("leads")
-      .select("id, tenant_id, full_name, status, assigned_user_id")
-      .eq("id", data.leadId)
+// =================== MODO DE APRENDIZADO ===================
+// Observa conversas reais entre atendentes humanos e clientes e extrai
+// aprendizados automaticamente. Pode ser disparado pela UI (botão) ou por
+// um cron público (/api/public/hooks/ai-training-observer).
+export const processTrainingObservations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { tenantId, role } = await getUserTenantAndRole(context.supabase, context.userId);
+    ensureCanRead(role);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1) tenant precisa ter Modo de Aprendizado ligado
+    const { data: cfg } = await supabaseAdmin
+      .from("ai_configs")
+      .select("training_mode")
       .eq("tenant_id", tenantId)
       .maybeSingle();
-    if (leadErr) throw new Error(leadErr.message);
-    if (!lead) throw new Error("Lead não encontrado");
-
-    // Busca conversa + mensagens
-    const { data: conv } = await context.supabase
-      .from("conversations")
-      .select("id")
-      .eq("lead_id", lead.id)
-      .order("last_message_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!conv) throw new Error("Nenhuma conversa encontrada para este lead");
-
-    const { data: messages, error: msgErr } = await context.supabase
-      .from("messages")
-      .select("direction, content, created_at")
-      .eq("conversation_id", conv.id)
-      .order("created_at", { ascending: true })
-      .limit(200);
-    if (msgErr) throw new Error(msgErr.message);
-    if (!messages || messages.length < 2) {
-      throw new Error("Conversa sem mensagens suficientes para análise");
+    if (!cfg?.training_mode) {
+      return { ok: false, analyzed: 0, skipped: 0, reason: "Modo de Aprendizado está desligado" };
     }
 
-    // Monta transcript
-    const transcript = messages
-      .map((m: any) => {
-        const who = m.direction === "incoming" ? "CLIENTE" : "ATENDENTE";
-        return `[${who}] ${m.content ?? "(sem texto)"}`;
-      })
-      .join("\n");
+    // 2) leads atendidos por humanos nos últimos 14 dias
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: leads, error: lErr } = await supabaseAdmin
+      .from("leads")
+      .select("id, phone, updated_at, assigned_user_id")
+      .eq("tenant_id", tenantId)
+      .not("assigned_user_id", "is", null)
+      .not("phone", "is", null)
+      .gte("updated_at", since)
+      .order("updated_at", { ascending: false })
+      .limit(25);
+    if (lErr) throw new Error(lErr.message);
 
-    // Resolve credencial IA (reusa helper existente)
-    const { getTenantAiKey, logAiUsage } = await import("./ai-credentials.server");
-    const cred = await getTenantAiKey(tenantId, "openai");
+    let analyzed = 0;
+    let skipped = 0;
+    const errors: string[] = [];
 
-    const systemPrompt = `Você é um analista de atendimento ao cliente. Analise a conversa abaixo entre um cliente e um atendente humano de uma ótica/clínica. Extraia aprendizados em JSON puro (sem markdown, sem comentários). Responda APENAS com o objeto JSON, no formato:
-{
-  "summary": "resumo da conversa em 1-2 frases",
-  "sentiment": "positive" | "neutral" | "negative",
-  "intent": "intenção principal do cliente em poucas palavras",
-  "frequent_questions": ["pergunta 1", "pergunta 2"],
-  "objections": ["objeção 1", "objeção 2"],
-  "keywords": ["palavra1", "palavra2"],
-  "successful_responses": ["frase do atendente que funcionou bem"]
-}`;
-
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cred.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: cred.model || "gpt-4o-mini",
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: transcript.slice(0, 12000) },
-        ],
-      }),
-    });
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`OpenAI ${resp.status}: ${txt.slice(0, 200)}`);
+    for (const lead of leads ?? []) {
+      try {
+        // pula se já temos insight recente (últimas 2h ou mais novo que última msg)
+        const { data: existing } = await supabaseAdmin
+          .from("ai_learning_insights")
+          .select("updated_at")
+          .eq("lead_id", lead.id)
+          .maybeSingle();
+        if (existing?.updated_at) {
+          const age = Date.now() - new Date(existing.updated_at).getTime();
+          if (age < 2 * 60 * 60 * 1000) {
+            skipped++;
+            continue;
+          }
+        }
+        await runLeadAnalysisCore(tenantId, lead.id);
+        analyzed++;
+      } catch (e: any) {
+        skipped++;
+        errors.push(`${lead.id}: ${e?.message ?? String(e)}`);
+      }
     }
 
-    const json = await resp.json();
-    const content = json?.choices?.[0]?.message?.content ?? "{}";
-    let parsed: any = {};
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      throw new Error("IA retornou JSON inválido");
-    }
-    const usage = json?.usage ?? {};
-    const tokensIn = Number(usage.prompt_tokens || 0);
-    const tokensOut = Number(usage.completion_tokens || 0);
-
-    // Log usage
-    await logAiUsage({
-      tenantId,
-      provider: "openai",
-      model: cred.model,
-      tokensInput: tokensIn,
-      tokensOutput: tokensOut,
-      usedFallback: cred.source === "master",
-      source: cred.source,
-      feature: "ai-insights",
-    });
-
-    // Upsert insight (1 por lead — substitui análise antiga)
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const insightPayload = {
-      tenant_id: tenantId,
-      lead_id: lead.id,
-      conversation_id: conv.id,
-      summary: parsed.summary ?? null,
-      sentiment: parsed.sentiment ?? null,
-      intent: parsed.intent ?? null,
-      frequent_questions: parsed.frequent_questions ?? [],
-      objections: parsed.objections ?? [],
-      keywords: parsed.keywords ?? [],
-      successful_responses: parsed.successful_responses ?? [],
-      outcome: lead.status,
-      agent_id: lead.assigned_user_id,
-      message_count: messages.length,
-      tokens_used: tokensIn + tokensOut,
-      model: cred.model,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Remove insight antigo do mesmo lead e insere o novo
-    await supabaseAdmin.from("ai_learning_insights").delete().eq("lead_id", lead.id);
-    const { error: insErr } = await supabaseAdmin
-      .from("ai_learning_insights")
-      .insert(insightPayload);
-    if (insErr) throw new Error(insErr.message);
-
-    // Agrega padrões
-    await aggregatePatterns(supabaseAdmin, tenantId, parsed, lead.status);
-
-    return { ok: true, insight: parsed, tokens: tokensIn + tokensOut };
+    return { ok: true, analyzed, skipped, errors: errors.slice(0, 5) };
   });
+
+
 
 async function aggregatePatterns(
   admin: any,
