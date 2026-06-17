@@ -78,9 +78,12 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     hasHuman ? "" : " (atendimento feito pela IA — analise mesmo assim)"
   }. Extraia aprendizados em JSON puro (sem markdown). Responda APENAS com o objeto:
 {
-  "summary": "resumo em 1-2 frases",
+  "summary": "resumo em 1-2 frases sobre o estado atual da negociação",
   "sentiment": "positive" | "neutral" | "negative",
+  "urgency": "baixa" | "media" | "alta",
+  "score": número inteiro de 0 a 100 (temperatura do lead — probabilidade de fechar),
   "intent": "intenção principal em poucas palavras",
+  "interests": ["produto/serviço de interesse 1", "produto 2"],
   "frequent_questions": ["pergunta 1", "pergunta 2"],
   "objections": ["objeção 1"],
   "keywords": ["palavra1", "palavra2"],
