@@ -243,13 +243,19 @@ function Chat() {
   // OCR real agora vive no painel do lead (aba "Lead" / Kanban).
 
 
-  const handleRecalibrateIA = () => {
-    toast.promise(new Promise(resolve => setTimeout(resolve, 1500)), {
-      loading: 'Recalibrando modelo SDR para esta conversa...',
-      success: 'IA Recalibrada! Interpretação ajustada.',
-      error: 'Erro na recalibração.'
-    })
-  }
+  // Auto-análise da IA SDR quando um lead é selecionado (cooldown 10min, best-effort)
+  const lastAnalyzedRef = useRef<Map<string, number>>(new Map())
+  useEffect(() => {
+    if (!currentLead?.id) return
+    const last = lastAnalyzedRef.current.get(currentLead.id) ?? 0
+    if (Date.now() - last < 10 * 60 * 1000) return
+    lastAnalyzedRef.current.set(currentLead.id, Date.now())
+    analyzeFn({ data: { leadId: currentLead.id } })
+      .then(() => qc.invalidateQueries({ queryKey: ['leads', tenantId] }))
+      .catch(() => { /* silencia: análise é best-effort */ })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLead?.id])
+
 
   const handleSend = async () => {
     if (!draft.trim() || !selectedPhone) return
