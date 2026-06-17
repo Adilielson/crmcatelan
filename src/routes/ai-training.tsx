@@ -28,6 +28,8 @@ import {
 import {
   listKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc,
 } from '@/lib/ai-knowledge.functions'
+import { processTrainingObservations } from '@/lib/ai-insights.functions'
+
 
 export const Route = createFileRoute('/ai-training')({
   component: AITrainingSettings,
