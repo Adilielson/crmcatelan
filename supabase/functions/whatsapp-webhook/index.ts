@@ -735,6 +735,11 @@ Deno.serve(async (req) => {
                 .select("*")
                 .eq("tenant_id", tenantId)
                 .maybeSingle();
+
+              // Guard: Modo de Aprendizado ativo → IA NÃO responde, apenas observa
+              if ((aiCfg as any)?.training_mode === true) {
+                console.log(`[sdr] pulado: modo de aprendizado ativo (tenant=${tenantId})`);
+              } else {
               const { data: docs } = await adminClient
                 .from("ai_knowledge_documents")
                 .select("name, content")
