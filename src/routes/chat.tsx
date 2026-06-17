@@ -529,17 +529,37 @@ function Chat() {
                 const ld = (l.phone ?? '').replace(/\D/g, '')
                 return ld.length >= 8 && (ld === convDigits || convDigits.endsWith(ld) || ld.endsWith(convDigits))
               })
+              // Alerta: última mensagem é do cliente e está sem resposta há > 30min
+              const lastMsg = conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null
+              const lastClientMsg = [...conv.messages].reverse().find((m) => !m.fromMe)
+              const isAwaitingReply = !!lastMsg && !lastMsg.fromMe
+              const waitingMinutes = lastClientMsg
+                ? Math.floor((Date.now() - new Date(lastClientMsg.at).getTime()) / 60000)
+                : 0
+              const showStaleAlert = isAwaitingReply && waitingMinutes >= 30
               return (
                 <div
                   key={conv.phone}
                   onClick={() => setSelectedPhone(conv.phone)}
                   className={cn(
                     "p-5 pr-6 md:pr-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
-                    isActive ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100"
+                    isActive ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100",
+                    showStaleAlert && !isActive && "bg-danger/5"
                   )}
                 >
                   {isActive && (
                     <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-[#FFC400] rounded-r-full shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
+                  )}
+                  {showStaleAlert && (
+                    <div
+                      title={`Aguardando resposta há ${waitingMinutes >= 60 ? `${Math.floor(waitingMinutes / 60)}h` : `${waitingMinutes}min`}`}
+                      className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-danger/10 border border-danger/30 animate-pulse"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-danger" />
+                      <span className="text-[9px] font-bold text-danger uppercase tracking-wider">
+                        {waitingMinutes >= 60 ? `${Math.floor(waitingMinutes / 60)}h` : `${waitingMinutes}min`}
+                      </span>
+                    </div>
                   )}
                   <div className="relative flex-shrink-0">
                     <Avatar className="h-14 w-14 rounded-full shadow-sm">
@@ -550,6 +570,7 @@ function Chat() {
                     </Avatar>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#1FA463] border-[3px] border-white rounded-full"></div>
                   </div>
+
                   <div className="flex-1 min-w-0 py-0.5">
                     <div className="flex justify-between items-center mb-0.5">
                       <h4 className="font-jakarta font-bold text-sm text-ink truncate group-hover:text-primary transition-colors">
