@@ -81,12 +81,33 @@ function AITrainingSettings() {
 
   const saveMut = useMutation({
     mutationFn: (payload: FormState) => saveCfg({ data: payload as any }),
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       toast.success('Configurações salvas')
       qc.invalidateQueries({ queryKey: ['ai-config'] })
       qc.invalidateQueries({ queryKey: ['ai-versions'] })
+      // Quando o Modo de Aprendizado acabou de ser ligado, dispara observação inicial
+      const wasOn = !!cfgQuery.data?.training_mode
+      if (!wasOn && vars.training_mode) {
+        observeMut.mutate()
+      }
     },
     onError: (e: any) => toast.error(e?.message ?? 'Erro ao salvar'),
+  })
+
+  const runObserve = useServerFn(processTrainingObservations)
+  const observeMut = useMutation({
+    mutationFn: () => runObserve(),
+    onSuccess: (res: any) => {
+      if (res?.ok === false) {
+        toast.info(res?.reason ?? 'Modo de Aprendizado desligado')
+        return
+      }
+      toast.success(
+        `Observação concluída: ${res?.analyzed ?? 0} conversa(s) analisada(s)` +
+          (res?.skipped ? `, ${res.skipped} ignorada(s)` : ''),
+      )
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Falha ao analisar conversas'),
   })
 
   const handleSave = () => {
@@ -97,6 +118,7 @@ function AITrainingSettings() {
     }
     saveMut.mutate(form)
   }
+
 
   if (cfgQuery.isLoading || !form) {
     return (
