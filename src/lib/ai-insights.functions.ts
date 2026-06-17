@@ -78,9 +78,12 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     hasHuman ? "" : " (atendimento feito pela IA — analise mesmo assim)"
   }. Extraia aprendizados em JSON puro (sem markdown). Responda APENAS com o objeto:
 {
-  "summary": "resumo em 1-2 frases",
+  "summary": "resumo em 1-2 frases sobre o estado atual da negociação",
   "sentiment": "positive" | "neutral" | "negative",
+  "urgency": "baixa" | "media" | "alta",
+  "score": número inteiro de 0 a 100 (temperatura do lead — probabilidade de fechar),
   "intent": "intenção principal em poucas palavras",
+  "interests": ["produto/serviço de interesse 1", "produto 2"],
   "frequent_questions": ["pergunta 1", "pergunta 2"],
   "objections": ["objeção 1"],
   "keywords": ["palavra1", "palavra2"],
@@ -156,6 +159,39 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     .from("ai_learning_insights")
     .insert(insightPayload);
   if (insErr) throw new Error(insErr.message);
+
+  // Espelha o resultado nos campos visíveis do lead (painel SDR Insight)
+  const sentimentoMap: Record<string, string> = {
+    positive: "Positivo",
+    neutral: "Neutro",
+    negative: "Negativo",
+  };
+  const urgenciaMap: Record<string, string> = {
+    baixa: "Baixa",
+    media: "Média",
+    alta: "Alta",
+  };
+  const rawScore = Number(parsed.score);
+  const scoreIa = Number.isFinite(rawScore)
+    ? Math.max(0, Math.min(100, Math.round(rawScore)))
+    : null;
+  const interesses = Array.isArray(parsed.interests)
+    ? parsed.interests.filter((x: any) => typeof x === "string" && x.trim()).slice(0, 8)
+    : Array.isArray(parsed.keywords)
+    ? parsed.keywords.filter((x: any) => typeof x === "string" && x.trim()).slice(0, 8)
+    : [];
+
+  await supabaseAdmin
+    .from("leads")
+    .update({
+      score_ia: scoreIa,
+      ia_summary: parsed.summary ?? null,
+      ia_sentimento: sentimentoMap[String(parsed.sentiment ?? "").toLowerCase()] ?? null,
+      ia_urgencia: urgenciaMap[String(parsed.urgency ?? "").toLowerCase()] ?? null,
+      ia_interesses: interesses,
+    })
+    .eq("id", lead.id)
+    .eq("tenant_id", tenantId);
 
   await aggregatePatterns(supabaseAdmin, tenantId, parsed, lead.status);
 

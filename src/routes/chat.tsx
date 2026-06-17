@@ -67,6 +67,14 @@ function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Tick a cada 60s para reavaliar o alerta de "aguardando atendente há 30min"
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+
   const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
 
   // Sempre que a URL mudar (?phone=...), reespelha em selectedPhone — isso garante
@@ -243,13 +251,19 @@ function Chat() {
   // OCR real agora vive no painel do lead (aba "Lead" / Kanban).
 
 
-  const handleRecalibrateIA = () => {
-    toast.promise(new Promise(resolve => setTimeout(resolve, 1500)), {
-      loading: 'Recalibrando modelo SDR para esta conversa...',
-      success: 'IA Recalibrada! Interpretação ajustada.',
-      error: 'Erro na recalibração.'
-    })
-  }
+  // Auto-análise da IA SDR quando um lead é selecionado (cooldown 10min, best-effort)
+  const lastAnalyzedRef = useRef<Map<string, number>>(new Map())
+  useEffect(() => {
+    if (!currentLead?.id) return
+    const last = lastAnalyzedRef.current.get(currentLead.id) ?? 0
+    if (Date.now() - last < 10 * 60 * 1000) return
+    lastAnalyzedRef.current.set(currentLead.id, Date.now())
+    analyzeFn({ data: { leadId: currentLead.id } })
+      .then(() => qc.invalidateQueries({ queryKey: ['leads', tenantId] }))
+      .catch(() => { /* silencia: análise é best-effort */ })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLead?.id])
+
 
   const handleSend = async () => {
     if (!draft.trim() || !selectedPhone) return
@@ -399,8 +413,8 @@ function Chat() {
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between text-xs font-bold">
-                      <span className="text-gray-500">Sentimento: <span className="text-ink capitalize">{currentLead.ia_sentimento || 'Neutro'}</span></span>
-                      <span className="text-gray-500">Urgência: <span className="text-danger capitalize">{currentLead.ia_urgencia || 'Média'}</span></span>
+                      <span className="text-gray-500">Sentimento: <span className="text-ink capitalize">{currentLead.ia_sentimento || 'Aguardando análise…'}</span></span>
+                      <span className="text-gray-500">Urgência: <span className="text-danger capitalize">{currentLead.ia_urgencia || '—'}</span></span>
                     </div>
                     <Progress value={currentLead.score_ia ?? 0} className="h-2 bg-gray-200" />
                   </div>
@@ -413,7 +427,7 @@ function Chat() {
                   </div>
                   <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm relative overflow-hidden group">
                     <p className="text-sm text-ink leading-relaxed font-medium relative z-10">
-                      {currentLead.ia_summary || 'Analisando conversa em tempo real...'}
+                      {currentLead.ia_summary || 'Aguardando análise da conversa…'}
                     </p>
                   </div>
                 </div>
@@ -421,19 +435,18 @@ function Chat() {
                 <div className="space-y-4">
                   <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-1">Gatilhos Detectados</h3>
                   <div className="flex flex-wrap gap-2">
-                    {(currentLead.ia_interesses || ['Óculos de Grau', 'Exame']).map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="bg-gray-50 text-ink border border-gray-100 font-bold px-3 py-1.5 rounded-xl text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
+                    {(currentLead.ia_interesses && currentLead.ia_interesses.length > 0) ? (
+                      currentLead.ia_interesses.map((tag, i) => (
+                        <Badge key={i} variant="secondary" className="bg-gray-50 text-ink border border-gray-100 font-bold px-3 py-1.5 rounded-xl text-xs">
+                          {tag}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-400 font-medium italic">Aguardando análise…</span>
+                    )}
                   </div>
                 </div>
 
-                <div className="pt-4 space-y-3">
-                  <Button onClick={handleRecalibrateIA} variant="ghost" className="w-full h-12 text-xs font-bold text-gray-400 hover:text-primary transition-colors">
-                    <Zap className="w-4 h-4 mr-2" /> Recalibrar Modelo IA
-                  </Button>
-                </div>
               </>
             ) : (
               <div className="text-center py-20 opacity-20">
@@ -524,17 +537,37 @@ function Chat() {
                 const ld = (l.phone ?? '').replace(/\D/g, '')
                 return ld.length >= 8 && (ld === convDigits || convDigits.endsWith(ld) || ld.endsWith(convDigits))
               })
+              // Alerta: última mensagem é do cliente e está sem resposta há > 30min
+              const lastMsg = conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null
+              const lastClientMsg = [...conv.messages].reverse().find((m) => !m.fromMe)
+              const isAwaitingReply = !!lastMsg && !lastMsg.fromMe
+              const waitingMinutes = lastClientMsg
+                ? Math.floor((Date.now() - new Date(lastClientMsg.at).getTime()) / 60000)
+                : 0
+              const showStaleAlert = isAwaitingReply && waitingMinutes >= 30
               return (
                 <div
                   key={conv.phone}
                   onClick={() => setSelectedPhone(conv.phone)}
                   className={cn(
                     "p-5 pr-6 md:pr-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",
-                    isActive ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100"
+                    isActive ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] z-10" : "opacity-80 hover:opacity-100",
+                    showStaleAlert && !isActive && "bg-danger/5"
                   )}
                 >
                   {isActive && (
                     <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-[#FFC400] rounded-r-full shadow-[0_0_10px_rgba(255,196,0,0.3)]" />
+                  )}
+                  {showStaleAlert && (
+                    <div
+                      title={`Aguardando resposta há ${waitingMinutes >= 60 ? `${Math.floor(waitingMinutes / 60)}h` : `${waitingMinutes}min`}`}
+                      className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-danger/10 border border-danger/30 animate-pulse"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-danger" />
+                      <span className="text-[9px] font-bold text-danger uppercase tracking-wider">
+                        {waitingMinutes >= 60 ? `${Math.floor(waitingMinutes / 60)}h` : `${waitingMinutes}min`}
+                      </span>
+                    </div>
                   )}
                   <div className="relative flex-shrink-0">
                     <Avatar className="h-14 w-14 rounded-full shadow-sm">
@@ -545,6 +578,7 @@ function Chat() {
                     </Avatar>
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#1FA463] border-[3px] border-white rounded-full"></div>
                   </div>
+
                   <div className="flex-1 min-w-0 py-0.5">
                     <div className="flex justify-between items-center mb-0.5">
                       <h4 className="font-jakarta font-bold text-sm text-ink truncate group-hover:text-primary transition-colors">
