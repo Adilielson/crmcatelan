@@ -300,9 +300,10 @@ function Dashboard() {
                       <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.waitHours}h</p>
                     </div>
                   </div>
-                  <Link to="/chat">
+                  <Link to="/chat" search={alert.phone ? { phone: alert.phone } : undefined}>
                     <Button size="sm" className="h-7 text-[10px] font-bold">Assumir Chat</Button>
                   </Link>
+
                 </div>
               ))}
             </div>
