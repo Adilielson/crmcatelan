@@ -775,6 +775,7 @@ Deno.serve(async (req) => {
                 });
                 console.log(`[sdr] resposta ${sent ? "enviada" : "falhou"} para ${senderPhone}`);
               }
+              }
             }
           } catch (e) {
             console.error("[sdr] erro:", e instanceof Error ? e.message : String(e));
