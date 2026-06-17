@@ -160,6 +160,39 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     .insert(insightPayload);
   if (insErr) throw new Error(insErr.message);
 
+  // Espelha o resultado nos campos visíveis do lead (painel SDR Insight)
+  const sentimentoMap: Record<string, string> = {
+    positive: "Positivo",
+    neutral: "Neutro",
+    negative: "Negativo",
+  };
+  const urgenciaMap: Record<string, string> = {
+    baixa: "Baixa",
+    media: "Média",
+    alta: "Alta",
+  };
+  const rawScore = Number(parsed.score);
+  const scoreIa = Number.isFinite(rawScore)
+    ? Math.max(0, Math.min(100, Math.round(rawScore)))
+    : null;
+  const interesses = Array.isArray(parsed.interests)
+    ? parsed.interests.filter((x: any) => typeof x === "string" && x.trim()).slice(0, 8)
+    : Array.isArray(parsed.keywords)
+    ? parsed.keywords.filter((x: any) => typeof x === "string" && x.trim()).slice(0, 8)
+    : [];
+
+  await supabaseAdmin
+    .from("leads")
+    .update({
+      score_ia: scoreIa,
+      ia_summary: parsed.summary ?? null,
+      ia_sentimento: sentimentoMap[String(parsed.sentiment ?? "").toLowerCase()] ?? null,
+      ia_urgencia: urgenciaMap[String(parsed.urgency ?? "").toLowerCase()] ?? null,
+      ia_interesses: interesses,
+    })
+    .eq("id", lead.id)
+    .eq("tenant_id", tenantId);
+
   await aggregatePatterns(supabaseAdmin, tenantId, parsed, lead.status);
 
   return { ok: true, insight: parsed, tokens: tokensIn + tokensOut, messageCount: filtered.length };
