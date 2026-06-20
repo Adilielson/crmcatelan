@@ -462,6 +462,10 @@ function Equipe() {
 
         {leadsQ.isLoading ? (
           <p className="text-sm text-[#6B7280]">Carregando atendimentos…</p>
+        ) : leadsQ.isError ? (
+          <p className="text-sm text-red-600">
+            Erro ao carregar atendimentos: {(leadsQ.error as Error)?.message}
+          </p>
         ) : filtered.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum atendimento encontrado.</p>
         ) : (
