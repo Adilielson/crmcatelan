@@ -527,9 +527,7 @@ function Chat() {
             )}
             {!loading && filteredConvs.length === 0 && (
               <div className="p-8 text-center text-xs text-gray-400 font-medium">
-                {waConnected
-                  ? 'Nenhuma mensagem recebida ainda. Aguardando WhatsApp...'
-                  : 'WhatsApp desconectado. Conecte em Configurações.'}
+                Nenhuma conversa encontrada.
               </div>
             )}
             {filteredConvs.map((conv) => {
