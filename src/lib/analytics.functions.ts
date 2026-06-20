@@ -38,13 +38,15 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     const unitFilter = data.unitId ?? null
 
     // ---- Leads ----
+    // ---- Leads ----
     let leadsQ = supabase
       .from('leads')
-      .select('id, status, sales_value, score_ia, source, updated_at, full_name, ia_summary, created_at, unit_id, phone')
+      .select('id, status, sales_value, score_ia, source, updated_at, full_name, ia_summary, created_at, unit_id, phone, last_inbound_at, last_outbound_at')
     if (unitFilter) leadsQ = leadsQ.eq('unit_id', unitFilter)
     const { data: leads, error: leadsErr } = await leadsQ
     if (leadsErr) throw leadsErr
-    const allLeads = leads ?? []
+    const allLeads = (leads ?? []) as Array<Record<string, any>>
+
 
     // ---- Appointments (next 7 days) ----
     const in7d = new Date()
@@ -112,20 +114,35 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
       color: SOURCE_COLORS[i % SOURCE_COLORS.length],
     }))
 
-    // ---- SLA alerts (alinhado com notify_stale_leads do banco) ----
-    // open: >1h | in_progress: >4h | negotiating: >4h
+    // ---- SLA alerts (mesma regra do notify_stale_leads) ----
+    // Só lista leads aguardando RESPOSTA DA LOJA:
+    //  - cliente mandou mensagem e ninguém respondeu (last_inbound_at > last_outbound_at), OU
+    //  - lead novo em "open" sem nenhuma conversa ainda
+    // Limiares: open >1h | in_progress >4h | negotiating >4h (tempo corrido — o cron usa horário comercial)
     const HOUR = 60 * 60 * 1000
     const slaAlerts = allLeads
       .filter((l) => l.status === 'open' || l.status === 'in_progress' || l.status === 'negotiating')
       .filter((l) => {
-        const age = now - new Date(l.updated_at ?? 0).getTime()
+        const inAt = l.last_inbound_at ? new Date(l.last_inbound_at).getTime() : 0
+        const outAt = l.last_outbound_at ? new Date(l.last_outbound_at).getTime() : 0
+        const waiting = inAt > 0 && inAt > outAt
+        const brandNewOpen = l.status === 'open' && inAt === 0
+        if (!waiting && !brandNewOpen) return false
+        const anchor = inAt > 0 ? inAt : new Date(l.updated_at ?? l.created_at ?? 0).getTime()
+        const age = now - anchor
         if (l.status === 'open') return age > 1 * HOUR
-        return age > 4 * HOUR // in_progress / negotiating
+        return age > 4 * HOUR
       })
-      .sort((a, b) => new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime())
+      .sort((a, b) => {
+        const aAnchor = a.last_inbound_at ? new Date(a.last_inbound_at).getTime() : new Date(a.updated_at ?? 0).getTime()
+        const bAnchor = b.last_inbound_at ? new Date(b.last_inbound_at).getTime() : new Date(b.updated_at ?? 0).getTime()
+        return aAnchor - bAnchor
+      })
       .slice(0, 5)
       .map((l) => {
-        const waitH = Math.floor((now - new Date(l.updated_at ?? 0).getTime()) / HOUR)
+        const inAt = l.last_inbound_at ? new Date(l.last_inbound_at).getTime() : 0
+        const anchor = inAt > 0 ? inAt : new Date(l.updated_at ?? l.created_at ?? 0).getTime()
+        const waitH = Math.floor((now - anchor) / HOUR)
         const stageLabel =
           l.status === 'open' ? 'Leads Prontos'
           : l.status === 'in_progress' ? 'Em Atendimento'
@@ -139,6 +156,7 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
           priority: waitH > 24 ? 'Alta' : 'Normal',
         }
       })
+
 
 
     // ---- Recent AI activity ----
