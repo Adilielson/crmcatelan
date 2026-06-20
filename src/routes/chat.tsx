@@ -527,9 +527,7 @@ function Chat() {
             )}
             {!loading && filteredConvs.length === 0 && (
               <div className="p-8 text-center text-xs text-gray-400 font-medium">
-                {waConnected
-                  ? 'Nenhuma mensagem recebida ainda. Aguardando WhatsApp...'
-                  : 'WhatsApp desconectado. Conecte em Configurações.'}
+                Nenhuma conversa encontrada.
               </div>
             )}
             {filteredConvs.map((conv) => {
@@ -826,7 +824,7 @@ function Chat() {
                     </Button>
                     <Button
                       onClick={handlePickFile}
-                      disabled={!waConnected || sending}
+                      disabled={sending}
                       variant="ghost"
                       size="icon"
                       className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl"
@@ -836,7 +834,7 @@ function Chat() {
                     </Button>
                     <Button
                       onClick={() => suggestReply.mutate()}
-                      disabled={!waConnected || sending || suggestReply.isPending || !currentLead}
+                      disabled={sending || suggestReply.isPending || !currentLead}
                       variant="ghost"
                       size="icon"
                       className="text-violet-500 h-9 w-9 hover:text-violet-600 hover:bg-violet-50 rounded-xl"
@@ -849,8 +847,8 @@ function Chat() {
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                      placeholder={waConnected ? (suggestReply.isPending ? 'IA está pensando uma sugestão...' : 'Digite sua mensagem...') : 'WhatsApp desconectado'}
-                      disabled={!waConnected || sending}
+                      placeholder={suggestReply.isPending ? 'IA está pensando uma sugestão...' : 'Digite sua mensagem...'}
+                      disabled={sending}
                       className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none disabled:opacity-50"
                     />
                   </div>
@@ -865,7 +863,7 @@ function Chat() {
                   ) : (
                     <Button
                       onClick={startRecording}
-                      disabled={!waConnected || sending}
+                      disabled={sending}
                       className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
                       title="Gravar áudio"
                     >
