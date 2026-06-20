@@ -915,6 +915,55 @@ function Chat() {
         open={transferOpen}
         onOpenChange={setTransferOpen}
       />
+
+      {/* Marcar como Perdido (motivo obrigatório) */}
+      <Dialog open={lostOpen} onOpenChange={setLostOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Motivo da Perda{currentLead ? ` — ${currentLead.full_name}` : ''}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Selecione o motivo *</Label>
+              <Select value={lostReason} onValueChange={setLostReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Preço alto">Preço alto</SelectItem>
+                  <SelectItem value="Fechou com concorrente">Fechou com concorrente</SelectItem>
+                  <SelectItem value="Não responde mais">Não responde mais</SelectItem>
+                  <SelectItem value="Sem perfil">Sem perfil</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLostOpen(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={!lostReason || !currentLead || moveToStatus.isPending}
+              onClick={async () => {
+                if (!currentLead || !lostReason) return;
+                const noteSuffix = `\n[Perdido: ${lostReason}]`;
+                const newNotes = `${currentLead.notes ?? ''}${noteSuffix}`.trim();
+                const { error } = await (supabase as any)
+                  .from('leads')
+                  .update({ status: 'lost', custom_column_id: null, notes: newNotes })
+                  .eq('id', currentLead.id);
+                if (error) { toast.error(error.message ?? 'Erro ao marcar perdido'); return; }
+                qc.invalidateQueries({ queryKey: ['leads', tenantId] });
+                toast.error('Lead marcado como perdido');
+                setLostOpen(false);
+                setLostReason('');
+              }}
+            >
+              Confirmar Perda
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
