@@ -46,7 +46,7 @@ function Chat() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const { conversations, loading } = useWhatsAppChat()
-  const { sendText, sendImage, sendAudio, isConnected: waConnected } = useWhatsApp()
+  const { sendText, sendImage, sendAudio, isConnected: waConnected, checkStatus } = useWhatsApp()
   const { data: leads = [] } = useLeads()
   const qc = useQueryClient()
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null)
