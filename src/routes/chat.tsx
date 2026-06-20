@@ -267,9 +267,13 @@ function Chat() {
 
   const handleSend = async () => {
     if (!draft.trim() || !selectedPhone) return
-    if (!waConnected) { toast.error('WhatsApp não está conectado.'); return }
     setSending(true)
     try {
+      // Revalida status ao vivo se o cache disser desconectado (evita falso bloqueio)
+      if (!waConnected) {
+        const ok = await checkStatus().catch(() => false)
+        if (!ok) { toast.error('WhatsApp não está conectado.'); return }
+      }
       await sendText(selectedPhone, draft.trim())
       setDraft('')
       toast.success('Mensagem enviada')
