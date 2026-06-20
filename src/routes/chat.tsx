@@ -857,7 +857,7 @@ function Chat() {
                   {draft.trim() ? (
                     <Button
                       onClick={handleSend}
-                      disabled={sending || !waConnected}
+                      disabled={sending}
                       className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
                     >
                       {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
