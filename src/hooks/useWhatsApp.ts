@@ -157,6 +157,8 @@ export function useWhatsApp() {
           status: 'sent',
           error_message: text,
         });
+        // Envio OK ⇒ garante que UI reflita "conectado"
+        setIsConnected(true);
       } catch (err) {
         await db.from('whatsapp_message_logs').insert({
           tenant_id: tenant.id,
