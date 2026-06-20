@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { AdSourceBreakdown } from '@/components/marketing/AdSourceBreakdown'
 
 export const Route = createFileRoute('/marketing')({
   component: MarketingPartnerDashboard,
