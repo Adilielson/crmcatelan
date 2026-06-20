@@ -127,7 +127,27 @@ function Chat() {
   const filteredConvs = useMemo(() => {
     const q = search.trim().toLowerCase()
     const onlyD = (s: string) => s.replace(/\D/g, '')
-    return conversations.filter((c) => {
+
+    const leadMatchesStatus = (lead: typeof leads[number] | undefined) => {
+      if (statusFilter === 'all') return true
+      if (!lead) return false
+      const col = kanbanColumns.find((k) => k.id === statusFilter)
+      if (!col) return false
+      if (col.is_system && col.system_key) {
+        return lead.custom_column_id == null && lead.status === col.system_key
+      }
+      return lead.custom_column_id === col.id
+    }
+
+    const findLeadByPhone = (phone: string) => {
+      const convDigits = onlyD(phone)
+      return leads.find((l) => {
+        const ld = onlyD(l.phone ?? '')
+        return ld.length >= 8 && (ld === convDigits || convDigits.endsWith(ld) || ld.endsWith(convDigits))
+      })
+    }
+
+    const base = conversations.filter((c) => {
       if (q) {
         const matchSearch =
           c.phone.toLowerCase().includes(q) ||
@@ -136,22 +156,45 @@ function Chat() {
         if (!matchSearch) return false
       }
       if (statusFilter !== 'all') {
-        const convDigits = onlyD(c.phone)
-        const lead = leads.find((l) => {
-          const ld = onlyD(l.phone ?? '')
-          return ld.length >= 8 && (ld === convDigits || convDigits.endsWith(ld) || ld.endsWith(convDigits))
-        })
-        if (!lead) return false
-        const col = kanbanColumns.find((k) => k.id === statusFilter)
-        if (!col) return false
-        if (col.is_system && col.system_key) {
-          if (!(lead.custom_column_id == null && lead.status === col.system_key)) return false
-        } else {
-          if (lead.custom_column_id !== col.id) return false
-        }
+        const lead = findLeadByPhone(c.phone)
+        if (!leadMatchesStatus(lead)) return false
       }
       return true
     })
+
+    // Inclui leads que casam com o filtro mas ainda não têm conversa no WhatsApp,
+    // para que a lista reflita exatamente os mesmos números do dashboard/kanban.
+    const presentDigits = new Set(base.map((c) => onlyD(c.phone)))
+    const virtualFromLeads: typeof base = []
+    for (const lead of leads) {
+      if (!leadMatchesStatus(lead)) continue
+      const phone = lead.phone ?? ''
+      const d = onlyD(phone)
+      if (!d || d.length < 8) continue
+      if (presentDigits.has(d)) continue
+      if (base.some((c) => {
+        const cd = onlyD(c.phone)
+        return cd.length >= 8 && (cd.endsWith(d) || d.endsWith(cd))
+      })) continue
+      if (q) {
+        const matchSearch =
+          phone.toLowerCase().includes(q) ||
+          (lead.full_name ?? '').toLowerCase().includes(q)
+        if (!matchSearch) continue
+      }
+      virtualFromLeads.push({
+        phone,
+        name: lead.full_name ?? null,
+        avatarUrl: null,
+        lastText: 'Sem mensagens ainda',
+        lastAt: lead.updated_at ?? lead.created_at ?? new Date(0).toISOString(),
+        unread: 0,
+        messages: [],
+      })
+      presentDigits.add(d)
+    }
+
+    return [...base, ...virtualFromLeads].sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1))
   }, [conversations, search, statusFilter, leads, kanbanColumns])
 
   // Casar o lead com o telefone selecionado (normalizando dígitos).
