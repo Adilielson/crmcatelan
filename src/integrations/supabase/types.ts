@@ -1038,11 +1038,20 @@ export type Database = {
       }
       leads: {
         Row: {
+          ad_body: string | null
+          ad_captured_at: string | null
+          ad_headline: string | null
+          ad_id: string | null
+          ad_media_type: string | null
+          ad_name: string | null
+          ad_source_url: string | null
+          ad_thumbnail_url: string | null
           assigned_user_id: string | null
           claimed_at: string | null
           claimed_by: string | null
           closed_at: string | null
           created_at: string | null
+          ctwa_clid: string | null
           custom_column_id: string | null
           email: string | null
           first_contact_at: string | null
@@ -1080,13 +1089,27 @@ export type Database = {
           tenant_id: string | null
           unit_id: string | null
           updated_at: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
+          ad_body?: string | null
+          ad_captured_at?: string | null
+          ad_headline?: string | null
+          ad_id?: string | null
+          ad_media_type?: string | null
+          ad_name?: string | null
+          ad_source_url?: string | null
+          ad_thumbnail_url?: string | null
           assigned_user_id?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
           closed_at?: string | null
           created_at?: string | null
+          ctwa_clid?: string | null
           custom_column_id?: string | null
           email?: string | null
           first_contact_at?: string | null
@@ -1124,13 +1147,27 @@ export type Database = {
           tenant_id?: string | null
           unit_id?: string | null
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
+          ad_body?: string | null
+          ad_captured_at?: string | null
+          ad_headline?: string | null
+          ad_id?: string | null
+          ad_media_type?: string | null
+          ad_name?: string | null
+          ad_source_url?: string | null
+          ad_thumbnail_url?: string | null
           assigned_user_id?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
           closed_at?: string | null
           created_at?: string | null
+          ctwa_clid?: string | null
           custom_column_id?: string | null
           email?: string | null
           first_contact_at?: string | null
@@ -1168,6 +1205,11 @@ export type Database = {
           tenant_id?: string | null
           unit_id?: string | null
           updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
