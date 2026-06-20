@@ -707,16 +707,22 @@ Deno.serve(async (req) => {
             }
           } else {
             const initialName = isValidContactName(senderName, senderPhone) ? senderName : null;
+            const adCtx = extractAdContext(message, b);
+            const insertPayload: Record<string, unknown> = {
+              tenant_id: tenantId,
+              phone: senderPhone,
+              full_name: initialName,
+              status: "open",
+              source: adCtx ? "ctwa_ads" : "whatsapp",
+              first_contact_at: new Date().toISOString(),
+            };
+            if (adCtx) {
+              Object.assign(insertPayload, adCtx, { ad_captured_at: new Date().toISOString() });
+              console.log(`[lead] CTWA capturado ad_id=${adCtx.ad_id ?? "-"} campaign=${adCtx.utm_campaign ?? "-"}`);
+            }
             const { data: newLead } = await adminClient
               .from("leads")
-              .insert({
-                tenant_id: tenantId,
-                phone: senderPhone,
-                full_name: initialName,
-                status: "open",
-                source: "whatsapp",
-                first_contact_at: new Date().toISOString(),
-              })
+              .insert(insertPayload)
               .select("id, full_name, assigned_user_id")
               .single();
             if (newLead) {
@@ -731,6 +737,27 @@ Deno.serve(async (req) => {
             await adminClient.from("leads").update({ full_name: senderName }).eq("id", leadId);
             leadName = senderName;
           }
+
+          // Lead pré-existente sem origem de anúncio ainda? Captura se este evento trouxer.
+          if (leadId) {
+            const adCtxExisting = extractAdContext(message, b);
+            if (adCtxExisting && (adCtxExisting.ad_id || adCtxExisting.ctwa_clid || adCtxExisting.utm_campaign)) {
+              const { data: cur } = await adminClient
+                .from("leads")
+                .select("ad_id, ctwa_clid, utm_campaign")
+                .eq("id", leadId)
+                .maybeSingle();
+              const hasOrigin = cur && (cur.ad_id || cur.ctwa_clid || cur.utm_campaign);
+              if (!hasOrigin) {
+                await adminClient
+                  .from("leads")
+                  .update({ ...adCtxExisting, ad_captured_at: new Date().toISOString() })
+                  .eq("id", leadId);
+                console.log(`[lead] origem de anúncio gravada em lead existente ${leadId}`);
+              }
+            }
+          }
+
         } catch (e) {
           console.error("[lead] erro localizar/criar:", e instanceof Error ? e.message : String(e));
         }
