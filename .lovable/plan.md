@@ -1,69 +1,89 @@
 ## Objetivo
 
-Disparar lembretes WhatsApp automáticos para agendamentos, detectar resposta de confirmação e atualizar o status do appointment (`pending` → `confirmed`). Reaproveita exatamente o padrão já existente em `lead_followups` + `/api/public/hooks/process-followups` + UAZ API.
+Três entregas que se complementam:
 
-## Pergunta de ambiguidade
+1. **Fuso correto da Ótica Catelan** salvo no banco (e seletor para qualquer tenant).
+2. **Tela Agenda → Configurações**: dropdown de fuso horário.
+3. **Lógica de "parado"** reescrita: usa última mensagem recebida vs. enviada, e só conta minutos dentro do horário comercial da loja.
 
-Os itens 2 e 3 do prompt dizem ambos "1h antes". Vou assumir:
-- **Item 2 — Lembrete do dia**: na manhã do agendamento (ex.: 8h da manhã do dia, ou 3h antes se for à tarde).
-- **Item 3 — Lembrete final**: 1h antes do horário marcado.
-Se quiser outro intervalo para o item 2, me diga antes que eu implemente.
+---
 
-## Mudanças
+## 1) Migration — coluna de fuso + colunas de mensagem no lead
 
-### 1. Banco (migração)
+**Tabela `tenants`**
+- Adicionar `timezone TEXT NOT NULL DEFAULT 'America/Sao_Paulo'`.
+- `UPDATE tenants SET timezone='America/Cuiaba' WHERE id = (Ótica Catelan Matriz)` — confirme se Cuiabá é o fuso certo (Catelan fica em MT?). Se for outro, me diga antes.
 
-Nova tabela `appointment_reminders` (espelha `lead_followups`):
-- `id`, `tenant_id`, `appointment_id` (FK), `lead_id`, `kind` (`confirm_24h` | `confirm_retry_2h` | `day_morning` | `final_1h`), `scheduled_at`, `status` (`pending|sent|skipped|failed|confirmed`), `sent_at`, `error_message`, `created_at`.
-- RLS por tenant (igual a `lead_followups`) + GRANTs para `authenticated` e `service_role`.
-- Trigger `schedule_appointment_reminders` em `appointments`:
-  - INSERT com status pending/confirmed → cria 3 lembretes (24h, day_morning, final_1h).
-  - UPDATE de `scheduled_at` → reagenda pendentes.
-  - UPDATE para status `cancelled`/`completed`/`no_show` → marca pendentes como `skipped`.
-  - UPDATE para `confirmed` → marca `confirm_24h`/`confirm_retry_2h` como `confirmed`.
+**Tabela `leads`** — duas colunas novas:
+- `last_inbound_at TIMESTAMPTZ` (última mensagem do cliente).
+- `last_outbound_at TIMESTAMPTZ` (última mensagem da loja/IA).
+- Backfill a partir de `messages` (max por `direction`).
 
-### 2. Processador (cron)
+**Trigger em `messages`** (AFTER INSERT):
+- Atualiza `leads.last_inbound_at` ou `last_outbound_at` conforme `direction`.
+- Mantém `updated_at` intocado nessas atualizações específicas (evita falso "movimento" do lead).
 
-Novo `src/routes/api/public/hooks/process-appointment-reminders.ts`:
-- Mesma forma de `process-followups.ts` (Bearer/cron-secret `FOLLOWUPS_CRON_SECRET`, lote de 200).
-- Para cada lembrete pendente vencido:
-  - Carrega lead + appointment + whatsapp_config + unit (endereço).
-  - Pula se appointment está `cancelled`/`completed`/`no_show`.
-  - Renderiza mensagem por `kind` (textos exatos do prompt).
-  - Envia via UAZ `/send/text`, loga em `whatsapp_message_logs`.
-  - Marca `sent`.
-  - Para `confirm_24h`: agenda automaticamente um `confirm_retry_2h` se ainda não havia.
+**Função `is_waiting_response(lead) → bool`**
+- Retorna `true` se `last_inbound_at > COALESCE(last_outbound_at, 'epoch')`.
 
-Agendamento `pg_cron`: a cada 15 min chamando a rota com `apikey`/`x-cron-secret`.
+**Função `business_minutes_between(_tenant_id, _from, _to) → INT`**
+- Calcula minutos úteis entre dois timestamps respeitando `agenda_business_hours` do tenant e o fuso do tenant (converte `_from/_to` para o timezone do tenant antes de iterar dias).
+- Desconta intervalo de almoço.
 
-### 3. Detecção de resposta de confirmação
+**Reescrever `notify_stale_leads()`**
+- Trocar `l.updated_at < now() - interval 'Xh'` por `business_minutes_between(tenant_id, GREATEST(last_inbound_at, updated_at), now()) >= threshold`.
+- Só notifica leads **aguardando resposta da loja** (`last_inbound_at > last_outbound_at`) OU leads em `open` sem nenhuma mensagem ainda.
+- Thresholds (em minutos comerciais): `open=60`, `in_progress=240`, `negotiating=240`.
+- Fora do horário comercial → nenhum minuto conta → nenhuma notificação extra criada de madrugada.
 
-Em `supabase/functions/whatsapp-webhook/index.ts`, ao receber uma mensagem inbound:
-- Se o telefone bate com um lead que tem appointment futuro em status `pending`:
-  - Regex simples: `/\b(sim|confirmo|confirmado|ok|pode\s*ser|tá|ta|👍)\b/i` → seta appointment `status = confirmed`, marca lembretes de confirmação como `confirmed`, registra atividade.
-  - Regex de cancelamento: `/\b(n[aã]o|cancelar|remarcar|desmarcar)\b/i` → cria notificação interna pedindo atenção do atendente (não cancela sozinho).
+---
 
-### 4. UI
+## 2) UI — Seletor de fuso em Agenda
 
-- `KanbanBoard` → no card do lead com appointment, badge "Confirmado" (verde) / "Pendente de confirmação" (âmbar) ao lado da data já planejada.
-- `LeadDetailSheet` / `LeadProfilePanel` → mostrar histórico dos lembretes (`status`, `sent_at`).
-- `agenda.tsx` → coluna/ícone "Confirmação" no calendário.
+Arquivo: `src/components/agenda/AgendaSettingsDialog.tsx`.
 
-## Mensagens (literal)
+- Adicionar `<Select>` "Fuso horário" no topo do diálogo, com opções IANA principais do Brasil:
+  - `America/Sao_Paulo` (Brasília — padrão)
+  - `America/Cuiaba` (MT)
+  - `America/Manaus` (AM/RO/RR)
+  - `America/Belem` (PA leste)
+  - `America/Fortaleza` (NE)
+  - `America/Noronha` (FN)
+  - `America/Rio_Branco` (AC)
+- Persistir via `update` em `tenants.timezone` (somente admin do tenant — RLS já cobre).
+- Hook novo `src/hooks/use-tenant-timezone.ts` (read + mutation, invalida `['tenant', tenantId]`).
+- Toast de confirmação.
 
-- `confirm_24h` / `confirm_retry_2h`:
-  *Olá, {nome}! Passando para confirmar seu agendamento amanhã na Ótica Catelã. Tudo certo para amanhã? Confirme aqui. Se não puder vir, nos avise.*
-- `day_morning` (confirmado):
-  *Ei, {nome}! Hoje é o dia do nosso agendamento! Estamos te esperando.*
-- `day_morning` (não confirmado):
-  *Ei, {nome}! Hoje é o dia do nosso agendamento! Aguardando sua confirmação.*
-- `final_1h`:
-  *{nome}, falta só 1 hora! Estamos te esperando na Ótica Catelã ({endereço}).*
+Também passa a usar esse fuso em qualquer formatador de data/hora existente da agenda (centraliza num helper `src/lib/tz.ts` com `formatInTz(date, tenantTz, pattern)` usando `Intl.DateTimeFormat`).
 
-## Pré-requisitos
+---
 
-- Confirme o intervalo do lembrete do item 2 (manhã do dia? 3h antes? outro?).
-- A integração WhatsApp (UAZ) já está pronta — sem novas chaves.
-- `FOLLOWUPS_CRON_SECRET` já existe e será reusado.
+## 3) Detalhes técnicos
 
-Depois de aprovado, implemento migração + rota + trigger no webhook + ajustes de UI numa única leva.
+```text
+notify_stale_leads()
+   │
+   ├── seleciona leads em (open|in_progress|negotiating) AGUARDANDO resposta
+   │     (last_inbound_at IS NULL e status=open, OU last_inbound_at > last_outbound_at)
+   │
+   ├── para cada lead:
+   │     waited_min = business_minutes_between(
+   │                    tenant_id,
+   │                    COALESCE(last_inbound_at, updated_at),
+   │                    now())
+   │     if waited_min >= threshold(status): cria notificação (dedupe 24h igual ao atual)
+   │
+   └── usa tenants.timezone para janela diária; respeita lunch_start/lunch_end
+```
+
+**Compatibilidade**: a coluna `timezone` tem default, então tenants existentes não quebram. O trigger de `messages` só dispara em novas mensagens; o backfill cuida do histórico. As 3 RPCs com `REVOKE EXECUTE` recém-aplicadas permanecem só para `service_role` (cron).
+
+**Tipos**: após a migration, `src/integrations/supabase/types.ts` será regenerado e referenciado nos componentes/hook novos. Nada para o usuário fazer.
+
+---
+
+## Confirmações antes de eu mandar a migration
+
+1. **Fuso da Catelan Matriz**: Cuiabá (`America/Cuiaba`, UTC−4)? Ou outro?
+2. **Thresholds em minutos comerciais** (60 / 240 / 240) batem com a regra atual ou querem ajustar?
+3. OK trigger atualizar `last_inbound_at/outbound_at` sem mexer no `updated_at` (para a coluna "Tempo parado" da equipe não ficar zerando a cada mensagem da IA)?
