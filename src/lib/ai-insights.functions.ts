@@ -51,8 +51,18 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     (m: any) => typeof m.error_message === "string" && m.error_message.trim().length > 0,
   );
   if (filtered.length < 4) {
-    throw new Error("Conversa sem mensagens suficientes para análise (mínimo 4)");
+    // Retorno suave: ainda não há conversa suficiente para análise.
+    // Não lançamos exceção pra não estourar overlay de erro no chat.
+    return {
+      ok: false as const,
+      skipped: true as const,
+      reason: "not_enough_messages" as const,
+      minimum: 4,
+      have: filtered.length,
+      message: `Aguarde a conversa avançar (mínimo ${4} mensagens, atual: ${filtered.length}).`,
+    };
   }
+
 
   // Precisamos de pelo menos uma mensagem do atendente HUMANO (não IA SDR)
   const hasHuman = filtered.some(
