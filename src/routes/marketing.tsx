@@ -70,11 +70,14 @@ function MarketingPartnerDashboard() {
         </div>
       </div>
 
+      <AdSourceBreakdown />
+
       {activeMainTab === 'performance' ? (
         <PerformanceView performanceData={performanceData} creativePerformance={creativePerformance} />
       ) : (
         <IntegrationsView />
       )}
+
     </div>
   )
 }
