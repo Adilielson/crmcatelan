@@ -176,8 +176,10 @@ export function useWhatsAppChat() {
         messages: [],
       };
       c.messages.push(m);
-      if (m.senderName) c.name = m.senderName;
-      if (m.senderAvatarUrl) c.avatarUrl = m.senderAvatarUrl;
+      // Apenas mensagens recebidas (do lead) definem o nome/avatar do contato.
+      // Mensagens enviadas têm sender_name do atendente/IA ("Atendente", "IA SDR", etc.).
+      if (!m.fromMe && m.senderName) c.name = m.senderName;
+      if (!m.fromMe && m.senderAvatarUrl) c.avatarUrl = m.senderAvatarUrl;
       if (m.at >= c.lastAt) {
         c.lastAt = m.at;
         c.lastText = m.text || `[${m.type}]`;
