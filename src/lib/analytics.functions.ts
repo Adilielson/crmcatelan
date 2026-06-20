@@ -38,13 +38,15 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     const unitFilter = data.unitId ?? null
 
     // ---- Leads ----
+    // ---- Leads ----
     let leadsQ = supabase
       .from('leads')
-      .select('id, status, sales_value, score_ia, source, updated_at, full_name, ia_summary, created_at, unit_id, phone')
+      .select('id, status, sales_value, score_ia, source, updated_at, full_name, ia_summary, created_at, unit_id, phone, last_inbound_at, last_outbound_at')
     if (unitFilter) leadsQ = leadsQ.eq('unit_id', unitFilter)
     const { data: leads, error: leadsErr } = await leadsQ
     if (leadsErr) throw leadsErr
-    const allLeads = leads ?? []
+    const allLeads = (leads ?? []) as Array<Record<string, any>>
+
 
     // ---- Appointments (next 7 days) ----
     const in7d = new Date()
