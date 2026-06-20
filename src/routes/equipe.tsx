@@ -137,6 +137,26 @@ function Equipe() {
     if (!isManager) setAssigneeFilter(userId);
   }, [userId, role, isManager]);
 
+  // Realtime: refletir movimentações de leads imediatamente
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`equipe-leads-${tenantId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads', filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['equipe-leads', tenantId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId, qc]);
+
+
+
 
 
   const profilesQ = useQuery({
