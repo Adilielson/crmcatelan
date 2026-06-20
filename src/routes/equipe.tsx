@@ -30,6 +30,13 @@ import { toast } from 'sonner';
 
 export const Route = createFileRoute('/equipe')({
   component: Equipe,
+  errorComponent: ({ error, reset }) => (
+    <div className="space-y-4 p-6">
+      <h1 className="text-xl font-black text-ink">Não foi possível carregar a Equipe</h1>
+      <p className="text-sm text-[#6B7280]">{error?.message || 'Erro desconhecido.'}</p>
+      <Button onClick={() => reset()}>Tentar novamente</Button>
+    </div>
+  ),
 });
 
 interface TeamProfile {
