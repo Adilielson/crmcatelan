@@ -63,9 +63,39 @@ export function useWhatsApp() {
         setIsConnected(!!row.is_connected);
         setConnectedPhone(row.connected_phone ?? null);
         setConnectedName(row.connected_name ?? null);
+        // Se o cache disser que está desconectado, valida ao vivo na uazapi
+        // (cache pode estar defasado se a conexão voltou após uma queda)
+        if (!row.is_connected) {
+          try {
+            const result = await callManage('check-status', tenant.id) as { connected?: boolean; phone?: string | null; name?: string | null };
+            if (result.connected) {
+              setIsConnected(true);
+              if (result.phone) setConnectedPhone(result.phone);
+              if (result.name) setConnectedName(result.name);
+            }
+          } catch (e) {
+            console.warn('[whatsapp] live check-status fallback:', e);
+          }
+        }
       }
     })();
   }, [tenant?.id]);
+
+  // Polling leve a cada 60s para manter status sincronizado
+  useEffect(() => {
+    if (!tenant?.id || !hasToken) return;
+    const id = setInterval(async () => {
+      try {
+        const result = await callManage('check-status', tenant.id) as { connected?: boolean; phone?: string | null; name?: string | null };
+        setIsConnected(!!result.connected);
+        if (result.connected) {
+          if (result.phone) setConnectedPhone(result.phone);
+          if (result.name) setConnectedName(result.name);
+        }
+      } catch { /* silencioso */ }
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [tenant?.id, hasToken]);
 
   const saveInstanceToken = useCallback(
     async (rawToken: string): Promise<void> => {
@@ -157,6 +187,8 @@ export function useWhatsApp() {
           status: 'sent',
           error_message: text,
         });
+        // Envio OK ⇒ garante que UI reflita "conectado"
+        setIsConnected(true);
       } catch (err) {
         await db.from('whatsapp_message_logs').insert({
           tenant_id: tenant.id,

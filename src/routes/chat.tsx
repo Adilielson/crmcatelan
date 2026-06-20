@@ -46,7 +46,7 @@ function Chat() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const { conversations, loading } = useWhatsAppChat()
-  const { sendText, sendImage, sendAudio, isConnected: waConnected } = useWhatsApp()
+  const { sendText, sendImage, sendAudio, isConnected: waConnected, checkStatus } = useWhatsApp()
   const { data: leads = [] } = useLeads()
   const qc = useQueryClient()
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null)
@@ -267,9 +267,13 @@ function Chat() {
 
   const handleSend = async () => {
     if (!draft.trim() || !selectedPhone) return
-    if (!waConnected) { toast.error('WhatsApp não está conectado.'); return }
     setSending(true)
     try {
+      // Revalida status ao vivo se o cache disser desconectado (evita falso bloqueio)
+      if (!waConnected) {
+        const ok = await checkStatus().catch(() => false)
+        if (!ok) { toast.error('WhatsApp não está conectado.'); return }
+      }
       await sendText(selectedPhone, draft.trim())
       setDraft('')
       toast.success('Mensagem enviada')
@@ -853,7 +857,7 @@ function Chat() {
                   {draft.trim() ? (
                     <Button
                       onClick={handleSend}
-                      disabled={sending || !waConnected}
+                      disabled={sending}
                       className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
                     >
                       {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
