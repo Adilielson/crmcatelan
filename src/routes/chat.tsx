@@ -32,6 +32,8 @@ import { supabase } from '@/integrations/supabase/client'
 import { TransferLeadDialog } from '@/components/chat/TransferLeadDialog'
 import { useServerFn } from '@tanstack/react-start'
 import { analyzeLeadConversation, suggestReplyForLead } from '@/lib/ai-insights.functions'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 
 
 export const Route = createFileRoute('/chat')({
