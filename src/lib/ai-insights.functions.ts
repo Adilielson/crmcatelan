@@ -454,12 +454,12 @@ export const suggestReplyForLead = createServerFn({ method: "POST" })
       if (digits.length >= 8) {
         const { data: convByPhone } = await supabaseAdmin
           .from("conversations")
-          .select("id, contact_phone")
+          .select("id, whatsapp_chat_id")
           .eq("tenant_id", tenantId)
           .order("last_message_at", { ascending: false })
           .limit(50);
         const match = (convByPhone || []).find((c: any) => {
-          const d = String(c.contact_phone || "").replace(/\D/g, "");
+          const d = String(c.whatsapp_chat_id || "").replace(/\D/g, "");
           return d && (d === digits || d.endsWith(digits) || digits.endsWith(d));
         });
         convId = match?.id ?? null;
