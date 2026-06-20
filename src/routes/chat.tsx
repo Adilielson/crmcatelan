@@ -62,6 +62,8 @@ function Chat() {
   const [recording, setRecording] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
+  const [lostOpen, setLostOpen] = useState(false)
+  const [lostReason, setLostReason] = useState('')
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
