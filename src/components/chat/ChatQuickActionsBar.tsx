@@ -12,18 +12,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { DBLead, LeadStage } from '@/hooks/use-leads';
+import { DBLead, LeadStage, useUpdateLead } from '@/hooks/use-leads';
 import { useKanbanColumns, KanbanColumn } from '@/hooks/use-kanban-columns';
+import { useAgenda } from '@/hooks/use-agenda';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
 import { TransferLeadDialog } from './TransferLeadDialog';
 
 /**
  * Toolbar com ações rápidas exibida abaixo do header da conversa em /chat.
  * - Select de status (move o lead entre colunas do Kanban do tenant)
+ *   • "Agendado" exige data/hora antes de mover
+ *   • "Perdido" exige motivo antes de mover
  * - Transferir para outro atendente
  * - Agendar / Local / Valor (via LeadQuickActions)
- * - "Ver ficha" para abrir o painel direito como Sheet em telas menores
  */
 export function ChatQuickActionsBar({
   lead,
@@ -36,7 +47,13 @@ export function ChatQuickActionsBar({
   const currentUserId = useAuthStore((s) => s.user?.id ?? null);
   const qc = useQueryClient();
   const { data: columns = [] } = useKanbanColumns();
+  const { addAppointment } = useAgenda();
+  const updateLead = useUpdateLead();
   const [transferOpen, setTransferOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
+  const [lossOpen, setLossOpen] = useState(false);
+  const [lossReason, setLossReason] = useState('');
   const isAiHandling = !lead.assigned_user_id;
 
   const toggleAi = useMutation({
@@ -92,7 +109,72 @@ export function ChatQuickActionsBar({
       c.is_system ? c.system_key === value : c.id === value,
     );
     if (!col) return;
+    if (col.is_system && col.system_key === 'scheduled') {
+      setScheduleData({ date: '', time: '' });
+      setScheduleOpen(true);
+      return;
+    }
+    if (col.is_system && col.system_key === 'lost') {
+      setLossReason('');
+      setLossOpen(true);
+      return;
+    }
     updateStatus.mutate(col);
+  };
+
+  const confirmSchedule = async () => {
+    if (!scheduleData.date || !scheduleData.time) {
+      toast.error('Informe data e horário do agendamento');
+      return;
+    }
+    const [hh, mm] = scheduleData.time.split(':');
+    const endTime = `${String(parseInt(hh) + 1).padStart(2, '0')}:${mm}`;
+    const ok = await addAppointment({
+      leadId: lead.id,
+      leadName: lead.full_name,
+      date: scheduleData.date,
+      startTime: scheduleData.time,
+      endTime,
+      status: 'pendente',
+      examType: 'Consulta Oftalmológica',
+      reminderSent: false,
+      professionalId: 'dr-claudio',
+      unit: 'Loja Centro',
+      origin: 'manual',
+      value: lead.sales_value ?? 150,
+      propensityScore: 0.85,
+      notificationChannel: 'whatsapp',
+      rescheduleCount: 0,
+      needsTransport: false,
+    });
+    if (!ok) {
+      toast.error('Conflito de horário na agenda');
+      return;
+    }
+    await updateLead.mutateAsync({ id: lead.id, updates: { status: 'scheduled', custom_column_id: null } });
+    qc.invalidateQueries({ queryKey: ['leads', tenantId] });
+    toast.success('Agendamento criado e lead movido!');
+    setScheduleOpen(false);
+    setScheduleData({ date: '', time: '' });
+  };
+
+  const confirmLoss = async () => {
+    if (!lossReason) {
+      toast.error('Selecione o motivo da perda');
+      return;
+    }
+    await updateLead.mutateAsync({
+      id: lead.id,
+      updates: {
+        status: 'lost',
+        custom_column_id: null,
+        notes: `${lead.notes ?? ''}\n[Perdido: ${lossReason}]`.trim(),
+      },
+    });
+    qc.invalidateQueries({ queryKey: ['leads', tenantId] });
+    toast.error('Lead marcado como perdido');
+    setLossOpen(false);
+    setLossReason('');
   };
 
   return (
@@ -175,6 +257,85 @@ export function ChatQuickActionsBar({
         open={transferOpen}
         onOpenChange={setTransferOpen}
       />
+
+      {/* Agenda dialog (obrigatório data/hora) */}
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Agendar — {lead.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Data *</Label>
+              <Input
+                type="date"
+                required
+                value={scheduleData.date}
+                onChange={(e) => setScheduleData((p) => ({ ...p, date: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Hora *</Label>
+              <Input
+                type="time"
+                required
+                value={scheduleData.time}
+                onChange={(e) => setScheduleData((p) => ({ ...p, time: e.target.value }))}
+              />
+            </div>
+            {lead.phone && <p className="text-xs text-gray-500">📱 {lead.phone}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScheduleOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmSchedule}
+              disabled={!scheduleData.date || !scheduleData.time || updateLead.isPending}
+            >
+              Confirmar Agendamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Loss dialog (motivo obrigatório) */}
+      <Dialog open={lossOpen} onOpenChange={setLossOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Motivo da Perda — {lead.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Selecione o motivo *</Label>
+              <Select value={lossReason} onValueChange={setLossReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Preço alto">Preço alto</SelectItem>
+                  <SelectItem value="Fechou com concorrente">Fechou com concorrente</SelectItem>
+                  <SelectItem value="Não responde mais">Não responde mais</SelectItem>
+                  <SelectItem value="Sem perfil">Sem perfil</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLossOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmLoss}
+              disabled={!lossReason || updateLead.isPending}
+            >
+              Confirmar Perda
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
