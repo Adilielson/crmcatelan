@@ -304,6 +304,10 @@ function Equipe() {
         </div>
         {profilesQ.isLoading ? (
           <p className="text-sm text-[#6B7280]">Carregando equipe…</p>
+        ) : profilesQ.isError ? (
+          <p className="text-sm text-red-600">
+            Erro ao carregar equipe: {(profilesQ.error as Error)?.message}
+          </p>
         ) : profiles.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum membro encontrado.</p>
         ) : (
