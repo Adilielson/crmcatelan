@@ -113,7 +113,7 @@ const BRL = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 0,
 });
 
-const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner']);
+const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner', 'manager']);
 
 function Equipe() {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
