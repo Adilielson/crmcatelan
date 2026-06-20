@@ -422,28 +422,55 @@ export const suggestReplyForLead = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { tenantId } = await getUserTenantAndRole(context.supabase, context.userId);
 
-    const { data: lead, error: leadErr } = await context.supabase
+    // Usamos supabaseAdmin a partir daqui pois já validamos que o usuário
+    // pertence ao tenant. Isso evita falsos "não encontrado" causados por RLS
+    // (ex.: atendente vendo conversa atribuída a outro, manager sem unit link).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: lead, error: leadErr } = await supabaseAdmin
       .from("leads")
-      .select("id, tenant_id, full_name, status")
+      .select("id, tenant_id, full_name, status, phone")
       .eq("id", data.leadId)
       .eq("tenant_id", tenantId)
       .maybeSingle();
     if (leadErr) throw new Error(leadErr.message);
     if (!lead) throw new Error("Lead não encontrado");
 
-    const { data: conv } = await context.supabase
-      .from("conversations")
-      .select("id")
-      .eq("lead_id", lead.id)
-      .order("last_message_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!conv) throw new Error("Nenhuma conversa encontrada para este lead");
+    // Busca conversa por lead_id; se não houver, tenta casar por telefone (lead recém pego da fila).
+    let convId: string | null = null;
+    {
+      const { data: conv } = await supabaseAdmin
+        .from("conversations")
+        .select("id")
+        .eq("lead_id", lead.id)
+        .eq("tenant_id", tenantId)
+        .order("last_message_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      convId = conv?.id ?? null;
+    }
+    if (!convId && lead.phone) {
+      const digits = String(lead.phone).replace(/\D/g, "");
+      if (digits.length >= 8) {
+        const { data: convByPhone } = await supabaseAdmin
+          .from("conversations")
+          .select("id, contact_phone")
+          .eq("tenant_id", tenantId)
+          .order("last_message_at", { ascending: false })
+          .limit(50);
+        const match = (convByPhone || []).find((c: any) => {
+          const d = String(c.contact_phone || "").replace(/\D/g, "");
+          return d && (d === digits || d.endsWith(digits) || digits.endsWith(d));
+        });
+        convId = match?.id ?? null;
+      }
+    }
+    if (!convId) throw new Error("Nenhuma conversa encontrada para este lead");
 
-    const { data: messages, error: msgErr } = await context.supabase
+    const { data: messages, error: msgErr } = await supabaseAdmin
       .from("messages")
       .select("direction, content, created_at")
-      .eq("conversation_id", conv.id)
+      .eq("conversation_id", convId)
       .order("created_at", { ascending: false })
       .limit(20);
     if (msgErr) throw new Error(msgErr.message);
