@@ -706,7 +706,7 @@ function Chat() {
                       <span>Marcar como Venda Fechada</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => moveToStatus.mutate('lost')}
+                      onClick={() => { setLostReason(''); setLostOpen(true); }}
                       disabled={!currentLead || moveToStatus.isPending}
                     >
                       <XCircle className="mr-2 h-4 w-4 text-red-500" />
