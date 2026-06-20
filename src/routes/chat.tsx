@@ -253,9 +253,16 @@ function Chat() {
       if (!currentLead) throw new Error('Lead não encontrado')
       return analyzeFn({ data: { leadId: currentLead.id } })
     },
-    onSuccess: () => toast.success('Conversa analisada pela IA Sombra ✨'),
+    onSuccess: (res: any) => {
+      if (res?.skipped) {
+        toast.info(res.message ?? 'Conversa ainda curta para análise.')
+        return
+      }
+      toast.success('Conversa analisada pela IA Sombra ✨')
+    },
     onError: (e: any) => toast.error(e.message ?? 'Erro ao analisar conversa'),
   })
+
 
   const suggestFn = useServerFn(suggestReplyForLead)
   const suggestReply = useMutation({
