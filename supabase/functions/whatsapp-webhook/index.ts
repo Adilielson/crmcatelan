@@ -225,6 +225,99 @@ function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown
   return { url, mime, kind };
 }
 
+// ── Extrai contexto de anúncio (Click-to-WhatsApp) do payload ───────────
+// A uazapi propaga o referral do Meta em variações como:
+//   message.contextInfo.externalAdReply
+//   message.ctwaContext / message.adReply
+//   b.ctwaContext / b.referral
+// Quando o lead vem de um anúncio do Meta com botão "Enviar mensagem",
+// esses campos trazem id do anúncio, título, thumb, sourceUrl e ctwa_clid.
+type AdContext = {
+  ad_id: string | null;
+  ad_name: string | null;
+  ad_headline: string | null;
+  ad_body: string | null;
+  ad_thumbnail_url: string | null;
+  ad_source_url: string | null;
+  ad_media_type: string | null;
+  ctwa_clid: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+};
+
+function parseUtmsFromUrl(url: string | null): Partial<AdContext> {
+  if (!url) return {};
+  try {
+    const u = new URL(url);
+    const g = (k: string) => u.searchParams.get(k);
+    return {
+      utm_source: g("utm_source"),
+      utm_medium: g("utm_medium"),
+      utm_campaign: g("utm_campaign"),
+      utm_content: g("utm_content"),
+      utm_term: g("utm_term"),
+    };
+  } catch {
+    return {};
+  }
+}
+
+function extractAdContext(message: Record<string, unknown>, root: Record<string, unknown>): AdContext | null {
+  const ctxInfo = asObject((message as any).contextInfo ?? (message as any).context);
+  const ear = asObject((ctxInfo as any).externalAdReply);
+  const ctwa = asObject(
+    (message as any).ctwaContext ?? (message as any).adReply ??
+    (root as any).ctwaContext ?? (root as any).referral ?? (root as any).adReply,
+  );
+
+  const ad_id = pickString(
+    (ear as any).sourceId, (ear as any).source_id,
+    (ctwa as any).sourceId, (ctwa as any).source_id,
+    (ctwa as any).ad_id, (ctwa as any).adId,
+  );
+  const ad_name = pickString(
+    (ear as any).sourceName, (ctwa as any).sourceName,
+    (ear as any).title, (ctwa as any).title,
+    (ctwa as any).ad_name, (ctwa as any).adName,
+  );
+  const ad_headline = pickString((ear as any).title, (ctwa as any).headline);
+  const ad_body = pickString((ear as any).body, (ctwa as any).body, (ctwa as any).description);
+  const ad_thumbnail_url = pickString(
+    (ear as any).thumbnailUrl, (ear as any).thumbnail_url, (ear as any).thumbnail,
+    (ctwa as any).thumbnailUrl, (ctwa as any).thumbnail_url, (ctwa as any).image_url,
+    (ctwa as any).media_url,
+  );
+  const ad_source_url = pickString(
+    (ear as any).sourceUrl, (ear as any).source_url,
+    (ctwa as any).sourceUrl, (ctwa as any).source_url, (ctwa as any).url,
+  );
+  const ad_media_type = pickString(
+    (ear as any).mediaType, (ear as any).media_type,
+    (ctwa as any).mediaType, (ctwa as any).media_type,
+    (ear as any).sourceType, (ctwa as any).sourceType,
+  );
+  const ctwa_clid = pickString(
+    (ctwa as any).ctwa_clid, (ctwa as any).ctwaClid, (ctwa as any).clid,
+    (ear as any).ctwa_clid, (root as any).ctwa_clid,
+  );
+
+  const hasAny = ad_id || ad_name || ad_headline || ad_source_url || ad_thumbnail_url || ctwa_clid;
+  if (!hasAny) return null;
+
+  const utms = parseUtmsFromUrl(ad_source_url);
+  return {
+    ad_id, ad_name, ad_headline, ad_body, ad_thumbnail_url, ad_source_url, ad_media_type, ctwa_clid,
+    utm_source:   utms.utm_source   ?? null,
+    utm_medium:   utms.utm_medium   ?? null,
+    utm_campaign: utms.utm_campaign ?? null,
+    utm_content:  utms.utm_content  ?? null,
+    utm_term:     utms.utm_term     ?? null,
+  };
+}
+
 // Baixa/descriptografa mídia via uazapi (URLs mmg.whatsapp.net são criptografadas
 // e não abrem no navegador). Retorna uma URL pública utilizável ou null.
 async function downloadMediaViaUazapi(instanceToken: string, messageId: string): Promise<string | null> {
