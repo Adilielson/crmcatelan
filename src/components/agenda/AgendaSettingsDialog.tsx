@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Trash2, Plus, Clock, Ban } from 'lucide-react';
+import { Trash2, Plus, Clock, Ban, Globe2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   useBusinessHours,
   useBlockedDates,
@@ -19,6 +20,8 @@ import {
   trimSec,
   BusinessHour,
 } from '@/hooks/use-agenda-settings';
+import { BR_TIMEZONES, useTenantTimezone, useUpdateTenantTimezone } from '@/hooks/use-tenant-timezone';
+
 
 interface Props {
   open: boolean;
@@ -59,25 +62,56 @@ export function AgendaSettingsDialog({ open, onOpenChange }: Props) {
 function BusinessHoursTab() {
   const { data: hours = [], isLoading } = useBusinessHours();
   const upsert = useUpsertBusinessHour();
+  const { data: tz } = useTenantTimezone();
+  const updateTz = useUpdateTenantTimezone();
 
   if (isLoading) return <div className="p-8 text-center text-sm text-gray-500">Carregando…</div>;
 
   return (
-    <div className="space-y-2">
-      {Array.from({ length: 7 }).map((_, weekday) => {
-        const row = hours.find((h) => h.weekday === weekday) ?? {
-          weekday,
-          is_open: false,
-          open_time: null,
-          close_time: null,
-          lunch_start: null,
-          lunch_end: null,
-        } as Partial<BusinessHour>;
-        return <WeekdayRow key={weekday} row={row} onSave={(patch) => upsert.mutate({ weekday, ...row, ...patch })} />;
-      })}
+    <div className="space-y-4">
+      <div className="p-3 rounded-xl border border-[#E3E6EB] bg-gray-50/50">
+        <div className="flex items-center gap-3">
+          <Globe2 className="w-4 h-4 text-gray-500" />
+          <div className="flex-1">
+            <Label className="text-[10px] uppercase tracking-wider text-gray-500">Fuso horário da loja</Label>
+            <Select
+              value={tz ?? 'America/Sao_Paulo'}
+              onValueChange={(v) => updateTz.mutate(v)}
+              disabled={updateTz.isPending}
+            >
+              <SelectTrigger className="h-9 mt-1 text-sm">
+                <SelectValue placeholder="Selecione o fuso" />
+              </SelectTrigger>
+              <SelectContent>
+                {BR_TIMEZONES.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Usado nos horários de funcionamento, lembretes e no cálculo de "lead parado em horário comercial".
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {Array.from({ length: 7 }).map((_, weekday) => {
+          const row = hours.find((h) => h.weekday === weekday) ?? {
+            weekday,
+            is_open: false,
+            open_time: null,
+            close_time: null,
+            lunch_start: null,
+            lunch_end: null,
+          } as Partial<BusinessHour>;
+          return <WeekdayRow key={weekday} row={row} onSave={(patch) => upsert.mutate({ weekday, ...row, ...patch })} />;
+        })}
+      </div>
     </div>
   );
 }
+
 
 function WeekdayRow({ row, onSave }: { row: Partial<BusinessHour>; onSave: (patch: Partial<BusinessHour>) => void }) {
   return (
