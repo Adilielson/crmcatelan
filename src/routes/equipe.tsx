@@ -511,10 +511,15 @@ function Equipe() {
                         }
                       >
                         {isStale && <AlertTriangle className="h-3 w-3" />}
-                        {formatDistanceToNow(new Date(l.updated_at), {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
+                        {(() => {
+                          const d = l.updated_at ? new Date(l.updated_at) : null;
+                          if (!d || Number.isNaN(d.getTime())) return '—';
+                          try {
+                            return formatDistanceToNow(d, { addSuffix: true, locale: ptBR });
+                          } catch {
+                            return '—';
+                          }
+                        })()}
                       </span>
                     </TableCell>
                     <TableCell className="text-sm">
