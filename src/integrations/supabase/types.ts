@@ -1059,6 +1059,8 @@ export type Database = {
           ia_urgencia: string | null
           ia_urgency: string | null
           id: string
+          last_inbound_at: string | null
+          last_outbound_at: string | null
           last_reactivated_at: string | null
           next_contact_at: string | null
           notes: string | null
@@ -1101,6 +1103,8 @@ export type Database = {
           ia_urgencia?: string | null
           ia_urgency?: string | null
           id?: string
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
           last_reactivated_at?: string | null
           next_contact_at?: string | null
           notes?: string | null
@@ -1143,6 +1147,8 @@ export type Database = {
           ia_urgencia?: string | null
           ia_urgency?: string | null
           id?: string
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
           last_reactivated_at?: string | null
           next_contact_at?: string | null
           notes?: string | null
@@ -1849,6 +1855,7 @@ export type Database = {
           status: string | null
           storage_limit_bytes: number | null
           storage_used_bytes: number | null
+          timezone: string
           total_leads_mes: number | null
           updated_at: string | null
           webhook_url_notificacoes: string | null
@@ -1870,6 +1877,7 @@ export type Database = {
           status?: string | null
           storage_limit_bytes?: number | null
           storage_used_bytes?: number | null
+          timezone?: string
           total_leads_mes?: number | null
           updated_at?: string | null
           webhook_url_notificacoes?: string | null
@@ -1891,6 +1899,7 @@ export type Database = {
           status?: string | null
           storage_limit_bytes?: number | null
           storage_used_bytes?: number | null
+          timezone?: string
           total_leads_mes?: number | null
           updated_at?: string | null
           webhook_url_notificacoes?: string | null
@@ -2256,6 +2265,10 @@ export type Database = {
       }
     }
     Functions: {
+      business_minutes_between: {
+        Args: { _from: string; _tenant_id: string; _to: string }
+        Returns: number
+      }
       get_active_ai_credential: {
         Args: {
           _provider?: Database["public"]["Enums"]["ai_provider"]
