@@ -30,6 +30,13 @@ import { toast } from 'sonner';
 
 export const Route = createFileRoute('/equipe')({
   component: Equipe,
+  errorComponent: ({ error, reset }) => (
+    <div className="space-y-4 p-6">
+      <h1 className="text-xl font-black text-ink">Não foi possível carregar a Equipe</h1>
+      <p className="text-sm text-[#6B7280]">{error?.message || 'Erro desconhecido.'}</p>
+      <Button onClick={() => reset()}>Tentar novamente</Button>
+    </div>
+  ),
 });
 
 interface TeamProfile {
@@ -106,7 +113,7 @@ const BRL = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 0,
 });
 
-const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner']);
+const MANAGER_ROLES = new Set(['admin', 'super_admin', 'owner', 'manager']);
 
 function Equipe() {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
@@ -297,6 +304,10 @@ function Equipe() {
         </div>
         {profilesQ.isLoading ? (
           <p className="text-sm text-[#6B7280]">Carregando equipe…</p>
+        ) : profilesQ.isError ? (
+          <p className="text-sm text-red-600">
+            Erro ao carregar equipe: {(profilesQ.error as Error)?.message}
+          </p>
         ) : profiles.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum membro encontrado.</p>
         ) : (
@@ -451,6 +462,10 @@ function Equipe() {
 
         {leadsQ.isLoading ? (
           <p className="text-sm text-[#6B7280]">Carregando atendimentos…</p>
+        ) : leadsQ.isError ? (
+          <p className="text-sm text-red-600">
+            Erro ao carregar atendimentos: {(leadsQ.error as Error)?.message}
+          </p>
         ) : filtered.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum atendimento encontrado.</p>
         ) : (
@@ -496,10 +511,15 @@ function Equipe() {
                         }
                       >
                         {isStale && <AlertTriangle className="h-3 w-3" />}
-                        {formatDistanceToNow(new Date(l.updated_at), {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
+                        {(() => {
+                          const d = l.updated_at ? new Date(l.updated_at) : null;
+                          if (!d || Number.isNaN(d.getTime())) return '—';
+                          try {
+                            return formatDistanceToNow(d, { addSuffix: true, locale: ptBR });
+                          } catch {
+                            return '—';
+                          }
+                        })()}
                       </span>
                     </TableCell>
                     <TableCell className="text-sm">
