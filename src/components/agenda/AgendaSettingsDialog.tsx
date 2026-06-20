@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Trash2, Plus, Clock, Ban } from 'lucide-react';
+import { Trash2, Plus, Clock, Ban, Globe2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   useBusinessHours,
   useBlockedDates,
@@ -19,6 +20,8 @@ import {
   trimSec,
   BusinessHour,
 } from '@/hooks/use-agenda-settings';
+import { BR_TIMEZONES, useTenantTimezone, useUpdateTenantTimezone } from '@/hooks/use-tenant-timezone';
+
 
 interface Props {
   open: boolean;
