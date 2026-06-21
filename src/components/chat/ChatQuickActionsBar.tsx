@@ -55,7 +55,6 @@ export function ChatQuickActionsBar({
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
   const [lossOpen, setLossOpen] = useState(false);
-  const [lossReason, setLossReason] = useState('');
   const isAiHandling = !lead.assigned_user_id;
 
   const toggleAi = useMutation({
