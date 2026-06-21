@@ -34,7 +34,7 @@ export function GoalsSettings() {
   const [newType, setNewType] = useState({ name: "", default_value: "" });
 
   const [month, setMonth] = useState(currentMonthISO().slice(0, 7));
-  const [goal, setGoal] = useState({ bronze: 0, gold: 0, diamond: 0, active_tier: "bronze" as Tier });
+  const [goal, setGoal] = useState<{ bronze: string; gold: string; diamond: string; active_tier: Tier }>({ bronze: "0", gold: "0", diamond: "0", active_tier: "bronze" });
   const [loadingGoal, setLoadingGoal] = useState(true);
   const [savingGoal, setSavingGoal] = useState(false);
 
