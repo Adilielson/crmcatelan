@@ -165,7 +165,9 @@ export const simulateChat = createServerFn({ method: "POST" })
       .filter((d: any) => d.content?.trim())
       .map((d: any) => `[${d.name}]\n${(d.content as string).slice(0, 3000)}`);
 
-    const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts);
+    const { loadStyleBlockForPrompt } = await import("./ai-style.functions");
+    const styleBlock = await loadStyleBlockForPrompt(tenantId);
+    const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts, styleBlock);
 
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new Error("OPENAI_API_KEY ausente");
