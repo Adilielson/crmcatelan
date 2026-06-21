@@ -1,14 +1,13 @@
 import { Badge } from '@/components/ui/badge';
-import { Brain, History, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag, Activity } from 'lucide-react';
+import { Brain, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag } from 'lucide-react';
 import { DBLead } from '@/hooks/use-leads';
-import { useLeadHistory } from '@/hooks/use-lead-history';
 import { useConsultationSummary } from '@/hooks/use-consultation-summary';
 import { PrescriptionCard } from '@/components/leads/PrescriptionCard';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
 import { StageBadge } from '@/components/leads/StageBadge';
 import { StageStepper } from '@/components/leads/StageStepper';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { LeadTimeline } from '@/components/leads/LeadTimeline';
+import { LeadPurchasesCard } from '@/components/leads/LeadPurchasesCard';
 import { cn } from '@/lib/utils';
 
 function fmtDateTime(s: string | null) {
