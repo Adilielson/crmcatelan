@@ -44,6 +44,7 @@ interface TeamProfile {
   full_name: string | null;
   role: string;
   avatar_url: string | null;
+  is_reference_agent: boolean;
 }
 
 interface TeamLead {
