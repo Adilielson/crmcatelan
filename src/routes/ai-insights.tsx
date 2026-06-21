@@ -65,6 +65,9 @@ function AiInsightsPage() {
         </div>
       </header>
 
+      <ReferenceStyleCard />
+
+
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4">
