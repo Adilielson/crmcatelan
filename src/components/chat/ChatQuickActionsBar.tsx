@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, ChevronsUpDown, Bot, Hand } from 'lucide-react';
+import { ChevronsUpDown, PanelRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/hooks/use-auth';
@@ -27,7 +27,6 @@ import { useKanbanColumns, KanbanColumn } from '@/hooks/use-kanban-columns';
 import { useAgenda } from '@/hooks/use-agenda';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
 import { LostLeadDialog } from '@/components/leads/LostLeadDialog';
-import { TransferLeadDialog } from './TransferLeadDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
 /**
@@ -35,46 +34,26 @@ import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
  * - Select de status (move o lead entre colunas do Kanban do tenant)
  *   • "Agendado" exige data/hora antes de mover
  *   • "Perdido" exige motivo antes de mover
- * - Transferir para outro atendente
+ * - Ver ficha do lead
  * - Agendar / Local / Valor (via LeadQuickActions)
  */
 export function ChatQuickActionsBar({
   lead,
   className,
+  onOpenProfile,
 }: {
   lead: DBLead;
   className?: string;
+  onOpenProfile?: () => void;
 }) {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
-  const currentUserId = useAuthStore((s) => s.user?.id ?? null);
   const qc = useQueryClient();
   const { data: columns = [] } = useKanbanColumns();
   const { addAppointment } = useAgenda();
   const updateLead = useUpdateLead();
-  const [transferOpen, setTransferOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
   const [lossOpen, setLossOpen] = useState(false);
-  const isAiHandling = !lead.assigned_user_id;
-
-  const toggleAi = useMutation({
-    mutationFn: async (takeOver: boolean) => {
-      const updates: Record<string, unknown> = takeOver
-        ? { assigned_user_id: currentUserId, status: 'in_progress' }
-        : { assigned_user_id: null };
-      const { error } = await (supabase as any)
-        .from('leads')
-        .update(updates)
-        .eq('id', lead.id);
-      if (error) throw error;
-      return takeOver;
-    },
-    onSuccess: (takeOver) => {
-      qc.invalidateQueries({ queryKey: ['leads', tenantId] });
-      toast.success(takeOver ? 'Você assumiu a conversa — IA pausada' : 'Conversa devolvida para a IA');
-    },
-    onError: (e: any) => toast.error(e.message ?? 'Erro ao alternar atendimento'),
-  });
 
   // Valor atual do select: id da coluna custom OU system_key
   const currentValue =
@@ -210,54 +189,21 @@ export function ChatQuickActionsBar({
           </SelectContent>
         </Select>
 
-        {/* Assumir / Devolver IA */}
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={toggleAi.isPending}
-          onClick={() => toggleAi.mutate(isAiHandling)}
-          className={cn(
-            'h-9 shrink-0 rounded-xl border-gray-100 bg-gray-50 px-2.5 sm:px-3 text-xs font-bold',
-            isAiHandling
-              ? 'hover:border-primary/30 hover:text-primary'
-              : 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300',
-          )}
-          title={isAiHandling ? 'Assumir conversa (pausa a IA)' : 'Devolver atendimento para a IA'}
-        >
-          {isAiHandling ? (
-            <>
-              <Hand className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Assumir</span>
-            </>
-          ) : (
-            <>
-              <Bot className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Devolver p/ IA</span>
-            </>
-          )}
-        </Button>
-
-        {/* Transferir */}
+        {/* Ver ficha do lead */}
         <Button
           variant="outline"
           size="sm"
           className="h-9 shrink-0 rounded-xl border-gray-100 bg-gray-50 px-2.5 sm:px-3 text-xs font-bold hover:border-primary/30 hover:text-primary"
-          onClick={() => setTransferOpen(true)}
-          title="Transferir atendimento"
+          onClick={() => onOpenProfile?.()}
+          title="Ver ficha do lead"
         >
-          <UserPlus className="h-4 w-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">Transferir</span>
+          <PanelRight className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">Ficha</span>
         </Button>
 
         {/* Agendar / Local / Valor */}
         <LeadQuickActions lead={lead} variant="compact" hideChat className="!gap-1.5 shrink-0" />
       </div>
-
-      <TransferLeadDialog
-        lead={transferOpen ? lead : null}
-        open={transferOpen}
-        onOpenChange={setTransferOpen}
-      />
 
       {/* Agenda dialog — usa o mesmo formulário da aba Agenda */}
       <NewAppointmentDialog
