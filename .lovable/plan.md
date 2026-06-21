@@ -1,89 +1,70 @@
 ## Objetivo
 
-Três entregas que se complementam:
+Fazer a IA SDR soar como a Raiana: concisa, analítica, humana. Hoje a Sombra aprende frases vencedoras misturadas de todos os atendentes — vamos focar nela (e em qualquer outra "referência" que você marcar), priorizar conversas que terminaram em agendamento/fechamento, e extrair um **perfil de estilo** que entra direto no prompt da IA SDR.
 
-1. **Fuso correto da Ótica Catelan** salvo no banco (e seletor para qualquer tenant).
-2. **Tela Agenda → Configurações**: dropdown de fuso horário.
-3. **Lógica de "parado"** reescrita: usa última mensagem recebida vs. enviada, e só conta minutos dentro do horário comercial da loja.
+## O que muda
 
----
+### 1. Banco — marcar referências e guardar o estilo
+- `profiles.is_reference_agent boolean default false` — você marca a Raiana (e outras) na tela de Equipe com um toggle "Referência de atendimento".
+- `ai_reference_style_profiles` (nova tabela, 1 linha por tenant):
+  - `style_guide jsonb` — traços extraídos (ex.: `avg_msg_length`, `questions_per_message`, `uses_emoji`, `uses_client_name`, `opening_patterns`, `closing_patterns`, `tone_descriptors`)
+  - `style_prompt text` — versão pronta pra colar no system prompt
+  - `sample_count int`, `last_built_at timestamptz`
+- `ai_knowledge_patterns.weight numeric default 1` — peso da frase (3x quando vem de lead ganho).
+- `ai_knowledge_patterns.agent_id uuid` — pra dar visibilidade de quem ensinou.
 
-## 1) Migration — coluna de fuso + colunas de mensagem no lead
+### 2. Aprendizado com peso e atribuição
+Em `ai-insights.functions.ts` (analyzeLeadConversation):
+- Identifica o atendente humano da mensagem (via `messages.profile_id` se existir, senão por nome no transcript).
+- Se for `is_reference_agent = true`: salva pattern com `agent_id` e `weight = 3` quando outcome ∈ {scheduled, checked_in, showed_up}.
+- Outros atendentes / outcomes neutros: `weight = 1`.
+- Patterns de leads `lost` → `weight = 0.3` (ainda aprendem, mas afundam no ranking).
 
-**Tabela `tenants`**
-- Adicionar `timezone TEXT NOT NULL DEFAULT 'America/Sao_Paulo'`.
-- `UPDATE tenants SET timezone='America/Cuiaba' WHERE id = (Ótica Catelan Matriz)` — confirme se Cuiabá é o fuso certo (Catelan fica em MT?). Se for outro, me diga antes.
+### 3. Style guide automático (o coração da mudança)
+Novo server fn `buildReferenceStyleProfile(tenantId)`:
+1. Busca as últimas 50 conversas atendidas por agentes-referência que terminaram bem.
+2. Extrai só as mensagens **outbound da Raiana**.
+3. Calcula métricas determinísticas: média de caracteres por mensagem, % com emoji, % com pergunta, palavras de abertura mais comuns, uso do nome do cliente.
+4. Manda pra IA um meta-prompt: "analise estas mensagens da Raiana e descreva o estilo dela em até 8 bullets curtos — tom, comprimento, ritmo, perguntas, gatilhos, o que ela NÃO faz."
+5. Grava `style_guide` (métricas) + `style_prompt` (texto pronto) em `ai_reference_style_profiles`.
 
-**Tabela `leads`** — duas colunas novas:
-- `last_inbound_at TIMESTAMPTZ` (última mensagem do cliente).
-- `last_outbound_at TIMESTAMPTZ` (última mensagem da loja/IA).
-- Backfill a partir de `messages` (max por `direction`).
+### 4. Injeção no prompt da IA SDR
+No system prompt da IA SDR (e do `suggestReply`), substituir o bloco genérico "frases que funcionam" por:
 
-**Trigger em `messages`** (AFTER INSERT):
-- Atualiza `leads.last_inbound_at` ou `last_outbound_at` conforme `direction`.
-- Mantém `updated_at` intocado nessas atualizações específicas (evita falso "movimento" do lead).
+```
+=== ESTILO DE ATENDIMENTO (siga rigorosamente) ===
+{style_prompt da Raiana}
 
-**Função `is_waiting_response(lead) → bool`**
-- Retorna `true` se `last_inbound_at > COALESCE(last_outbound_at, 'epoch')`.
+Métricas a respeitar:
+- Mensagens de até {avg_msg_length} caracteres
+- No máximo 1 pergunta por mensagem
+- {uses_emoji ? "Emoji ocasional" : "Sem emojis"}
+- Sempre use o nome do cliente quando souber
 
-**Função `business_minutes_between(_tenant_id, _from, _to) → INT`**
-- Calcula minutos úteis entre dois timestamps respeitando `agenda_business_hours` do tenant e o fuso do tenant (converte `_from/_to` para o timezone do tenant antes de iterar dias).
-- Desconta intervalo de almoço.
-
-**Reescrever `notify_stale_leads()`**
-- Trocar `l.updated_at < now() - interval 'Xh'` por `business_minutes_between(tenant_id, GREATEST(last_inbound_at, updated_at), now()) >= threshold`.
-- Só notifica leads **aguardando resposta da loja** (`last_inbound_at > last_outbound_at`) OU leads em `open` sem nenhuma mensagem ainda.
-- Thresholds (em minutos comerciais): `open=60`, `in_progress=240`, `negotiating=240`.
-- Fora do horário comercial → nenhum minuto conta → nenhuma notificação extra criada de madrugada.
-
----
-
-## 2) UI — Seletor de fuso em Agenda
-
-Arquivo: `src/components/agenda/AgendaSettingsDialog.tsx`.
-
-- Adicionar `<Select>` "Fuso horário" no topo do diálogo, com opções IANA principais do Brasil:
-  - `America/Sao_Paulo` (Brasília — padrão)
-  - `America/Cuiaba` (MT)
-  - `America/Manaus` (AM/RO/RR)
-  - `America/Belem` (PA leste)
-  - `America/Fortaleza` (NE)
-  - `America/Noronha` (FN)
-  - `America/Rio_Branco` (AC)
-- Persistir via `update` em `tenants.timezone` (somente admin do tenant — RLS já cobre).
-- Hook novo `src/hooks/use-tenant-timezone.ts` (read + mutation, invalida `['tenant', tenantId]`).
-- Toast de confirmação.
-
-Também passa a usar esse fuso em qualquer formatador de data/hora existente da agenda (centraliza num helper `src/lib/tz.ts` com `formatInTz(date, tenantTz, pattern)` usando `Intl.DateTimeFormat`).
-
----
-
-## 3) Detalhes técnicos
-
-```text
-notify_stale_leads()
-   │
-   ├── seleciona leads em (open|in_progress|negotiating) AGUARDANDO resposta
-   │     (last_inbound_at IS NULL e status=open, OU last_inbound_at > last_outbound_at)
-   │
-   ├── para cada lead:
-   │     waited_min = business_minutes_between(
-   │                    tenant_id,
-   │                    COALESCE(last_inbound_at, updated_at),
-   │                    now())
-   │     if waited_min >= threshold(status): cria notificação (dedupe 24h igual ao atual)
-   │
-   └── usa tenants.timezone para janela diária; respeita lunch_start/lunch_end
+=== FRASES DE REFERÊNCIA (use como inspiração, não copie literal) ===
+{top 10 winning_phrases ordenadas por weight * occurrences, só de agentes-referência}
 ```
 
-**Compatibilidade**: a coluna `timezone` tem default, então tenants existentes não quebram. O trigger de `messages` só dispara em novas mensagens; o backfill cuida do histórico. As 3 RPCs com `REVOKE EXECUTE` recém-aplicadas permanecem só para `service_role` (cron).
+Resultado: respostas mais curtas, menos "IA-zadas", no ritmo da Raiana.
 
-**Tipos**: após a migration, `src/integrations/supabase/types.ts` será regenerado e referenciado nos componentes/hook novos. Nada para o usuário fazer.
+### 5. Quando rodar (ambos)
+- **Trigger por evento**: quando um lead atendido por agente-referência muda pra `scheduled`/`checked_in`/`showed_up`, dispara `analyzeLeadConversation` + agenda rebuild do style profile (debounce 1h).
+- **Cron diário 03:00**: roda `buildReferenceStyleProfile` pra cada tenant que tem ≥1 referência. Rota nova em `src/routes/api/public/hooks/build-reference-style.ts` chamada via pg_cron.
 
----
+### 6. UI mínima
+- Em **Equipe / Profiles**: toggle "Referência de atendimento" (só admin vê).
+- Em **Dashboard IA** (ou onde já tem insights): card "Estilo da Raiana" mostrando os bullets do `style_prompt` + métricas + botão "Recalcular agora".
 
-## Confirmações antes de eu mandar a migration
+## Detalhes técnicos
 
-1. **Fuso da Catelan Matriz**: Cuiabá (`America/Cuiaba`, UTC−4)? Ou outro?
-2. **Thresholds em minutos comerciais** (60 / 240 / 240) batem com a regra atual ou querem ajustar?
-3. OK trigger atualizar `last_inbound_at/outbound_at` sem mexer no `updated_at` (para a coluna "Tempo parado" da equipe não ficar zerando a cada mensagem da IA)?
+- Migração: 1 coluna em `profiles`, 2 colunas em `ai_knowledge_patterns`, 1 tabela nova com RLS (`tenant_id` scoping, leitura para `authenticated` do mesmo tenant, write só via service_role).
+- Identificação do atendente nas mensagens: hoje `messages` não tem `profile_id` confiável — usar `sender_name` como fallback e tentar match por `profiles.full_name ILIKE`. Se nada bater, descarta a mensagem do treino (sem ruído).
+- Custos de IA: o rebuild gasta ~1 chamada Gemini Flash por tenant/dia. Trigger por evento reusa a análise que já roda hoje.
+- Backward compat: enquanto não houver style_profile, o prompt cai no comportamento atual.
+
+## Fora do escopo desta iteração
+- Tela de aprovação manual do style guide (você escolheu "automático").
+- Captura de áudios / tempo de resposta da Raiana.
+- Script de qualificação (sequência de perguntas) — fica pra próxima se topar.
+
+Posso seguir e implementar?
