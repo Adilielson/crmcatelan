@@ -40,8 +40,8 @@ export function exportToPDF(
       headStyles: { fillColor: [37, 99, 235] },
       margin: { left: 40, right: 40 },
     });
-    // @ts-expect-error - jspdf-autotable mutates lastAutoTable
     y = (doc as any).lastAutoTable.finalY + 20;
+
   }
   doc.save(`${filename}.pdf`);
 }
