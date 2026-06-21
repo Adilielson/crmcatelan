@@ -27,6 +27,7 @@ import { useKanbanColumns, KanbanColumn } from '@/hooks/use-kanban-columns';
 import { useAgenda } from '@/hooks/use-agenda';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
 import { TransferLeadDialog } from './TransferLeadDialog';
+import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
 /**
  * Toolbar com ações rápidas exibida abaixo do header da conversa em /chat.
