@@ -555,105 +555,107 @@ function Equipe() {
         ) : filtered.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum atendimento encontrado.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Tempo parado</TableHead>
-                <TableHead>Vendedor</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((l) => {
-                const seller = l.assigned_user_id
-                  ? profileById.get(l.assigned_user_id)
-                  : null;
-                const isActive = ACTIVE_STATUSES.has(l.status);
-                const pend = pendingHours(l);
-                const isStale = isActive && pend !== null && pend >= STALE_HOURS;
-                return (
-                  <TableRow key={l.id}>
-                    <TableCell>
-                      <div className="font-bold text-ink">
-                        {l.full_name?.trim() || l.phone || 'Sem nome'}
-                      </div>
-                      {l.phone && (
-                        <div className="text-xs text-[#6B7280]">{l.phone}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANTS[l.status] || 'secondary'}>
-                        {stageLabel(l.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <span
-                        className={
-                          isStale
-                            ? 'inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-700'
-                            : 'text-[#6B7280]'
-                        }
-                      >
-                        {isStale && <AlertTriangle className="h-3 w-3" />}
-                        {(() => {
-                          // Se parado: tempo desde a mensagem do cliente sem resposta.
-                          // Senão: tempo desde a última interação (qualquer direção) ou updated_at.
-                          const refIso = isStale
-                            ? l.last_inbound_at
-                            : (l.last_outbound_at || l.last_inbound_at || l.updated_at);
-                          const d = refIso ? new Date(refIso) : null;
-                          if (!d || Number.isNaN(d.getTime())) return '—';
-                          try {
-                            return formatDistanceToNow(d, { addSuffix: true, locale: ptBR });
-                          } catch {
-                            return '—';
-                          }
-                        })()}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {seller?.full_name ? (
-                        <span className="font-medium text-ink">{seller.full_name}</span>
-                      ) : l.assigned_user_id === null && isActive ? (
-                        <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
-                          IA
-                        </span>
-                      ) : (
-                        <span className="text-[#9CA3AF] italic">Livre</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            navigate({
-                              to: '/chat',
-                              search: { phone: l.phone ?? undefined },
-                            })
-                          }
-                        >
-                          <Eye />
-                          Ver
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => assignMutation.mutate(l)}
-                          disabled={assignMutation.isPending}
-                        >
-                          <UserCheck />
-                          Assumir
-                        </Button>
-                      </div>
-                    </TableCell>
+          <div className="-mx-6 overflow-x-auto">
+            <div className="min-w-[720px] px-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Tempo parado</TableHead>
+                    <TableHead>Vendedor</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((l) => {
+                    const seller = l.assigned_user_id
+                      ? profileById.get(l.assigned_user_id)
+                      : null;
+                    const isActive = ACTIVE_STATUSES.has(l.status);
+                    const pend = pendingHours(l);
+                    const isStale = isActive && pend !== null && pend >= STALE_HOURS;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell>
+                          <div className="font-bold text-ink">
+                            {l.full_name?.trim() || l.phone || 'Sem nome'}
+                          </div>
+                          {l.phone && (
+                            <div className="text-xs text-[#6B7280]">{l.phone}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={STATUS_VARIANTS[l.status] || 'secondary'}>
+                            {stageLabel(l.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <span
+                            className={
+                              isStale
+                                ? 'inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-700'
+                                : 'text-[#6B7280]'
+                            }
+                          >
+                            {isStale && <AlertTriangle className="h-3 w-3" />}
+                            {(() => {
+                              const refIso = isStale
+                                ? l.last_inbound_at
+                                : (l.last_outbound_at || l.last_inbound_at || l.updated_at);
+                              const d = refIso ? new Date(refIso) : null;
+                              if (!d || Number.isNaN(d.getTime())) return '—';
+                              try {
+                                return formatDistanceToNow(d, { addSuffix: true, locale: ptBR });
+                              } catch {
+                                return '—';
+                              }
+                            })()}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {seller?.full_name ? (
+                            <span className="font-medium text-ink">{seller.full_name}</span>
+                          ) : l.assigned_user_id === null && isActive ? (
+                            <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
+                              IA
+                            </span>
+                          ) : (
+                            <span className="text-[#9CA3AF] italic">Livre</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                navigate({
+                                  to: '/chat',
+                                  search: { phone: l.phone ?? undefined },
+                                })
+                              }
+                            >
+                              <Eye />
+                              Ver
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => assignMutation.mutate(l)}
+                              disabled={assignMutation.isPending}
+                            >
+                              <UserCheck />
+                              Assumir
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         )}
       </Card>
     </div>
