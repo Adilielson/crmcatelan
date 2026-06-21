@@ -87,20 +87,21 @@ function FilaAtendimento() {
             Leads aguardando um responsável — atendidos por ordem de chegada.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome, telefone ou origem"
-              className="w-72 pl-9"
+              className="w-full pl-9"
             />
           </div>
           <Button
             variant="outline"
             onClick={() => refetch()}
             disabled={isFetching}
+            className="w-full sm:w-auto"
           >
             <RefreshCw className={isFetching ? 'animate-spin' : ''} />
             Sincronizar
