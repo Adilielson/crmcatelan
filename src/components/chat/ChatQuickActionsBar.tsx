@@ -26,6 +26,7 @@ import { DBLead, LeadStage, useUpdateLead } from '@/hooks/use-leads';
 import { useKanbanColumns, KanbanColumn } from '@/hooks/use-kanban-columns';
 import { useAgenda } from '@/hooks/use-agenda';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
+import { LostLeadDialog } from '@/components/leads/LostLeadDialog';
 import { TransferLeadDialog } from './TransferLeadDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
