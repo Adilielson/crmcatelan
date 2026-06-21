@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useAgenda } from "@/hooks/use-agenda";
-import { useLeads } from "@/hooks/use-leads";
+import { useLeads, useUpdateLead } from "@/hooks/use-leads";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
 import {
   useBusinessHours,
