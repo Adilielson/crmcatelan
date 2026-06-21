@@ -33,7 +33,7 @@ export const ALL_MODULE_KEYS = MODULE_CATALOG.map((m) => m.key) as ModuleKey[];
 export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   admin: [...ALL_MODULE_KEYS],
   manager: ALL_MODULE_KEYS.filter((k) => k !== 'saas'),
-  seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes', 'metas', 'ranking'],
+  seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes', 'metas', 'ranking', 'report_attendants', 'report_appointments'],
   marketing_partner: ['home', 'marketing', 'performance', 'no_show', 'reports', 'ai_insights'],
   super_admin: [...ALL_MODULE_KEYS],
 };
