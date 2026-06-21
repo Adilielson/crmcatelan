@@ -10,14 +10,6 @@ import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { LeadPurchasesCard } from '@/components/leads/LeadPurchasesCard';
 import { cn } from '@/lib/utils';
 
-function fmtDateTime(s: string | null) {
-  if (!s) return '—';
-  try {
-    return format(new Date(s), "dd/MM/yy 'às' HH:mm", { locale: ptBR });
-  } catch {
-    return s;
-  }
-}
 
 /**
  * Painel unificado do lead — usado no Kanban (LeadDetailSheet), Chat e mobile.
