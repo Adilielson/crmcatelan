@@ -7,13 +7,15 @@ export default defineConfig({
   nitro: {
     preset: "vercel",
   },
-  optimizeDeps: {
-    include: [
-      "@tanstack/router-core",
-      "@tanstack/router-core/ssr/client",
-      "@tanstack/history",
-      "seroval",
-      "h3-v2",
-    ],
+  vite: {
+    optimizeDeps: {
+      include: [
+        "@tanstack/router-core",
+        "@tanstack/router-core/ssr/client",
+        "@tanstack/history",
+        "seroval",
+        "h3-v2",
+      ],
+    },
   },
 });
