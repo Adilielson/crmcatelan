@@ -1174,6 +1174,8 @@ export type Database = {
           last_inbound_at: string | null
           last_outbound_at: string | null
           last_reactivated_at: string | null
+          lost_reason: string | null
+          lost_reason_note: string | null
           next_contact_at: string | null
           notes: string | null
           payment_method: string | null
@@ -1232,6 +1234,8 @@ export type Database = {
           last_inbound_at?: string | null
           last_outbound_at?: string | null
           last_reactivated_at?: string | null
+          lost_reason?: string | null
+          lost_reason_note?: string | null
           next_contact_at?: string | null
           notes?: string | null
           payment_method?: string | null
@@ -1290,6 +1294,8 @@ export type Database = {
           last_inbound_at?: string | null
           last_outbound_at?: string | null
           last_reactivated_at?: string | null
+          lost_reason?: string | null
+          lost_reason_note?: string | null
           next_contact_at?: string | null
           notes?: string | null
           payment_method?: string | null

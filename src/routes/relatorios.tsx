@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router';
-import { Users, Calendar, CheckCircle2, FileBarChart } from 'lucide-react';
+import { Users, Calendar, CheckCircle2, FileBarChart, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/relatorios')({
@@ -24,6 +24,12 @@ const items = [
     description: 'Comparecimento e no-show',
     href: '/relatorios/comparecimento',
     icon: CheckCircle2,
+  },
+  {
+    label: 'Leads Perdidos',
+    description: 'Motivos e detalhamento de perdas',
+    href: '/relatorios/perdidos',
+    icon: XCircle,
   },
 ];
 

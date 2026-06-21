@@ -26,6 +26,7 @@ import { DBLead, LeadStage, useUpdateLead } from '@/hooks/use-leads';
 import { useKanbanColumns, KanbanColumn } from '@/hooks/use-kanban-columns';
 import { useAgenda } from '@/hooks/use-agenda';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
+import { LostLeadDialog } from '@/components/leads/LostLeadDialog';
 import { TransferLeadDialog } from './TransferLeadDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
@@ -54,7 +55,6 @@ export function ChatQuickActionsBar({
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
   const [lossOpen, setLossOpen] = useState(false);
-  const [lossReason, setLossReason] = useState('');
   const isAiHandling = !lead.assigned_user_id;
 
   const toggleAi = useMutation({
@@ -115,7 +115,6 @@ export function ChatQuickActionsBar({
       return;
     }
     if (col.is_system && col.system_key === 'lost') {
-      setLossReason('');
       setLossOpen(true);
       return;
     }
@@ -158,23 +157,25 @@ export function ChatQuickActionsBar({
     setScheduleData({ date: '', time: '' });
   };
 
-  const confirmLoss = async () => {
-    if (!lossReason) {
+  const confirmLoss = async ({ reason, note }: { reason: string; note: string }) => {
+    if (!reason) {
       toast.error('Selecione o motivo da perda');
       return;
     }
+    const summary = note ? `${reason} — ${note}` : reason;
     await updateLead.mutateAsync({
       id: lead.id,
       updates: {
         status: 'lost',
         custom_column_id: null,
-        notes: `${lead.notes ?? ''}\n[Perdido: ${lossReason}]`.trim(),
+        lost_reason: reason,
+        lost_reason_note: note || null,
+        notes: `${lead.notes ?? ''}\n[Perdido: ${summary}]`.trim(),
       },
     });
     qc.invalidateQueries({ queryKey: ['leads', tenantId] });
     toast.error('Lead marcado como perdido');
     setLossOpen(false);
-    setLossReason('');
   };
 
   return (
@@ -269,42 +270,13 @@ export function ChatQuickActionsBar({
       />
 
       {/* Loss dialog (motivo obrigatório) */}
-      <Dialog open={lossOpen} onOpenChange={setLossOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Motivo da Perda — {lead.full_name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Selecione o motivo *</Label>
-              <Select value={lossReason} onValueChange={setLossReason}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preço alto">Preço alto</SelectItem>
-                  <SelectItem value="Fechou com concorrente">Fechou com concorrente</SelectItem>
-                  <SelectItem value="Não responde mais">Não responde mais</SelectItem>
-                  <SelectItem value="Sem perfil">Sem perfil</SelectItem>
-                  <SelectItem value="Outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLossOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmLoss}
-              disabled={!lossReason || updateLead.isPending}
-            >
-              Confirmar Perda
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LostLeadDialog
+        open={lossOpen}
+        leadName={lead.full_name}
+        isSubmitting={updateLead.isPending}
+        onOpenChange={setLossOpen}
+        onConfirm={confirmLoss}
+      />
     </>
   );
 }

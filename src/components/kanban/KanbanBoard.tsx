@@ -26,6 +26,7 @@ import { LeadLocationDialog } from './LeadLocationDialog';
 import { KanbanColumnDialog } from './KanbanColumnDialog';
 import { KanbanColumnsSettingsDialog } from './KanbanColumnsSettingsDialog';
 import { CloseLeadDialog } from './CloseLeadDialog';
+import { LostLeadDialog } from '@/components/leads/LostLeadDialog';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
@@ -72,7 +73,7 @@ export function KanbanBoard() {
   const [scheduleLead, setScheduleLead] = useState<DBLead | null>(null);
   const [lossLead, setLossLead] = useState<DBLead | null>(null);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
-  const [lossReason, setLossReason] = useState('');
+  
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<KanbanColumn | null>(null);
   const [columnsSettingsOpen, setColumnsSettingsOpen] = useState(false);
@@ -197,15 +198,21 @@ export function KanbanBoard() {
     setScheduleData({ date: '', time: '' });
   };
 
-  const confirmLoss = async () => {
-    if (!lossLead || !lossReason) return;
+  const confirmLoss = async ({ reason, note }: { reason: string; note: string }) => {
+    if (!lossLead || !reason) return;
+    const summary = note ? `${reason} — ${note}` : reason;
     await updateLead.mutateAsync({
       id: lossLead.id,
-      updates: { status: 'lost', notes: `${lossLead.notes ?? ''}\n[Perdido: ${lossReason}]`.trim() },
+      updates: {
+        status: 'lost',
+        custom_column_id: null,
+        lost_reason: reason,
+        lost_reason_note: note || null,
+        notes: `${lossLead.notes ?? ''}\n[Perdido: ${summary}]`.trim(),
+      },
     });
     toast.error('Lead marcado como perdido');
     setLossLead(null);
-    setLossReason('');
   };
 
   const openChat = (lead: DBLead) => {
@@ -380,30 +387,13 @@ export function KanbanBoard() {
       />
 
       {/* Loss dialog */}
-      <Dialog open={!!lossLead} onOpenChange={(v) => !v && setLossLead(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Motivo da Perda — {lossLead?.full_name}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Selecione o motivo</Label>
-              <Select value={lossReason} onValueChange={setLossReason}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preço alto">Preço alto</SelectItem>
-                  <SelectItem value="Fechou com concorrente">Fechou com concorrente</SelectItem>
-                  <SelectItem value="Não responde mais">Não responde mais</SelectItem>
-                  <SelectItem value="Sem perfil">Sem perfil</SelectItem>
-                  <SelectItem value="Outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLossLead(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmLoss} disabled={!lossReason}>Confirmar Perda</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LostLeadDialog
+        open={!!lossLead}
+        leadName={lossLead?.full_name ?? null}
+        isSubmitting={updateLead.isPending}
+        onOpenChange={(v) => !v && setLossLead(null)}
+        onConfirm={confirmLoss}
+      />
 
       {/* Column create/edit dialog (per-column from dropdown menu) */}
       <KanbanColumnDialog
