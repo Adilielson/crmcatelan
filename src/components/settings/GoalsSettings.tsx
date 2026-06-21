@@ -286,11 +286,10 @@ export function GoalsSettings() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {(["bronze", "gold", "diamond"] as Tier[]).map((tier) => (
-                <button
-                  type="button"
+                <div
                   key={tier}
                   onClick={() => setGoal((g) => ({ ...g, active_tier: tier }))}
-                  className={`text-left p-5 rounded-xl border-2 transition-all ${
+                  className={`text-left p-5 rounded-xl border-2 transition-all cursor-pointer ${
                     goal.active_tier === tier
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/40"
@@ -306,20 +305,21 @@ export function GoalsSettings() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <span className="text-xs text-gray-500">R$</span>
                     <Input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={goal[tier]}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) =>
-                        setGoal((g) => ({ ...g, [tier]: Number(e.target.value) }))
-                      }
+                      onChange={(e) => {
+                        const v = e.target.value.replace(",", ".");
+                        if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                        setGoal((g) => ({ ...g, [tier]: v }));
+                      }}
                       className="h-11 text-lg font-black text-ink text-right"
                     />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
             <div className="flex justify-end mt-6">
