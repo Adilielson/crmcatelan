@@ -231,17 +231,19 @@ function Equipe() {
     let aiSales = 0;
     let aiSalesCount = 0;
     for (const l of active) {
-      const hrs = hoursSince(l.updated_at);
+      const pend = pendingHours(l);
+      const isStale = pend !== null && pend >= STALE_HOURS;
+      const oldestCandidate = pend ?? 0;
       if (!l.assigned_user_id) {
         aiCount += 1;
-        if (hrs >= STALE_HOURS) aiStale += 1;
-        if (hrs > aiOldest) aiOldest = hrs;
+        if (isStale) aiStale += 1;
+        if (oldestCandidate > aiOldest) aiOldest = oldestCandidate;
         continue;
       }
       const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
       cur.count += 1;
-      if (hrs >= STALE_HOURS) cur.stale += 1;
-      if (hrs > cur.oldestHrs) cur.oldestHrs = hrs;
+      if (isStale) cur.stale += 1;
+      if (oldestCandidate > cur.oldestHrs) cur.oldestHrs = oldestCandidate;
       byUser.set(l.assigned_user_id, cur);
     }
     // Soma vendas fechadas (status = showed_up) por atendente, com base no valor da ficha
