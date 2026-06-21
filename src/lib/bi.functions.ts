@@ -305,3 +305,122 @@ export const getGoalProgress = createServerFn({ method: "POST" })
       ranking,
     };
   });
+
+// ----------------- Executive dashboard (Phase 3) -----------------
+
+const RangeSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  unit_id: z.string().uuid().nullable().optional(),
+});
+
+export const getExecutiveDashboard = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RangeSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { tenantId } = await getTenantOrThrow(context.supabase, context.userId);
+    const fromISO = new Date(data.from).toISOString();
+    const toISO = new Date(data.to).toISOString();
+
+    // Revenue events
+    let rq = context.supabase
+      .from("v_revenue_events")
+      .select("amount, event_at, source_type, created_by_ai")
+      .eq("tenant_id", tenantId)
+      .gte("event_at", fromISO)
+      .lte("event_at", toISO);
+    if (data.unit_id) rq = rq.eq("unit_id", data.unit_id);
+    const { data: events } = await rq;
+
+    let totalRevenue = 0;
+    let consultations = 0;
+    let glasses = 0;
+    let aiRevenue = 0;
+    const byDay = new Map<string, { date: string; consultations: number; glasses: number; total: number }>();
+    for (const e of events ?? []) {
+      const amt = Number(e.amount) || 0;
+      totalRevenue += amt;
+      if (e.source_type === "consultation") consultations += amt;
+      else glasses += amt;
+      if (e.created_by_ai) aiRevenue += amt;
+      const day = new Date(e.event_at as string).toISOString().slice(0, 10);
+      const cur = byDay.get(day) ?? { date: day, consultations: 0, glasses: 0, total: 0 };
+      if (e.source_type === "consultation") cur.consultations += amt;
+      else cur.glasses += amt;
+      cur.total += amt;
+      byDay.set(day, cur);
+    }
+    const revenueSeries = Array.from(byDay.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Leads funnel
+    let lq = context.supabase
+      .from("leads")
+      .select("status, source, utm_source, utm_campaign, created_at, sales_value")
+      .eq("tenant_id", tenantId)
+      .gte("created_at", fromISO)
+      .lte("created_at", toISO);
+    const { data: leads } = await lq;
+    const funnel = { open: 0, in_progress: 0, scheduled: 0, showed_up: 0, no_show: 0, lost: 0, other: 0 };
+    const campaignMap = new Map<string, { campaign: string; leads: number; converted: number; revenue: number }>();
+    for (const l of leads ?? []) {
+      const s = (l.status as string) ?? "open";
+      if (s in funnel) (funnel as any)[s] += 1;
+      else funnel.other += 1;
+      const key = (l.utm_campaign as string) || (l.source as string) || "Direto";
+      const cur = campaignMap.get(key) ?? { campaign: key, leads: 0, converted: 0, revenue: 0 };
+      cur.leads += 1;
+      if (s === "showed_up") {
+        cur.converted += 1;
+        cur.revenue += Number(l.sales_value ?? 0) || 0;
+      }
+      campaignMap.set(key, cur);
+    }
+    const totalLeads = leads?.length ?? 0;
+    const converted = funnel.showed_up;
+    const conversionRate = totalLeads > 0 ? converted / totalLeads : 0;
+    const topCampaigns = Array.from(campaignMap.values()).sort((a, b) => b.leads - a.leads).slice(0, 10);
+
+    // Marketing spend & CPL/ROI
+    const { data: spend } = await context.supabase
+      .from("marketing_spend")
+      .select("amount, spend_date")
+      .eq("tenant_id", tenantId)
+      .gte("spend_date", data.from.slice(0, 10))
+      .lte("spend_date", data.to.slice(0, 10));
+    const totalSpend = (spend ?? []).reduce((acc: number, s: any) => acc + (Number(s.amount) || 0), 0);
+    const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+    const cpa = converted > 0 ? totalSpend / converted : 0;
+    const roi = totalSpend > 0 ? (totalRevenue - totalSpend) / totalSpend : 0;
+
+    // AI vs human (appointments + messages)
+    const { data: appts } = await context.supabase
+      .from("appointments")
+      .select("created_by_ai")
+      .eq("tenant_id", tenantId)
+      .gte("created_at", fromISO)
+      .lte("created_at", toISO);
+    const apptAi = (appts ?? []).filter((a: any) => a.created_by_ai).length;
+    const apptHuman = (appts ?? []).length - apptAi;
+
+    const { data: msgs } = await context.supabase
+      .from("messages")
+      .select("is_from_ai")
+      .gte("created_at", fromISO)
+      .lte("created_at", toISO);
+    const msgAi = (msgs ?? []).filter((m: any) => m.is_from_ai).length;
+    const msgHuman = (msgs ?? []).length - msgAi;
+
+    return {
+      revenue: {
+        total: totalRevenue,
+        consultations,
+        glasses,
+        aiRevenue,
+        series: revenueSeries,
+      },
+      funnel,
+      leads: { total: totalLeads, converted, conversionRate },
+      marketing: { spend: totalSpend, cpl, cpa, roi, topCampaigns },
+      ai: { apptAi, apptHuman, msgAi, msgHuman },
+    };
+  });
