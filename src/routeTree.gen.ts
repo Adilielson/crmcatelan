@@ -28,7 +28,9 @@ import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AiInsightsRouteImport } from './routes/ai-insights'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RelatoriosComparecimentoRouteImport } from './routes/relatorios.comparecimento'
 import { Route as RelatoriosAtendentesRouteImport } from './routes/relatorios.atendentes'
+import { Route as RelatoriosAgendamentosRouteImport } from './routes/relatorios.agendamentos'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 import { Route as ApiPublicHooksProcessAppointmentRemindersRouteImport } from './routes/api/public/hooks/process-appointment-reminders'
@@ -129,9 +131,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelatoriosComparecimentoRoute =
+  RelatoriosComparecimentoRouteImport.update({
+    id: '/relatorios/comparecimento',
+    path: '/relatorios/comparecimento',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const RelatoriosAtendentesRoute = RelatoriosAtendentesRouteImport.update({
   id: '/relatorios/atendentes',
   path: '/relatorios/atendentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosAgendamentosRoute = RelatoriosAgendamentosRouteImport.update({
+  id: '/relatorios/agendamentos',
+  path: '/relatorios/agendamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
@@ -179,7 +192,9 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
+  '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -205,7 +220,9 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
+  '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -232,7 +249,9 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
+  '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -260,7 +279,9 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
+    | '/relatorios/comparecimento'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -286,7 +307,9 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
+    | '/relatorios/comparecimento'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -312,7 +335,9 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
+    | '/relatorios/comparecimento'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -339,7 +364,9 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
+  RelatoriosAgendamentosRoute: typeof RelatoriosAgendamentosRoute
   RelatoriosAtendentesRoute: typeof RelatoriosAtendentesRoute
+  RelatoriosComparecimentoRoute: typeof RelatoriosComparecimentoRoute
   ApiPublicHooksBuildReferenceStyleRoute: typeof ApiPublicHooksBuildReferenceStyleRoute
   ApiPublicHooksProcessAppointmentRemindersRoute: typeof ApiPublicHooksProcessAppointmentRemindersRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
@@ -480,11 +507,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relatorios/comparecimento': {
+      id: '/relatorios/comparecimento'
+      path: '/relatorios/comparecimento'
+      fullPath: '/relatorios/comparecimento'
+      preLoaderRoute: typeof RelatoriosComparecimentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/relatorios/atendentes': {
       id: '/relatorios/atendentes'
       path: '/relatorios/atendentes'
       fullPath: '/relatorios/atendentes'
       preLoaderRoute: typeof RelatoriosAtendentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios/agendamentos': {
+      id: '/relatorios/agendamentos'
+      path: '/relatorios/agendamentos'
+      fullPath: '/relatorios/agendamentos'
+      preLoaderRoute: typeof RelatoriosAgendamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics/no-show': {
@@ -539,7 +580,9 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
+  RelatoriosAgendamentosRoute: RelatoriosAgendamentosRoute,
   RelatoriosAtendentesRoute: RelatoriosAtendentesRoute,
+  RelatoriosComparecimentoRoute: RelatoriosComparecimentoRoute,
   ApiPublicHooksBuildReferenceStyleRoute:
     ApiPublicHooksBuildReferenceStyleRoute,
   ApiPublicHooksProcessAppointmentRemindersRoute:
@@ -549,3 +592,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
