@@ -24,6 +24,7 @@ import { LeadDetailSheet } from './LeadDetailSheet';
 import { LeadValueDialog } from './LeadValueDialog';
 import { LeadLocationDialog } from './LeadLocationDialog';
 import { KanbanColumnDialog } from './KanbanColumnDialog';
+import { KanbanColumnsSettingsDialog } from './KanbanColumnsSettingsDialog';
 import { CloseLeadDialog } from './CloseLeadDialog';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
