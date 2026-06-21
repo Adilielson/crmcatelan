@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router';
-import { Users, Calendar, CheckCircle2, FileBarChart } from 'lucide-react';
+import { Users, Calendar, CheckCircle2, FileBarChart, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/relatorios')({

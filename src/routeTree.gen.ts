@@ -30,6 +30,7 @@ import { Route as AiInsightsRouteImport } from './routes/ai-insights'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RelatoriosIndexRouteImport } from './routes/relatorios.index'
+import { Route as RelatoriosPerdidosRouteImport } from './routes/relatorios.perdidos'
 import { Route as RelatoriosComparecimentoRouteImport } from './routes/relatorios.comparecimento'
 import { Route as RelatoriosAtendentesRouteImport } from './routes/relatorios.atendentes'
 import { Route as RelatoriosAgendamentosRouteImport } from './routes/relatorios.agendamentos'
@@ -143,6 +144,11 @@ const RelatoriosIndexRoute = RelatoriosIndexRouteImport.update({
   path: '/',
   getParentRoute: () => RelatoriosRoute,
 } as any)
+const RelatoriosPerdidosRoute = RelatoriosPerdidosRouteImport.update({
+  id: '/perdidos',
+  path: '/perdidos',
+  getParentRoute: () => RelatoriosRoute,
+} as any)
 const RelatoriosComparecimentoRoute =
   RelatoriosComparecimentoRouteImport.update({
     id: '/comparecimento',
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios/': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios/': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/perdidos'
     | '/relatorios/'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/perdidos'
     | '/relatorios'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/perdidos'
     | '/relatorios/'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
@@ -541,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RelatoriosIndexRouteImport
       parentRoute: typeof RelatoriosRoute
     }
+    '/relatorios/perdidos': {
+      id: '/relatorios/perdidos'
+      path: '/perdidos'
+      fullPath: '/relatorios/perdidos'
+      preLoaderRoute: typeof RelatoriosPerdidosRouteImport
+      parentRoute: typeof RelatoriosRoute
+    }
     '/relatorios/comparecimento': {
       id: '/relatorios/comparecimento'
       path: '/comparecimento'
@@ -597,6 +616,7 @@ interface RelatoriosRouteChildren {
   RelatoriosAgendamentosRoute: typeof RelatoriosAgendamentosRoute
   RelatoriosAtendentesRoute: typeof RelatoriosAtendentesRoute
   RelatoriosComparecimentoRoute: typeof RelatoriosComparecimentoRoute
+  RelatoriosPerdidosRoute: typeof RelatoriosPerdidosRoute
   RelatoriosIndexRoute: typeof RelatoriosIndexRoute
 }
 
@@ -604,6 +624,7 @@ const RelatoriosRouteChildren: RelatoriosRouteChildren = {
   RelatoriosAgendamentosRoute: RelatoriosAgendamentosRoute,
   RelatoriosAtendentesRoute: RelatoriosAtendentesRoute,
   RelatoriosComparecimentoRoute: RelatoriosComparecimentoRoute,
+  RelatoriosPerdidosRoute: RelatoriosPerdidosRoute,
   RelatoriosIndexRoute: RelatoriosIndexRoute,
 }
 
