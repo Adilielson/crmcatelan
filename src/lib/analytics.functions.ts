@@ -4,6 +4,8 @@ import { z } from 'zod'
 
 const DashboardInput = z.object({
   unitId: z.string().uuid().nullable().optional(),
+  from: z.string().datetime().nullable().optional(),
+  to: z.string().datetime().nullable().optional(),
 })
 
 const NoShowInput = z.object({
