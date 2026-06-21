@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { 
   Card, 
@@ -37,6 +37,7 @@ import {
   DollarSign,
   Store,
   MessageSquare,
+  CalendarRange,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +45,9 @@ import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { useUnits } from '@/hooks/use-leads'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useServerFn } from '@tanstack/react-start'
 import { useQuery } from '@tanstack/react-query'
 import { getDashboardMetrics } from '@/lib/analytics.functions'
@@ -61,14 +65,52 @@ function fmtDelta(n: number) {
   return `${sign}${n.toFixed(1)}%`
 }
 
+type PeriodKey = 'all' | 'today' | '7d' | '15d' | '30d' | 'custom'
+
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  all: 'Acumulado',
+  today: 'Hoje',
+  '7d': 'Últimos 7 dias',
+  '15d': 'Últimos 15 dias',
+  '30d': 'Últimos 30 dias',
+  custom: 'Personalizado',
+}
+
+function computeRange(period: PeriodKey, customFrom: string, customTo: string): { from: string | null; to: string | null } {
+  if (period === 'all') return { from: null, to: null }
+  const now = new Date()
+  const to = new Date(now); to.setHours(23, 59, 59, 999)
+  const from = new Date(now); from.setHours(0, 0, 0, 0)
+  if (period === 'today') return { from: from.toISOString(), to: to.toISOString() }
+  if (period === '7d') from.setDate(from.getDate() - 6)
+  else if (period === '15d') from.setDate(from.getDate() - 14)
+  else if (period === '30d') from.setDate(from.getDate() - 29)
+  else if (period === 'custom') {
+    if (!customFrom || !customTo) return { from: null, to: null }
+    const f = new Date(customFrom); f.setHours(0, 0, 0, 0)
+    const t = new Date(customTo); t.setHours(23, 59, 59, 999)
+    return { from: f.toISOString(), to: t.toISOString() }
+  }
+  return { from: from.toISOString(), to: to.toISOString() }
+}
+
 function Dashboard() {
   const { data: pipelines = [] } = useUnits()
   const [selectedUnit, setSelectedUnit] = useState<string>('all')
+  const [period, setPeriod] = useState<PeriodKey>('all')
+  const [customFrom, setCustomFrom] = useState<string>('')
+  const [customTo, setCustomTo] = useState<string>('')
+
+  const range = useMemo(() => computeRange(period, customFrom, customTo), [period, customFrom, customTo])
 
   const fetchMetrics = useServerFn(getDashboardMetrics)
   const { data: metrics } = useQuery({
-    queryKey: ['dashboard-metrics', selectedUnit],
-    queryFn: () => fetchMetrics({ data: { unitId: selectedUnit === 'all' ? null : selectedUnit } }),
+    queryKey: ['dashboard-metrics', selectedUnit, period, range.from, range.to],
+    queryFn: () => fetchMetrics({ data: {
+      unitId: selectedUnit === 'all' ? null : selectedUnit,
+      from: range.from,
+      to: range.to,
+    } }),
   })
 
   const funnelData = metrics?.funnelData ?? []
@@ -82,6 +124,8 @@ function Dashboard() {
     confirmedAppts: kpis?.confirmedAppts ?? 0,
     qualRate: `${kpis?.qualRate?.toFixed(0) ?? 0}%`,
   }
+  const periodDesc = period === 'all' ? 'vs 30 dias anteriores' : `${PERIOD_LABELS[period]} · vs período anterior`
+  const apptDesc = period === 'all' ? 'próximos 7 dias' : PERIOD_LABELS[period]
 
 
   return (
@@ -100,10 +144,48 @@ function Dashboard() {
             Visão consolidada da performance comercial e operacional de suas unidades com inteligência preditiva.
           </p>
         </div>
-        {pipelines.length > 1 && (
-          <div className="flex flex-wrap items-center gap-4 relative z-10 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 relative z-10 w-full md:w-auto">
+          {/* Filtro de período */}
+          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
+            <SelectTrigger className="w-full sm:w-[200px] md:w-[220px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+              <CalendarRange className="w-4 h-4 mr-3 text-primary shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-white border-[#E3E6EB] text-ink rounded-[16px]">
+              <SelectItem value="all" className="font-bold">Acumulado</SelectItem>
+              <SelectItem value="today" className="font-bold">Hoje</SelectItem>
+              <SelectItem value="7d" className="font-bold">Últimos 7 dias</SelectItem>
+              <SelectItem value="15d" className="font-bold">Últimos 15 dias</SelectItem>
+              <SelectItem value="30d" className="font-bold">Últimos 30 dias</SelectItem>
+              <SelectItem value="custom" className="font-bold">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {period === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto h-12 md:h-14 rounded-[14px] md:rounded-[16px] border-[#E3E6EB] font-black text-[11px] uppercase tracking-wider px-4 md:px-6">
+                  {customFrom && customTo
+                    ? `${new Date(customFrom).toLocaleDateString('pt-BR')} → ${new Date(customTo).toLocaleDateString('pt-BR')}`
+                    : 'Escolher datas'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-4 space-y-3 bg-white" align="end">
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Data inicial</Label>
+                  <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Data final</Label>
+                  <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} />
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {pipelines.length > 1 && (
             <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-              <SelectTrigger className="w-full md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+              <SelectTrigger className="w-full sm:w-[220px] md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
                 <Store className="w-4 h-4 mr-3 text-primary shrink-0" />
                 <SelectValue placeholder="Todas as Unidades" />
               </SelectTrigger>
@@ -114,33 +196,33 @@ function Dashboard() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <StatCard 
-          title="Total de Leads" 
-          value={stats.totalLeads.toString()} 
-          change={fmtDelta(kpis?.leadsDelta ?? 0)} 
-          changeDesc="vs 30 dias anteriores"
+        <StatCard
+          title="Total de Leads"
+          value={stats.totalLeads.toString()}
+          change={fmtDelta(kpis?.leadsDelta ?? 0)}
+          changeDesc={periodDesc}
           icon={<Users className="w-5 h-5" />}
           link="/kanban"
         />
-        <StatCard 
-          title="Valor em Pipeline" 
-          value={stats.totalValue} 
-          change={fmtDelta(kpis?.valueDelta ?? 0)} 
-          changeDesc="vs 30 dias anteriores"
+        <StatCard
+          title="Valor em Pipeline"
+          value={stats.totalValue}
+          change={fmtDelta(kpis?.valueDelta ?? 0)}
+          changeDesc={periodDesc}
           icon={<DollarSign className="w-5 h-5" />}
           link="/kanban"
         />
-        <StatCard 
-          title="Consultas Agendadas" 
-          value={stats.confirmedAppts.toString()} 
-          change={`${stats.confirmedAppts}`} 
-          changeDesc="próximos 7 dias"
+        <StatCard
+          title="Consultas Agendadas"
+          value={stats.confirmedAppts.toString()}
+          change={`${stats.confirmedAppts}`}
+          changeDesc={apptDesc}
           icon={<Calendar className="w-5 h-5" />}
           link="/agenda"
         />

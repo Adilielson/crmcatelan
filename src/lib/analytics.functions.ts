@@ -4,6 +4,8 @@ import { z } from 'zod'
 
 const DashboardInput = z.object({
   unitId: z.string().uuid().nullable().optional(),
+  from: z.string().datetime().nullable().optional(),
+  to: z.string().datetime().nullable().optional(),
 })
 
 const NoShowInput = z.object({
@@ -36,26 +38,37 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const { supabase } = context
     const unitFilter = data.unitId ?? null
+    const fromISO = data.from ?? null
+    const toISO = data.to ?? null
+    const fromMs = fromISO ? new Date(fromISO).getTime() : null
+    const toMs = toISO ? new Date(toISO).getTime() : null
+    const hasRange = fromMs != null && toMs != null
+    const rangeMs = hasRange ? (toMs! - fromMs!) : 30 * 24 * 60 * 60 * 1000
 
-    // ---- Leads ----
     // ---- Leads ----
     let leadsQ = supabase
       .from('leads')
-      .select('id, status, sales_value, score_ia, source, updated_at, full_name, ia_summary, created_at, unit_id, phone, last_inbound_at, last_outbound_at')
+      .select('id, status, sales_value, score_ia, source, updated_at, full_name, ia_summary, created_at, unit_id, phone, last_inbound_at, last_outbound_at, first_contact_at, custom_column_id, assigned_user_id, claimed_by')
     if (unitFilter) leadsQ = leadsQ.eq('unit_id', unitFilter)
+    if (fromISO) leadsQ = leadsQ.gte('created_at', fromISO)
+    if (toISO) leadsQ = leadsQ.lte('created_at', toISO)
     const { data: leads, error: leadsErr } = await leadsQ
     if (leadsErr) throw leadsErr
     const allLeads = (leads ?? []) as Array<Record<string, any>>
 
 
-    // ---- Appointments (next 7 days) ----
-    const in7d = new Date()
-    in7d.setDate(in7d.getDate() + 7)
+    // ---- Appointments ----
+    // Se houver período, usa-o; caso contrário, próximos 7 dias.
     let apptQ = supabase
       .from('appointments')
       .select('id, status, scheduled_at, unit_id')
-      .gte('scheduled_at', new Date().toISOString())
-      .lte('scheduled_at', in7d.toISOString())
+    if (hasRange) {
+      apptQ = apptQ.gte('scheduled_at', fromISO!).lte('scheduled_at', toISO!)
+    } else {
+      const in7d = new Date()
+      in7d.setDate(in7d.getDate() + 7)
+      apptQ = apptQ.gte('scheduled_at', new Date().toISOString()).lte('scheduled_at', in7d.toISOString())
+    }
     if (unitFilter) apptQ = apptQ.eq('unit_id', unitFilter)
     const { data: appts } = await apptQ
 
@@ -63,14 +76,31 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     let colsQ = supabase.from('kanban_columns').select('name, system_key, position').order('position')
     const { data: cols } = await colsQ
 
-    // ---- Period split (current 30d vs previous 30d) for deltas ----
+    // ---- Delta period (current vs previous of same length) ----
     const now = Date.now()
-    const D30 = 30 * 24 * 60 * 60 * 1000
-    const cur = allLeads.filter((l) => new Date(l.created_at ?? 0).getTime() > now - D30)
-    const prev = allLeads.filter((l) => {
-      const t = new Date(l.created_at ?? 0).getTime()
-      return t <= now - D30 && t > now - 2 * D30
-    })
+    const curEnd = hasRange ? toMs! : now
+    const curStart = hasRange ? fromMs! : (now - rangeMs)
+    const prevEnd = curStart
+    const prevStart = curStart - rangeMs
+
+    // Para o delta vs período anterior, busca leads do período anterior separadamente
+    // quando há filtro (allLeads já está restrito ao período atual).
+    let prevLeads: Array<Record<string, any>> = []
+    if (hasRange || true) {
+      let prevQ = supabase
+        .from('leads')
+        .select('id, sales_value, created_at, unit_id')
+        .gte('created_at', new Date(prevStart).toISOString())
+        .lt('created_at', new Date(prevEnd).toISOString())
+      if (unitFilter) prevQ = prevQ.eq('unit_id', unitFilter)
+      const { data: pl } = await prevQ
+      prevLeads = (pl ?? []) as Array<Record<string, any>>
+    }
+
+    // No "acumulado" (sem range), curLeads = últimos 30d (subset de allLeads).
+    const curLeads = hasRange
+      ? allLeads
+      : allLeads.filter((l) => new Date(l.created_at ?? 0).getTime() > curStart)
 
     const totalLeads = allLeads.length
     const totalValue = allLeads.reduce((a, l) => a + (Number(l.sales_value) || 0), 0)
@@ -78,12 +108,10 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     const qualRate = pct(qualified, totalLeads)
     const confirmedAppts = (appts ?? []).filter((a) => a.status === 'confirmed' || a.status === 'pending').length
 
-    const leadsDelta = pct(cur.length - prev.length, Math.max(prev.length, 1))
-    const valueDelta = pct(
-      cur.reduce((a, l) => a + (Number(l.sales_value) || 0), 0) -
-        prev.reduce((a, l) => a + (Number(l.sales_value) || 0), 0),
-      Math.max(prev.reduce((a, l) => a + (Number(l.sales_value) || 0), 0), 1),
-    )
+    const leadsDelta = pct(curLeads.length - prevLeads.length, Math.max(prevLeads.length, 1))
+    const curValue = curLeads.reduce((a, l) => a + (Number(l.sales_value) || 0), 0)
+    const prevValue = prevLeads.reduce((a, l) => a + (Number(l.sales_value) || 0), 0)
+    const valueDelta = pct(curValue - prevValue, Math.max(prevValue, 1))
 
     // ---- Funnel by status ----
     const counts: Record<string, number> = {}
