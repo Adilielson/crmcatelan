@@ -21,6 +21,8 @@ import {
   Megaphone,
   UserCog,
   Bell,
+  Target,
+  Trophy,
 } from 'lucide-react';
 
 /* ============ MOBILE BOTTOM NAV ============ */
