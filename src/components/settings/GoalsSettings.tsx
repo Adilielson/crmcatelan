@@ -14,7 +14,7 @@ import {
   upsertRevenueGoal,
 } from "@/lib/bi.functions";
 
-type CT = { id: string; name: string; default_value: number; is_active: boolean };
+type CT = { id: string; name: string; default_value: number | string; is_active: boolean };
 type Tier = "bronze" | "gold" | "diamond";
 
 function currentMonthISO() {
