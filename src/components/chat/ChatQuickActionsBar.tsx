@@ -115,7 +115,6 @@ export function ChatQuickActionsBar({
       return;
     }
     if (col.is_system && col.system_key === 'lost') {
-      setLossReason('');
       setLossOpen(true);
       return;
     }
