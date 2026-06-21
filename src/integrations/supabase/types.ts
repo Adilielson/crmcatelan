@@ -553,7 +553,9 @@ export type Database = {
           cancellation_reason: string | null
           checkin_at: string | null
           checkout_at: string | null
+          consultation_type_id: string | null
           created_at: string | null
+          created_by_ai: boolean
           end_at: string | null
           id: string
           lead_id: string | null
@@ -579,7 +581,9 @@ export type Database = {
           cancellation_reason?: string | null
           checkin_at?: string | null
           checkout_at?: string | null
+          consultation_type_id?: string | null
           created_at?: string | null
+          created_by_ai?: boolean
           end_at?: string | null
           id?: string
           lead_id?: string | null
@@ -605,7 +609,9 @@ export type Database = {
           cancellation_reason?: string | null
           checkin_at?: string | null
           checkout_at?: string | null
+          consultation_type_id?: string | null
           created_at?: string | null
+          created_by_ai?: boolean
           end_at?: string | null
           id?: string
           lead_id?: string | null
@@ -628,6 +634,13 @@ export type Database = {
           value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_consultation_type_id_fkey"
+            columns: ["consultation_type_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_lead_id_fkey"
             columns: ["lead_id"]
@@ -654,6 +667,44 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultation_types: {
+        Row: {
+          created_at: string
+          default_value: number
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_value?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_value?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_types_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1449,6 +1500,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["message_direction"]
           ia_transcription: string | null
           id: string
+          is_from_ai: boolean
           is_internal: boolean | null
           media_url: string | null
           message_type: string | null
@@ -1463,6 +1515,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["message_direction"]
           ia_transcription?: string | null
           id?: string
+          is_from_ai?: boolean
           is_internal?: boolean | null
           media_url?: string | null
           message_type?: string | null
@@ -1477,6 +1530,7 @@ export type Database = {
           direction?: Database["public"]["Enums"]["message_direction"]
           ia_transcription?: string | null
           id?: string
+          is_from_ai?: boolean
           is_internal?: boolean | null
           media_url?: string | null
           message_type?: string | null
@@ -1818,6 +1872,60 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue_goals: {
+        Row: {
+          active_tier: string
+          bronze: number
+          created_at: string
+          diamond: number
+          gold: number
+          id: string
+          month: string
+          tenant_id: string
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_tier?: string
+          bronze?: number
+          created_at?: string
+          diamond?: number
+          gold?: number
+          id?: string
+          month: string
+          tenant_id: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_tier?: string
+          bronze?: number
+          created_at?: string
+          diamond?: number
+          gold?: number
+          id?: string
+          month?: string
+          tenant_id?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_goals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_goals_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
@@ -2356,6 +2464,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_revenue_events: {
+        Row: {
+          amount: number | null
+          created_by_ai: boolean | null
+          event_at: string | null
+          lead_id: string | null
+          source_id: string | null
+          source_type: string | null
+          tenant_id: string | null
+          unit_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
