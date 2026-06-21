@@ -14,7 +14,7 @@ import {
   upsertRevenueGoal,
 } from "@/lib/bi.functions";
 
-type CT = { id: string; name: string; default_value: number; is_active: boolean };
+type CT = { id: string; name: string; default_value: number | string; is_active: boolean };
 type Tier = "bronze" | "gold" | "diamond";
 
 function currentMonthISO() {
@@ -34,7 +34,7 @@ export function GoalsSettings() {
   const [newType, setNewType] = useState({ name: "", default_value: "" });
 
   const [month, setMonth] = useState(currentMonthISO().slice(0, 7));
-  const [goal, setGoal] = useState({ bronze: 0, gold: 0, diamond: 0, active_tier: "bronze" as Tier });
+  const [goal, setGoal] = useState<{ bronze: string; gold: string; diamond: string; active_tier: Tier }>({ bronze: "0", gold: "0", diamond: "0", active_tier: "bronze" });
   const [loadingGoal, setLoadingGoal] = useState(true);
   const [savingGoal, setSavingGoal] = useState(false);
 
@@ -56,13 +56,13 @@ export function GoalsSettings() {
       const row = await getGoal({ data: { month: `${month}-01`, unit_id: null } });
       if (row) {
         setGoal({
-          bronze: Number(row.bronze) || 0,
-          gold: Number(row.gold) || 0,
-          diamond: Number(row.diamond) || 0,
+          bronze: String(Number(row.bronze) || 0),
+          gold: String(Number(row.gold) || 0),
+          diamond: String(Number(row.diamond) || 0),
           active_tier: (row.active_tier as Tier) ?? "bronze",
         });
       } else {
-        setGoal({ bronze: 0, gold: 0, diamond: 0, active_tier: "bronze" });
+        setGoal({ bronze: "0", gold: "0", diamond: "0", active_tier: "bronze" });
       }
     } catch (e) {
       toast.error("Erro ao carregar meta: " + (e instanceof Error ? e.message : String(e)));
@@ -175,16 +175,16 @@ export function GoalsSettings() {
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-gray-500">R$</span>
                   <Input
-                    type="number"
-                    step="0.01"
-                    value={ct.default_value}
-                    onChange={(e) =>
+                    type="text"
+                    inputMode="decimal"
+                    value={String(ct.default_value ?? "")}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(",", ".");
+                      if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
                       setTypes((arr) =>
-                        arr.map((x) =>
-                          x.id === ct.id ? { ...x, default_value: Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
+                        arr.map((x) => (x.id === ct.id ? { ...x, default_value: v } : x)),
+                      );
+                    }}
                     className="w-28 h-10 text-right"
                   />
                 </div>
@@ -233,11 +233,15 @@ export function GoalsSettings() {
               Valor (R$)
             </Label>
             <Input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="0,00"
               value={newType.default_value}
-              onChange={(e) => setNewType((n) => ({ ...n, default_value: e.target.value }))}
+              onChange={(e) => {
+                const v = e.target.value.replace(",", ".");
+                if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                setNewType((n) => ({ ...n, default_value: v }));
+              }}
               className="h-10 mt-2 text-right"
             />
           </div>
@@ -282,11 +286,10 @@ export function GoalsSettings() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {(["bronze", "gold", "diamond"] as Tier[]).map((tier) => (
-                <button
-                  type="button"
+                <div
                   key={tier}
                   onClick={() => setGoal((g) => ({ ...g, active_tier: tier }))}
-                  className={`text-left p-5 rounded-xl border-2 transition-all ${
+                  className={`text-left p-5 rounded-xl border-2 transition-all cursor-pointer ${
                     goal.active_tier === tier
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/40"
@@ -302,20 +305,21 @@ export function GoalsSettings() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <span className="text-xs text-gray-500">R$</span>
                     <Input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={goal[tier]}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) =>
-                        setGoal((g) => ({ ...g, [tier]: Number(e.target.value) }))
-                      }
+                      onChange={(e) => {
+                        const v = e.target.value.replace(",", ".");
+                        if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                        setGoal((g) => ({ ...g, [tier]: v }));
+                      }}
                       className="h-11 text-lg font-black text-ink text-right"
                     />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
             <div className="flex justify-end mt-6">
