@@ -28,6 +28,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 import { Route as ApiPublicHooksProcessAppointmentRemindersRouteImport } from './routes/api/public/hooks/process-appointment-reminders'
+import { Route as ApiPublicHooksBuildReferenceStyleRouteImport } from './routes/api/public/hooks/build-reference-style'
 
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
@@ -126,6 +127,12 @@ const ApiPublicHooksProcessAppointmentRemindersRoute =
     path: '/api/public/hooks/process-appointment-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBuildReferenceStyleRoute =
+  ApiPublicHooksBuildReferenceStyleRouteImport.update({
+    id: '/api/public/hooks/build-reference-style',
+    path: '/api/public/hooks/build-reference-style',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
@@ -166,6 +174,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
@@ -188,6 +197,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/whatsapp': typeof WhatsappRoute
   '/analytics/no-show': typeof AnalyticsNoShowRoute
+  '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
 }
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
   fileRoutesByTo: FileRoutesByTo
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
   id:
@@ -253,6 +265,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/whatsapp'
     | '/analytics/no-show'
+    | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
   fileRoutesById: FileRoutesById
@@ -275,6 +288,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
+  ApiPublicHooksBuildReferenceStyleRoute: typeof ApiPublicHooksBuildReferenceStyleRoute
   ApiPublicHooksProcessAppointmentRemindersRoute: typeof ApiPublicHooksProcessAppointmentRemindersRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
 }
@@ -414,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessAppointmentRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/build-reference-style': {
+      id: '/api/public/hooks/build-reference-style'
+      path: '/api/public/hooks/build-reference-style'
+      fullPath: '/api/public/hooks/build-reference-style'
+      preLoaderRoute: typeof ApiPublicHooksBuildReferenceStyleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -435,6 +456,8 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
+  ApiPublicHooksBuildReferenceStyleRoute:
+    ApiPublicHooksBuildReferenceStyleRoute,
   ApiPublicHooksProcessAppointmentRemindersRoute:
     ApiPublicHooksProcessAppointmentRemindersRoute,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,

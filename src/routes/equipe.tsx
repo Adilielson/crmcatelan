@@ -27,6 +27,9 @@ import {
 } from '@/components/ui/table';
 import { stageLabel } from '@/hooks/use-leads';
 import { toast } from 'sonner';
+import { useServerFn } from '@tanstack/react-start';
+import { toggleReferenceAgent } from '@/lib/ai-style.functions';
+import { Star } from 'lucide-react';
 
 export const Route = createFileRoute('/equipe')({
   component: Equipe,
@@ -44,6 +47,7 @@ interface TeamProfile {
   full_name: string | null;
   role: string;
   avatar_url: string | null;
+  is_reference_agent: boolean;
 }
 
 interface TeamLead {
@@ -122,6 +126,16 @@ function Equipe() {
   const isManager = role ? MANAGER_ROLES.has(role) : false;
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const toggleRefFn = useServerFn(toggleReferenceAgent);
+  const toggleRefMutation = useMutation({
+    mutationFn: ({ profileId, value }: { profileId: string; value: boolean }) =>
+      toggleRefFn({ data: { profileId, value } }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['equipe-profiles', tenantId] });
+      toast.success(vars.value ? 'Marcado como referência de atendimento' : 'Removido das referências');
+    },
+    onError: (err: any) => toast.error(err?.message ?? 'Erro ao atualizar'),
+  });
   const [search, setSearch] = useState('');
   // Atendente comum entra já filtrado nos próprios leads; gerentes/admins veem todos
   const [assigneeFilter, setAssigneeFilter] = useState<string>(
@@ -165,7 +179,7 @@ function Equipe() {
     queryFn: async (): Promise<TeamProfile[]> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, role, avatar_url')
+        .select('id, full_name, role, avatar_url, is_reference_agent')
         .eq('tenant_id', tenantId!);
       if (error) throw error;
       return (data ?? []) as TeamProfile[];
@@ -383,6 +397,40 @@ function Equipe() {
                         </span>
                       </span>
                     </div>
+                    {isManager && (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (toggleRefMutation.isPending) return;
+                          toggleRefMutation.mutate({ profileId: p.id, value: !p.is_reference_agent });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleRefMutation.mutate({ profileId: p.id, value: !p.is_reference_agent });
+                          }
+                        }}
+                        className={`mt-2 flex items-center justify-between gap-2 rounded-md px-2 py-1 cursor-pointer transition ${
+                          p.is_reference_agent
+                            ? 'bg-violet-100 hover:bg-violet-200'
+                            : 'bg-slate-50 hover:bg-slate-100'
+                        }`}
+                        title="A IA SDR vai imitar o estilo desta pessoa"
+                      >
+                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
+                          <Star className={`h-3 w-3 ${p.is_reference_agent ? 'fill-violet-700 text-violet-700' : 'text-slate-400'}`} />
+                          <span className={p.is_reference_agent ? 'text-violet-800' : 'text-slate-500'}>
+                            Referência IA
+                          </span>
+                        </span>
+                        <span className={`text-[10px] font-bold ${p.is_reference_agent ? 'text-violet-700' : 'text-slate-400'}`}>
+                          {p.is_reference_agent ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </button>
               );

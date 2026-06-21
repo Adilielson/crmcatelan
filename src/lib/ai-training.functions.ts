@@ -124,8 +124,9 @@ export const restoreAiVersion = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[]): string {
+function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock: string = ""): string {
   const parts: string[] = [cfg.prompt_system || "Você é um atendente da Ótica Catelan."];
+  if (styleBlock) parts.push(styleBlock);
   if (cfg.goal) parts.push(`Objetivo principal da conversa: ${cfg.goal === "appointment" ? "agendar uma consulta" : cfg.goal === "qualification" ? "qualificar o lead" : "dar suporte"}.`);
   if (cfg.scheduling_link) parts.push(`Link de agendamento (use quando o lead pedir): ${cfg.scheduling_link}`);
   if (cfg.knowledge_base_faq?.trim()) parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`);
@@ -164,7 +165,9 @@ export const simulateChat = createServerFn({ method: "POST" })
       .filter((d: any) => d.content?.trim())
       .map((d: any) => `[${d.name}]\n${(d.content as string).slice(0, 3000)}`);
 
-    const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts);
+    const { loadStyleBlockForPrompt } = await import("./ai-style.functions");
+    const styleBlock = await loadStyleBlockForPrompt(tenantId);
+    const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts, styleBlock);
 
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new Error("OPENAI_API_KEY ausente");

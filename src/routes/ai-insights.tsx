@@ -1,10 +1,15 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getInsightsDashboard } from '@/lib/ai-insights.functions';
+import { getReferenceStyleProfile, rebuildReferenceStyleProfile } from '@/lib/ai-style.functions';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown } from 'lucide-react';
+import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown, Star, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const Route = createFileRoute('/ai-insights')({
   component: AiInsightsPage,
@@ -59,6 +64,9 @@ function AiInsightsPage() {
           </p>
         </div>
       </header>
+
+      <ReferenceStyleCard />
+
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -190,4 +198,105 @@ function SentimentBadge({ sentiment }: { sentiment: string | null }) {
   };
   const v = map[sentiment || ''] || { label: sentiment || '—', cls: 'bg-slate-100 text-slate-600' };
   return <span className={`text-xs px-2 py-0.5 rounded-full ${v.cls}`}>{v.label}</span>;
+}
+
+function ReferenceStyleCard() {
+  const qc = useQueryClient();
+  const fetchFn = useServerFn(getReferenceStyleProfile);
+  const rebuildFn = useServerFn(rebuildReferenceStyleProfile);
+  const { data, isLoading } = useQuery({
+    queryKey: ['ai-reference-style'],
+    queryFn: () => fetchFn(),
+    staleTime: 60_000,
+  });
+  const rebuild = useMutation({
+    mutationFn: () => rebuildFn(),
+    onSuccess: (r: any) => {
+      qc.invalidateQueries({ queryKey: ['ai-reference-style'] });
+      if (r?.ok) toast.success(`Estilo atualizado (${r.sample_count} mensagens analisadas)`);
+      else if (r?.reason === 'no_reference_agents') toast.error('Marque ao menos 1 atendente como "Referência IA" na Equipe');
+      else if (r?.reason === 'no_successful_leads') toast.error('Ainda não há leads agendados/fechados pela referência');
+      else if (r?.reason === 'not_enough_messages') toast.error(`Apenas ${r.sample_count} mensagens — precisa de mais histórico`);
+      else toast.message('Sem mudanças');
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Falha ao reconstruir'),
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="p-4">
+        <p className="text-sm text-slate-500">Carregando estilo da referência…</p>
+      </Card>
+    );
+  }
+
+  const profile = data?.profile;
+  const refs = data?.reference_agents ?? [];
+  const guide = (profile?.style_guide ?? {}) as any;
+
+  return (
+    <Card className="p-5 bg-gradient-to-br from-violet-50 to-white border-violet-200">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-violet-200 rounded-lg">
+            <Star className="w-5 h-5 text-violet-700 fill-violet-700" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-violet-900">Estilo da atendente referência</h2>
+            <p className="text-xs text-violet-700/80">
+              A IA SDR vai imitar este estilo em todas as respostas.
+              {refs.length > 0 && ` Baseado em: ${refs.map((r: any) => r.full_name).filter(Boolean).join(', ')}.`}
+            </p>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => rebuild.mutate()}
+          disabled={rebuild.isPending}
+          className="border-violet-300 text-violet-800 hover:bg-violet-100"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 mr-1 ${rebuild.isPending ? 'animate-spin' : ''}`} />
+          Recalcular
+        </Button>
+      </div>
+
+      {refs.length === 0 ? (
+        <p className="text-sm text-slate-600 bg-amber-50 border border-amber-200 rounded-md p-3">
+          Nenhum atendente marcado como referência. Vá em <strong>Equipe</strong> e ative
+          "Referência IA" no card da Raiana (ou de outra pessoa).
+        </p>
+      ) : !profile?.style_prompt ? (
+        <p className="text-sm text-slate-600 bg-slate-50 rounded-md p-3">
+          Ainda não calculei o estilo. Clique em <strong>Recalcular</strong>.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <div className="text-sm text-slate-700 whitespace-pre-line border-l-2 border-violet-300 pl-3">
+            {profile.style_prompt}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <Metric label="Mensagens" value={String(profile.sample_count ?? 0)} />
+            <Metric label="Tam. médio" value={`${guide.avg_msg_length ?? 0} car.`} />
+            <Metric label="Com pergunta" value={`${guide.pct_with_question ?? 0}%`} />
+            <Metric label="Com emoji" value={`${guide.pct_with_emoji ?? 0}%`} />
+          </div>
+          {profile.last_built_at && (
+            <p className="text-[11px] text-slate-400">
+              Atualizado {formatDistanceToNow(new Date(profile.last_built_at), { addSuffix: true, locale: ptBR })}
+            </p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white rounded-md border border-violet-100 px-2 py-1.5">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-sm font-bold text-violet-900">{value}</div>
+    </div>
+  );
 }
