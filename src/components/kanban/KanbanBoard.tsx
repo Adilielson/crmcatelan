@@ -234,10 +234,10 @@ export function KanbanBoard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { setEditingColumn(null); setColumnDialogOpen(true); }}
+              onClick={() => setColumnsSettingsOpen(true)}
               className="h-11 px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px]"
             >
-              <Plus className="w-4 h-4 mr-2" /> Nova Coluna
+              <Settings2 className="w-4 h-4 mr-2" /> Configurar Etapas
             </Button>
           )}
           <Button onClick={() => setNewOpen(true)} size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">
