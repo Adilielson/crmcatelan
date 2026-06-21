@@ -40,16 +40,21 @@ const DEFAULT_HOURS: BusinessHours = {
 function BusinessHoursSection() {
   const fetchHours = useServerFn(getBusinessHours)
   const saveHours = useServerFn(updateBusinessHours)
+  const resolveTz = useServerFn(resolveTimezoneFromAddress)
   const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS)
   const [tz, setTz] = useState('America/Sao_Paulo')
+  const [address, setAddress] = useState('')
+  const [tzLocation, setTzLocation] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [detectingTz, setDetectingTz] = useState(false)
 
   useEffect(() => {
     fetchHours()
       .then((r) => {
         if (r.business_hours) setHours(r.business_hours)
         if (r.timezone) setTz(r.timezone)
+        if (r.address) setAddress(r.address)
       })
       .catch((e) => toast.error('Erro ao carregar horário: ' + (e instanceof Error ? e.message : String(e))))
       .finally(() => setLoading(false))
@@ -66,11 +71,30 @@ function BusinessHoursSection() {
     })
   }
 
+  const detectTimezone = async () => {
+    const addr = address.trim()
+    if (addr.length < 5) {
+      toast.error('Informe um endereço válido (rua, cidade, UF).')
+      return
+    }
+    setDetectingTz(true)
+    try {
+      const r = await resolveTz({ data: { address: addr } })
+      setTz(r.timezone)
+      setTzLocation(r.display_name)
+      toast.success(`Fuso detectado: ${r.timezone}`)
+    } catch (e) {
+      toast.error('Não foi possível detectar o fuso: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setDetectingTz(false)
+    }
+  }
+
   const save = async () => {
     setSaving(true)
     try {
-      await saveHours({ data: { business_hours: hours, timezone: tz } })
-      toast.success('Horário de expediente salvo. A IA SDR vai respeitar a partir de agora.')
+      await saveHours({ data: { business_hours: hours, timezone: tz, address } })
+      toast.success('Horário e localização salvos. A IA SDR vai respeitar a partir de agora.')
     } catch (e) {
       toast.error('Erro ao salvar: ' + (e instanceof Error ? e.message : String(e)))
     } finally {
@@ -116,9 +140,49 @@ function BusinessHoursSection() {
           )
         })}
       </div>
-      <div className="mt-4">
-        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Fuso Horário</Label>
-        <Input value={tz} onChange={(e) => setTz(e.target.value)} className="mt-2 h-10 bg-white border-border text-ink" />
+
+      <div className="mt-6 grid grid-cols-1 gap-4">
+        <div>
+          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+            Endereço da Loja
+          </Label>
+          <p className="text-[10px] text-gray-400 mt-1 mb-2">
+            O fuso horário é detectado automaticamente a partir do endereço.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              onBlur={detectTimezone}
+              placeholder="Rua, número, bairro, cidade - UF"
+              disabled={loading}
+              className="h-10 bg-white border-border text-ink flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={detectTimezone}
+              disabled={detectingTz || loading || address.trim().length < 5}
+              className="h-10 text-[10px] font-black uppercase tracking-widest"
+            >
+              {detectingTz ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Detectar fuso'}
+            </Button>
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Fuso Horário (detectado)</Label>
+          <div className="mt-2 flex items-center gap-2 h-10 px-3 rounded-lg bg-gray-50 border border-border">
+            <Globe className="w-4 h-4 text-primary" />
+            <span className="text-xs font-black text-ink">{tz}</span>
+            {tzLocation && (
+              <span className="text-[10px] text-gray-500 truncate ml-2" title={tzLocation}>
+                · {tzLocation}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     </section>
   )
