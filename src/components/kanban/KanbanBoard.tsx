@@ -75,6 +75,7 @@ export function KanbanBoard() {
   const [lossReason, setLossReason] = useState('');
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<KanbanColumn | null>(null);
+  const [columnsSettingsOpen, setColumnsSettingsOpen] = useState(false);
   const [deletingColumn, setDeletingColumn] = useState<KanbanColumn | null>(null);
   const [closingLead, setClosingLead] = useState<DBLead | null>(null);
   const [followupLead, setFollowupLead] = useState<DBLead | null>(null);
