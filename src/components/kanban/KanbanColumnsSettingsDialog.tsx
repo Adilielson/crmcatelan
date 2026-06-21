@@ -134,19 +134,33 @@ export function KanbanColumnsSettingsDialog({ open, onOpenChange, columns, group
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-white border-b border-[#E3E6EB] shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-[0.18em] text-[#6C727C] font-jakarta">
-              Etapas de <span className="text-[#FF8A00] normal-case tracking-normal">{groupLabel}</span>
-            </h2>
-            <p className="text-xs text-[#A7ADB8] mt-1 font-semibold">
-              Edite nome, cor e SLA em dias. Arraste para reordenar — tudo é salvo automaticamente.
-            </p>
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="group flex items-center gap-2 h-11 pl-2 pr-3 rounded-xl border border-[#E3E6EB] bg-white hover:bg-[#F6F7F9] hover:border-[#C7CDD6] text-[#3a414c] hover:text-ink transition-all shadow-sm"
+              aria-label="Voltar para o Kanban"
+              title="Voltar (Esc)"
+            >
+              <span className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F6F7F9] group-hover:bg-white transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+              </span>
+              <span className="text-sm font-bold hidden sm:inline">Voltar</span>
+            </button>
+            <div className="min-w-0">
+              <h2 className="text-sm font-black uppercase tracking-[0.18em] text-[#6C727C] font-jakarta truncate">
+                Etapas de <span className="text-[#FF8A00] normal-case tracking-normal">{groupLabel}</span>
+              </h2>
+              <p className="text-xs text-[#A7ADB8] mt-1 font-semibold hidden sm:block">
+                Edite nome, cor e SLA em dias. Arraste para reordenar — tudo é salvo automaticamente.
+              </p>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onOpenChange(false)}
-            className="h-11 w-11 rounded-xl hover:bg-[#F6F7F9] text-[#6C727C] hover:text-ink"
+            className="h-11 w-11 rounded-xl hover:bg-[#F6F7F9] text-[#6C727C] hover:text-ink shrink-0"
             aria-label="Fechar"
           >
             <X className="w-5 h-5" />
