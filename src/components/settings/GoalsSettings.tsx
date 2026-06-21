@@ -175,16 +175,16 @@ export function GoalsSettings() {
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-gray-500">R$</span>
                   <Input
-                    type="number"
-                    step="0.01"
-                    value={ct.default_value}
-                    onChange={(e) =>
+                    type="text"
+                    inputMode="decimal"
+                    value={String(ct.default_value ?? "")}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(",", ".");
+                      if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
                       setTypes((arr) =>
-                        arr.map((x) =>
-                          x.id === ct.id ? { ...x, default_value: Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
+                        arr.map((x) => (x.id === ct.id ? { ...x, default_value: v } : x)),
+                      );
+                    }}
                     className="w-28 h-10 text-right"
                   />
                 </div>
