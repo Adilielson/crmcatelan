@@ -202,27 +202,27 @@ function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <StatCard 
-          title="Total de Leads" 
-          value={stats.totalLeads.toString()} 
-          change={fmtDelta(kpis?.leadsDelta ?? 0)} 
-          changeDesc="vs 30 dias anteriores"
+        <StatCard
+          title="Total de Leads"
+          value={stats.totalLeads.toString()}
+          change={fmtDelta(kpis?.leadsDelta ?? 0)}
+          changeDesc={periodDesc}
           icon={<Users className="w-5 h-5" />}
           link="/kanban"
         />
-        <StatCard 
-          title="Valor em Pipeline" 
-          value={stats.totalValue} 
-          change={fmtDelta(kpis?.valueDelta ?? 0)} 
-          changeDesc="vs 30 dias anteriores"
+        <StatCard
+          title="Valor em Pipeline"
+          value={stats.totalValue}
+          change={fmtDelta(kpis?.valueDelta ?? 0)}
+          changeDesc={periodDesc}
           icon={<DollarSign className="w-5 h-5" />}
           link="/kanban"
         />
-        <StatCard 
-          title="Consultas Agendadas" 
-          value={stats.confirmedAppts.toString()} 
-          change={`${stats.confirmedAppts}`} 
-          changeDesc="próximos 7 dias"
+        <StatCard
+          title="Consultas Agendadas"
+          value={stats.confirmedAppts.toString()}
+          change={`${stats.confirmedAppts}`}
+          changeDesc={apptDesc}
           icon={<Calendar className="w-5 h-5" />}
           link="/agenda"
         />
