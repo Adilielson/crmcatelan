@@ -26,6 +26,7 @@ import { LeadLocationDialog } from './LeadLocationDialog';
 import { KanbanColumnDialog } from './KanbanColumnDialog';
 import { CloseLeadDialog } from './CloseLeadDialog';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
+import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
 const InstagramIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
