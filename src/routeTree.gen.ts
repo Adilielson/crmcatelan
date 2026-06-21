@@ -13,6 +13,7 @@ import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MetasRouteImport } from './routes/metas'
@@ -28,6 +29,7 @@ import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AiInsightsRouteImport } from './routes/ai-insights'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RelatoriosIndexRouteImport } from './routes/relatorios.index'
 import { Route as RelatoriosComparecimentoRouteImport } from './routes/relatorios.comparecimento'
 import { Route as RelatoriosAtendentesRouteImport } from './routes/relatorios.atendentes'
 import { Route as RelatoriosAgendamentosRouteImport } from './routes/relatorios.agendamentos'
@@ -54,6 +56,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SaasRoute = SaasRouteImport.update({
   id: '/saas',
   path: '/saas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RankingRoute = RankingRouteImport.update({
@@ -131,21 +138,26 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelatoriosIndexRoute = RelatoriosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RelatoriosRoute,
+} as any)
 const RelatoriosComparecimentoRoute =
   RelatoriosComparecimentoRouteImport.update({
-    id: '/relatorios/comparecimento',
-    path: '/relatorios/comparecimento',
-    getParentRoute: () => rootRouteImport,
+    id: '/comparecimento',
+    path: '/comparecimento',
+    getParentRoute: () => RelatoriosRoute,
   } as any)
 const RelatoriosAtendentesRoute = RelatoriosAtendentesRouteImport.update({
-  id: '/relatorios/atendentes',
-  path: '/relatorios/atendentes',
-  getParentRoute: () => rootRouteImport,
+  id: '/atendentes',
+  path: '/atendentes',
+  getParentRoute: () => RelatoriosRoute,
 } as any)
 const RelatoriosAgendamentosRoute = RelatoriosAgendamentosRouteImport.update({
-  id: '/relatorios/agendamentos',
-  path: '/relatorios/agendamentos',
-  getParentRoute: () => rootRouteImport,
+  id: '/agendamentos',
+  path: '/agendamentos',
+  getParentRoute: () => RelatoriosRoute,
 } as any)
 const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
   id: '/analytics/no-show',
@@ -187,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
+  '/relatorios': typeof RelatoriosRouteWithChildren
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -195,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -223,6 +237,7 @@ export interface FileRoutesByTo {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -244,6 +259,7 @@ export interface FileRoutesById {
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
+  '/relatorios': typeof RelatoriosRouteWithChildren
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -252,6 +268,7 @@ export interface FileRoutesById {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -274,6 +291,7 @@ export interface FileRouteTypes {
     | '/metas'
     | '/performance'
     | '/ranking'
+    | '/relatorios'
     | '/saas'
     | '/settings'
     | '/users'
@@ -282,6 +300,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -310,6 +329,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -330,6 +350,7 @@ export interface FileRouteTypes {
     | '/metas'
     | '/performance'
     | '/ranking'
+    | '/relatorios'
     | '/saas'
     | '/settings'
     | '/users'
@@ -338,6 +359,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -359,14 +381,12 @@ export interface RootRouteChildren {
   MetasRoute: typeof MetasRoute
   PerformanceRoute: typeof PerformanceRoute
   RankingRoute: typeof RankingRoute
+  RelatoriosRoute: typeof RelatoriosRouteWithChildren
   SaasRoute: typeof SaasRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
-  RelatoriosAgendamentosRoute: typeof RelatoriosAgendamentosRoute
-  RelatoriosAtendentesRoute: typeof RelatoriosAtendentesRoute
-  RelatoriosComparecimentoRoute: typeof RelatoriosComparecimentoRoute
   ApiPublicHooksBuildReferenceStyleRoute: typeof ApiPublicHooksBuildReferenceStyleRoute
   ApiPublicHooksProcessAppointmentRemindersRoute: typeof ApiPublicHooksProcessAppointmentRemindersRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
@@ -400,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/saas'
       fullPath: '/saas'
       preLoaderRoute: typeof SaasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ranking': {
@@ -507,26 +534,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relatorios/': {
+      id: '/relatorios/'
+      path: '/'
+      fullPath: '/relatorios/'
+      preLoaderRoute: typeof RelatoriosIndexRouteImport
+      parentRoute: typeof RelatoriosRoute
+    }
     '/relatorios/comparecimento': {
       id: '/relatorios/comparecimento'
-      path: '/relatorios/comparecimento'
+      path: '/comparecimento'
       fullPath: '/relatorios/comparecimento'
       preLoaderRoute: typeof RelatoriosComparecimentoRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof RelatoriosRoute
     }
     '/relatorios/atendentes': {
       id: '/relatorios/atendentes'
-      path: '/relatorios/atendentes'
+      path: '/atendentes'
       fullPath: '/relatorios/atendentes'
       preLoaderRoute: typeof RelatoriosAtendentesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof RelatoriosRoute
     }
     '/relatorios/agendamentos': {
       id: '/relatorios/agendamentos'
-      path: '/relatorios/agendamentos'
+      path: '/agendamentos'
       fullPath: '/relatorios/agendamentos'
       preLoaderRoute: typeof RelatoriosAgendamentosRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof RelatoriosRoute
     }
     '/analytics/no-show': {
       id: '/analytics/no-show'
@@ -559,6 +593,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface RelatoriosRouteChildren {
+  RelatoriosAgendamentosRoute: typeof RelatoriosAgendamentosRoute
+  RelatoriosAtendentesRoute: typeof RelatoriosAtendentesRoute
+  RelatoriosComparecimentoRoute: typeof RelatoriosComparecimentoRoute
+  RelatoriosIndexRoute: typeof RelatoriosIndexRoute
+}
+
+const RelatoriosRouteChildren: RelatoriosRouteChildren = {
+  RelatoriosAgendamentosRoute: RelatoriosAgendamentosRoute,
+  RelatoriosAtendentesRoute: RelatoriosAtendentesRoute,
+  RelatoriosComparecimentoRoute: RelatoriosComparecimentoRoute,
+  RelatoriosIndexRoute: RelatoriosIndexRoute,
+}
+
+const RelatoriosRouteWithChildren = RelatoriosRoute._addFileChildren(
+  RelatoriosRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
@@ -575,14 +627,12 @@ const rootRouteChildren: RootRouteChildren = {
   MetasRoute: MetasRoute,
   PerformanceRoute: PerformanceRoute,
   RankingRoute: RankingRoute,
+  RelatoriosRoute: RelatoriosRouteWithChildren,
   SaasRoute: SaasRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
-  RelatoriosAgendamentosRoute: RelatoriosAgendamentosRoute,
-  RelatoriosAtendentesRoute: RelatoriosAtendentesRoute,
-  RelatoriosComparecimentoRoute: RelatoriosComparecimentoRoute,
   ApiPublicHooksBuildReferenceStyleRoute:
     ApiPublicHooksBuildReferenceStyleRoute,
   ApiPublicHooksProcessAppointmentRemindersRoute:
