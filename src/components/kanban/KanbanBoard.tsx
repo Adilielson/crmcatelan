@@ -26,6 +26,7 @@ import { LeadLocationDialog } from './LeadLocationDialog';
 import { KanbanColumnDialog } from './KanbanColumnDialog';
 import { KanbanColumnsSettingsDialog } from './KanbanColumnsSettingsDialog';
 import { CloseLeadDialog } from './CloseLeadDialog';
+import { LostLeadDialog } from '@/components/leads/LostLeadDialog';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
