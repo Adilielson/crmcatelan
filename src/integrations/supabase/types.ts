@@ -894,6 +894,7 @@ export type Database = {
           is_system: boolean
           name: string
           position: number
+          sla_days: number
           system_key: string | null
           tenant_id: string
           updated_at: string
@@ -906,6 +907,7 @@ export type Database = {
           is_system?: boolean
           name: string
           position?: number
+          sla_days?: number
           system_key?: string | null
           tenant_id: string
           updated_at?: string
@@ -918,6 +920,7 @@ export type Database = {
           is_system?: boolean
           name?: string
           position?: number
+          sla_days?: number
           system_key?: string | null
           tenant_id?: string
           updated_at?: string

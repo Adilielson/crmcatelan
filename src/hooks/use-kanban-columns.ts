@@ -9,6 +9,7 @@ export interface KanbanColumn {
   name: string;
   color: string;
   position: number;
+  sla_days: number;
   is_system: boolean;
   system_key: string | null;
   created_at: string;

@@ -1,0 +1,1 @@
+ALTER TABLE public.kanban_columns ADD COLUMN IF NOT EXISTS sla_days integer NOT NULL DEFAULT 7;
