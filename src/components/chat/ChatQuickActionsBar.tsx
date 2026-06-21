@@ -41,9 +41,11 @@ import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 export function ChatQuickActionsBar({
   lead,
   className,
+  onOpenProfile,
 }: {
   lead: DBLead;
   className?: string;
+  onOpenProfile?: () => void;
 }) {
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
   const currentUserId = useAuthStore((s) => s.user?.id ?? null);
