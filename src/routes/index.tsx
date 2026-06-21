@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { 
   Card, 
