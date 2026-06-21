@@ -157,23 +157,25 @@ export function ChatQuickActionsBar({
     setScheduleData({ date: '', time: '' });
   };
 
-  const confirmLoss = async () => {
-    if (!lossReason) {
+  const confirmLoss = async ({ reason, note }: { reason: string; note: string }) => {
+    if (!reason) {
       toast.error('Selecione o motivo da perda');
       return;
     }
+    const summary = note ? `${reason} — ${note}` : reason;
     await updateLead.mutateAsync({
       id: lead.id,
       updates: {
         status: 'lost',
         custom_column_id: null,
-        notes: `${lead.notes ?? ''}\n[Perdido: ${lossReason}]`.trim(),
+        lost_reason: reason,
+        lost_reason_note: note || null,
+        notes: `${lead.notes ?? ''}\n[Perdido: ${summary}]`.trim(),
       },
     });
     qc.invalidateQueries({ queryKey: ['leads', tenantId] });
     toast.error('Lead marcado como perdido');
     setLossOpen(false);
-    setLossReason('');
   };
 
   return (
