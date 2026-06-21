@@ -52,7 +52,13 @@ export const Route = createFileRoute('/agenda')({
 })
 
 function Agenda() {
-  const { appointments, addAppointment, updateAppointment, workingHours } = useAgenda()
+  const { appointments: allAppointments, addAppointment, updateAppointment, workingHours } = useAgenda()
+  // Não exibimos agendamentos passados na agenda — o histórico fica disponível na ficha do lead.
+  const appointments = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return allAppointments.filter(a => new Date(a.date + 'T00:00:00').getTime() >= today.getTime())
+  }, [allAppointments])
   const qc = useQueryClient()
   const { data: leads = [] } = useLeads()
   const { sendText, isConnected: waConnected } = useWhatsApp()
