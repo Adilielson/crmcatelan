@@ -258,46 +258,15 @@ export function ChatQuickActionsBar({
         onOpenChange={setTransferOpen}
       />
 
-      {/* Agenda dialog (obrigatório data/hora) */}
-      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Agendar — {lead.full_name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Data *</Label>
-              <Input
-                type="date"
-                required
-                value={scheduleData.date}
-                onChange={(e) => setScheduleData((p) => ({ ...p, date: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Hora *</Label>
-              <Input
-                type="time"
-                required
-                value={scheduleData.time}
-                onChange={(e) => setScheduleData((p) => ({ ...p, time: e.target.value }))}
-              />
-            </div>
-            {lead.phone && <p className="text-xs text-gray-500">📱 {lead.phone}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setScheduleOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={confirmSchedule}
-              disabled={!scheduleData.date || !scheduleData.time || updateLead.isPending}
-            >
-              Confirmar Agendamento
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Agenda dialog — usa o mesmo formulário da aba Agenda */}
+      <NewAppointmentDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        defaultLeadId={lead.id}
+        lockLead
+        moveLeadToScheduled
+        onCreated={() => qc.invalidateQueries({ queryKey: ['leads', tenantId] })}
+      />
 
       {/* Loss dialog (motivo obrigatório) */}
       <Dialog open={lossOpen} onOpenChange={setLossOpen}>
