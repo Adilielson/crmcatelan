@@ -102,6 +102,9 @@ const ACTIVE_STATUSES = new Set([
   'followup',
 ]);
 
+// Roles que aparecem na aba Equipe (atendentes, equipe e gerentes)
+const VISIBLE_ROLES = ['attendant', 'seller', 'consultant', 'admin', 'super_admin', 'owner'];
+
 // SLA: alerta se lead ativo está parado há mais de X horas
 const STALE_HOURS = 4;
 
