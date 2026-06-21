@@ -314,6 +314,7 @@ async function aggregatePatterns(
   tenantId: string,
   parsed: any,
   outcome: string | null,
+  opts?: { agentId?: string | null; isReferenceAgent?: boolean },
 ) {
   type Item = { type: string; content: string };
   const items: Item[] = [];
@@ -330,13 +331,18 @@ async function aggregatePatterns(
     items.push({ type: "winning_phrase", content: String(s).trim() }),
   );
 
+  // Cálculo de peso: referência + sucesso = 3x; lost = 0.3; default = 1
+  const positive = new Set(["scheduled", "checked_in", "showed_up", "negotiating"]);
+  let weight = 1;
+  if (outcome === "lost") weight = 0.3;
+  if (opts?.isReferenceAgent && positive.has(String(outcome))) weight = 3;
+
   for (const it of items) {
     if (!it.content || it.content.length < 2) continue;
     const truncated = it.content.slice(0, 500);
-    // Upsert por (tenant, type, content)
     const { data: existing } = await admin
       .from("ai_knowledge_patterns")
-      .select("id, occurrences")
+      .select("id, occurrences, weight")
       .eq("tenant_id", tenantId)
       .eq("pattern_type", it.type)
       .eq("content", truncated)
@@ -349,6 +355,8 @@ async function aggregatePatterns(
           occurrences: existing.occurrences + 1,
           last_seen_at: new Date().toISOString(),
           related_outcome: outcome,
+          weight: Math.max(Number(existing.weight ?? 1), weight),
+          agent_id: opts?.agentId ?? null,
         })
         .eq("id", existing.id);
     } else {
@@ -358,6 +366,8 @@ async function aggregatePatterns(
         content: truncated,
         occurrences: 1,
         related_outcome: outcome,
+        weight,
+        agent_id: opts?.agentId ?? null,
       });
     }
   }
