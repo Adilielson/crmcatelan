@@ -315,6 +315,7 @@ export type Database = {
       }
       ai_knowledge_patterns: {
         Row: {
+          agent_id: string | null
           content: string
           conversion_rate: number | null
           created_at: string
@@ -325,8 +326,10 @@ export type Database = {
           related_outcome: string | null
           tenant_id: string
           updated_at: string
+          weight: number
         }
         Insert: {
+          agent_id?: string | null
           content: string
           conversion_rate?: number | null
           created_at?: string
@@ -337,8 +340,10 @@ export type Database = {
           related_outcome?: string | null
           tenant_id: string
           updated_at?: string
+          weight?: number
         }
         Update: {
+          agent_id?: string | null
           content?: string
           conversion_rate?: number | null
           created_at?: string
@@ -349,8 +354,16 @@ export type Database = {
           related_outcome?: string | null
           tenant_id?: string
           updated_at?: string
+          weight?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_knowledge_patterns_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_knowledge_patterns_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -451,6 +464,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_reference_style_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          last_built_at: string | null
+          reference_agent_ids: string[]
+          sample_count: number
+          style_guide: Json
+          style_prompt: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_built_at?: string | null
+          reference_agent_ids?: string[]
+          sample_count?: number
+          style_guide?: Json
+          style_prompt?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_built_at?: string | null
+          reference_agent_ids?: string[]
+          sample_count?: number
+          style_guide?: Json
+          style_prompt?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       appointment_reminders: {
         Row: {
@@ -1720,6 +1769,7 @@ export type Database = {
           external_crm_id: string | null
           full_name: string | null
           id: string
+          is_reference_agent: boolean
           last_login_at: string | null
           notification_phone: string | null
           phone: string | null
@@ -1736,6 +1786,7 @@ export type Database = {
           external_crm_id?: string | null
           full_name?: string | null
           id: string
+          is_reference_agent?: boolean
           last_login_at?: string | null
           notification_phone?: string | null
           phone?: string | null
@@ -1752,6 +1803,7 @@ export type Database = {
           external_crm_id?: string | null
           full_name?: string | null
           id?: string
+          is_reference_agent?: boolean
           last_login_at?: string | null
           notification_phone?: string | null
           phone?: string | null
