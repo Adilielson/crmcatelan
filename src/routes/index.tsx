@@ -144,10 +144,48 @@ function Dashboard() {
             Visão consolidada da performance comercial e operacional de suas unidades com inteligência preditiva.
           </p>
         </div>
-        {pipelines.length > 1 && (
-          <div className="flex flex-wrap items-center gap-4 relative z-10 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 relative z-10 w-full md:w-auto">
+          {/* Filtro de período */}
+          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
+            <SelectTrigger className="w-full sm:w-[200px] md:w-[220px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+              <CalendarRange className="w-4 h-4 mr-3 text-primary shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-white border-[#E3E6EB] text-ink rounded-[16px]">
+              <SelectItem value="all" className="font-bold">Acumulado</SelectItem>
+              <SelectItem value="today" className="font-bold">Hoje</SelectItem>
+              <SelectItem value="7d" className="font-bold">Últimos 7 dias</SelectItem>
+              <SelectItem value="15d" className="font-bold">Últimos 15 dias</SelectItem>
+              <SelectItem value="30d" className="font-bold">Últimos 30 dias</SelectItem>
+              <SelectItem value="custom" className="font-bold">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {period === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto h-12 md:h-14 rounded-[14px] md:rounded-[16px] border-[#E3E6EB] font-black text-[11px] uppercase tracking-wider px-4 md:px-6">
+                  {customFrom && customTo
+                    ? `${new Date(customFrom).toLocaleDateString('pt-BR')} → ${new Date(customTo).toLocaleDateString('pt-BR')}`
+                    : 'Escolher datas'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-4 space-y-3 bg-white" align="end">
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Data inicial</Label>
+                  <Input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-gray-500">Data final</Label>
+                  <Input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} />
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {pipelines.length > 1 && (
             <Select value={selectedUnit} onValueChange={setSelectedUnit}>
-              <SelectTrigger className="w-full md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
+              <SelectTrigger className="w-full sm:w-[220px] md:w-[240px] bg-white border-[#E3E6EB] shadow-sm font-black text-[11px] h-12 md:h-14 text-ink rounded-[14px] md:rounded-[16px] px-4 md:px-6 uppercase tracking-wider transition-all hover:border-primary/50">
                 <Store className="w-4 h-4 mr-3 text-primary shrink-0" />
                 <SelectValue placeholder="Todas as Unidades" />
               </SelectTrigger>
@@ -158,8 +196,8 @@ function Dashboard() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* KPI Cards */}
