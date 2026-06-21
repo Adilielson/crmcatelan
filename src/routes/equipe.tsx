@@ -566,9 +566,9 @@ function Equipe() {
                 const seller = l.assigned_user_id
                   ? profileById.get(l.assigned_user_id)
                   : null;
-                const hrs = hoursSince(l.updated_at);
                 const isActive = ACTIVE_STATUSES.has(l.status);
-                const isStale = isActive && hrs >= STALE_HOURS;
+                const pend = pendingHours(l);
+                const isStale = isActive && pend !== null && pend >= STALE_HOURS;
                 return (
                   <TableRow key={l.id}>
                     <TableCell>
@@ -594,7 +594,12 @@ function Equipe() {
                       >
                         {isStale && <AlertTriangle className="h-3 w-3" />}
                         {(() => {
-                          const d = l.updated_at ? new Date(l.updated_at) : null;
+                          // Se parado: tempo desde a mensagem do cliente sem resposta.
+                          // Senão: tempo desde a última interação (qualquer direção) ou updated_at.
+                          const refIso = isStale
+                            ? l.last_inbound_at
+                            : (l.last_outbound_at || l.last_inbound_at || l.updated_at);
+                          const d = refIso ? new Date(refIso) : null;
                           if (!d || Number.isNaN(d.getTime())) return '—';
                           try {
                             return formatDistanceToNow(d, { addSuffix: true, locale: ptBR });
