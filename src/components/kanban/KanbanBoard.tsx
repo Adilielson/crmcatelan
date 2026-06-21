@@ -226,15 +226,15 @@ export function KanbanBoard() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-[14px] border border-[#E3E6EB] shadow-sm gap-4">
-        <div className="flex flex-col">
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-4 sm:p-6 rounded-[14px] border border-[#E3E6EB] shadow-sm gap-4">
+        <div className="flex flex-col min-w-0">
           <h3 className="text-sm font-black text-[#6C727C] uppercase tracking-[0.2em] font-jakarta">Fluxo de Vendas</h3>
-          <p className="text-xs font-bold text-ink mt-1">{leads.length} lead(s) — Ótica Catelan Matriz</p>
+          <p className="text-xs font-bold text-ink mt-1 truncate">{leads.length} lead(s) — Ótica Catelan Matriz</p>
         </div>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-3 md:w-auto">
           {leads.length === 0 && !isLoading && (
-            <Button variant="outline" size="sm" onClick={() => seed.mutate()} disabled={seed.isPending} className="h-11 px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px]">
-              <Database className="w-4 h-4 mr-2" /> Importar exemplos
+            <Button variant="outline" size="sm" onClick={() => seed.mutate()} disabled={seed.isPending} className="col-span-2 md:col-span-1 h-11 px-3 md:px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px] whitespace-nowrap">
+              <Database className="w-4 h-4 mr-2 shrink-0" /> Importar exemplos
             </Button>
           )}
           {canManageColumns && (
@@ -242,13 +242,13 @@ export function KanbanBoard() {
               variant="outline"
               size="sm"
               onClick={() => setColumnsSettingsOpen(true)}
-              className="h-11 px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px]"
+              className="h-11 px-3 md:px-5 font-bold text-[11px] md:text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px] whitespace-nowrap"
             >
-              <Settings2 className="w-4 h-4 mr-2" /> Configurar Etapas
+              <Settings2 className="w-4 h-4 mr-2 shrink-0" /> <span className="truncate">Configurar Etapas</span>
             </Button>
           )}
-          <Button onClick={() => setNewOpen(true)} size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">
-            <PlusCircle className="w-4 h-4 mr-2" /> Novo Lead
+          <Button onClick={() => setNewOpen(true)} size="sm" className="h-11 px-3 md:px-8 font-black text-[11px] md:text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px] whitespace-nowrap">
+            <PlusCircle className="w-4 h-4 mr-2 shrink-0" /> Novo Lead
           </Button>
         </div>
       </div>
