@@ -25,6 +25,12 @@ const items = [
     href: '/relatorios/comparecimento',
     icon: CheckCircle2,
   },
+  {
+    label: 'Leads Perdidos',
+    description: 'Motivos e detalhamento de perdas',
+    href: '/relatorios/perdidos',
+    icon: XCircle,
+  },
 ];
 
 function RelatoriosLayout() {
