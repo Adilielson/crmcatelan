@@ -367,27 +367,14 @@ export function KanbanBoard() {
         moveToFollowupOnSave
       />
 
-      {/* Agenda dialog */}
-      <Dialog open={!!scheduleLead} onOpenChange={(v) => !v && setScheduleLead(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader><DialogTitle>Agendar — {scheduleLead?.full_name}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Data</Label>
-              <Input type="date" value={scheduleData.date} onChange={(e) => setScheduleData((p) => ({ ...p, date: e.target.value }))} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Hora</Label>
-              <Input type="time" value={scheduleData.time} onChange={(e) => setScheduleData((p) => ({ ...p, time: e.target.value }))} />
-            </div>
-            {scheduleLead?.phone && <p className="text-xs text-gray-500">📱 {scheduleLead.phone}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setScheduleLead(null)}>Cancelar</Button>
-            <Button onClick={confirmSchedule}>Confirmar Agendamento</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Agenda dialog — usa o mesmo formulário da aba Agenda */}
+      <NewAppointmentDialog
+        open={!!scheduleLead}
+        onOpenChange={(v) => { if (!v) { setScheduleLead(null); setScheduleData({ date: '', time: '' }); } }}
+        defaultLeadId={scheduleLead?.id}
+        lockLead
+        moveLeadToScheduled
+      />
 
       {/* Loss dialog */}
       <Dialog open={!!lossLead} onOpenChange={(v) => !v && setLossLead(null)}>
