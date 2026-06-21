@@ -203,7 +203,28 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     .eq("id", lead.id)
     .eq("tenant_id", tenantId);
 
-  await aggregatePatterns(supabaseAdmin, tenantId, parsed, lead.status);
+  // Detecta se o atendente atribuído é "agente-referência" (Raiana etc.)
+  let isReferenceAgent = false;
+  if (lead.assigned_user_id) {
+    const { data: agentRow } = await supabaseAdmin
+      .from("profiles")
+      .select("is_reference_agent")
+      .eq("id", lead.assigned_user_id)
+      .maybeSingle();
+    isReferenceAgent = !!agentRow?.is_reference_agent;
+  }
+
+  await aggregatePatterns(supabaseAdmin, tenantId, parsed, lead.status, {
+    agentId: lead.assigned_user_id ?? null,
+    isReferenceAgent,
+  });
+
+  // Se o lead fechou bem e foi atendido por referência, reconstrói o estilo (debounced 1h)
+  const { POSITIVE_OUTCOMES, maybeRebuildStyleProfile } = await import("./ai-style.functions");
+  if (isReferenceAgent && POSITIVE_OUTCOMES.has(String(lead.status))) {
+    // fire-and-forget — não bloqueia o retorno da análise
+    maybeRebuildStyleProfile(tenantId);
+  }
 
   return { ok: true, insight: parsed, tokens: tokensIn + tokensOut, messageCount: filtered.length };
 }
