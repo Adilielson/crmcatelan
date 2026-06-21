@@ -39,6 +39,10 @@ interface NewAppointmentDialogProps {
   onOpenChange: (open: boolean) => void;
   defaultDate?: Date;
   defaultLeadId?: string;
+  /** Travar o lead (atalhos contextuais) — esconde o select de lead. */
+  lockLead?: boolean;
+  /** Após criar o agendamento, mover o lead para a etapa "Agendado" do Kanban. */
+  moveLeadToScheduled?: boolean;
   onCreated?: () => void;
 }
 
@@ -47,10 +51,13 @@ export function NewAppointmentDialog({
   onOpenChange,
   defaultDate,
   defaultLeadId,
+  lockLead = false,
+  moveLeadToScheduled = false,
   onCreated,
 }: NewAppointmentDialogProps) {
   const { addAppointment } = useAgenda();
   const { data: leads = [] } = useLeads();
+  const updateLead = useUpdateLead();
   const { sendText, isConnected: waConnected } = useWhatsApp();
   const { data: businessHours = [] } = useBusinessHours();
   const { data: blockedDates = [] } = useBlockedDates();
