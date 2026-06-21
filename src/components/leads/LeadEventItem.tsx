@@ -36,8 +36,8 @@ const CFG: Record<string, Cfg> = {
             {e.metadata.lost_reason_note && <span className="italic"> — "{e.metadata.lost_reason_note}"</span>}
           </div>
         )}
-        {e.stage_to === 'showed_up' && e.metadata?.sales_value > 0 && (
-          <div className="text-[11px] text-emerald-700 font-bold">Venda: {brl(e.metadata.sales_value)}</div>
+        {e.stage_to === 'showed_up' && Number(e.metadata?.sales_value ?? 0) > 0 && (
+          <div className="text-[11px] text-emerald-700 font-bold">Venda: {brl(e.metadata?.sales_value)}</div>
         )}
       </div>
     ),
