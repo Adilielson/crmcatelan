@@ -44,6 +44,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { TodayFollowupsTab } from '@/components/agenda/TodayFollowupsTab'
 import { useTodayFollowups } from '@/hooks/use-followups'
 import { AgendaSettingsDialog } from '@/components/agenda/AgendaSettingsDialog'
+import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog'
 import { useBusinessHours, useBlockedDates, checkAvailability, isDayFullyClosed } from '@/hooks/use-agenda-settings'
 
 export const Route = createFileRoute('/agenda')({
@@ -717,78 +718,13 @@ function Agenda() {
 
 
 
-      {/* Modal Novo Agendamento */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Novo Agendamento Oftalmológico</DialogTitle>
-            <DialogDescription>Preencha os dados do lead e selecione o horário disponível na agenda mestre.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Lead</Label>
-                <Select value={formData.leadId} onValueChange={(v) => setFormData({...formData, leadId: v})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar Lead" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leads.map(lead => (
-                      <SelectItem key={lead.id} value={lead.id}>{lead.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Unidade</Label>
-                <Select value={formData.unit} onValueChange={(v) => setFormData({...formData, unit: v})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Loja Centro">Loja Centro</SelectItem>
-                    <SelectItem value="Loja Shopping">Loja Shopping</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+      {/* Modal Novo Agendamento — componente compartilhado */}
+      <NewAppointmentDialog
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        defaultDate={selectedDay}
+      />
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Data</Label>
-                <Input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Início</Label>
-                <Input type="time" value={formData.startTime} onChange={(e) => setFormData({...formData, startTime: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Fim</Label>
-                <Input type="time" value={formData.endTime} onChange={(e) => setFormData({...formData, endTime: e.target.value})} />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tipo de Exame / Consulta</Label>
-              <Input value={formData.examType} onChange={(e) => setFormData({...formData, examType: e.target.value})} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Campo Customizável (Informações Adicionais)</Label>
-              <Input placeholder="Convênio, indicações, etc." value={formData.customField} onChange={(e) => setFormData({...formData, customField: e.target.value})} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Observações Médicas</Label>
-              <Textarea placeholder="Histórico breve ou queixas..." value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddAppointment}>Confirmar e Enviar WhatsApp</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AgendaSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
 
