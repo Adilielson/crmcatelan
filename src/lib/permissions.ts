@@ -7,6 +7,7 @@ export const MODULE_CATALOG = [
   { key: 'fila', label: 'Fila', path: '/fila' },
   { key: 'agenda', label: 'Agenda', path: '/agenda' },
   { key: 'clientes', label: 'Clientes', path: '/clientes' },
+  { key: 'bi', label: 'BI Executivo', path: '/bi' },
   { key: 'performance', label: 'Performance / Dashboard', path: '/performance' },
   { key: 'metas', label: 'Metas', path: '/metas' },
   { key: 'ranking', label: 'Ranking', path: '/ranking' },
