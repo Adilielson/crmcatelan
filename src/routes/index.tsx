@@ -65,14 +65,52 @@ function fmtDelta(n: number) {
   return `${sign}${n.toFixed(1)}%`
 }
 
+type PeriodKey = 'all' | 'today' | '7d' | '15d' | '30d' | 'custom'
+
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  all: 'Acumulado',
+  today: 'Hoje',
+  '7d': 'Últimos 7 dias',
+  '15d': 'Últimos 15 dias',
+  '30d': 'Últimos 30 dias',
+  custom: 'Personalizado',
+}
+
+function computeRange(period: PeriodKey, customFrom: string, customTo: string): { from: string | null; to: string | null } {
+  if (period === 'all') return { from: null, to: null }
+  const now = new Date()
+  const to = new Date(now); to.setHours(23, 59, 59, 999)
+  const from = new Date(now); from.setHours(0, 0, 0, 0)
+  if (period === 'today') return { from: from.toISOString(), to: to.toISOString() }
+  if (period === '7d') from.setDate(from.getDate() - 6)
+  else if (period === '15d') from.setDate(from.getDate() - 14)
+  else if (period === '30d') from.setDate(from.getDate() - 29)
+  else if (period === 'custom') {
+    if (!customFrom || !customTo) return { from: null, to: null }
+    const f = new Date(customFrom); f.setHours(0, 0, 0, 0)
+    const t = new Date(customTo); t.setHours(23, 59, 59, 999)
+    return { from: f.toISOString(), to: t.toISOString() }
+  }
+  return { from: from.toISOString(), to: to.toISOString() }
+}
+
 function Dashboard() {
   const { data: pipelines = [] } = useUnits()
   const [selectedUnit, setSelectedUnit] = useState<string>('all')
+  const [period, setPeriod] = useState<PeriodKey>('all')
+  const [customFrom, setCustomFrom] = useState<string>('')
+  const [customTo, setCustomTo] = useState<string>('')
+
+  const range = useMemo(() => computeRange(period, customFrom, customTo), [period, customFrom, customTo])
 
   const fetchMetrics = useServerFn(getDashboardMetrics)
   const { data: metrics } = useQuery({
-    queryKey: ['dashboard-metrics', selectedUnit],
-    queryFn: () => fetchMetrics({ data: { unitId: selectedUnit === 'all' ? null : selectedUnit } }),
+    queryKey: ['dashboard-metrics', selectedUnit, period, range.from, range.to],
+    queryFn: () => fetchMetrics({ data: {
+      unitId: selectedUnit === 'all' ? null : selectedUnit,
+      from: range.from,
+      to: range.to,
+    } }),
   })
 
   const funnelData = metrics?.funnelData ?? []
@@ -86,6 +124,8 @@ function Dashboard() {
     confirmedAppts: kpis?.confirmedAppts ?? 0,
     qualRate: `${kpis?.qualRate?.toFixed(0) ?? 0}%`,
   }
+  const periodDesc = period === 'all' ? 'vs 30 dias anteriores' : `${PERIOD_LABELS[period]} · vs período anterior`
+  const apptDesc = period === 'all' ? 'próximos 7 dias' : PERIOD_LABELS[period]
 
 
   return (
