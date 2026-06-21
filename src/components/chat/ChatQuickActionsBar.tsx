@@ -270,42 +270,13 @@ export function ChatQuickActionsBar({
       />
 
       {/* Loss dialog (motivo obrigatório) */}
-      <Dialog open={lossOpen} onOpenChange={setLossOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Motivo da Perda — {lead.full_name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Selecione o motivo *</Label>
-              <Select value={lossReason} onValueChange={setLossReason}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preço alto">Preço alto</SelectItem>
-                  <SelectItem value="Fechou com concorrente">Fechou com concorrente</SelectItem>
-                  <SelectItem value="Não responde mais">Não responde mais</SelectItem>
-                  <SelectItem value="Sem perfil">Sem perfil</SelectItem>
-                  <SelectItem value="Outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLossOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmLoss}
-              disabled={!lossReason || updateLead.isPending}
-            >
-              Confirmar Perda
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LostLeadDialog
+        open={lossOpen}
+        leadName={lead.full_name}
+        isSubmitting={updateLead.isPending}
+        onOpenChange={setLossOpen}
+        onConfirm={confirmLoss}
+      />
     </>
   );
 }
