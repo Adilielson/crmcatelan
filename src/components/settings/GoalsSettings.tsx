@@ -233,11 +233,15 @@ export function GoalsSettings() {
               Valor (R$)
             </Label>
             <Input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="0,00"
               value={newType.default_value}
-              onChange={(e) => setNewType((n) => ({ ...n, default_value: e.target.value }))}
+              onChange={(e) => {
+                const v = e.target.value.replace(",", ".");
+                if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                setNewType((n) => ({ ...n, default_value: v }));
+              }}
               className="h-10 mt-2 text-right"
             />
           </div>
