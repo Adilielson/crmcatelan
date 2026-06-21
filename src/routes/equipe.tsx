@@ -397,6 +397,40 @@ function Equipe() {
                         </span>
                       </span>
                     </div>
+                    {isManager && (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (toggleRefMutation.isPending) return;
+                          toggleRefMutation.mutate({ profileId: p.id, value: !p.is_reference_agent });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleRefMutation.mutate({ profileId: p.id, value: !p.is_reference_agent });
+                          }
+                        }}
+                        className={`mt-2 flex items-center justify-between gap-2 rounded-md px-2 py-1 cursor-pointer transition ${
+                          p.is_reference_agent
+                            ? 'bg-violet-100 hover:bg-violet-200'
+                            : 'bg-slate-50 hover:bg-slate-100'
+                        }`}
+                        title="A IA SDR vai imitar o estilo desta pessoa"
+                      >
+                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
+                          <Star className={`h-3 w-3 ${p.is_reference_agent ? 'fill-violet-700 text-violet-700' : 'text-slate-400'}`} />
+                          <span className={p.is_reference_agent ? 'text-violet-800' : 'text-slate-500'}>
+                            Referência IA
+                          </span>
+                        </span>
+                        <span className={`text-[10px] font-bold ${p.is_reference_agent ? 'text-violet-700' : 'text-slate-400'}`}>
+                          {p.is_reference_agent ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </button>
               );
