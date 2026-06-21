@@ -115,29 +115,33 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     }))
 
     // ---- SLA alerts ----
-    // Apenas leads em "Leads Prontos" (status='open' e sem coluna kanban custom)
-    // que ainda não receberam resposta da equipe. Leads já em atendimento,
-    // em negociação ou movidos para outras colunas do kanban NÃO devem aparecer
-    // como atrasados — eles já estão sendo tratados.
+    // Apenas leads que estão de fato em "Leads Prontos" SEM nenhum atendimento
+    // (nem humano nem IA). Critérios cumulativos:
+    //   - status='open' e sem coluna kanban custom (= coluna "Leads Prontos")
+    //   - sem assigned_user_id e sem claimed_by (ninguém assumiu)
+    //   - sem last_outbound_at (nenhuma resposta da equipe ou IA registrada)
+    //   - parado há mais de 1h desde o último contato do cliente
     const HOUR = 60 * 60 * 1000
     const slaAlerts = allLeads
       .filter((l) => l.status === 'open' && !l.custom_column_id)
+      .filter((l) => !l.assigned_user_id && !l.claimed_by)
       .filter((l) => {
         const outAt = l.last_outbound_at ? new Date(l.last_outbound_at).getTime() : 0
-        if (outAt > 0) return false // equipe já respondeu pelo menos uma vez
+        if (outAt > 0) return false
         const inAt = l.last_inbound_at ? new Date(l.last_inbound_at).getTime() : 0
-        const anchor = inAt > 0 ? inAt : new Date(l.updated_at ?? l.created_at ?? 0).getTime()
+        const anchor = inAt > 0 ? inAt : new Date(l.first_contact_at ?? l.created_at ?? 0).getTime()
         return now - anchor > 1 * HOUR
       })
       .sort((a, b) => {
-        const aAnchor = a.last_inbound_at ? new Date(a.last_inbound_at).getTime() : new Date(a.updated_at ?? 0).getTime()
-        const bAnchor = b.last_inbound_at ? new Date(b.last_inbound_at).getTime() : new Date(b.updated_at ?? 0).getTime()
+        const aAnchor = a.last_inbound_at ? new Date(a.last_inbound_at).getTime() : new Date(a.first_contact_at ?? a.created_at ?? 0).getTime()
+        const bAnchor = b.last_inbound_at ? new Date(b.last_inbound_at).getTime() : new Date(b.first_contact_at ?? b.created_at ?? 0).getTime()
         return aAnchor - bAnchor
       })
       .slice(0, 5)
       .map((l) => {
         const inAt = l.last_inbound_at ? new Date(l.last_inbound_at).getTime() : 0
-        const anchor = inAt > 0 ? inAt : new Date(l.updated_at ?? l.created_at ?? 0).getTime()
+        const firstAt = new Date(l.first_contact_at ?? l.created_at ?? 0).getTime()
+        const anchor = inAt > 0 ? inAt : firstAt
         const waitH = Math.floor((now - anchor) / HOUR)
         return {
           id: l.id,
@@ -146,6 +150,7 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
           stage: 'Leads Prontos',
           waitHours: waitH,
           priority: waitH > 24 ? 'Alta' : 'Normal',
+          firstContactAt: new Date(firstAt).toISOString(),
         }
       })
 
