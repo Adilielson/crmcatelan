@@ -106,6 +106,16 @@ export function NewAppointmentDialog({
     };
   }, [open]);
 
+  // Sync defaultLeadId / defaultDate when opening
+  useEffect(() => {
+    if (!open) return;
+    setFormData((f) => ({
+      ...f,
+      leadId: defaultLeadId ?? f.leadId,
+      date: defaultDate ? format(defaultDate, "yyyy-MM-dd") : f.date,
+    }));
+  }, [open, defaultDate, defaultLeadId]);
+
   // Reset form on close
   useEffect(() => {
     if (open) return;
