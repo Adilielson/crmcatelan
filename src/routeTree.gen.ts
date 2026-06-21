@@ -31,6 +31,7 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RelatoriosIndexRouteImport } from './routes/relatorios.index'
 import { Route as RelatoriosPerdidosRouteImport } from './routes/relatorios.perdidos'
+import { Route as RelatoriosLtvRouteImport } from './routes/relatorios.ltv'
 import { Route as RelatoriosComparecimentoRouteImport } from './routes/relatorios.comparecimento'
 import { Route as RelatoriosAtendentesRouteImport } from './routes/relatorios.atendentes'
 import { Route as RelatoriosAgendamentosRouteImport } from './routes/relatorios.agendamentos'
@@ -149,6 +150,11 @@ const RelatoriosPerdidosRoute = RelatoriosPerdidosRouteImport.update({
   path: '/perdidos',
   getParentRoute: () => RelatoriosRoute,
 } as any)
+const RelatoriosLtvRoute = RelatoriosLtvRouteImport.update({
+  id: '/ltv',
+  path: '/ltv',
+  getParentRoute: () => RelatoriosRoute,
+} as any)
 const RelatoriosComparecimentoRoute =
   RelatoriosComparecimentoRouteImport.update({
     id: '/comparecimento',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/ltv': typeof RelatoriosLtvRoute
   '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios/': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/ltv': typeof RelatoriosLtvRoute
   '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
@@ -276,6 +284,7 @@ export interface FileRoutesById {
   '/relatorios/agendamentos': typeof RelatoriosAgendamentosRoute
   '/relatorios/atendentes': typeof RelatoriosAtendentesRoute
   '/relatorios/comparecimento': typeof RelatoriosComparecimentoRoute
+  '/relatorios/ltv': typeof RelatoriosLtvRoute
   '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios/': typeof RelatoriosIndexRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/ltv'
     | '/relatorios/perdidos'
     | '/relatorios/'
     | '/api/public/hooks/build-reference-style'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/ltv'
     | '/relatorios/perdidos'
     | '/relatorios'
     | '/api/public/hooks/build-reference-style'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/relatorios/agendamentos'
     | '/relatorios/atendentes'
     | '/relatorios/comparecimento'
+    | '/relatorios/ltv'
     | '/relatorios/perdidos'
     | '/relatorios/'
     | '/api/public/hooks/build-reference-style'
@@ -560,6 +572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RelatoriosPerdidosRouteImport
       parentRoute: typeof RelatoriosRoute
     }
+    '/relatorios/ltv': {
+      id: '/relatorios/ltv'
+      path: '/ltv'
+      fullPath: '/relatorios/ltv'
+      preLoaderRoute: typeof RelatoriosLtvRouteImport
+      parentRoute: typeof RelatoriosRoute
+    }
     '/relatorios/comparecimento': {
       id: '/relatorios/comparecimento'
       path: '/comparecimento'
@@ -616,6 +635,7 @@ interface RelatoriosRouteChildren {
   RelatoriosAgendamentosRoute: typeof RelatoriosAgendamentosRoute
   RelatoriosAtendentesRoute: typeof RelatoriosAtendentesRoute
   RelatoriosComparecimentoRoute: typeof RelatoriosComparecimentoRoute
+  RelatoriosLtvRoute: typeof RelatoriosLtvRoute
   RelatoriosPerdidosRoute: typeof RelatoriosPerdidosRoute
   RelatoriosIndexRoute: typeof RelatoriosIndexRoute
 }
@@ -624,6 +644,7 @@ const RelatoriosRouteChildren: RelatoriosRouteChildren = {
   RelatoriosAgendamentosRoute: RelatoriosAgendamentosRoute,
   RelatoriosAtendentesRoute: RelatoriosAtendentesRoute,
   RelatoriosComparecimentoRoute: RelatoriosComparecimentoRoute,
+  RelatoriosLtvRoute: RelatoriosLtvRoute,
   RelatoriosPerdidosRoute: RelatoriosPerdidosRoute,
   RelatoriosIndexRoute: RelatoriosIndexRoute,
 }
