@@ -14,6 +14,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
 import { Route as PerformanceRouteImport } from './routes/performance'
+import { Route as MetasRouteImport } from './routes/metas'
 import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
@@ -53,6 +54,11 @@ const SaasRoute = SaasRouteImport.update({
 const PerformanceRoute = PerformanceRouteImport.update({
   id: '/performance',
   path: '/performance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetasRoute = MetasRouteImport.update({
+  id: '/metas',
+  path: '/metas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketingRoute = MarketingRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
+  '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
+  '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/marketing': typeof MarketingRoute
+  '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/login'
     | '/marketing'
+    | '/metas'
     | '/performance'
     | '/saas'
     | '/settings'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/login'
     | '/marketing'
+    | '/metas'
     | '/performance'
     | '/saas'
     | '/settings'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/login'
     | '/marketing'
+    | '/metas'
     | '/performance'
     | '/saas'
     | '/settings'
@@ -282,6 +294,7 @@ export interface RootRouteChildren {
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
   MarketingRoute: typeof MarketingRoute
+  MetasRoute: typeof MetasRoute
   PerformanceRoute: typeof PerformanceRoute
   SaasRoute: typeof SaasRoute
   SettingsRoute: typeof SettingsRoute
@@ -328,6 +341,13 @@ declare module '@tanstack/react-router' {
       path: '/performance'
       fullPath: '/performance'
       preLoaderRoute: typeof PerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metas': {
+      id: '/metas'
+      path: '/metas'
+      fullPath: '/metas'
+      preLoaderRoute: typeof MetasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marketing': {
@@ -450,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
   MarketingRoute: MarketingRoute,
+  MetasRoute: MetasRoute,
   PerformanceRoute: PerformanceRoute,
   SaasRoute: SaasRoute,
   SettingsRoute: SettingsRoute,
