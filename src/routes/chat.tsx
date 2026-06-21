@@ -777,7 +777,7 @@ function Chat() {
             </div>
 
             {currentLead && (
-              <ChatQuickActionsBar lead={currentLead} />
+              <ChatQuickActionsBar lead={currentLead} onOpenProfile={() => setDetailsOpen(true)} />
             )}
 
 
