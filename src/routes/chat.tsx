@@ -718,15 +718,6 @@ function Chat() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 text-[#A7ADB8] hover:text-[#FFC400] hover:bg-[#FFC400]/10 rounded-xl transition-all xl:hidden"
-                  onClick={() => setDetailsOpen(true)}
-                  title="Ver ficha do lead"
-                >
-                  <PanelRight className="w-5 h-5" />
-                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-[#A7ADB8] hover:text-ink hover:bg-gray-100 rounded-xl transition-all">
