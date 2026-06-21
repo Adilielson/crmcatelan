@@ -198,11 +198,11 @@ function Clientes() {
   }, [data, search]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-ink">Clientes</h1>
-          <p className="text-sm text-[#6B7280]">Base completa de leads do tenant.</p>
+    <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3 sm:h-auto sm:space-y-6 sm:gap-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-black text-ink sm:text-2xl">Clientes</h1>
+          <p className="hidden text-sm text-[#6B7280] sm:block">Base completa de leads do tenant.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -218,18 +218,19 @@ function Clientes() {
           />
           <Button
             variant="outline"
+            size="sm"
             onClick={() => fileRef.current?.click()}
             disabled={importMutation.isPending}
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none sm:size-default"
           >
             <Upload />
-            Importar Excel
+            <span className="truncate">Importar Excel</span>
           </Button>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="flex-1 sm:flex-none">
+              <Button size="sm" className="flex-1 sm:flex-none sm:size-default">
                 <Plus />
-                Novo lead
+                <span className="truncate">Novo lead</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -308,18 +309,18 @@ function Clientes() {
         </div>
       </div>
 
-      <Card className="p-4 sm:p-6">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <Card className="flex min-h-0 flex-1 flex-col p-3 sm:flex-none sm:p-6">
+        <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome ou telefone"
-              className="w-full pl-9"
+              className="h-9 w-full pl-9 sm:h-10"
             />
           </div>
-          <span className="text-xs uppercase tracking-widest text-[#6B7280]">
+          <span className="text-[10px] uppercase tracking-widest text-[#6B7280] sm:text-xs">
             {filtered.length} leads
           </span>
         </div>
@@ -329,76 +330,118 @@ function Clientes() {
         ) : filtered.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum cliente encontrado.</p>
         ) : (
-          <div className="-mx-4 sm:-mx-6 overflow-x-auto">
-            <div className="min-w-[640px] px-4 sm:px-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Lead</TableHead>
-                    <TableHead>Estágio</TableHead>
-                    <TableHead>Temperatura</TableHead>
-                    <TableHead>Última conversa</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((l) => {
-                    const t = temperatureFromUrgencia(l.ia_urgencia);
-                    return (
-                      <TableRow key={l.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFC400]/15 text-xs font-black text-[#1a1500]">
-                              {initials(l.full_name, l.phone)}
+          <>
+            {/* Mobile: compact list with internal scroll */}
+            <ul className="-mx-1 min-h-0 flex-1 divide-y divide-[#F0F0F0] overflow-y-auto sm:hidden">
+              {filtered.map((l) => {
+                const t = temperatureFromUrgencia(l.ia_urgencia);
+                return (
+                  <li key={l.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate({
+                          to: '/chat',
+                          search: { phone: l.phone ?? undefined },
+                        })
+                      }
+                      className="flex w-full items-center gap-2.5 px-1 py-2 text-left active:bg-[#FAFAFA]"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FFC400]/15 text-[11px] font-black text-[#1a1500]">
+                        {initials(l.full_name, l.phone)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold leading-tight text-ink">
+                          {l.full_name?.trim() || 'Sem nome'}
+                        </p>
+                        <p className="truncate text-[11px] leading-tight text-[#6B7280]">
+                          {l.phone || '—'} · {stageLabel(l.status)}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${t.className}`}
+                      >
+                        {t.label}
+                      </span>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#9CA3AF]" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Desktop/tablet: full table */}
+            <div className="-mx-6 hidden overflow-x-auto sm:block">
+              <div className="min-w-[640px] px-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Lead</TableHead>
+                      <TableHead>Estágio</TableHead>
+                      <TableHead>Temperatura</TableHead>
+                      <TableHead>Última conversa</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((l) => {
+                      const t = temperatureFromUrgencia(l.ia_urgencia);
+                      return (
+                        <TableRow key={l.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFC400]/15 text-xs font-black text-[#1a1500]">
+                                {initials(l.full_name, l.phone)}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate font-bold text-ink">
+                                  {l.full_name?.trim() || 'Sem nome'}
+                                </p>
+                                <p className="truncate text-xs text-[#6B7280]">
+                                  {l.phone || '—'}
+                                </p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="truncate font-bold text-ink">
-                                {l.full_name?.trim() || 'Sem nome'}
-                              </p>
-                              <p className="truncate text-xs text-[#6B7280]">
-                                {l.phone || '—'}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{stageLabel(l.status)}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${t.className}`}
-                          >
-                            {t.label}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-sm text-[#6B7280]">
-                          {formatDistanceToNow(new Date(l.updated_at), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              navigate({
-                                to: '/chat',
-                                search: { phone: l.phone ?? undefined },
-                              })
-                            }
-                          >
-                            Abrir
-                            <ArrowRight />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{stageLabel(l.status)}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${t.className}`}
+                            >
+                              {t.label}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm text-[#6B7280]">
+                            {formatDistanceToNow(new Date(l.updated_at), {
+                              addSuffix: true,
+                              locale: ptBR,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                navigate({
+                                  to: '/chat',
+                                  search: { phone: l.phone ?? undefined },
+                                })
+                              }
+                            >
+                              Abrir
+                              <ArrowRight />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </Card>
     </div>
