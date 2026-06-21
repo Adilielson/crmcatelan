@@ -246,85 +246,112 @@ export function KanbanBoard() {
       {isLoading ? (
         <div className="text-center py-20 text-gray-400 font-bold">Carregando leads...</div>
       ) : (
-        <div
-          className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {columns.map((col) => {
-            const colLeads = leadsForColumn(col);
-            const isCheckedIn = col.system_key === 'checked_in';
-            return (
-              <div key={col.id} className="min-w-[280px] md:min-w-[320px] flex-1 flex flex-col gap-5 snap-start">
-                <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden">
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-1.5"
-                    style={{ backgroundColor: col.color }}
-                  />
-                  <div className="flex items-center gap-3">
-                    <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.name}</span>
-                    {isCheckedIn && (
-                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
-                        Qualificado
-                      </span>
-                    )}
-                    <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
-                      {colLeads.length}
-                    </div>
-                  </div>
-                  {canManageColumns ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setEditingColumn(col); setColumnDialogOpen(true); }}>
-                          <Pencil className="w-4 h-4 mr-2" /> {col.is_system ? 'Mudar cor' : 'Editar'}
-                        </DropdownMenuItem>
-                        {!col.is_system && (
-                          <DropdownMenuItem
-                            onClick={() => setDeletingColumn(col)}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : (
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink"><MoreVertical className="w-4 h-4" /></Button>
-                  )}
-                </div>
-
-                <div
-                  className="bg-transparent rounded-[20px] min-h-[400px] flex flex-col gap-4 overflow-y-auto scrollbar-hide pr-1"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    const id = e.dataTransfer.getData('leadId');
-                    if (id) handleDrop(id, col);
-                  }}
-                >
-                  {colLeads.length === 0 ? (
-                    <div className="text-center py-8 text-[10px] uppercase tracking-widest text-gray-300 font-bold">Vazio</div>
-                  ) : colLeads.map((lead) => (
-                    <LeadCard
-                      key={lead.id}
-                      lead={lead}
-                      assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
-                      reminders={remindersByLead?.get(lead.id) ?? []}
-                      onClick={() => setDetailLead(lead)}
-                      onCalendar={() => openAgenda(lead)}
-                      onChat={() => openChat(lead)}
-                      onLocation={() => setLocationLead(lead)}
-                      onValue={() => setValueLead(lead)}
+        <div className="relative">
+          <div
+            ref={scrollRef}
+            className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none scroll-smooth"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {columns.map((col) => {
+              const colLeads = leadsForColumn(col);
+              const isCheckedIn = col.system_key === 'checked_in';
+              return (
+                <div key={col.id} data-kanban-col className="min-w-[280px] md:min-w-[320px] flex-1 flex flex-col gap-5 snap-start">
+                  <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+                    <div
+                      className="absolute left-0 top-0 bottom-0 w-1.5"
+                      style={{ backgroundColor: col.color }}
                     />
-                  ))}
+                    <div className="flex items-center gap-3">
+                      <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.name}</span>
+                      {isCheckedIn && (
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                          Qualificado
+                        </span>
+                      )}
+                      <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
+                        {colLeads.length}
+                      </div>
+                    </div>
+                    {canManageColumns ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setEditingColumn(col); setColumnDialogOpen(true); }}>
+                            <Pencil className="w-4 h-4 mr-2" /> {col.is_system ? 'Mudar cor' : 'Editar'}
+                          </DropdownMenuItem>
+                          {!col.is_system && (
+                            <DropdownMenuItem
+                              onClick={() => setDeletingColumn(col)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#F6F7F9] text-[#A7ADB8] hover:text-ink"><MoreVertical className="w-4 h-4" /></Button>
+                    )}
+                  </div>
 
+                  <div
+                    className="bg-transparent rounded-[20px] min-h-[400px] flex flex-col gap-4 overflow-y-auto scrollbar-hide pr-1"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      const id = e.dataTransfer.getData('leadId');
+                      if (id) handleDrop(id, col);
+                    }}
+                  >
+                    {colLeads.length === 0 ? (
+                      <div className="text-center py-8 text-[10px] uppercase tracking-widest text-gray-300 font-bold">Vazio</div>
+                    ) : colLeads.map((lead) => (
+                      <LeadCard
+                        key={lead.id}
+                        lead={lead}
+                        assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
+                        reminders={remindersByLead?.get(lead.id) ?? []}
+                        onClick={() => setDetailLead(lead)}
+                        onCalendar={() => openAgenda(lead)}
+                        onChat={() => openChat(lead)}
+                        onLocation={() => setLocationLead(lead)}
+                        onValue={() => setValueLead(lead)}
+                      />
+                    ))}
+
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Desktop-only navigation arrows */}
+          <button
+            type="button"
+            aria-label="Coluna anterior"
+            onClick={() => scrollByColumn(-1)}
+            className={cn(
+              "hidden md:flex absolute left-1 top-[calc(50%-1rem)] -translate-y-1/2 z-20 h-12 w-12 items-center justify-center rounded-full bg-white/90 backdrop-blur-md border border-[#E3E6EB] shadow-lg text-ink hover:bg-white hover:scale-105 hover:shadow-xl active:scale-95 transition-all duration-200",
+              !canScrollLeft && "opacity-0 pointer-events-none"
+            )}
+          >
+            <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+          </button>
+          <button
+            type="button"
+            aria-label="Próxima coluna"
+            onClick={() => scrollByColumn(1)}
+            className={cn(
+              "hidden md:flex absolute right-1 top-[calc(50%-1rem)] -translate-y-1/2 z-20 h-12 w-12 items-center justify-center rounded-full bg-[#FFC400] border border-[#FFC400] shadow-lg shadow-[#FFC400]/30 text-[#1a1500] hover:bg-[#FFD60A] hover:scale-105 hover:shadow-xl hover:shadow-[#FFC400]/40 active:scale-95 transition-all duration-200",
+              !canScrollRight && "opacity-0 pointer-events-none"
+            )}
+          >
+            <ChevronRight className="w-5 h-5" strokeWidth={2.5} />
+          </button>
         </div>
       )}
 
