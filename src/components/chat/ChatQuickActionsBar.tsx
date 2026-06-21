@@ -227,12 +227,6 @@ export function ChatQuickActionsBar({
         <LeadQuickActions lead={lead} variant="compact" hideChat className="!gap-1.5 shrink-0" />
       </div>
 
-      <TransferLeadDialog
-        lead={transferOpen ? lead : null}
-        open={transferOpen}
-        onOpenChange={setTransferOpen}
-      />
-
       {/* Agenda dialog — usa o mesmo formulário da aba Agenda */}
       <NewAppointmentDialog
         open={scheduleOpen}
