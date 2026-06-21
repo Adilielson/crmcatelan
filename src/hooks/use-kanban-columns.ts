@@ -105,3 +105,44 @@ export function useDeleteKanbanColumn() {
     onError: (e: any) => toast.error(e.message ?? 'Erro ao remover coluna'),
   });
 }
+
+export function useReorderKanbanColumns() {
+  const qc = useQueryClient();
+  const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
+  return useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      // Assign positions in multiples of 10 to keep room for future inserts
+      const updates = orderedIds.map((id, idx) =>
+        (supabase as any)
+          .from('kanban_columns')
+          .update({ position: (idx + 1) * 10 })
+          .eq('id', id),
+      );
+      const results = await Promise.all(updates);
+      const err = results.find((r: any) => r.error);
+      if (err?.error) throw err.error;
+    },
+    onMutate: async (orderedIds: string[]) => {
+      await qc.cancelQueries({ queryKey: ['kanban_columns', tenantId] });
+      const prev = qc.getQueryData<KanbanColumn[]>(['kanban_columns', tenantId]);
+      if (prev) {
+        const byId = new Map(prev.map((c) => [c.id, c] as const));
+        const next = orderedIds
+          .map((id, idx) => {
+            const c = byId.get(id);
+            return c ? { ...c, position: (idx + 1) * 10 } : null;
+          })
+          .filter(Boolean) as KanbanColumn[];
+        qc.setQueryData(['kanban_columns', tenantId], next);
+      }
+      return { prev };
+    },
+    onError: (e: any, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['kanban_columns', tenantId], ctx.prev);
+      toast.error(e.message ?? 'Erro ao reordenar colunas');
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['kanban_columns', tenantId] });
+    },
+  });
+}
