@@ -166,7 +166,7 @@ function Equipe() {
     queryFn: async (): Promise<TeamProfile[]> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, role, avatar_url')
+        .select('id, full_name, role, avatar_url, is_reference_agent')
         .eq('tenant_id', tenantId!);
       if (error) throw error;
       return (data ?? []) as TeamProfile[];
