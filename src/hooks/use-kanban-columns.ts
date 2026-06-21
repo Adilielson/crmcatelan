@@ -9,6 +9,7 @@ export interface KanbanColumn {
   name: string;
   color: string;
   position: number;
+  sla_days: number;
   is_system: boolean;
   system_key: string | null;
   created_at: string;
@@ -66,7 +67,7 @@ export function useUpdateKanbanColumn() {
   const qc = useQueryClient();
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
   return useMutation({
-    mutationFn: async (payload: { id: string; updates: Partial<Pick<KanbanColumn, 'name' | 'color' | 'position'>> }) => {
+    mutationFn: async (payload: { id: string; updates: Partial<Pick<KanbanColumn, 'name' | 'color' | 'position' | 'sla_days'>> }) => {
       const { error } = await (supabase as any)
         .from('kanban_columns')
         .update(payload.updates)
