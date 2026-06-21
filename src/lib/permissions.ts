@@ -8,6 +8,8 @@ export const MODULE_CATALOG = [
   { key: 'agenda', label: 'Agenda', path: '/agenda' },
   { key: 'clientes', label: 'Clientes', path: '/clientes' },
   { key: 'performance', label: 'Performance / Dashboard', path: '/performance' },
+  { key: 'metas', label: 'Metas', path: '/metas' },
+  { key: 'ranking', label: 'Ranking', path: '/ranking' },
   { key: 'no_show', label: 'Métricas No-Show', path: '/analytics/no-show' },
   { key: 'reports', label: 'Relatórios' },
   { key: 'marketing', label: 'Marketing', path: '/marketing' },
