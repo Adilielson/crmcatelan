@@ -1,22 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Calendar, MessageSquare, DollarSign } from 'lucide-react';
-import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { DBLead, useUpdateLead } from '@/hooks/use-leads';
-import { useAgenda } from '@/hooks/use-agenda';
+import { DBLead } from '@/hooks/use-leads';
 import { LeadValueDialog } from '@/components/kanban/LeadValueDialog';
+import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
 
 
 /**
- * Atalhos rápidos do lead — Agendar, Conversar, Localização, Valor.
- * Componente reutilizado no Kanban, Chat (desktop) e visões mobile.
- *
- * Owns its own dialogs to evitar duplicação de lógica entre telas.
+ * Atalhos rápidos do lead — Agendar, Conversar, Valor.
+ * O atalho "Agendar" abre o mesmo formulário completo usado na Agenda
+ * (NewAppointmentDialog) e, ao confirmar, move automaticamente o lead
+ * para a etapa "Agendado" do Kanban.
  */
 export function LeadQuickActions({
   lead,
@@ -35,48 +30,13 @@ export function LeadQuickActions({
   className?: string;
 }) {
   const navigate = useNavigate();
-  const updateLead = useUpdateLead();
-  const { addAppointment } = useAgenda();
 
   const [valueOpen, setValueOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
 
   const openChat = () => {
     if (onOpenChat) return onOpenChat();
     navigate({ to: '/chat', search: { phone: lead.phone ?? '' } });
-  };
-
-  const confirmSchedule = async () => {
-    if (!scheduleData.date || !scheduleData.time) return;
-    const [hh, mm] = scheduleData.time.split(':');
-    const endTime = `${String(parseInt(hh) + 1).padStart(2, '0')}:${mm}`;
-    const ok = await addAppointment({
-      leadId: lead.id,
-      leadName: lead.full_name,
-      date: scheduleData.date,
-      startTime: scheduleData.time,
-      endTime,
-      status: 'pendente',
-      examType: 'Consulta Oftalmológica',
-      reminderSent: false,
-      professionalId: 'dr-claudio',
-      unit: 'Loja Centro',
-      origin: 'manual',
-      value: lead.sales_value ?? 150,
-      propensityScore: 0.85,
-      notificationChannel: 'whatsapp',
-      rescheduleCount: 0,
-      needsTransport: false,
-    });
-    if (!ok) {
-      toast.error('Conflito de horário na agenda');
-      return;
-    }
-    await updateLead.mutateAsync({ id: lead.id, updates: { status: 'scheduled' } });
-    toast.success('Agendamento criado e lead movido!');
-    setScheduleOpen(false);
-    setScheduleData({ date: '', time: '' });
   };
 
   const actions = [
@@ -125,38 +85,13 @@ export function LeadQuickActions({
       {/* Diálogos owned */}
       <LeadValueDialog lead={valueOpen ? lead : null} open={valueOpen} onOpenChange={setValueOpen} />
 
-      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Agendar — {lead.full_name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Data</Label>
-              <Input
-                type="date"
-                value={scheduleData.date}
-                onChange={(e) => setScheduleData((p) => ({ ...p, date: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Hora</Label>
-              <Input
-                type="time"
-                value={scheduleData.time}
-                onChange={(e) => setScheduleData((p) => ({ ...p, time: e.target.value }))}
-              />
-            </div>
-            {lead.phone && <p className="text-xs text-gray-500">📱 {lead.phone}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setScheduleOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmSchedule}>Confirmar Agendamento</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewAppointmentDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        defaultLeadId={lead.id}
+        lockLead
+        moveLeadToScheduled
+      />
     </>
   );
 }

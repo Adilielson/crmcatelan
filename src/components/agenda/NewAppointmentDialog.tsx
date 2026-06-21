@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useAgenda } from "@/hooks/use-agenda";
-import { useLeads } from "@/hooks/use-leads";
+import { useLeads, useUpdateLead } from "@/hooks/use-leads";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
 import {
   useBusinessHours,
@@ -39,6 +39,10 @@ interface NewAppointmentDialogProps {
   onOpenChange: (open: boolean) => void;
   defaultDate?: Date;
   defaultLeadId?: string;
+  /** Travar o lead (atalhos contextuais) — esconde o select de lead. */
+  lockLead?: boolean;
+  /** Após criar o agendamento, mover o lead para a etapa "Agendado" do Kanban. */
+  moveLeadToScheduled?: boolean;
   onCreated?: () => void;
 }
 
@@ -47,10 +51,13 @@ export function NewAppointmentDialog({
   onOpenChange,
   defaultDate,
   defaultLeadId,
+  lockLead = false,
+  moveLeadToScheduled = false,
   onCreated,
 }: NewAppointmentDialogProps) {
   const { addAppointment } = useAgenda();
   const { data: leads = [] } = useLeads();
+  const updateLead = useUpdateLead();
   const { sendText, isConnected: waConnected } = useWhatsApp();
   const { data: businessHours = [] } = useBusinessHours();
   const { data: blockedDates = [] } = useBlockedDates();
@@ -98,6 +105,16 @@ export function NewAppointmentDialog({
       cancelled = true;
     };
   }, [open]);
+
+  // Sync defaultLeadId / defaultDate when opening
+  useEffect(() => {
+    if (!open) return;
+    setFormData((f) => ({
+      ...f,
+      leadId: defaultLeadId ?? f.leadId,
+      date: defaultDate ? format(defaultDate, "yyyy-MM-dd") : f.date,
+    }));
+  }, [open, defaultDate, defaultLeadId]);
 
   // Reset form on close
   useEffect(() => {
@@ -174,6 +191,18 @@ export function NewAppointmentDialog({
 
       toast.success("Agendamento realizado com sucesso!");
 
+      // Mover lead para a coluna "Agendado" do Kanban quando solicitado.
+      if (moveLeadToScheduled) {
+        try {
+          await updateLead.mutateAsync({
+            id: selectedLead.id,
+            updates: { status: "scheduled", custom_column_id: null },
+          });
+        } catch {
+          toast.warning("Agendamento criado, mas falha ao mover o lead.");
+        }
+      }
+
       // REAL WhatsApp dispatch — no longer mocked
       const phone = selectedLead.phone;
       if (phone && waConnected) {
@@ -209,24 +238,38 @@ export function NewAppointmentDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="space-y-2">
-            <Label>Lead</Label>
-            <Select
-              value={formData.leadId}
-              onValueChange={(v) => setFormData({ ...formData, leadId: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecionar Lead" />
-              </SelectTrigger>
-              <SelectContent>
-                {leads.map((lead) => (
-                  <SelectItem key={lead.id} value={lead.id}>
-                    {lead.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {lockLead ? (
+            selectedLead && (
+              <div className="space-y-2">
+                <Label>Lead</Label>
+                <div className="flex items-center justify-between rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+                  <span className="font-medium">{selectedLead.full_name}</span>
+                  {selectedLead.phone && (
+                    <span className="text-xs text-muted-foreground">📱 {selectedLead.phone}</span>
+                  )}
+                </div>
+              </div>
+            )
+          ) : (
+            <div className="space-y-2">
+              <Label>Lead</Label>
+              <Select
+                value={formData.leadId}
+                onValueChange={(v) => setFormData({ ...formData, leadId: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar Lead" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leads.map((lead) => (
+                    <SelectItem key={lead.id} value={lead.id}>
+                      {lead.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
