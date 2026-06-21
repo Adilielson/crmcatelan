@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus, Bell, Check, Clock, X as XIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus, Bell, Check, Clock, X as XIcon, ChevronLeft, ChevronRight, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -24,6 +24,7 @@ import { LeadDetailSheet } from './LeadDetailSheet';
 import { LeadValueDialog } from './LeadValueDialog';
 import { LeadLocationDialog } from './LeadLocationDialog';
 import { KanbanColumnDialog } from './KanbanColumnDialog';
+import { KanbanColumnsSettingsDialog } from './KanbanColumnsSettingsDialog';
 import { CloseLeadDialog } from './CloseLeadDialog';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
@@ -74,6 +75,7 @@ export function KanbanBoard() {
   const [lossReason, setLossReason] = useState('');
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<KanbanColumn | null>(null);
+  const [columnsSettingsOpen, setColumnsSettingsOpen] = useState(false);
   const [deletingColumn, setDeletingColumn] = useState<KanbanColumn | null>(null);
   const [closingLead, setClosingLead] = useState<DBLead | null>(null);
   const [followupLead, setFollowupLead] = useState<DBLead | null>(null);
@@ -232,10 +234,10 @@ export function KanbanBoard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { setEditingColumn(null); setColumnDialogOpen(true); }}
+              onClick={() => setColumnsSettingsOpen(true)}
               className="h-11 px-5 font-bold text-xs uppercase tracking-wider border-[#E3E6EB] rounded-[14px]"
             >
-              <Plus className="w-4 h-4 mr-2" /> Nova Coluna
+              <Settings2 className="w-4 h-4 mr-2" /> Configurar Etapas
             </Button>
           )}
           <Button onClick={() => setNewOpen(true)} size="sm" className="h-11 px-8 font-black text-xs uppercase tracking-[0.1em] bg-[#FFC400] text-[#1a1500] hover:bg-[#FFD60A] shadow-md shadow-[#FFC400]/10 rounded-[14px]">
@@ -403,13 +405,21 @@ export function KanbanBoard() {
         </DialogContent>
       </Dialog>
 
-      {/* Column create/edit dialog */}
+      {/* Column create/edit dialog (per-column from dropdown menu) */}
       <KanbanColumnDialog
         open={columnDialogOpen}
         onOpenChange={(v) => { setColumnDialogOpen(v); if (!v) setEditingColumn(null); }}
         editing={editingColumn}
         nextPosition={nextPosition}
       />
+
+      {/* Columns settings (list + reorder + add) */}
+      <KanbanColumnsSettingsDialog
+        open={columnsSettingsOpen}
+        onOpenChange={setColumnsSettingsOpen}
+        columns={columns}
+      />
+
 
       {/* Delete column confirmation */}
       <Dialog open={!!deletingColumn} onOpenChange={(v) => !v && setDeletingColumn(null)}>
