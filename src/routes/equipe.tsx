@@ -27,6 +27,9 @@ import {
 } from '@/components/ui/table';
 import { stageLabel } from '@/hooks/use-leads';
 import { toast } from 'sonner';
+import { useServerFn } from '@tanstack/react-start';
+import { toggleReferenceAgent } from '@/lib/ai-style.functions';
+import { Star } from 'lucide-react';
 
 export const Route = createFileRoute('/equipe')({
   component: Equipe,
