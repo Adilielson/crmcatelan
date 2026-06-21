@@ -198,15 +198,21 @@ export function KanbanBoard() {
     setScheduleData({ date: '', time: '' });
   };
 
-  const confirmLoss = async () => {
-    if (!lossLead || !lossReason) return;
+  const confirmLoss = async ({ reason, note }: { reason: string; note: string }) => {
+    if (!lossLead || !reason) return;
+    const summary = note ? `${reason} — ${note}` : reason;
     await updateLead.mutateAsync({
       id: lossLead.id,
-      updates: { status: 'lost', notes: `${lossLead.notes ?? ''}\n[Perdido: ${lossReason}]`.trim() },
+      updates: {
+        status: 'lost',
+        custom_column_id: null,
+        lost_reason: reason,
+        lost_reason_note: note || null,
+        notes: `${lossLead.notes ?? ''}\n[Perdido: ${summary}]`.trim(),
+      },
     });
     toast.error('Lead marcado como perdido');
     setLossLead(null);
-    setLossReason('');
   };
 
   const openChat = (lead: DBLead) => {
