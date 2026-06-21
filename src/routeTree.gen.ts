@@ -13,6 +13,7 @@ import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
+import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MetasRouteImport } from './routes/metas'
 import { Route as MarketingRouteImport } from './routes/marketing'
@@ -49,6 +50,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SaasRoute = SaasRouteImport.update({
   id: '/saas',
   path: '/saas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RankingRoute = RankingRouteImport.update({
+  id: '/ranking',
+  path: '/ranking',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerformanceRoute = PerformanceRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/marketing': typeof MarketingRoute
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
+  '/ranking': typeof RankingRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/marketing': typeof MarketingRoute
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
+  '/ranking': typeof RankingRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/marketing': typeof MarketingRoute
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
+  '/ranking': typeof RankingRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/marketing'
     | '/metas'
     | '/performance'
+    | '/ranking'
     | '/saas'
     | '/settings'
     | '/users'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/marketing'
     | '/metas'
     | '/performance'
+    | '/ranking'
     | '/saas'
     | '/settings'
     | '/users'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/marketing'
     | '/metas'
     | '/performance'
+    | '/ranking'
     | '/saas'
     | '/settings'
     | '/users'
@@ -296,6 +308,7 @@ export interface RootRouteChildren {
   MarketingRoute: typeof MarketingRoute
   MetasRoute: typeof MetasRoute
   PerformanceRoute: typeof PerformanceRoute
+  RankingRoute: typeof RankingRoute
   SaasRoute: typeof SaasRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
@@ -334,6 +347,13 @@ declare module '@tanstack/react-router' {
       path: '/saas'
       fullPath: '/saas'
       preLoaderRoute: typeof SaasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ranking': {
+      id: '/ranking'
+      path: '/ranking'
+      fullPath: '/ranking'
+      preLoaderRoute: typeof RankingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/performance': {
@@ -472,6 +492,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarketingRoute: MarketingRoute,
   MetasRoute: MetasRoute,
   PerformanceRoute: PerformanceRoute,
+  RankingRoute: RankingRoute,
   SaasRoute: SaasRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
