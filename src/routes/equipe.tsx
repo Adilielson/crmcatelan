@@ -58,6 +58,18 @@ interface TeamLead {
   assigned_user_id: string | null;
   updated_at: string;
   sales_value: number | null;
+  last_inbound_at: string | null;
+  last_outbound_at: string | null;
+}
+
+// Retorna horas desde a última mensagem do cliente que ficou sem resposta.
+// Se não há inbound pendente (atendente ou IA já respondeu), retorna null = não está parado.
+function pendingHours(l: { last_inbound_at: string | null; last_outbound_at: string | null }) {
+  if (!l.last_inbound_at) return null;
+  const inbound = new Date(l.last_inbound_at).getTime();
+  const outbound = l.last_outbound_at ? new Date(l.last_outbound_at).getTime() : 0;
+  if (outbound >= inbound) return null; // já respondido
+  return (Date.now() - inbound) / 3_600_000;
 }
 
 const ROLE_LABELS: Record<string, string> = {
