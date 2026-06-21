@@ -128,6 +128,7 @@ const useNavItems = (isSuperAdmin: boolean): NavItem[] => {
       label: 'Performance',
       icon: BarChart3,
       children: [
+        { label: 'BI Executivo', icon: BarChart3, href: '/bi', module: 'bi' },
         { label: 'Dashboard', icon: BarChart3, href: '/performance', module: 'performance' },
         { label: 'Metas', icon: Target, href: '/metas', module: 'metas' },
         { label: 'Ranking', icon: Trophy, href: '/ranking', module: 'ranking' },
