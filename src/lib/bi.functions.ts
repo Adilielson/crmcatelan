@@ -16,8 +16,8 @@ async function getTenantOrThrow(supabase: any, userId: string) {
 }
 
 function assertAdmin(role: string) {
-  if (!["admin", "super_admin"].includes(role)) {
-    throw new Error("Apenas administradores podem editar configurações de BI");
+  if (!["admin", "super_admin", "manager"].includes(role)) {
+    throw new Error("Apenas administradores ou gerentes podem editar configurações de BI");
   }
 }
 
