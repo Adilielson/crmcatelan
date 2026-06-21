@@ -204,7 +204,7 @@ function Clientes() {
           <h1 className="text-2xl font-black text-ink">Clientes</h1>
           <p className="text-sm text-[#6B7280]">Base completa de leads do tenant.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             ref={fileRef}
             type="file"
@@ -220,13 +220,14 @@ function Clientes() {
             variant="outline"
             onClick={() => fileRef.current?.click()}
             disabled={importMutation.isPending}
+            className="flex-1 sm:flex-none"
           >
             <Upload />
             Importar Excel
           </Button>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="flex-1 sm:flex-none">
                 <Plus />
                 Novo lead
               </Button>
