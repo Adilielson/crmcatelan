@@ -95,13 +95,26 @@ export function KanbanColumnsSettingsDialog({ open, onOpenChange, columns, group
   };
   const commitRename = (col: KanbanColumn, value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || trimmed === col.name) return;
-    update.mutate({ id: col.id, updates: { name: trimmed } });
+    const original = columns.find((c) => c.id === col.id);
+    if (!trimmed) {
+      if (original) setLocalOrder((prev) => prev.map((c) => (c.id === col.id ? { ...c, name: original.name } : c)));
+      return;
+    }
+    if (original && trimmed === original.name) return;
+    dirtyRef.current = true;
+    update.mutate(
+      { id: col.id, updates: { name: trimmed } },
+      { onSuccess: () => { dirtyRef.current = false; toast.success('Etapa renomeada'); } },
+    );
   };
 
   const handleColorChange = (col: KanbanColumn, color: string) => {
     setLocalOrder((prev) => prev.map((c) => (c.id === col.id ? { ...c, color } : c)));
-    update.mutate({ id: col.id, updates: { color } });
+    dirtyRef.current = true;
+    update.mutate(
+      { id: col.id, updates: { color } },
+      { onSuccess: () => { dirtyRef.current = false; } },
+    );
   };
 
   const handleDaysChange = (col: KanbanColumn, value: number) => {
@@ -110,8 +123,13 @@ export function KanbanColumnsSettingsDialog({ open, onOpenChange, columns, group
   };
   const commitDays = (col: KanbanColumn, value: number) => {
     const days = Math.max(0, Math.min(365, Math.round(value || 0)));
-    if (days === col.sla_days) return;
-    update.mutate({ id: col.id, updates: { sla_days: days } });
+    const original = columns.find((c) => c.id === col.id);
+    if (original && days === original.sla_days) return;
+    dirtyRef.current = true;
+    update.mutate(
+      { id: col.id, updates: { sla_days: days } },
+      { onSuccess: () => { dirtyRef.current = false; } },
+    );
   };
 
   const handleDelete = (col: KanbanColumn) => {
