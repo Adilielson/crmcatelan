@@ -195,7 +195,8 @@ function Equipe() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, role, avatar_url, is_reference_agent')
-        .eq('tenant_id', tenantId!);
+        .eq('tenant_id', tenantId!)
+        .in('role', VISIBLE_ROLES);
       if (error) throw error;
       return (data ?? []) as TeamProfile[];
     },
