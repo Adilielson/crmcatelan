@@ -23,6 +23,7 @@ import { Route as FilaRouteImport } from './routes/fila'
 import { Route as EquipeRouteImport } from './routes/equipe'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as BiRouteImport } from './routes/bi'
 import { Route as AiTrainingRouteImport } from './routes/ai-training'
 import { Route as AiInsightsRouteImport } from './routes/ai-insights'
 import { Route as AgendaRouteImport } from './routes/agenda'
@@ -102,6 +103,11 @@ const ChatRoute = ChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BiRoute = BiRouteImport.update({
+  id: '/bi',
+  path: '/bi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiTrainingRoute = AiTrainingRouteImport.update({
   id: '/ai-training',
   path: '/ai-training',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AgendaRoute
   '/ai-insights': typeof AiInsightsRoute
   '/ai-training': typeof AiTrainingRoute
+  '/bi': typeof BiRoute
   '/chat': typeof ChatRoute
   '/clientes': typeof ClientesRoute
   '/equipe': typeof EquipeRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/ai-insights': typeof AiInsightsRoute
   '/ai-training': typeof AiTrainingRoute
+  '/bi': typeof BiRoute
   '/chat': typeof ChatRoute
   '/clientes': typeof ClientesRoute
   '/equipe': typeof EquipeRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/agenda': typeof AgendaRoute
   '/ai-insights': typeof AiInsightsRoute
   '/ai-training': typeof AiTrainingRoute
+  '/bi': typeof BiRoute
   '/chat': typeof ChatRoute
   '/clientes': typeof ClientesRoute
   '/equipe': typeof EquipeRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-insights'
     | '/ai-training'
+    | '/bi'
     | '/chat'
     | '/clientes'
     | '/equipe'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-insights'
     | '/ai-training'
+    | '/bi'
     | '/chat'
     | '/clientes'
     | '/equipe'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/ai-insights'
     | '/ai-training'
+    | '/bi'
     | '/chat'
     | '/clientes'
     | '/equipe'
@@ -299,6 +311,7 @@ export interface RootRouteChildren {
   AgendaRoute: typeof AgendaRoute
   AiInsightsRoute: typeof AiInsightsRoute
   AiTrainingRoute: typeof AiTrainingRoute
+  BiRoute: typeof BiRoute
   ChatRoute: typeof ChatRoute
   ClientesRoute: typeof ClientesRoute
   EquipeRoute: typeof EquipeRoute
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bi': {
+      id: '/bi'
+      path: '/bi'
+      fullPath: '/bi'
+      preLoaderRoute: typeof BiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-training': {
       id: '/ai-training'
       path: '/ai-training'
@@ -483,6 +503,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaRoute: AgendaRoute,
   AiInsightsRoute: AiInsightsRoute,
   AiTrainingRoute: AiTrainingRoute,
+  BiRoute: BiRoute,
   ChatRoute: ChatRoute,
   ClientesRoute: ClientesRoute,
   EquipeRoute: EquipeRoute,
