@@ -191,6 +191,18 @@ export function NewAppointmentDialog({
 
       toast.success("Agendamento realizado com sucesso!");
 
+      // Mover lead para a coluna "Agendado" do Kanban quando solicitado.
+      if (moveLeadToScheduled) {
+        try {
+          await updateLead.mutateAsync({
+            id: selectedLead.id,
+            updates: { status: "scheduled", custom_column_id: null },
+          });
+        } catch {
+          toast.warning("Agendamento criado, mas falha ao mover o lead.");
+        }
+      }
+
       // REAL WhatsApp dispatch — no longer mocked
       const phone = selectedLead.phone;
       if (phone && waConnected) {
