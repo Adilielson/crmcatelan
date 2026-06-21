@@ -77,6 +77,38 @@ export function KanbanBoard() {
   const [closingLead, setClosingLead] = useState<DBLead | null>(null);
   const [followupLead, setFollowupLead] = useState<DBLead | null>(null);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < maxScroll - 4);
+  }, []);
+
+  useEffect(() => {
+    updateScrollState();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    window.addEventListener('resize', updateScrollState);
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [updateScrollState, columns.length]);
+
+  const scrollByColumn = (direction: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const firstCol = el.querySelector<HTMLElement>('[data-kanban-col]');
+    const step = firstCol ? firstCol.offsetWidth + 32 : el.clientWidth * 0.8;
+    el.scrollBy({ left: step * direction, behavior: 'smooth' });
+  };
+
   const leadsForColumn = (col: KanbanColumn): DBLead[] => {
     if (col.is_system && col.system_key) {
       return leads.filter((l) => l.custom_column_id == null && l.status === col.system_key);
