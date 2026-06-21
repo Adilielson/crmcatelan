@@ -79,6 +79,13 @@ function Chat() {
     return () => clearInterval(id)
   }, [])
 
+  // Aplica filtro de coluna vindo da URL (?stage=open -> Leads Prontos)
+  useEffect(() => {
+    if (!stageFromUrl || kanbanColumns.length === 0) return
+    const col = kanbanColumns.find((k) => k.system_key === stageFromUrl || k.id === stageFromUrl)
+    if (col) setStatusFilter(col.id)
+  }, [stageFromUrl, kanbanColumns])
+
 
   const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
 
