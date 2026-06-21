@@ -4,6 +4,44 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type DayKey = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
 export type BusinessHours = Record<DayKey, [string, string] | null>;
 
+/**
+ * Update only the tenant timezone. Bypasses RLS (which restricts UPDATE
+ * on `tenants` to super_admin) after verifying the caller is admin/manager
+ * of their own tenant.
+ */
+export const updateTenantTimezone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => {
+    const i = input as { timezone: string };
+    if (!i?.timezone || typeof i.timezone !== "string") {
+      throw new Error("timezone obrigatório");
+    }
+    return { timezone: i.timezone };
+  })
+  .handler(async ({ data, context }) => {
+    const tenantId = await getTenantId(context.supabase, context.userId);
+
+    // Authorize: only admin/manager/super_admin of this tenant
+    const { data: profile, error: pErr } = await context.supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    const role = profile?.role as string | undefined;
+    if (!role || !["admin", "manager", "super_admin"].includes(role)) {
+      throw new Error("Permissão negada para alterar o fuso da loja");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("tenants")
+      .update({ timezone: data.timezone, updated_at: new Date().toISOString() } as any)
+      .eq("id", tenantId);
+    if (error) throw new Error(error.message);
+    return { ok: true, timezone: data.timezone };
+  });
+
 async function getTenantId(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase
     .from("profiles").select("tenant_id").eq("id", userId).maybeSingle();

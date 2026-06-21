@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+import { updateTenantTimezone } from '@/lib/business-hours.functions';
 
 export const BR_TIMEZONES: { value: string; label: string }[] = [
   { value: 'America/Sao_Paulo', label: 'Brasília — São Paulo, Rio, MG, Sul, Centro-Oeste (UTC−3)' },
@@ -35,16 +37,16 @@ export function useTenantTimezone() {
 export function useUpdateTenantTimezone() {
   const qc = useQueryClient();
   const tenantId = useAuthStore((s) => s.tenant?.id ?? null);
+  const updateFn = useServerFn(updateTenantTimezone);
   return useMutation({
     mutationFn: async (timezone: string) => {
       if (!tenantId) throw new Error('Tenant não identificado');
-      const { error } = await (supabase as any)
-        .from('tenants')
-        .update({ timezone, updated_at: new Date().toISOString() })
-        .eq('id', tenantId);
-      if (error) throw error;
+      // RLS on `tenants` only allows super_admin to UPDATE; go through a
+      // server function that authorizes admin/manager and uses the admin client.
+      await updateFn({ data: { timezone } });
     },
-    onSuccess: () => {
+    onSuccess: (_data, timezone) => {
+      qc.setQueryData(['tenant_timezone', tenantId], timezone);
       qc.invalidateQueries({ queryKey: ['tenant_timezone', tenantId] });
       toast.success('Fuso horário atualizado');
     },
