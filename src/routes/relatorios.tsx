@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router';
-import { Users, Calendar, CheckCircle2, FileBarChart, XCircle } from 'lucide-react';
+import { Users, Calendar, CheckCircle2, FileBarChart, XCircle, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/relatorios')({
@@ -30,6 +30,12 @@ const items = [
     description: 'Motivos e detalhamento de perdas',
     href: '/relatorios/perdidos',
     icon: XCircle,
+  },
+  {
+    label: 'LTV',
+    description: 'Compras, recorrência e top clientes',
+    href: '/relatorios/ltv',
+    icon: TrendingUp,
   },
 ];
 

@@ -25,7 +25,7 @@ import { LeadValueDialog } from './LeadValueDialog';
 import { LeadLocationDialog } from './LeadLocationDialog';
 import { KanbanColumnDialog } from './KanbanColumnDialog';
 import { KanbanColumnsSettingsDialog } from './KanbanColumnsSettingsDialog';
-import { CloseLeadDialog } from './CloseLeadDialog';
+import { RegisterPurchaseDialog } from '@/components/leads/RegisterPurchaseDialog';
 import { LostLeadDialog } from '@/components/leads/LostLeadDialog';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
@@ -369,7 +369,7 @@ export function KanbanBoard() {
       <LeadDetailSheet lead={detailLead} open={!!detailLead} onOpenChange={(v) => !v && setDetailLead(null)} />
       <LeadValueDialog lead={valueLead} open={!!valueLead} onOpenChange={(v) => !v && setValueLead(null)} />
       <LeadLocationDialog lead={locationLead} open={!!locationLead} onOpenChange={(v) => !v && setLocationLead(null)} />
-      <CloseLeadDialog lead={closingLead} open={!!closingLead} onOpenChange={(v) => !v && setClosingLead(null)} />
+      <RegisterPurchaseDialog lead={closingLead} open={!!closingLead} onOpenChange={(v) => !v && setClosingLead(null)} closeLead />
       <ConsultationSummaryDialog
         lead={followupLead}
         open={!!followupLead}
