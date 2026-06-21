@@ -28,7 +28,6 @@ export function LeadProfilePanel({
   hideChat?: boolean;
   onOpenChat?: () => void;
 }) {
-  const { data: history = [] } = useLeadHistory(lead.id);
   const { data: summary } = useConsultationSummary(lead.id);
 
   return (
@@ -188,51 +187,11 @@ export function LeadProfilePanel({
       {/* Receita (foto + OCR) */}
       <PrescriptionCard lead={lead} />
 
-      {/* Histórico de etapas */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 px-1">
-          <History className="w-3.5 h-3.5 text-gray-500" />
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-            Histórico do lead
-          </h4>
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4">
-          <ol className="relative border-l border-gray-200 ml-1 space-y-4">
-            {history.length === 0 && (
-              <li className="ml-4 text-[11px] text-gray-400 font-medium">
-                Nenhuma mudança de etapa registrada ainda.
-              </li>
-            )}
-            {history.map((h) => (
-              <li key={h.id} className="ml-4">
-                <div className="absolute -left-1.5 mt-1.5 w-3 h-3 rounded-full bg-primary border-2 border-white shadow" />
-                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                  {fmtDateTime(h.created_at)}
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5 text-xs">
-                  <StageBadge stage={h.stage_from} />
-                  <span className="text-gray-400">→</span>
-                  <StageBadge stage={h.stage_to} />
-                </div>
-                {h.duration && (
-                  <div className="text-[10px] text-gray-500 mt-1 flex items-center gap-1">
-                    <Activity className="w-3 h-3" />
-                    Permaneceu {h.duration}
-                  </div>
-                )}
-              </li>
-            ))}
-            {/* Marco de criação */}
-            <li className="ml-4">
-              <div className="absolute -left-1.5 mt-1.5 w-3 h-3 rounded-full bg-gray-300 border-2 border-white" />
-              <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                {fmtDateTime(lead.created_at)}
-              </div>
-              <div className="text-xs text-ink font-bold mt-0.5">Lead criado</div>
-            </li>
-          </ol>
-        </div>
-      </div>
+      {/* LTV & Compras */}
+      <LeadPurchasesCard lead={lead} />
+
+      {/* Histórico unificado */}
+      <LeadTimeline lead={lead} />
     </div>
   );
 }
