@@ -73,7 +73,7 @@ export function KanbanBoard() {
   const [scheduleLead, setScheduleLead] = useState<DBLead | null>(null);
   const [lossLead, setLossLead] = useState<DBLead | null>(null);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
-  const [lossReason, setLossReason] = useState('');
+  
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<KanbanColumn | null>(null);
   const [columnsSettingsOpen, setColumnsSettingsOpen] = useState(false);
