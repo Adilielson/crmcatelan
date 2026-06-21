@@ -114,24 +114,20 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
       color: SOURCE_COLORS[i % SOURCE_COLORS.length],
     }))
 
-    // ---- SLA alerts (mesma regra do notify_stale_leads) ----
-    // Só lista leads aguardando RESPOSTA DA LOJA:
-    //  - cliente mandou mensagem e ninguém respondeu (last_inbound_at > last_outbound_at), OU
-    //  - lead novo em "open" sem nenhuma conversa ainda
-    // Limiares: open >1h | in_progress >4h | negotiating >4h (tempo corrido — o cron usa horário comercial)
+    // ---- SLA alerts ----
+    // Apenas leads em "Leads Prontos" (status='open' e sem coluna kanban custom)
+    // que ainda não receberam resposta da equipe. Leads já em atendimento,
+    // em negociação ou movidos para outras colunas do kanban NÃO devem aparecer
+    // como atrasados — eles já estão sendo tratados.
     const HOUR = 60 * 60 * 1000
     const slaAlerts = allLeads
-      .filter((l) => l.status === 'open' || l.status === 'in_progress' || l.status === 'negotiating')
+      .filter((l) => l.status === 'open' && !l.custom_column_id)
       .filter((l) => {
-        const inAt = l.last_inbound_at ? new Date(l.last_inbound_at).getTime() : 0
         const outAt = l.last_outbound_at ? new Date(l.last_outbound_at).getTime() : 0
-        const waiting = inAt > 0 && inAt > outAt
-        const brandNewOpen = l.status === 'open' && inAt === 0
-        if (!waiting && !brandNewOpen) return false
+        if (outAt > 0) return false // equipe já respondeu pelo menos uma vez
+        const inAt = l.last_inbound_at ? new Date(l.last_inbound_at).getTime() : 0
         const anchor = inAt > 0 ? inAt : new Date(l.updated_at ?? l.created_at ?? 0).getTime()
-        const age = now - anchor
-        if (l.status === 'open') return age > 1 * HOUR
-        return age > 4 * HOUR
+        return now - anchor > 1 * HOUR
       })
       .sort((a, b) => {
         const aAnchor = a.last_inbound_at ? new Date(a.last_inbound_at).getTime() : new Date(a.updated_at ?? 0).getTime()
@@ -143,15 +139,11 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
         const inAt = l.last_inbound_at ? new Date(l.last_inbound_at).getTime() : 0
         const anchor = inAt > 0 ? inAt : new Date(l.updated_at ?? l.created_at ?? 0).getTime()
         const waitH = Math.floor((now - anchor) / HOUR)
-        const stageLabel =
-          l.status === 'open' ? 'Leads Prontos'
-          : l.status === 'in_progress' ? 'Em Atendimento'
-          : 'Em Negociação'
         return {
           id: l.id,
           name: l.full_name ?? 'Sem nome',
           phone: l.phone ?? null,
-          stage: stageLabel,
+          stage: 'Leads Prontos',
           waitHours: waitH,
           priority: waitH > 24 ? 'Alta' : 'Normal',
         }
