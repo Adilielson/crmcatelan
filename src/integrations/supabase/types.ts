@@ -2539,6 +2539,10 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
       }
+      is_tenant_admin_or_manager: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
       notify_stale_leads: { Args: never; Returns: undefined }
       reactivate_lead_if_stale: {
         Args: { _lead_id: string; _stale_days?: number }
