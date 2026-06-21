@@ -45,7 +45,7 @@ export const Route = createFileRoute('/chat')({
 })
 
 function Chat() {
-  const { phone: phoneFromUrl } = Route.useSearch()
+  const { phone: phoneFromUrl, stage: stageFromUrl } = Route.useSearch()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const { conversations, loading } = useWhatsAppChat()
