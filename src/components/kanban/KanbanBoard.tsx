@@ -371,7 +371,7 @@ export function KanbanBoard() {
       {/* Agenda dialog — usa o mesmo formulário da aba Agenda */}
       <NewAppointmentDialog
         open={!!scheduleLead}
-        onOpenChange={(v) => { if (!v) { setScheduleLead(null); setScheduleData({ date: '', time: '' }); } }}
+        onOpenChange={(v: boolean) => { if (!v) { setScheduleLead(null); setScheduleData({ date: '', time: '' }); } }}
         defaultLeadId={scheduleLead?.id}
         lockLead
         moveLeadToScheduled
