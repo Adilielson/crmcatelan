@@ -1099,28 +1099,40 @@ export type Database = {
           changed_by: string | null
           created_at: string | null
           duration: string | null
+          event_type: string
           id: string
           lead_id: string | null
+          metadata: Json | null
+          reason: string | null
           stage_from: Database["public"]["Enums"]["lead_status"] | null
           stage_to: Database["public"]["Enums"]["lead_status"] | null
+          tenant_id: string | null
         }
         Insert: {
           changed_by?: string | null
           created_at?: string | null
           duration?: string | null
+          event_type?: string
           id?: string
           lead_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
           stage_from?: Database["public"]["Enums"]["lead_status"] | null
           stage_to?: Database["public"]["Enums"]["lead_status"] | null
+          tenant_id?: string | null
         }
         Update: {
           changed_by?: string | null
           created_at?: string | null
           duration?: string | null
+          event_type?: string
           id?: string
           lead_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
           stage_from?: Database["public"]["Enums"]["lead_status"] | null
           stage_to?: Database["public"]["Enums"]["lead_status"] | null
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -1132,6 +1144,75 @@ export type Database = {
           },
           {
             foreignKeyName: "lead_pipeline_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_purchases: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          attendant_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          installments: number | null
+          lead_id: string
+          notes: string | null
+          payment_method: string | null
+          product_description: string | null
+          purchase_date: string
+          tenant_id: string
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          attendant_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          installments?: number | null
+          lead_id: string
+          notes?: string | null
+          payment_method?: string | null
+          product_description?: string | null
+          purchase_date?: string
+          tenant_id: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          attendant_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          installments?: number | null
+          lead_id?: string
+          notes?: string | null
+          payment_method?: string | null
+          product_description?: string | null
+          purchase_date?: string
+          tenant_id?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_purchases_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_purchases_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
