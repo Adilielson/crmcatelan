@@ -102,6 +102,9 @@ const ACTIVE_STATUSES = new Set([
   'followup',
 ]);
 
+// Roles que aparecem na aba Equipe (atendentes, equipe e gerentes)
+const VISIBLE_ROLES = ['attendant', 'seller', 'consultant', 'admin', 'super_admin', 'owner'];
+
 // SLA: alerta se lead ativo está parado há mais de X horas
 const STALE_HOURS = 4;
 
@@ -192,7 +195,8 @@ function Equipe() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, role, avatar_url, is_reference_agent')
-        .eq('tenant_id', tenantId!);
+        .eq('tenant_id', tenantId!)
+        .in('role', VISIBLE_ROLES);
       if (error) throw error;
       return (data ?? []) as TeamProfile[];
     },
