@@ -238,24 +238,38 @@ export function NewAppointmentDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="space-y-2">
-            <Label>Lead</Label>
-            <Select
-              value={formData.leadId}
-              onValueChange={(v) => setFormData({ ...formData, leadId: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecionar Lead" />
-              </SelectTrigger>
-              <SelectContent>
-                {leads.map((lead) => (
-                  <SelectItem key={lead.id} value={lead.id}>
-                    {lead.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {lockLead ? (
+            selectedLead && (
+              <div className="space-y-2">
+                <Label>Lead</Label>
+                <div className="flex items-center justify-between rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+                  <span className="font-medium">{selectedLead.full_name}</span>
+                  {selectedLead.phone && (
+                    <span className="text-xs text-muted-foreground">📱 {selectedLead.phone}</span>
+                  )}
+                </div>
+              </div>
+            )
+          ) : (
+            <div className="space-y-2">
+              <Label>Lead</Label>
+              <Select
+                value={formData.leadId}
+                onValueChange={(v) => setFormData({ ...formData, leadId: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar Lead" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leads.map((lead) => (
+                    <SelectItem key={lead.id} value={lead.id}>
+                      {lead.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
