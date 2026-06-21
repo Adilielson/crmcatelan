@@ -47,10 +47,17 @@ export function KanbanColumnsSettingsDialog({ open, onOpenChange, columns, group
       dirtyRef.current = false;
       setLocalOrder(columns);
       document.body.style.overflow = 'hidden';
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onOpenChange(false);
+      };
+      window.addEventListener('keydown', onKey);
+      return () => {
+        window.removeEventListener('keydown', onKey);
+        document.body.style.overflow = '';
+      };
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
   }, [open]);
 
   const nextPosition = useMemo(() => {
