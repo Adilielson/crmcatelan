@@ -111,7 +111,6 @@ export function ChatQuickActionsBar({
     );
     if (!col) return;
     if (col.is_system && col.system_key === 'scheduled') {
-      setScheduleData({ date: '', time: '' });
       setScheduleOpen(true);
       return;
     }
