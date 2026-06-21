@@ -124,8 +124,9 @@ export const restoreAiVersion = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[]): string {
+function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock: string = ""): string {
   const parts: string[] = [cfg.prompt_system || "Você é um atendente da Ótica Catelan."];
+  if (styleBlock) parts.push(styleBlock);
   if (cfg.goal) parts.push(`Objetivo principal da conversa: ${cfg.goal === "appointment" ? "agendar uma consulta" : cfg.goal === "qualification" ? "qualificar o lead" : "dar suporte"}.`);
   if (cfg.scheduling_link) parts.push(`Link de agendamento (use quando o lead pedir): ${cfg.scheduling_link}`);
   if (cfg.knowledge_base_faq?.trim()) parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`);
