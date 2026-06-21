@@ -527,31 +527,48 @@ export const suggestReplyForLead = createServerFn({ method: "POST" })
       })
       .join("\n");
 
-    // Contexto extra: top objeções/perguntas frequentes do tenant para enriquecer sugestão
+    // Contexto extra: top objeções/frases por (weight*occurrences) — privilegia referência
     const { data: patterns } = await context.supabase
       .from("ai_knowledge_patterns")
-      .select("pattern_type, content")
+      .select("pattern_type, content, weight, occurrences")
       .eq("tenant_id", tenantId)
       .in("pattern_type", ["winning_phrase", "objection"])
+      .order("weight", { ascending: false })
       .order("occurrences", { ascending: false })
-      .limit(20);
+      .limit(30);
 
-    const winning = (patterns || []).filter((p: any) => p.pattern_type === "winning_phrase").map((p: any) => `- ${p.content}`).join("\n");
-    const objections = (patterns || []).filter((p: any) => p.pattern_type === "objection").map((p: any) => `- ${p.content}`).join("\n");
+    const rank = (p: any) => Number(p.weight ?? 1) * Number(p.occurrences ?? 1);
+    const sorted = [...(patterns ?? [])].sort((a, b) => rank(b) - rank(a));
+    const winning = sorted
+      .filter((p: any) => p.pattern_type === "winning_phrase")
+      .slice(0, 10)
+      .map((p: any) => `- ${p.content}`)
+      .join("\n");
+    const objections = sorted
+      .filter((p: any) => p.pattern_type === "objection")
+      .slice(0, 6)
+      .map((p: any) => `- ${p.content}`)
+      .join("\n");
+
+    // Bloco de estilo da referência (Raiana)
+    const { loadStyleBlockForPrompt } = await import("./ai-style.functions");
+    const styleBlock = await loadStyleBlockForPrompt(tenantId);
 
     const { getTenantAiKey, logAiUsage } = await import("./ai-credentials.server");
     const cred = await getTenantAiKey(tenantId, "openai");
 
     const systemPrompt = `Você é um atendente humano de uma ótica/clínica conversando via WhatsApp em português brasileiro. Gere UMA sugestão de resposta para a próxima mensagem do atendente, baseada na conversa abaixo.
-Regras:
-- Tom natural, humano, cordial, curto (até 2-3 frases).
-- Sem markdown, sem emojis exagerados (no máx 1).
+Regras gerais:
+- Tom natural, humano, cordial, curto.
+- Sem markdown, sem listas numeradas.
 - Não invente preços, horários ou produtos que não foram mencionados.
 - Se o cliente fez pergunta, responda direto. Se está em dúvida, ajude a avançar.
 - Retorne APENAS o texto da mensagem sugerida, sem aspas, sem prefixos como "Atendente:".
 
-${winning ? `Frases que costumam funcionar bem com nossos clientes:\n${winning}\n` : ""}
-${objections ? `Objeções comuns para considerar:\n${objections}\n` : ""}
+${styleBlock || ""}
+
+${winning ? `FRASES DE REFERÊNCIA (inspire-se, não copie literal):\n${winning}\n` : ""}
+${objections ? `OBJEÇÕES COMUNS A CONSIDERAR:\n${objections}\n` : ""}
 ${data.hint ? `Direcionamento do atendente: ${data.hint}` : ""}`;
 
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
