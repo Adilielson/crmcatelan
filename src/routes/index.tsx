@@ -37,7 +37,6 @@ import {
   DollarSign,
   Store,
   MessageSquare,
-  Settings
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -280,8 +279,8 @@ function Dashboard() {
               </div>
               <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Alertas de SLA / Estagnação</CardTitle>
             </div>
-            <Link to="/settings">
-              <Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="w-4 h-4 text-slate-400" /></Button>
+            <Link to="/chat" search={{ stage: 'open' }}>
+              <Button size="sm" className="h-8 text-[11px] font-black uppercase tracking-wider">Atender Leads</Button>
             </Link>
           </CardHeader>
           <CardContent>

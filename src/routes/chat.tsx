@@ -39,12 +39,13 @@ import { Label } from '@/components/ui/label'
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
     phone: typeof search.phone === 'string' ? search.phone : undefined,
+    stage: typeof search.stage === 'string' ? search.stage : undefined,
   }),
   component: Chat,
 })
 
 function Chat() {
-  const { phone: phoneFromUrl } = Route.useSearch()
+  const { phone: phoneFromUrl, stage: stageFromUrl } = Route.useSearch()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const { conversations, loading } = useWhatsAppChat()
@@ -77,6 +78,13 @@ function Chat() {
     const id = setInterval(() => setTick((t) => t + 1), 60_000)
     return () => clearInterval(id)
   }, [])
+
+  // Aplica filtro de coluna vindo da URL (?stage=open -> Leads Prontos)
+  useEffect(() => {
+    if (!stageFromUrl || kanbanColumns.length === 0) return
+    const col = kanbanColumns.find((k) => k.system_key === stageFromUrl || k.id === stageFromUrl)
+    if (col) setStatusFilter(col.id)
+  }, [stageFromUrl, kanbanColumns])
 
 
   const onlyDigits = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '')
