@@ -308,15 +308,15 @@ function Clientes() {
         </div>
       </div>
 
-      <Card className="p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="relative">
+      <Card className="p-4 sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome ou telefone"
-              className="w-80 pl-9"
+              className="w-full pl-9"
             />
           </div>
           <span className="text-xs uppercase tracking-widest text-[#6B7280]">
@@ -329,72 +329,76 @@ function Clientes() {
         ) : filtered.length === 0 ? (
           <p className="text-sm text-[#6B7280]">Nenhum cliente encontrado.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Lead</TableHead>
-                <TableHead>Estágio</TableHead>
-                <TableHead>Temperatura</TableHead>
-                <TableHead>Última conversa</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((l) => {
-                const t = temperatureFromUrgencia(l.ia_urgencia);
-                return (
-                  <TableRow key={l.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFC400]/15 text-xs font-black text-[#1a1500]">
-                          {initials(l.full_name, l.phone)}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate font-bold text-ink">
-                            {l.full_name?.trim() || 'Sem nome'}
-                          </p>
-                          <p className="truncate text-xs text-[#6B7280]">
-                            {l.phone || '—'}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{stageLabel(l.status)}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${t.className}`}
-                      >
-                        {t.label}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-[#6B7280]">
-                      {formatDistanceToNow(new Date(l.updated_at), {
-                        addSuffix: true,
-                        locale: ptBR,
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          navigate({
-                            to: '/chat',
-                            search: { phone: l.phone ?? undefined },
-                          })
-                        }
-                      >
-                        Abrir
-                        <ArrowRight />
-                      </Button>
-                    </TableCell>
+          <div className="-mx-4 sm:-mx-6 overflow-x-auto">
+            <div className="min-w-[640px] px-4 sm:px-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Lead</TableHead>
+                    <TableHead>Estágio</TableHead>
+                    <TableHead>Temperatura</TableHead>
+                    <TableHead>Última conversa</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((l) => {
+                    const t = temperatureFromUrgencia(l.ia_urgencia);
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFC400]/15 text-xs font-black text-[#1a1500]">
+                              {initials(l.full_name, l.phone)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-bold text-ink">
+                                {l.full_name?.trim() || 'Sem nome'}
+                              </p>
+                              <p className="truncate text-xs text-[#6B7280]">
+                                {l.phone || '—'}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{stageLabel(l.status)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${t.className}`}
+                          >
+                            {t.label}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm text-[#6B7280]">
+                          {formatDistanceToNow(new Date(l.updated_at), {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              navigate({
+                                to: '/chat',
+                                search: { phone: l.phone ?? undefined },
+                              })
+                            }
+                          >
+                            Abrir
+                            <ArrowRight />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         )}
       </Card>
     </div>
