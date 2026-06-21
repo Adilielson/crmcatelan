@@ -298,6 +298,9 @@ function Dashboard() {
                     <div>
                       <p className="text-sm font-black text-ink font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
                       <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.waitHours}h</p>
+                      {alert.firstContactAt && (
+                        <p className="text-[9px] text-gray-400 font-medium">1º contato: {new Date(alert.firstContactAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      )}
                     </div>
                   </div>
                   <Link to="/chat" search={alert.phone ? { phone: alert.phone } : undefined}>
