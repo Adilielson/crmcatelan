@@ -1,10 +1,15 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getInsightsDashboard } from '@/lib/ai-insights.functions';
+import { getReferenceStyleProfile, rebuildReferenceStyleProfile } from '@/lib/ai-style.functions';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown } from 'lucide-react';
+import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown, Star, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const Route = createFileRoute('/ai-insights')({
   component: AiInsightsPage,
