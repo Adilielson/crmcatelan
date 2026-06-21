@@ -468,6 +468,9 @@ function LeadCard({
             <span className="text-[12px] font-black text-ink">R$ {(lead.sales_value ?? 0).toLocaleString('pt-BR')}</span>
           </div>
           {lead.phone && <p className="text-[10px] text-gray-400 font-medium truncate">{lead.phone}</p>}
+          <p className="text-[9px] text-gray-400 font-medium">
+            1º contato: {new Date(lead.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </p>
           <div className="flex items-center gap-1.5 flex-wrap mt-1">
             <span className={cn('inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide', slaTone)}>
               {daysInStage === 0 ? 'Hoje' : `${daysInStage}d na etapa`}
