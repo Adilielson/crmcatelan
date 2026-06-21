@@ -1,70 +1,134 @@
-## Objetivo
 
-Fazer a IA SDR soar como a Raiana: concisa, analítica, humana. Hoje a Sombra aprende frases vencedoras misturadas de todos os atendentes — vamos focar nela (e em qualquer outra "referência" que você marcar), priorizar conversas que terminaram em agendamento/fechamento, e extrair um **perfil de estilo** que entra direto no prompt da IA SDR.
+# Módulo de BI, Metas e Relatórios
 
-## O que muda
+## 1. Auditoria do que JÁ existe (reaproveitável)
 
-### 1. Banco — marcar referências e guardar o estilo
-- `profiles.is_reference_agent boolean default false` — você marca a Raiana (e outras) na tela de Equipe com um toggle "Referência de atendimento".
-- `ai_reference_style_profiles` (nova tabela, 1 linha por tenant):
-  - `style_guide jsonb` — traços extraídos (ex.: `avg_msg_length`, `questions_per_message`, `uses_emoji`, `uses_client_name`, `opening_patterns`, `closing_patterns`, `tone_descriptors`)
-  - `style_prompt text` — versão pronta pra colar no system prompt
-  - `sample_count int`, `last_built_at timestamptz`
-- `ai_knowledge_patterns.weight numeric default 1` — peso da frase (3x quando vem de lead ganho).
-- `ai_knowledge_patterns.agent_id uuid` — pra dar visibilidade de quem ensinou.
+**Leads (`leads`)**
+- `sales_value` (numeric) → venda de óculos ✅
+- `status` com `showed_up` (compareceu), `no_show`, `scheduled`, `lost`, `followup` ✅
+- `closed_at`, `first_contact_at`, `last_inbound_at`, `last_outbound_at` ✅
+- UTM/Ads completos: `utm_source/medium/campaign/content/term`, `ad_id`, `ad_name`, `source_id` ✅
+- `assigned_user_id` → responsável ✅
+- `score_ia`, `ia_summary`, `ia_sentiment` → IA já marca leads ✅
 
-### 2. Aprendizado com peso e atribuição
-Em `ai-insights.functions.ts` (analyzeLeadConversation):
-- Identifica o atendente humano da mensagem (via `messages.profile_id` se existir, senão por nome no transcript).
-- Se for `is_reference_agent = true`: salva pattern com `agent_id` e `weight = 3` quando outcome ∈ {scheduled, checked_in, showed_up}.
-- Outros atendentes / outcomes neutros: `weight = 1`.
-- Patterns de leads `lost` → `weight = 0.3` (ainda aprendem, mas afundam no ranking).
+**Agendamentos (`appointments`)**
+- `type_exam` (text livre), `value` (numeric), `status` (com `completed`, `no_show`, `cancelled`) ✅
+- Trigger `auto_checkout_on_close` já marca appointment como `completed` quando lead vira `showed_up` ✅
 
-### 3. Style guide automático (o coração da mudança)
-Novo server fn `buildReferenceStyleProfile(tenantId)`:
-1. Busca as últimas 50 conversas atendidas por agentes-referência que terminaram bem.
-2. Extrai só as mensagens **outbound da Raiana**.
-3. Calcula métricas determinísticas: média de caracteres por mensagem, % com emoji, % com pergunta, palavras de abertura mais comuns, uso do nome do cliente.
-4. Manda pra IA um meta-prompt: "analise estas mensagens da Raiana e descreva o estilo dela em até 8 bullets curtos — tom, comprimento, ritmo, perguntas, gatilhos, o que ela NÃO faz."
-5. Grava `style_guide` (métricas) + `style_prompt` (texto pronto) em `ai_reference_style_profiles`.
+**Marketing**
+- `marketing_sources` (utm, ad_id, platform), `marketing_spend` (date, spend, impressions, clicks) ✅
+- Permite CPL, ROI, receita por campanha ✅
 
-### 4. Injeção no prompt da IA SDR
-No system prompt da IA SDR (e do `suggestReply`), substituir o bloco genérico "frases que funcionam" por:
+**IA**
+- `ia_token_logs` (custo/tokens por tenant) ✅
+- Falta: marcação de qual mensagem/agendamento foi feito pela IA
 
-```
-=== ESTILO DE ATENDIMENTO (siga rigorosamente) ===
-{style_prompt da Raiana}
+**Perfis (`profiles.role` enum)**
+- Atual: `super_admin`, `admin`, `manager`, `seller`, `marketing_partner`
+- Mapeamento solicitado:
+  - Super Admin → `super_admin`
+  - Administrador (dono) → `admin`
+  - Gerente → `manager`
+  - Atendente → `seller`
+  - Gestor de Tráfego → `marketing_partner`
 
-Métricas a respeitar:
-- Mensagens de até {avg_msg_length} caracteres
-- No máximo 1 pergunta por mensagem
-- {uses_emoji ? "Emoji ocasional" : "Sem emojis"}
-- Sempre use o nome do cliente quando souber
+**Metas (`conversion_goals`)**
+- Já existe metas de **taxa** (conversion_rate, CPA, no_show, appointments). NÃO há metas de **receita** (Bronze/Ouro/Diamante).
 
-=== FRASES DE REFERÊNCIA (use como inspiração, não copie literal) ===
-{top 10 winning_phrases ordenadas por weight * occurrences, só de agentes-referência}
-```
+---
 
-Resultado: respostas mais curtas, menos "IA-zadas", no ritmo da Raiana.
+## 2. Gaps — o que precisa ser criado
 
-### 5. Quando rodar (ambos)
-- **Trigger por evento**: quando um lead atendido por agente-referência muda pra `scheduled`/`checked_in`/`showed_up`, dispara `analyzeLeadConversation` + agenda rebuild do style profile (debounce 1h).
-- **Cron diário 03:00**: roda `buildReferenceStyleProfile` pra cada tenant que tem ≥1 referência. Rota nova em `src/routes/api/public/hooks/build-reference-style.ts` chamada via pg_cron.
+1. **Parametrização de tipos de consulta + valor padrão**
+   - Hoje `appointments.type_exam` é texto livre, sem valor padrão associado.
+   - Criar `consultation_types (id, tenant_id, name, default_value, is_active)`.
+   - Seed: "Optometrista" R$ 29,90 / "Oftalmológica" R$ 120,00.
+   - Adicionar `appointments.consultation_type_id` (FK opcional, mantém `type_exam` p/ retrocompat).
 
-### 6. UI mínima
-- Em **Equipe / Profiles**: toggle "Referência de atendimento" (só admin vê).
-- Em **Dashboard IA** (ou onde já tem insights): card "Estilo da Raiana" mostrando os bullets do `style_prompt` + métricas + botão "Recalcular agora".
+2. **Metas de receita mensais (Bronze/Ouro/Diamante)**
+   - Criar `revenue_goals (id, tenant_id, month, bronze, gold, diamond, active_tier, created_at, updated_at)`.
+   - Meta individual = `active_tier ÷ atendentes ativos do mês` (calculado on-the-fly, recalcula sozinho quando entra/sai atendente).
 
-## Detalhes técnicos
+3. **Marcação IA vs humano**
+   - `appointments.created_by_ai boolean default false`.
+   - `messages.is_from_ai boolean default false` (já temos `direction`; falta autor).
+   - Backfill: NULL → falso.
 
-- Migração: 1 coluna em `profiles`, 2 colunas em `ai_knowledge_patterns`, 1 tabela nova com RLS (`tenant_id` scoping, leitura para `authenticated` do mesmo tenant, write só via service_role).
-- Identificação do atendente nas mensagens: hoje `messages` não tem `profile_id` confiável — usar `sender_name` como fallback e tentar match por `profiles.full_name ILIKE`. Se nada bater, descarta a mensagem do treino (sem ruído).
-- Custos de IA: o rebuild gasta ~1 chamada Gemini Flash por tenant/dia. Trigger por evento reusa a análise que já roda hoje.
-- Backward compat: enquanto não houver style_profile, o prompt cai no comportamento atual.
+4. **(Opcional) Custos de consulta parametrizáveis por unidade** — fora do escopo inicial, só global por tenant.
 
-## Fora do escopo desta iteração
-- Tela de aprovação manual do style guide (você escolheu "automático").
-- Captura de áudios / tempo de resposta da Raiana.
-- Script de qualificação (sequência de perguntas) — fica pra próxima se topar.
+---
 
-Posso seguir e implementar?
+## 3. Regras de contabilização (server-side)
+
+Toda métrica de receita usa uma única **view** `v_revenue_events` que une:
+- **Consultas pagas:** `appointments` com `status='completed'` E lead com `status='showed_up'` → valor = `appointments.value` (ou `consultation_types.default_value` se null).
+- **Vendas de óculos:** `leads` com `status='showed_up'` E `sales_value > 0` → valor = `sales_value`, data = `closed_at`, atendente = `assigned_user_id`.
+
+Receita por atendente/mês = soma dos dois. Usado em ranking, metas e dashboards.
+
+---
+
+## 4. Fases de entrega
+
+**Fase 1 — Fundação (migração + settings)**
+- Migração: `consultation_types`, `revenue_goals`, novas colunas `created_by_ai`, `consultation_type_id`.
+- Tela `Configurações → Consultas & Metas` (somente admin/super_admin): edita tipos+valores e metas Bronze/Ouro/Diamante.
+- View `v_revenue_events` + server fn `getRevenueByPeriod`.
+
+**Fase 2 — Metas & Ranking**
+- Rota `/metas` (admin/manager/seller; atendente vê só sua linha).
+- Dashboard de meta da loja: tier atual, realizado, faltante, %, barras Bronze/Ouro/Diamante.
+- Ranking mensal: posição, nome, meta individual, realizado, %, diferença.
+
+**Fase 3 — Dashboard Executivo**
+- Rota `/bi` (admin/super_admin/manager).
+- KPIs: leads recebidos, qualificados, agendamentos, comparecimentos, faltas, receita consultas, receita vendas, receita total, ticket médio, % meta, top 3 ranking.
+- Filtros: período, atendente, campanha, origem.
+
+**Fase 4 — Relatórios operacionais**
+- `/relatorios/atendentes` — tabela por atendente.
+- `/relatorios/agendamentos` — por dia/semana/mês/horário + heatmap.
+- `/relatorios/comparecimento` — taxas show/no-show/remarcou/cancelou.
+- Export PDF + Excel (via `jspdf` + `xlsx`, client-side).
+
+**Fase 5 — BI Marketing & IA**
+- `/relatorios/marketing` — leads/CPL/conversão/receita por campanha/anúncio/conjunto (gestor de tráfego entra aqui).
+- `/relatorios/ia` — atendidos IA vs humano, agendamentos IA vs humano, conversão comparada.
+
+---
+
+## 5. Permissões (resumo da matriz)
+
+| Rota | super_admin | admin | manager | seller | marketing_partner |
+|---|---|---|---|---|---|
+| /bi (executivo) | ✅ | ✅ | ✅ | ❌ | ❌ |
+| /metas (loja) | ✅ | ✅ | ✅ | own row | ❌ |
+| /ranking | ✅ | ✅ | ✅ | ✅ | ❌ |
+| /relatorios/atendentes | ✅ | ✅ | ✅ | own row | ❌ |
+| /relatorios/agendamentos | ✅ | ✅ | ✅ | own row | ❌ |
+| /relatorios/comparecimento | ✅ | ✅ | ✅ | ❌ | ❌ |
+| /relatorios/marketing | ✅ | ✅ | ❌ | ❌ | ✅ |
+| /relatorios/ia | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Configurações (tipos/valores/metas) | ✅ | ✅ | ❌ | ❌ | ❌ |
+
+Tudo enforced via RLS + checagem nas server functions com `has_role`.
+
+---
+
+## 6. Detalhes técnicos
+
+- Server functions em `src/lib/bi.functions.ts`, `revenue-goals.functions.ts`, `consultation-types.functions.ts`.
+- Views SQL para performance (`v_revenue_events`, `v_attendant_monthly`, `v_marketing_kpis`).
+- Exportação PDF/Excel client-side com `jspdf-autotable` e `xlsx` (sem novas deps server).
+- Charts: usa o `recharts` já instalado.
+- Filtros padronizados via componente `<BiFilters>` reutilizável.
+
+---
+
+## Pergunta antes de migrar
+
+1. Confirma a fórmula da meta individual = **meta do tier ativo ÷ atendentes ativos no mês**? (atendentes = `role='seller'` `status='active'`)
+2. O **tier ativo** (Bronze/Ouro/Diamante) é escolhido manualmente pelo admin a cada mês, ou é sempre o próximo ainda não atingido?
+3. Vendas de óculos: contabilizamos **na data de `closed_at`** (quando lead foi para `showed_up`) — ok? Ou existe alguma data de venda separada?
+
+Aprovando, executo a **Fase 1** (migração + tela de configuração de tipos/valores/metas).
