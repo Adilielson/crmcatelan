@@ -17,22 +17,35 @@ export const getBusinessHours = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const tenantId = await getTenantId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
-      .from("whatsapp_config")
-      .select("business_hours, timezone")
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
+
+    const [wc, t] = await Promise.all([
+      supabaseAdmin
+        .from("whatsapp_config")
+        .select("business_hours, timezone")
+        .eq("tenant_id", tenantId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("tenants")
+        .select("settings")
+        .eq("id", tenantId)
+        .maybeSingle(),
+    ]);
+
+    if (wc.error) throw new Error(wc.error.message);
+    if (t.error) throw new Error(t.error.message);
+
+    const settings = (t.data?.settings as Record<string, unknown> | null) ?? {};
     return {
-      business_hours: (data?.business_hours as BusinessHours | null) ?? null,
-      timezone: (data?.timezone as string | null) ?? "America/Sao_Paulo",
+      business_hours: (wc.data?.business_hours as BusinessHours | null) ?? null,
+      timezone: (wc.data?.timezone as string | null) ?? "America/Sao_Paulo",
+      address: (settings.address as string | null) ?? null,
     };
   });
 
 export const updateBusinessHours = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const i = input as { business_hours: BusinessHours; timezone?: string };
+    const i = input as { business_hours: BusinessHours; timezone?: string; address?: string };
     if (!i || typeof i !== "object" || !i.business_hours) {
       throw new Error("business_hours obrigatório");
     }
@@ -41,6 +54,7 @@ export const updateBusinessHours = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const tenantId = await getTenantId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
     const { error } = await supabaseAdmin
       .from("whatsapp_config")
       .update({
@@ -50,5 +64,71 @@ export const updateBusinessHours = createServerFn({ method: "POST" })
       } as any)
       .eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
+
+    if (typeof data.address === "string") {
+      const { data: t } = await supabaseAdmin
+        .from("tenants")
+        .select("settings")
+        .eq("id", tenantId)
+        .maybeSingle();
+      const settings = ((t?.settings as Record<string, unknown> | null) ?? {});
+      settings.address = data.address;
+      const { error: upErr } = await supabaseAdmin
+        .from("tenants")
+        .update({ settings, timezone: data.timezone || "America/Sao_Paulo", updated_at: new Date().toISOString() } as any)
+        .eq("id", tenantId);
+      if (upErr) throw new Error(upErr.message);
+    }
+
     return { ok: true };
+  });
+
+/**
+ * Resolve IANA timezone from a free-form address using public APIs:
+ *  1) Nominatim (OpenStreetMap) -> lat/lng
+ *  2) timeapi.io -> IANA timezone
+ */
+export const resolveTimezoneFromAddress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => {
+    const i = input as { address: string };
+    if (!i?.address || typeof i.address !== "string" || i.address.trim().length < 5) {
+      throw new Error("Endereço inválido");
+    }
+    return { address: i.address.trim() };
+  })
+  .handler(async ({ data }) => {
+    const geoUrl =
+      "https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=" +
+      encodeURIComponent(data.address);
+
+    const geoRes = await fetch(geoUrl, {
+      headers: {
+        "User-Agent": "OticaCatelanCRM/1.0 (timezone-resolver)",
+        "Accept-Language": "pt-BR",
+      },
+    });
+    if (!geoRes.ok) throw new Error("Falha na geocodificação (Nominatim)");
+    const geo = (await geoRes.json()) as Array<{
+      lat: string;
+      lon: string;
+      display_name: string;
+    }>;
+    if (!Array.isArray(geo) || geo.length === 0) {
+      throw new Error("Endereço não encontrado");
+    }
+    const { lat, lon, display_name } = geo[0];
+
+    const tzUrl = `https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lon}`;
+    const tzRes = await fetch(tzUrl, { headers: { Accept: "application/json" } });
+    if (!tzRes.ok) throw new Error("Falha ao resolver fuso (timeapi.io)");
+    const tz = (await tzRes.json()) as { timeZone?: string };
+    if (!tz?.timeZone) throw new Error("Fuso não retornado pela API");
+
+    return {
+      timezone: tz.timeZone,
+      lat: Number(lat),
+      lon: Number(lon),
+      display_name,
+    };
   });
