@@ -126,6 +126,16 @@ function Equipe() {
   const isManager = role ? MANAGER_ROLES.has(role) : false;
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const toggleRefFn = useServerFn(toggleReferenceAgent);
+  const toggleRefMutation = useMutation({
+    mutationFn: ({ profileId, value }: { profileId: string; value: boolean }) =>
+      toggleRefFn({ data: { profileId, value } }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['equipe-profiles', tenantId] });
+      toast.success(vars.value ? 'Marcado como referência de atendimento' : 'Removido das referências');
+    },
+    onError: (err: any) => toast.error(err?.message ?? 'Erro ao atualizar'),
+  });
   const [search, setSearch] = useState('');
   // Atendente comum entra já filtrado nos próprios leads; gerentes/admins veem todos
   const [assigneeFilter, setAssigneeFilter] = useState<string>(
