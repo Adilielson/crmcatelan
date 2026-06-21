@@ -58,6 +58,18 @@ interface TeamLead {
   assigned_user_id: string | null;
   updated_at: string;
   sales_value: number | null;
+  last_inbound_at: string | null;
+  last_outbound_at: string | null;
+}
+
+// Retorna horas desde a última mensagem do cliente que ficou sem resposta.
+// Se não há inbound pendente (atendente ou IA já respondeu), retorna null = não está parado.
+function pendingHours(l: { last_inbound_at: string | null; last_outbound_at: string | null }) {
+  if (!l.last_inbound_at) return null;
+  const inbound = new Date(l.last_inbound_at).getTime();
+  const outbound = l.last_outbound_at ? new Date(l.last_outbound_at).getTime() : 0;
+  if (outbound >= inbound) return null; // já respondido
+  return (Date.now() - inbound) / 3_600_000;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -192,7 +204,7 @@ function Equipe() {
     queryFn: async (): Promise<TeamLead[]> => {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, full_name, phone, status, assigned_user_id, updated_at, sales_value')
+        .select('id, full_name, phone, status, assigned_user_id, updated_at, sales_value, last_inbound_at, last_outbound_at')
         .eq('tenant_id', tenantId!)
         .order('updated_at', { ascending: false });
       if (error) throw error;
@@ -219,17 +231,19 @@ function Equipe() {
     let aiSales = 0;
     let aiSalesCount = 0;
     for (const l of active) {
-      const hrs = hoursSince(l.updated_at);
+      const pend = pendingHours(l);
+      const isStale = pend !== null && pend >= STALE_HOURS;
+      const oldestCandidate = pend ?? 0;
       if (!l.assigned_user_id) {
         aiCount += 1;
-        if (hrs >= STALE_HOURS) aiStale += 1;
-        if (hrs > aiOldest) aiOldest = hrs;
+        if (isStale) aiStale += 1;
+        if (oldestCandidate > aiOldest) aiOldest = oldestCandidate;
         continue;
       }
       const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
       cur.count += 1;
-      if (hrs >= STALE_HOURS) cur.stale += 1;
-      if (hrs > cur.oldestHrs) cur.oldestHrs = hrs;
+      if (isStale) cur.stale += 1;
+      if (oldestCandidate > cur.oldestHrs) cur.oldestHrs = oldestCandidate;
       byUser.set(l.assigned_user_id, cur);
     }
     // Soma vendas fechadas (status = showed_up) por atendente, com base no valor da ficha
@@ -552,9 +566,9 @@ function Equipe() {
                 const seller = l.assigned_user_id
                   ? profileById.get(l.assigned_user_id)
                   : null;
-                const hrs = hoursSince(l.updated_at);
                 const isActive = ACTIVE_STATUSES.has(l.status);
-                const isStale = isActive && hrs >= STALE_HOURS;
+                const pend = pendingHours(l);
+                const isStale = isActive && pend !== null && pend >= STALE_HOURS;
                 return (
                   <TableRow key={l.id}>
                     <TableCell>
@@ -580,7 +594,12 @@ function Equipe() {
                       >
                         {isStale && <AlertTriangle className="h-3 w-3" />}
                         {(() => {
-                          const d = l.updated_at ? new Date(l.updated_at) : null;
+                          // Se parado: tempo desde a mensagem do cliente sem resposta.
+                          // Senão: tempo desde a última interação (qualquer direção) ou updated_at.
+                          const refIso = isStale
+                            ? l.last_inbound_at
+                            : (l.last_outbound_at || l.last_inbound_at || l.updated_at);
+                          const d = refIso ? new Date(refIso) : null;
                           if (!d || Number.isNaN(d.getTime())) return '—';
                           try {
                             return formatDistanceToNow(d, { addSuffix: true, locale: ptBR });
