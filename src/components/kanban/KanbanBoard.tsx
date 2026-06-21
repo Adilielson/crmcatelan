@@ -405,13 +405,21 @@ export function KanbanBoard() {
         </DialogContent>
       </Dialog>
 
-      {/* Column create/edit dialog */}
+      {/* Column create/edit dialog (per-column from dropdown menu) */}
       <KanbanColumnDialog
         open={columnDialogOpen}
         onOpenChange={(v) => { setColumnDialogOpen(v); if (!v) setEditingColumn(null); }}
         editing={editingColumn}
         nextPosition={nextPosition}
       />
+
+      {/* Columns settings (list + reorder + add) */}
+      <KanbanColumnsSettingsDialog
+        open={columnsSettingsOpen}
+        onOpenChange={setColumnsSettingsOpen}
+        columns={columns}
+      />
+
 
       {/* Delete column confirmation */}
       <Dialog open={!!deletingColumn} onOpenChange={(v) => !v && setDeletingColumn(null)}>
