@@ -22,6 +22,29 @@ function currentMonthISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+// Aceita formato BR: "70.000", "70.000,50", "70000", "70000.50"
+// Regras: se houver vírgula, ela é o decimal e pontos são milhar.
+// Sem vírgula: pontos são tratados como separador de milhar.
+function parseBRNumber(input: string | number | null | undefined): number {
+  if (input === null || input === undefined) return 0;
+  if (typeof input === "number") return isFinite(input) ? input : 0;
+  const s = String(input).trim();
+  if (!s) return 0;
+  let normalized: string;
+  if (s.includes(",")) {
+    normalized = s.replace(/\./g, "").replace(",", ".");
+  } else {
+    normalized = s.replace(/\./g, "");
+  }
+  const n = Number(normalized);
+  return isFinite(n) ? n : 0;
+}
+
+function formatBRNumber(n: number): string {
+  if (!isFinite(n)) return "0";
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
 export function GoalsSettings() {
   const list = useServerFn(listConsultationTypes);
   const upsertCT = useServerFn(upsertConsultationType);
