@@ -107,7 +107,7 @@ export function GoalsSettings() {
         data: {
           id: ct.id,
           name: ct.name,
-          default_value: Number(ct.default_value) || 0,
+          default_value: parseBRNumber(ct.default_value),
           is_active: ct.is_active,
         },
       });
