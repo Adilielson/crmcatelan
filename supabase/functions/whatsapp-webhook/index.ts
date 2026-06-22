@@ -270,18 +270,22 @@ function extractAdContext(message: Record<string, unknown>, root: Record<string,
   const ear = asObject((ctxInfo as any).externalAdReply);
   const ctwa = asObject(
     (message as any).ctwaContext ?? (message as any).adReply ??
-    (root as any).ctwaContext ?? (root as any).referral ?? (root as any).adReply,
+    (message as any).referral ?? (message as any).referralMessage ??
+    (root as any).ctwaContext ?? (root as any).referral ?? (root as any).adReply ??
+    (root as any).referralMessage ?? (root as any).source,
   );
 
   const ad_id = pickString(
     (ear as any).sourceId, (ear as any).source_id,
     (ctwa as any).sourceId, (ctwa as any).source_id,
-    (ctwa as any).ad_id, (ctwa as any).adId,
+    (ctwa as any).ad_id, (ctwa as any).adId, (ctwa as any).source_id,
+    (root as any).ad_id, (root as any).adId,
   );
   const ad_name = pickString(
     (ear as any).sourceName, (ctwa as any).sourceName,
     (ear as any).title, (ctwa as any).title,
     (ctwa as any).ad_name, (ctwa as any).adName,
+    (root as any).ad_name, (root as any).adName,
   );
   const ad_headline = pickString((ear as any).title, (ctwa as any).headline);
   const ad_body = pickString((ear as any).body, (ctwa as any).body, (ctwa as any).description);
