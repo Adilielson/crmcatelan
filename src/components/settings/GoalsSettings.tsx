@@ -79,9 +79,9 @@ export function GoalsSettings() {
       const row = await getGoal({ data: { month: `${month}-01`, unit_id: null } });
       if (row) {
         setGoal({
-          bronze: String(Number(row.bronze) || 0),
-          gold: String(Number(row.gold) || 0),
-          diamond: String(Number(row.diamond) || 0),
+          bronze: formatBRNumber(Number(row.bronze) || 0),
+          gold: formatBRNumber(Number(row.gold) || 0),
+          diamond: formatBRNumber(Number(row.diamond) || 0),
           active_tier: (row.active_tier as Tier) ?? "bronze",
         });
       } else {
