@@ -202,8 +202,8 @@ export function GoalsSettings() {
                     inputMode="decimal"
                     value={String(ct.default_value ?? "")}
                     onChange={(e) => {
-                      const v = e.target.value.replace(",", ".");
-                      if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                      const v = e.target.value;
+                      if (v !== "" && !/^[\d.,]*$/.test(v)) return;
                       setTypes((arr) =>
                         arr.map((x) => (x.id === ct.id ? { ...x, default_value: v } : x)),
                       );
