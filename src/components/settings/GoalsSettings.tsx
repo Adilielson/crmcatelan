@@ -22,6 +22,29 @@ function currentMonthISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+// Aceita formato BR: "70.000", "70.000,50", "70000", "70000.50"
+// Regras: se houver vírgula, ela é o decimal e pontos são milhar.
+// Sem vírgula: pontos são tratados como separador de milhar.
+function parseBRNumber(input: string | number | null | undefined): number {
+  if (input === null || input === undefined) return 0;
+  if (typeof input === "number") return isFinite(input) ? input : 0;
+  const s = String(input).trim();
+  if (!s) return 0;
+  let normalized: string;
+  if (s.includes(",")) {
+    normalized = s.replace(/\./g, "").replace(",", ".");
+  } else {
+    normalized = s.replace(/\./g, "");
+  }
+  const n = Number(normalized);
+  return isFinite(n) ? n : 0;
+}
+
+function formatBRNumber(n: number): string {
+  if (!isFinite(n)) return "0";
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
 export function GoalsSettings() {
   const list = useServerFn(listConsultationTypes);
   const upsertCT = useServerFn(upsertConsultationType);
@@ -56,9 +79,9 @@ export function GoalsSettings() {
       const row = await getGoal({ data: { month: `${month}-01`, unit_id: null } });
       if (row) {
         setGoal({
-          bronze: String(Number(row.bronze) || 0),
-          gold: String(Number(row.gold) || 0),
-          diamond: String(Number(row.diamond) || 0),
+          bronze: formatBRNumber(Number(row.bronze) || 0),
+          gold: formatBRNumber(Number(row.gold) || 0),
+          diamond: formatBRNumber(Number(row.diamond) || 0),
           active_tier: (row.active_tier as Tier) ?? "bronze",
         });
       } else {
@@ -84,7 +107,7 @@ export function GoalsSettings() {
         data: {
           id: ct.id,
           name: ct.name,
-          default_value: Number(ct.default_value) || 0,
+          default_value: parseBRNumber(ct.default_value),
           is_active: ct.is_active,
         },
       });
@@ -96,7 +119,7 @@ export function GoalsSettings() {
 
   async function addType() {
     const name = newType.name.trim();
-    const value = Number(newType.default_value) || 0;
+    const value = parseBRNumber(newType.default_value);
     if (!name) return toast.error("Informe o nome");
     try {
       await upsertCT({ data: { name, default_value: value, is_active: true } });
@@ -125,9 +148,9 @@ export function GoalsSettings() {
         data: {
           month: `${month}-01`,
           unit_id: null,
-          bronze: Number(goal.bronze) || 0,
-          gold: Number(goal.gold) || 0,
-          diamond: Number(goal.diamond) || 0,
+          bronze: parseBRNumber(goal.bronze),
+          gold: parseBRNumber(goal.gold),
+          diamond: parseBRNumber(goal.diamond),
           active_tier: goal.active_tier,
         },
       });
@@ -179,8 +202,8 @@ export function GoalsSettings() {
                     inputMode="decimal"
                     value={String(ct.default_value ?? "")}
                     onChange={(e) => {
-                      const v = e.target.value.replace(",", ".");
-                      if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                      const v = e.target.value;
+                      if (v !== "" && !/^[\d.,]*$/.test(v)) return;
                       setTypes((arr) =>
                         arr.map((x) => (x.id === ct.id ? { ...x, default_value: v } : x)),
                       );
@@ -238,8 +261,8 @@ export function GoalsSettings() {
               placeholder="0,00"
               value={newType.default_value}
               onChange={(e) => {
-                const v = e.target.value.replace(",", ".");
-                if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                const v = e.target.value;
+                if (v !== "" && !/^[\d.,]*$/.test(v)) return;
                 setNewType((n) => ({ ...n, default_value: v }));
               }}
               className="h-10 mt-2 text-right"
@@ -312,8 +335,8 @@ export function GoalsSettings() {
                       inputMode="decimal"
                       value={goal[tier]}
                       onChange={(e) => {
-                        const v = e.target.value.replace(",", ".");
-                        if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                        const v = e.target.value;
+                        if (v !== "" && !/^[\d.,]*$/.test(v)) return;
                         setGoal((g) => ({ ...g, [tier]: v }));
                       }}
                       className="h-11 text-lg font-black text-ink text-right"
