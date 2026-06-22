@@ -261,8 +261,8 @@ export function GoalsSettings() {
               placeholder="0,00"
               value={newType.default_value}
               onChange={(e) => {
-                const v = e.target.value.replace(",", ".");
-                if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                const v = e.target.value;
+                if (v !== "" && !/^[\d.,]*$/.test(v)) return;
                 setNewType((n) => ({ ...n, default_value: v }));
               }}
               className="h-10 mt-2 text-right"
