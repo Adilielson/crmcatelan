@@ -538,7 +538,7 @@ function Chat() {
   )
 
   return (
-    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-160px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
+    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-72px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
 
 
 
