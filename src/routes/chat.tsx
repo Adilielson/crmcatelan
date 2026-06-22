@@ -996,7 +996,7 @@ function Chat() {
       </div>
 
       {/* Coluna 3: SDR Insights — visível só em xl+ */}
-      <div className="hidden xl:flex w-[340px] flex-shrink-0 border-l border-gray-100 bg-white overflow-hidden flex-col">
+      <div className="hidden xl:flex w-[380px] 2xl:w-[440px] flex-shrink-0 border-l border-gray-100 bg-white overflow-hidden flex-col">
         {insightsPanel}
       </div>
 
