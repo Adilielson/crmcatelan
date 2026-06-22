@@ -783,6 +783,58 @@ function Chat() {
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50/50 mobile-no-scrollbar thin-scrollbar">
               <div className="p-8 space-y-4 min-h-full">
+                {currentLead && (currentLead.ad_id || currentLead.ad_name || currentLead.ad_headline || currentLead.ad_body || currentLead.ad_thumbnail_url || currentLead.ad_source_url || currentLead.ctwa_clid) && (() => {
+                  const src = (currentLead.ad_source_url || '').toLowerCase()
+                  const platform = src.includes('instagram') ? 'Instagram' : src.includes('facebook') || src.includes('fb.') ? 'Facebook' : 'Meta Ads'
+                  return (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setDetailsOpen(true)}
+                        className="w-full max-w-md text-left rounded-2xl border border-blue-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border-b border-blue-100">
+                          <Megaphone className="w-3.5 h-3.5 text-blue-600" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Anúncio do {platform}</span>
+                          {currentLead.ad_source_url && (
+                            <a
+                              href={currentLead.ad_source_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-auto inline-flex items-center gap-1 text-[10px] font-black text-blue-700 hover:underline"
+                            >
+                              Abrir <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex gap-3 p-3">
+                          {currentLead.ad_thumbnail_url ? (
+                            <img src={currentLead.ad_thumbnail_url} alt="Criativo" className="w-16 h-16 rounded-lg object-cover border border-blue-100 shrink-0" />
+                          ) : (
+                            <div className="w-16 h-16 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                              <Megaphone className="w-6 h-6 text-blue-300" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="text-sm font-black text-ink truncate">{currentLead.ad_name || currentLead.ad_headline || 'Click-to-WhatsApp'}</div>
+                            {currentLead.ad_headline && currentLead.ad_name && (
+                              <div className="text-xs font-bold text-blue-900 truncate">{currentLead.ad_headline}</div>
+                            )}
+                            {currentLead.ad_body && (
+                              <p className="text-[11px] text-gray-600 leading-snug line-clamp-2">{currentLead.ad_body}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="px-3 pb-3">
+                          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                            Conversa iniciada pelo anúncio · Mensagem padrão do Meta enviada ao lead
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  )
+                })()}
                 {displayConv.messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center text-center py-16 opacity-70">
                     <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
