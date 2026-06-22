@@ -335,8 +335,8 @@ export function GoalsSettings() {
                       inputMode="decimal"
                       value={goal[tier]}
                       onChange={(e) => {
-                        const v = e.target.value.replace(",", ".");
-                        if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+                        const v = e.target.value;
+                        if (v !== "" && !/^[\d.,]*$/.test(v)) return;
                         setGoal((g) => ({ ...g, [tier]: v }));
                       }}
                       className="h-11 text-lg font-black text-ink text-right"
