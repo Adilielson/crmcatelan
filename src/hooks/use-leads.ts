@@ -45,6 +45,21 @@ export interface DBLead {
   ia_receita_validade: string | null;
   prescription_image_path: string | null;
   prescription_ocr_at: string | null;
+  first_contact_at: string | null;
+  ad_id: string | null;
+  ad_name: string | null;
+  ad_headline: string | null;
+  ad_body: string | null;
+  ad_thumbnail_url: string | null;
+  ad_source_url: string | null;
+  ad_media_type: string | null;
+  ctwa_clid: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  ad_captured_at: string | null;
   created_at: string;
   updated_at: string;
 }
