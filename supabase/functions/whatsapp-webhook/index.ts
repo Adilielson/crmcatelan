@@ -550,6 +550,18 @@ Deno.serve(async (req) => {
 
     console.log(`[webhook] tenant=${tenantId} event=${eventType} keys=${Object.keys(b).join(",")}`);
 
+    // ── DEBUG: loga payload bruto de eventos desconhecidos (7 dias) ──────
+    try {
+      await adminClient.from("webhook_debug_logs").insert({
+        tenant_id: tenantId,
+        event_type: eventType,
+        payload: body,
+        received_at: new Date().toISOString(),
+      });
+    } catch {
+      // tabela pode não existir ainda — ignora
+    }
+
     // ── Connection events ──────────────────────────────────────────────────
     if (eventType.includes("connect") || eventType === "status") {
       const connected = String(b.status ?? b.state ?? "").toLowerCase();
@@ -560,6 +572,58 @@ Deno.serve(async (req) => {
           .from("whatsapp_config")
           .update({ is_connected: isConn, updated_at: new Date().toISOString() })
           .eq("tenant_id", tenantId);
+      }
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── Lead events (uazapi "Leads" event) ───────────────────────────────
+    // Quando um contato é identificado como lead de anúncio, a uazapi envia
+    // um evento separado com dados do perfil e possivelmente do anúncio.
+    if (eventType === "lead" || eventType === "leads") {
+      const leadPhone = cleanPhone(pickString(b.phone, b.wa_id, b.jid, b.number, b.id));
+      const leadName = pickString(b.name, b.pushName, b.notifyName, b.verifiedName);
+      const leadAvatar = pickString(b.image, b.imageUrl, b.profilePicUrl, b.avatar, b.photo);
+      const leadData = asObject(b.lead ?? b.data ?? b.contact ?? b);
+
+      if (leadPhone) {
+        // Tenta capturar contexto de anúncio do payload do lead
+        const adCtx = extractAdContext(leadData, b);
+        console.log(`[webhook] lead event phone=${leadPhone} name=${leadName} ad_id=${adCtx?.ad_id ?? "-"}`);
+
+        // Localiza ou cria lead
+        const { data: existing } = await adminClient
+          .from("leads")
+          .select("id, full_name, source, ad_id, ctwa_clid")
+          .eq("tenant_id", tenantId)
+          .eq("phone", leadPhone)
+          .maybeSingle();
+
+        if (existing) {
+          const updates: Record<string, unknown> = {};
+          if (!existing.full_name && isValidContactName(leadName, leadPhone)) updates.full_name = leadName;
+          if (leadAvatar) updates.avatar_url = leadAvatar;
+          if (adCtx && (!existing.ad_id || !existing.ctwa_clid)) {
+            Object.assign(updates, adCtx, { ad_captured_at: new Date().toISOString() });
+            if (!existing.source || existing.source === "whatsapp") updates.source = "ctwa_ads";
+          }
+          if (Object.keys(updates).length) {
+            await adminClient.from("leads").update(updates).eq("id", existing.id);
+            console.log(`[webhook] lead ${existing.id} atualizado via evento lead`);
+          }
+        } else {
+          const insert: Record<string, unknown> = {
+            tenant_id: tenantId,
+            phone: leadPhone,
+            full_name: isValidContactName(leadName, leadPhone) ? leadName : null,
+            status: "open",
+            source: adCtx ? "ctwa_ads" : "whatsapp",
+            first_contact_at: new Date().toISOString(),
+            avatar_url: leadAvatar || null,
+          };
+          if (adCtx) Object.assign(insert, adCtx, { ad_captured_at: new Date().toISOString() });
+          await adminClient.from("leads").insert(insert);
+          console.log(`[webhook] lead criado via evento lead: ${leadPhone}`);
+        }
       }
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
