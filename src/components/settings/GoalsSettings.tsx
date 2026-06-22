@@ -148,9 +148,9 @@ export function GoalsSettings() {
         data: {
           month: `${month}-01`,
           unit_id: null,
-          bronze: Number(goal.bronze) || 0,
-          gold: Number(goal.gold) || 0,
-          diamond: Number(goal.diamond) || 0,
+          bronze: parseBRNumber(goal.bronze),
+          gold: parseBRNumber(goal.gold),
+          diamond: parseBRNumber(goal.diamond),
           active_tier: goal.active_tier,
         },
       });
