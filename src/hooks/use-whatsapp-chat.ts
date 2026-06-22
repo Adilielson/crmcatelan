@@ -117,17 +117,21 @@ export function useWhatsAppChat() {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    if (!tenant?.id) return;
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!tenant?.id) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+    if (!silent) setLoading(true);
     const { data, error } = await db
       .from('whatsapp_message_logs')
       .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
       .eq('tenant_id', tenant.id)
-      .order('sent_at', { ascending: true })
-      .limit(500);
+      .order('sent_at', { ascending: false })
+      .limit(1000);
     if (!error && data) {
-      const rows = data as LogRow[];
+      const rows = [...(data as LogRow[])].reverse();
       const resolved = await Promise.all(rows.map((r) => resolveMediaUrl(r)));
       setMessages(rows.map((r, i) => mapRowSync(r, resolved[i])));
     }
@@ -135,6 +139,14 @@ export function useWhatsAppChat() {
   }, [tenant?.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Fallback de sincronização: se o realtime perder algum evento enquanto a aba
+  // está em segundo plano, a lista se atualiza sozinha sem depender de reload.
+  useEffect(() => {
+    if (!tenant?.id) return;
+    const id = window.setInterval(() => { void load(true); }, 15_000);
+    return () => window.clearInterval(id);
+  }, [tenant?.id, load]);
 
   // Realtime: novas mensagens
   useEffect(() => {
@@ -153,7 +165,9 @@ export function useWhatsAppChat() {
           const row = payload.new as LogRow;
           const resolved = await resolveMediaUrl(row);
           setMessages((prev) =>
-            prev.some((m) => m.id === row.id) ? prev : [...prev, mapRowSync(row, resolved)]
+            prev.some((m) => m.id === row.id)
+              ? prev
+              : [...prev, mapRowSync(row, resolved)].sort((a, b) => (a.at > b.at ? 1 : -1))
           );
         }
       )
