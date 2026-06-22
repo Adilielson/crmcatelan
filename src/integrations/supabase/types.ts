@@ -2339,6 +2339,30 @@ export type Database = {
           },
         ]
       }
+      webhook_debug_logs: {
+        Row: {
+          event_type: string | null
+          id: string
+          payload: Json | null
+          received_at: string
+          tenant_id: string
+        }
+        Insert: {
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          received_at?: string
+          tenant_id?: string
+        }
+        Update: {
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          received_at?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       whatsapp_config: {
         Row: {
           business_hours: Json
@@ -2575,6 +2599,7 @@ export type Database = {
         Args: { _from: string; _tenant_id: string; _to: string }
         Returns: number
       }
+      clean_old_webhook_debug_logs: { Args: never; Returns: undefined }
       get_active_ai_credential: {
         Args: {
           _provider?: Database["public"]["Enums"]["ai_provider"]
