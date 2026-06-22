@@ -270,18 +270,22 @@ function extractAdContext(message: Record<string, unknown>, root: Record<string,
   const ear = asObject((ctxInfo as any).externalAdReply);
   const ctwa = asObject(
     (message as any).ctwaContext ?? (message as any).adReply ??
-    (root as any).ctwaContext ?? (root as any).referral ?? (root as any).adReply,
+    (message as any).referral ?? (message as any).referralMessage ??
+    (root as any).ctwaContext ?? (root as any).referral ?? (root as any).adReply ??
+    (root as any).referralMessage ?? (root as any).source,
   );
 
   const ad_id = pickString(
     (ear as any).sourceId, (ear as any).source_id,
     (ctwa as any).sourceId, (ctwa as any).source_id,
-    (ctwa as any).ad_id, (ctwa as any).adId,
+    (ctwa as any).ad_id, (ctwa as any).adId, (ctwa as any).source_id,
+    (root as any).ad_id, (root as any).adId,
   );
   const ad_name = pickString(
     (ear as any).sourceName, (ctwa as any).sourceName,
     (ear as any).title, (ctwa as any).title,
     (ctwa as any).ad_name, (ctwa as any).adName,
+    (root as any).ad_name, (root as any).adName,
   );
   const ad_headline = pickString((ear as any).title, (ctwa as any).headline);
   const ad_body = pickString((ear as any).body, (ctwa as any).body, (ctwa as any).description);
@@ -304,17 +308,24 @@ function extractAdContext(message: Record<string, unknown>, root: Record<string,
     (ear as any).ctwa_clid, (root as any).ctwa_clid,
   );
 
-  const hasAny = ad_id || ad_name || ad_headline || ad_source_url || ad_thumbnail_url || ctwa_clid;
+  const utms = parseUtmsFromUrl(ad_source_url);
+  const utm_source = pickString((root as any).utm_source, (message as any).utm_source, (ctwa as any).utm_source) ?? utms.utm_source ?? null;
+  const utm_medium = pickString((root as any).utm_medium, (message as any).utm_medium, (ctwa as any).utm_medium) ?? utms.utm_medium ?? null;
+  const utm_campaign = pickString((root as any).utm_campaign, (message as any).utm_campaign, (ctwa as any).utm_campaign) ?? utms.utm_campaign ?? null;
+  const utm_content = pickString((root as any).utm_content, (message as any).utm_content, (ctwa as any).utm_content) ?? utms.utm_content ?? null;
+  const utm_term = pickString((root as any).utm_term, (message as any).utm_term, (ctwa as any).utm_term) ?? utms.utm_term ?? null;
+
+  const hasAny = ad_id || ad_name || ad_headline || ad_source_url || ad_thumbnail_url || ctwa_clid ||
+    utm_source || utm_medium || utm_campaign || utm_content || utm_term;
   if (!hasAny) return null;
 
-  const utms = parseUtmsFromUrl(ad_source_url);
   return {
     ad_id, ad_name, ad_headline, ad_body, ad_thumbnail_url, ad_source_url, ad_media_type, ctwa_clid,
-    utm_source:   utms.utm_source   ?? null,
-    utm_medium:   utms.utm_medium   ?? null,
-    utm_campaign: utms.utm_campaign ?? null,
-    utm_content:  utms.utm_content  ?? null,
-    utm_term:     utms.utm_term     ?? null,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
+    utm_term,
   };
 }
 

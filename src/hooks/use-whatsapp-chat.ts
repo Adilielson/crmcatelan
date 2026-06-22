@@ -44,6 +44,7 @@ interface LogRow {
 }
 
 const MEDIA_BUCKET = 'whatsapp-media';
+const PAGE_SIZE = 1000;
 
 async function resolveMediaUrl(row: Pick<LogRow, 'media_storage_path' | 'media_url'>): Promise<string | null> {
   if (row.media_storage_path) {
@@ -124,16 +125,25 @@ export function useWhatsAppChat() {
       return;
     }
     if (!silent) setLoading(true);
-    const { data, error } = await db
-      .from('whatsapp_message_logs')
-      .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
-      .eq('tenant_id', tenant.id)
-      .order('sent_at', { ascending: false })
-      .limit(1000);
-    if (!error && data) {
-      const rows = [...(data as LogRow[])].reverse();
+    const allRows: LogRow[] = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error } = await db
+        .from('whatsapp_message_logs')
+        .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
+        .eq('tenant_id', tenant.id)
+        .order('sent_at', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+      if (error) break;
+      const page = (data ?? []) as LogRow[];
+      allRows.push(...page);
+      if (page.length < PAGE_SIZE) break;
+    }
+    if (allRows.length) {
+      const rows = allRows.sort((a, b) => (a.sent_at > b.sent_at ? 1 : -1));
       const resolved = await Promise.all(rows.map((r) => resolveMediaUrl(r)));
       setMessages(rows.map((r, i) => mapRowSync(r, resolved[i])));
+    } else {
+      setMessages([]);
     }
     setLoading(false);
   }, [tenant?.id]);

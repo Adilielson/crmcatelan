@@ -208,12 +208,12 @@ function Chat() {
   // Casar o lead com o telefone selecionado (normalizando dígitos).
   // Se veio pela Fila (lead novo, sem conversa ainda), ainda assim achamos o lead.
   const currentLead = useMemo(() => {
-    if (!selectedPhone) return leads[0]
+    if (!selectedPhone) return null
     const target = onlyDigits(selectedPhone)
     return (
       leads.find((l) => onlyDigits(l.phone) === target) ||
       leads.find((l) => target.endsWith(onlyDigits(l.phone)) && onlyDigits(l.phone).length >= 8) ||
-      leads[0]
+      null
     )
   }, [leads, selectedPhone])
   const isAiHandling = currentLead ? !currentLead.assigned_user_id : false

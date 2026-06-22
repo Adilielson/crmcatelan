@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Brain, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag } from 'lucide-react';
+import { Brain, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag, Megaphone, ExternalLink } from 'lucide-react';
 import { DBLead } from '@/hooks/use-leads';
 import { useConsultationSummary } from '@/hooks/use-consultation-summary';
 import { PrescriptionCard } from '@/components/leads/PrescriptionCard';
@@ -29,6 +29,10 @@ export function LeadProfilePanel({
   onOpenChat?: () => void;
 }) {
   const { data: summary } = useConsultationSummary(lead.id);
+  const hasAdContext = !!(
+    lead.ad_id || lead.ad_name || lead.ad_headline || lead.ad_body || lead.ad_source_url ||
+    lead.ctwa_clid || lead.utm_campaign || lead.utm_content || lead.utm_source
+  );
 
   return (
     <div className={cn('space-y-5', compact && 'space-y-4')}>
@@ -83,6 +87,38 @@ export function LeadProfilePanel({
 
       {/* Trilha visual do funil */}
       <StageStepper stage={lead.status} />
+
+      {/* Origem Meta Ads / Click-to-WhatsApp */}
+      {hasAdContext && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <Megaphone className="w-3.5 h-3.5 text-blue-600" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Anúncio de origem</h4>
+          </div>
+          <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-xs text-ink space-y-3">
+            {lead.ad_thumbnail_url && (
+              <img src={lead.ad_thumbnail_url} alt="Criativo do anúncio" className="h-24 w-full rounded-lg object-cover border border-blue-100" />
+            )}
+            <div className="space-y-1">
+              <div className="font-black text-sm">{lead.ad_name || lead.ad_headline || 'Meta Ads / Click-to-WhatsApp'}</div>
+              {lead.ad_headline && lead.ad_name && <div className="font-bold text-blue-900">{lead.ad_headline}</div>}
+              {lead.ad_body && <p className="text-gray-600 leading-relaxed">{lead.ad_body}</p>}
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 text-[11px] text-gray-600">
+              {lead.ad_id && <div><span className="font-black text-gray-400 uppercase">ID:</span> {lead.ad_id}</div>}
+              {lead.utm_campaign && <div><span className="font-black text-gray-400 uppercase">Campanha:</span> {lead.utm_campaign}</div>}
+              {lead.utm_content && <div><span className="font-black text-gray-400 uppercase">Criativo:</span> {lead.utm_content}</div>}
+              {lead.utm_source && <div><span className="font-black text-gray-400 uppercase">Origem:</span> {lead.utm_source}</div>}
+              {lead.ctwa_clid && <div className="truncate"><span className="font-black text-gray-400 uppercase">CTWA:</span> {lead.ctwa_clid}</div>}
+            </div>
+            {lead.ad_source_url && (
+              <a href={lead.ad_source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-black text-blue-700 hover:underline">
+                Abrir origem do anúncio <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
 
       {/* IA Insights */}
