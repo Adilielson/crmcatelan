@@ -538,7 +538,7 @@ function Chat() {
   )
 
   return (
-    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-160px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
+    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-72px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
 
 
 
@@ -996,7 +996,7 @@ function Chat() {
       </div>
 
       {/* Coluna 3: SDR Insights — visível só em xl+ */}
-      <div className="hidden xl:flex w-[340px] flex-shrink-0 border-l border-gray-100 bg-white overflow-hidden flex-col">
+      <div className="hidden xl:flex w-[380px] 2xl:w-[440px] flex-shrink-0 border-l border-gray-100 bg-white overflow-hidden flex-col">
         {insightsPanel}
       </div>
 

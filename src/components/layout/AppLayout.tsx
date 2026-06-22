@@ -608,9 +608,15 @@ const AppLayout = () => {
       <main
         className="pt-14 min-h-screen pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0"
       >
-        <div className="max-w-[1600px] mx-auto w-full p-3 sm:p-4 md:p-6 lg:p-8">
-          <Outlet />
-        </div>
+        {location.pathname === '/chat' ? (
+          <div className="w-full px-2 sm:px-3 md:px-4">
+            <Outlet />
+          </div>
+        ) : (
+          <div className="max-w-[1600px] mx-auto w-full p-3 sm:p-4 md:p-6 lg:p-8">
+            <Outlet />
+          </div>
+        )}
       </main>
 
       {/* Bottom nav mobile */}
