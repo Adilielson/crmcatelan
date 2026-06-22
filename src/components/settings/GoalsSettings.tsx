@@ -119,7 +119,7 @@ export function GoalsSettings() {
 
   async function addType() {
     const name = newType.name.trim();
-    const value = Number(newType.default_value) || 0;
+    const value = parseBRNumber(newType.default_value);
     if (!name) return toast.error("Informe o nome");
     try {
       await upsertCT({ data: { name, default_value: value, is_active: true } });
