@@ -117,13 +117,13 @@ export function useWhatsAppChat() {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!tenant?.id) {
       setMessages([]);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!silent) setLoading(true);
     const { data, error } = await db
       .from('whatsapp_message_logs')
       .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
@@ -139,6 +139,14 @@ export function useWhatsAppChat() {
   }, [tenant?.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Fallback de sincronização: se o realtime perder algum evento enquanto a aba
+  // está em segundo plano, a lista se atualiza sozinha sem depender de reload.
+  useEffect(() => {
+    if (!tenant?.id) return;
+    const id = window.setInterval(() => { void load(true); }, 15_000);
+    return () => window.clearInterval(id);
+  }, [tenant?.id, load]);
 
   // Realtime: novas mensagens
   useEffect(() => {
