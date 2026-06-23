@@ -30,6 +30,7 @@ import { useKanbanColumns } from '@/hooks/use-kanban-columns'
 import { useAuthStore } from '@/hooks/use-auth'
 import { supabase } from '@/integrations/supabase/client'
 import { TransferLeadDialog } from '@/components/chat/TransferLeadDialog'
+import { AudioMessage } from '@/components/chat/AudioMessage'
 import { useServerFn } from '@tanstack/react-start'
 import { analyzeLeadConversation, suggestReplyForLead } from '@/lib/ai-insights.functions'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -865,7 +866,7 @@ function Chat() {
                           </a>
                         )}
                         {isAudio && (
-                          <audio controls src={m.mediaUrl!} className="w-64 max-w-full" />
+                          <AudioMessage src={m.mediaUrl!} mime={m.mediaMime} />
                         )}
                         {isVideo && (
                           <video controls src={m.mediaUrl!} className="rounded-xl max-h-72" />
