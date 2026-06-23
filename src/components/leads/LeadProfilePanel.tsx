@@ -86,7 +86,7 @@ export function LeadProfilePanel({
       )}
 
       {/* Trilha visual do funil */}
-      <StageStepper stage={lead.status} />
+      <StageStepper stage={lead.status} leadId={lead.id} />
 
       {/* Origem Meta Ads / Click-to-WhatsApp */}
       {hasAdContext && (
