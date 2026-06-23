@@ -1,8 +1,9 @@
-import { Check, SkipForward } from 'lucide-react';
+import { Check, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { STAGES, stageLabel, type LeadStage } from '@/hooks/use-leads';
 import { getStageColors } from './StageBadge';
 import { useLeadHistory } from '@/hooks/use-lead-history';
+
 
 /**
  * Trilha visual do funil do lead — mostra estágios concluídos, atual, pulados e futuros.
@@ -68,80 +69,86 @@ export function StageStepper({
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-100 bg-white p-4">
-        <div className="flex items-center justify-between gap-1">
+      <div className="rounded-xl border border-gray-100 bg-white p-3 sm:p-4">
+        {/* Vertical timeline — sempre cabe em qualquer largura */}
+        <ol className="space-y-2.5">
           {FUNNEL.map((s, i) => {
             const colors = getStageColors(s);
             const isPast = !isTerminal && i < currentIdx;
             const wasVisited = visitedStages.has(s);
-            // Só marcamos como "pulada" quando temos histórico carregado.
             const isSkipped = hasHistoryData && isPast && !wasVisited;
             const isDone = isPast && !isSkipped;
             const isCurrent = !isTerminal && i === currentIdx;
             const isFuture = isTerminal || i > currentIdx;
+            const isLast = i === FUNNEL.length - 1;
 
             return (
-              <div key={s} className="flex items-center flex-1 last:flex-none min-w-0">
-                <div className="flex flex-col items-center gap-1.5 min-w-0">
-                  <div
-                    className={cn(
-                      'relative w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all',
-                      isDone && 'bg-emerald-500 text-white shadow-sm shadow-emerald-200',
-                      isSkipped && 'bg-amber-50 text-amber-600 ring-2 ring-amber-300 ring-dashed',
-                      isCurrent && cn(colors.bg, colors.text, 'ring-2 ring-offset-1', colors.ring),
-                      isFuture && 'bg-gray-100 text-gray-400',
-                    )}
-                    title={isSkipped ? 'Etapa pulada — não houve transição registrada' : stageLabel(s)}
-                  >
-                    {isDone ? (
-                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                    ) : isSkipped ? (
-                      <SkipForward className="w-3 h-3" strokeWidth={3} />
-                    ) : (
-                      i + 1
-                    )}
-                    {isCurrent && (
-                      <span className={cn(
-                        'absolute inset-0 rounded-full animate-ping opacity-40',
-                        colors.dot,
-                      )} />
-                    )}
-                  </div>
+              <li key={s} className="relative flex items-center gap-3">
+                {/* Linha conectora vertical */}
+                {!isLast && (
                   <span
                     className={cn(
-                      'text-[9px] font-bold text-center uppercase tracking-wider truncate max-w-[64px] leading-tight',
-                      isCurrent && 'text-ink',
-                      isSkipped && 'text-amber-600',
-                      !isCurrent && !isSkipped && 'text-gray-400',
+                      'absolute left-[13px] top-7 w-0.5 h-[calc(100%+0.25rem)]',
+                      isDone ? 'bg-emerald-400' : isSkipped ? 'bg-amber-200' : 'bg-gray-200',
                     )}
-                    title={isSkipped ? `${stageLabel(s)} (pulada)` : stageLabel(s)}
+                  />
+                )}
+
+                {/* Marcador */}
+                <div
+                  className={cn(
+                    'relative z-10 shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all',
+                    isDone && 'bg-emerald-500 text-white shadow-sm shadow-emerald-200',
+                    isSkipped && 'bg-white text-amber-500 border-2 border-dashed border-amber-300',
+                    isCurrent && cn(colors.bg, colors.text, 'ring-2 ring-offset-1', colors.ring),
+                    isFuture && 'bg-gray-100 text-gray-400',
+                  )}
+                  title={isSkipped ? 'Etapa pulada' : stageLabel(s)}
+                >
+                  {isDone ? (
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                  ) : isSkipped ? (
+                    <Minus className="w-3.5 h-3.5" strokeWidth={3} />
+                  ) : (
+                    i + 1
+                  )}
+                  {isCurrent && (
+                    <span className={cn('absolute inset-0 rounded-full animate-ping opacity-40', colors.dot)} />
+                  )}
+                </div>
+
+                {/* Rótulo */}
+                <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                  <span
+                    className={cn(
+                      'text-xs font-bold truncate',
+                      isCurrent && 'text-ink',
+                      isDone && 'text-gray-600',
+                      isSkipped && 'text-amber-600 line-through decoration-amber-300',
+                      isFuture && 'text-gray-400',
+                    )}
                   >
                     {stageLabel(s)}
                   </span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider shrink-0">
+                    {isCurrent && <span className={cn(colors.text)}>Atual</span>}
+                    {isDone && <span className="text-emerald-600">Concluído</span>}
+                    {isSkipped && <span className="text-amber-600">Pulada</span>}
+                  </span>
                 </div>
-                {i < FUNNEL.length - 1 && (
-                  <div className="flex-1 h-0.5 mx-1 mb-5 rounded-full overflow-hidden bg-gray-100">
-                    <div
-                      className={cn(
-                        'h-full transition-all',
-                        i < currentIdx && (hasHistoryData && !visitedStages.has(FUNNEL[i + 1]) && !visitedStages.has(s)
-                          ? 'bg-amber-300 w-full'
-                          : 'bg-emerald-500 w-full'),
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
 
         {hasHistoryData && FUNNEL.some((s, i) => !isTerminal && i < currentIdx && !visitedStages.has(s)) && (
-          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 text-[10px] text-amber-600 font-bold uppercase tracking-wider">
-            <SkipForward className="w-3 h-3" strokeWidth={3} />
-            Algumas etapas foram puladas sem registro de transição
+          <div className="mt-3 pt-3 border-t border-gray-100 flex items-start gap-2 text-[10px] text-amber-600 font-bold uppercase tracking-wider leading-snug">
+            <Minus className="w-3 h-3 mt-0.5 shrink-0" strokeWidth={3} />
+            <span>Etapas puladas sem registro de transição</span>
           </div>
         )}
+
+
 
         {isTerminal && (
           <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-center gap-2 text-xs">
