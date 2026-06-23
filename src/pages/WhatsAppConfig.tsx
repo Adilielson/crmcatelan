@@ -368,6 +368,33 @@ export function WhatsAppConfig() {
         </CardContent>
       </Card>
 
+      {/* Sincronização de fotos de perfil dos contatos antigos */}
+      {hasToken && isConnected && (
+        <Card className="border-[#E5E7EB] shadow-sm rounded-[14px]">
+          <CardHeader className="pb-3 border-b border-[#F3F4F6]">
+            <CardTitle className="text-xs font-black uppercase tracking-widest text-[#6B7280] flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" /> Fotos de Perfil dos Contatos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-3">
+            <p className="text-xs text-[#6B7280] leading-relaxed">
+              Busca e salva as fotos de perfil do WhatsApp dos seus contatos já cadastrados.
+              Processa <strong>50 contatos por clique</strong>. Se ainda restarem, basta clicar novamente.
+              Contatos sem foto pública (privacidade) ficam com as iniciais.
+            </p>
+            <Button
+              variant="outline"
+              onClick={handleBackfillAvatars}
+              disabled={backfillLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${backfillLoading ? 'animate-spin' : ''}`} />
+              {backfillLoading ? 'Sincronizando...' : 'Sincronizar fotos antigas'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* QR Code */}
       {showQR && (
         <Card className="border-[#E5E7EB] shadow-sm rounded-[14px]">
