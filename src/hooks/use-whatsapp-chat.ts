@@ -132,6 +132,18 @@ export function getContactInitials(name: string | null, phone: string) {
   return formatPhoneLast4(phone).slice(0, 2);
 }
 
+export function mediaLabel(type: string | null | undefined, mime?: string | null): string {
+  const t = (type || '').toLowerCase();
+  const m = (mime || '').toLowerCase();
+  if (t.includes('audio') || m.startsWith('audio/')) return '🎤 Áudio';
+  if (t.includes('image') || t.includes('sticker') || m.startsWith('image/')) return '📷 Imagem';
+  if (t.includes('video') || m.startsWith('video/')) return '🎬 Vídeo';
+  if (t.includes('document') || t.includes('file')) return '📄 Documento';
+  if (t.includes('location')) return '📍 Localização';
+  if (t.includes('contact')) return '👤 Contato';
+  return 'Mensagem';
+}
+
 export function useWhatsAppChat() {
   const { tenant } = useAuthStore();
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
