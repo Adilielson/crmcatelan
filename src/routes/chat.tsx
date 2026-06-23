@@ -865,7 +865,7 @@ function Chat() {
                           </a>
                         )}
                         {isAudio && (
-                          <audio controls src={m.mediaUrl!} className="w-64 max-w-full" />
+                          <AudioMessage src={m.mediaUrl!} mime={m.mediaMime} />
                         )}
                         {isVideo && (
                           <video controls src={m.mediaUrl!} className="rounded-xl max-h-72" />
