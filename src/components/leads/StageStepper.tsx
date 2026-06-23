@@ -1,11 +1,14 @@
-import { Check } from 'lucide-react';
+import { Check, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { STAGES, stageLabel, type LeadStage } from '@/hooks/use-leads';
 import { getStageColors } from './StageBadge';
+import { useLeadHistory } from '@/hooks/use-lead-history';
 
 /**
- * Trilha visual do funil do lead — mostra estágios concluídos, atual e futuros.
+ * Trilha visual do funil do lead — mostra estágios concluídos, atual, pulados e futuros.
  * Estágios terminais (lost / no_show) são exibidos como "saída" do funil.
+ * Quando um leadId é informado, consulta o histórico para diferenciar etapas
+ * efetivamente percorridas de etapas que foram puladas.
  */
 
 // Ordem linear do funil "positivo" (sem perdas)
@@ -26,13 +29,31 @@ const TERMINAL_LABELS: Record<string, string> = {
 
 export function StageStepper({
   stage,
+  leadId,
   className,
 }: {
   stage: string | null | undefined;
+  leadId?: string | null;
   className?: string;
 }) {
+  const { data: history } = useLeadHistory(leadId ?? null);
+
+  // Etapas que aparecem no histórico (como destino de uma transição) ou origem inicial.
+  const visitedStages = new Set<string>();
+  if (history) {
+    for (const ev of history) {
+      if (ev.event_type !== 'stage_change') continue;
+      if (ev.stage_to) visitedStages.add(ev.stage_to);
+      if (ev.stage_from) visitedStages.add(ev.stage_from);
+    }
+  }
+  // 'open' é o estágio inicial automático — sempre considerado visitado.
+  visitedStages.add('open');
+  if (stage) visitedStages.add(stage);
+
   const isTerminal = stage && !FUNNEL.includes(stage as LeadStage);
   const currentIdx = stage ? FUNNEL.indexOf(stage as LeadStage) : -1;
+  const hasHistoryData = !!leadId && Array.isArray(history);
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -51,7 +72,11 @@ export function StageStepper({
         <div className="flex items-center justify-between gap-1">
           {FUNNEL.map((s, i) => {
             const colors = getStageColors(s);
-            const isDone = !isTerminal && i < currentIdx;
+            const isPast = !isTerminal && i < currentIdx;
+            const wasVisited = visitedStages.has(s);
+            // Só marcamos como "pulada" quando temos histórico carregado.
+            const isSkipped = hasHistoryData && isPast && !wasVisited;
+            const isDone = isPast && !isSkipped;
             const isCurrent = !isTerminal && i === currentIdx;
             const isFuture = isTerminal || i > currentIdx;
 
@@ -62,12 +87,16 @@ export function StageStepper({
                     className={cn(
                       'relative w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all',
                       isDone && 'bg-emerald-500 text-white shadow-sm shadow-emerald-200',
+                      isSkipped && 'bg-amber-50 text-amber-600 ring-2 ring-amber-300 ring-dashed',
                       isCurrent && cn(colors.bg, colors.text, 'ring-2 ring-offset-1', colors.ring),
                       isFuture && 'bg-gray-100 text-gray-400',
                     )}
+                    title={isSkipped ? 'Etapa pulada — não houve transição registrada' : stageLabel(s)}
                   >
                     {isDone ? (
                       <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    ) : isSkipped ? (
+                      <SkipForward className="w-3 h-3" strokeWidth={3} />
                     ) : (
                       i + 1
                     )}
@@ -81,9 +110,11 @@ export function StageStepper({
                   <span
                     className={cn(
                       'text-[9px] font-bold text-center uppercase tracking-wider truncate max-w-[64px] leading-tight',
-                      isCurrent ? 'text-ink' : 'text-gray-400',
+                      isCurrent && 'text-ink',
+                      isSkipped && 'text-amber-600',
+                      !isCurrent && !isSkipped && 'text-gray-400',
                     )}
-                    title={stageLabel(s)}
+                    title={isSkipped ? `${stageLabel(s)} (pulada)` : stageLabel(s)}
                   >
                     {stageLabel(s)}
                   </span>
@@ -93,7 +124,9 @@ export function StageStepper({
                     <div
                       className={cn(
                         'h-full transition-all',
-                        i < currentIdx ? 'bg-emerald-500 w-full' : 'w-0',
+                        i < currentIdx && (hasHistoryData && !visitedStages.has(FUNNEL[i + 1]) && !visitedStages.has(s)
+                          ? 'bg-amber-300 w-full'
+                          : 'bg-emerald-500 w-full'),
                       )}
                     />
                   </div>
@@ -102,6 +135,13 @@ export function StageStepper({
             );
           })}
         </div>
+
+        {hasHistoryData && FUNNEL.some((s, i) => !isTerminal && i < currentIdx && !visitedStages.has(s)) && (
+          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 text-[10px] text-amber-600 font-bold uppercase tracking-wider">
+            <SkipForward className="w-3 h-3" strokeWidth={3} />
+            Algumas etapas foram puladas sem registro de transição
+          </div>
+        )}
 
         {isTerminal && (
           <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-center gap-2 text-xs">
@@ -121,3 +161,4 @@ export function StageStepper({
     </div>
   );
 }
+
