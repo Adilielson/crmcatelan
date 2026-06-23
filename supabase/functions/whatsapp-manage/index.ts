@@ -125,6 +125,59 @@ async function uazapiDelete(path: string, token: string) {
   return parseUazapiResponse(path, res);
 }
 
+// ── Avatar helpers (mirror do whatsapp-webhook) ───────────────────────────
+const MEDIA_BUCKET = "whatsapp-media";
+
+function pickString(...values: unknown[]): string | null {
+  for (const v of values) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  }
+  return null;
+}
+
+function extFromMime(mime: string): string {
+  const m = mime.toLowerCase();
+  if (m.includes("png")) return "png";
+  if (m.includes("webp")) return "webp";
+  if (m.includes("gif")) return "gif";
+  return "jpg";
+}
+
+async function fetchContactImage(token: string, phone: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${UAZAPI_BASE_URL}/chat/GetNameAndImageURL`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token },
+      body: JSON.stringify({ number: phone, preview: false }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return pickString(
+      data?.image, data?.imageUrl, data?.imgUrl, data?.profilePicUrl,
+      data?.picture, data?.url, data?.result?.image, data?.result?.imageUrl,
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function persistAvatar(tenantId: string, phone: string, imageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(imageUrl);
+    if (!res.ok) return null;
+    const mime = res.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const path = `avatars/${tenantId}/${phone}.${extFromMime(mime)}`;
+    const { error } = await adminClient.storage
+      .from(MEDIA_BUCKET)
+      .upload(path, bytes, { contentType: mime, upsert: true });
+    if (error) return null;
+    return path;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -256,6 +309,70 @@ Deno.serve(async (req) => {
         file: audioUrl,
       });
       return json(data);
+    }
+
+    // ── Backfill de avatares de contatos antigos ───────────────────────────
+    if (action === "backfill-avatars") {
+      const limit = Math.min(Math.max(Number(body.limit) || 50, 1), 100);
+      const { data: leads, error: leadsErr } = await adminClient
+        .from("leads")
+        .select("id, phone")
+        .eq("tenant_id", tenant_id)
+        .is("avatar_url", null)
+        .not("phone", "is", null)
+        .limit(limit);
+      if (leadsErr) return json({ error: `DB: ${leadsErr.message}` }, 500);
+
+      const list = (leads ?? []).filter((l: { phone: string | null }) => {
+        const d = (l.phone || "").replace(/\D+/g, "");
+        return d.length >= 10 && d.length <= 13;
+      });
+
+      let processed = 0;
+      let updated = 0;
+      let withoutPhoto = 0;
+      const nowIso = new Date().toISOString();
+
+      for (const lead of list) {
+        processed++;
+        const phone = (lead.phone as string).replace(/\D+/g, "");
+        const imageUrl = await fetchContactImage(token, phone);
+        if (!imageUrl) {
+          // Marca o timestamp pra não tentar de novo no próximo lote
+          await adminClient
+            .from("leads")
+            .update({ avatar_updated_at: nowIso })
+            .eq("id", lead.id);
+          withoutPhoto++;
+          continue;
+        }
+        const path = await persistAvatar(tenant_id, phone, imageUrl);
+        if (!path) {
+          withoutPhoto++;
+          continue;
+        }
+        await adminClient
+          .from("leads")
+          .update({ avatar_url: path, avatar_updated_at: nowIso })
+          .eq("id", lead.id);
+        updated++;
+      }
+
+      // Conta restantes (sem avatar ainda) pra UI saber se precisa clicar de novo
+      const { count: remaining } = await adminClient
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenant_id)
+        .is("avatar_url", null)
+        .not("phone", "is", null);
+
+      return json({
+        success: true,
+        processed,
+        updated,
+        without_photo: withoutPhoto,
+        remaining: remaining ?? 0,
+      });
     }
 
     return json({ error: `Ação desconhecida: ${action}` }, 400);

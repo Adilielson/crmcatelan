@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useWhatsApp } from '@/hooks/useWhatsApp';
+import { useAuthStore } from '@/hooks/use-auth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   MessageSquare,
@@ -18,6 +20,7 @@ import {
   Eye,
   EyeOff,
   Phone,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 const UAZAPI_BASE_URL = 'https://ipazua.uazapi.com';
@@ -58,6 +61,31 @@ export function WhatsAppConfig() {
   const [showTokenText, setShowTokenText] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [backfillLoading, setBackfillLoading] = useState(false);
+  const { tenant } = useAuthStore();
+
+  const handleBackfillAvatars = async () => {
+    if (!tenant?.id) {
+      toast.error('Sem tenant ativo.');
+      return;
+    }
+    setBackfillLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-manage', {
+        body: { action: 'backfill-avatars', tenant_id: tenant.id, limit: 50 },
+      });
+      if (error) throw new Error(error.message);
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      const r = data as { processed: number; updated: number; without_photo: number; remaining: number };
+      toast.success(
+        `${r.updated} foto(s) sincronizada(s). ${r.without_photo} sem foto disponível. ${r.remaining} restantes.`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao sincronizar fotos.');
+    } finally {
+      setBackfillLoading(false);
+    }
+  };
 
   // Quando QR é exibido, faz polling a cada 10s para detectar conexão
   useEffect(() => {
@@ -339,6 +367,33 @@ export function WhatsAppConfig() {
           )}
         </CardContent>
       </Card>
+
+      {/* Sincronização de fotos de perfil dos contatos antigos */}
+      {hasToken && isConnected && (
+        <Card className="border-[#E5E7EB] shadow-sm rounded-[14px]">
+          <CardHeader className="pb-3 border-b border-[#F3F4F6]">
+            <CardTitle className="text-xs font-black uppercase tracking-widest text-[#6B7280] flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" /> Fotos de Perfil dos Contatos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-3">
+            <p className="text-xs text-[#6B7280] leading-relaxed">
+              Busca e salva as fotos de perfil do WhatsApp dos seus contatos já cadastrados.
+              Processa <strong>50 contatos por clique</strong>. Se ainda restarem, basta clicar novamente.
+              Contatos sem foto pública (privacidade) ficam com as iniciais.
+            </p>
+            <Button
+              variant="outline"
+              onClick={handleBackfillAvatars}
+              disabled={backfillLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${backfillLoading ? 'animate-spin' : ''}`} />
+              {backfillLoading ? 'Sincronizando...' : 'Sincronizar fotos antigas'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* QR Code */}
       {showQR && (
