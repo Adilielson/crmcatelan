@@ -294,7 +294,7 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     maybeRebuildStyleProfile(tenantId);
   }
 
-  return { ok: true, insight: parsed, tokens: tokensIn + tokensOut, messageCount: filtered.length };
+  return { ok: true, insight: parsed, tokens: tokensIn + tokensOut, messageCount: filtered.length, audiosAnalyzed };
 }
 
 // =================== ANALISAR CONVERSA (manual via UI) ===================
