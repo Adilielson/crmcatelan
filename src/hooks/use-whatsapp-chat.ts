@@ -46,15 +46,34 @@ interface LogRow {
 const MEDIA_BUCKET = 'whatsapp-media';
 const PAGE_SIZE = 1000;
 
-async function resolveMediaUrl(row: Pick<LogRow, 'media_storage_path' | 'media_url'>): Promise<string | null> {
+// Cache de URLs assinadas por message id, evita gerar novas URLs a cada poll
+// (caso contrário o <audio src> muda de string e o player reinicia, cortando
+// a reprodução no meio).
+interface CachedUrl { url: string; expiresAt: number }
+const signedUrlCache = new Map<string, CachedUrl>();
+const SIGNED_URL_TTL_SEC = 60 * 60; // 1h
+const SIGNED_URL_REFRESH_BEFORE_MS = 5 * 60 * 1000; // renova 5min antes
+
+async function resolveMediaUrl(row: Pick<LogRow, 'id' | 'media_storage_path' | 'media_url'>): Promise<string | null> {
   if (row.media_storage_path) {
+    const cached = signedUrlCache.get(row.id);
+    if (cached && cached.expiresAt - Date.now() > SIGNED_URL_REFRESH_BEFORE_MS) {
+      return cached.url;
+    }
     const { data } = await supabase.storage
       .from(MEDIA_BUCKET)
-      .createSignedUrl(row.media_storage_path, 60 * 60);
-    if (data?.signedUrl) return data.signedUrl;
+      .createSignedUrl(row.media_storage_path, SIGNED_URL_TTL_SEC);
+    if (data?.signedUrl) {
+      signedUrlCache.set(row.id, {
+        url: data.signedUrl,
+        expiresAt: Date.now() + SIGNED_URL_TTL_SEC * 1000,
+      });
+      return data.signedUrl;
+    }
   }
   return row.media_url;
 }
+
 
 function mapRowSync(row: LogRow, resolvedUrl: string | null): WhatsAppMessage {
   return {
