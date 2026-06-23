@@ -311,6 +311,70 @@ Deno.serve(async (req) => {
       return json(data);
     }
 
+    // ── Backfill de avatares de contatos antigos ───────────────────────────
+    if (action === "backfill-avatars") {
+      const limit = Math.min(Math.max(Number(body.limit) || 50, 1), 100);
+      const { data: leads, error: leadsErr } = await adminClient
+        .from("leads")
+        .select("id, phone")
+        .eq("tenant_id", tenant_id)
+        .is("avatar_url", null)
+        .not("phone", "is", null)
+        .limit(limit);
+      if (leadsErr) return json({ error: `DB: ${leadsErr.message}` }, 500);
+
+      const list = (leads ?? []).filter((l: { phone: string | null }) => {
+        const d = (l.phone || "").replace(/\D+/g, "");
+        return d.length >= 10 && d.length <= 13;
+      });
+
+      let processed = 0;
+      let updated = 0;
+      let withoutPhoto = 0;
+      const nowIso = new Date().toISOString();
+
+      for (const lead of list) {
+        processed++;
+        const phone = (lead.phone as string).replace(/\D+/g, "");
+        const imageUrl = await fetchContactImage(token, phone);
+        if (!imageUrl) {
+          // Marca o timestamp pra não tentar de novo no próximo lote
+          await adminClient
+            .from("leads")
+            .update({ avatar_updated_at: nowIso })
+            .eq("id", lead.id);
+          withoutPhoto++;
+          continue;
+        }
+        const path = await persistAvatar(tenant_id, phone, imageUrl);
+        if (!path) {
+          withoutPhoto++;
+          continue;
+        }
+        await adminClient
+          .from("leads")
+          .update({ avatar_url: path, avatar_updated_at: nowIso })
+          .eq("id", lead.id);
+        updated++;
+      }
+
+      // Conta restantes (sem avatar ainda) pra UI saber se precisa clicar de novo
+      const { count: remaining } = await adminClient
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenant_id)
+        .is("avatar_url", null)
+        .not("phone", "is", null);
+
+      return json({
+        success: true,
+        processed,
+        updated,
+        without_photo: withoutPhoto,
+        remaining: remaining ?? 0,
+      });
+    }
+
     return json({ error: `Ação desconhecida: ${action}` }, 400);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
