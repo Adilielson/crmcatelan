@@ -1243,6 +1243,8 @@ export type Database = {
           ad_source_url: string | null
           ad_thumbnail_url: string | null
           assigned_user_id: string | null
+          avatar_updated_at: string | null
+          avatar_url: string | null
           claimed_at: string | null
           claimed_by: string | null
           closed_at: string | null
@@ -1303,6 +1305,8 @@ export type Database = {
           ad_source_url?: string | null
           ad_thumbnail_url?: string | null
           assigned_user_id?: string | null
+          avatar_updated_at?: string | null
+          avatar_url?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
           closed_at?: string | null
@@ -1363,6 +1367,8 @@ export type Database = {
           ad_source_url?: string | null
           ad_thumbnail_url?: string | null
           assigned_user_id?: string | null
+          avatar_updated_at?: string | null
+          avatar_url?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
           closed_at?: string | null
