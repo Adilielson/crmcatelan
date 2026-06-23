@@ -799,19 +799,27 @@ Deno.serve(async (req) => {
           }
         }
 
-        const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
-          tenant_id: tenantId,
-          recipient_phone: senderPhone,
-          message_type: msgType,
-          status: "received",
-          error_message: text ? text.slice(0, 500) : null,
-          sender_name: senderName,
-          sender_avatar_url: senderAvatarUrl,
-          media_url: mediaUrl,
-          media_mime: finalMime,
-          media_storage_path: mediaStoragePath,
-        });
-        if (logErr) console.error("[webhook] log insert error:", logErr.message);
+        // Não polui o histórico com mensagens vazias (sem texto e sem mídia) —
+        // geralmente são eventos de status/notificação mal classificados.
+        const hasText = !!(text && text.trim());
+        const hasMedia = !!(mediaUrl || mediaStoragePath);
+        if (!hasText && !hasMedia) {
+          console.log(`[webhook] ignorando msg sem texto/mídia phone=${senderPhone} type=${msgType}`);
+        } else {
+          const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
+            tenant_id: tenantId,
+            recipient_phone: senderPhone,
+            message_type: msgType,
+            status: "received",
+            error_message: hasText ? text!.slice(0, 500) : null,
+            sender_name: senderName,
+            sender_avatar_url: senderAvatarUrl,
+            media_url: mediaUrl,
+            media_mime: finalMime,
+            media_storage_path: mediaStoragePath,
+          });
+          if (logErr) console.error("[webhook] log insert error:", logErr.message);
+        }
 
 
 
