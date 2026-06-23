@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,12 +14,12 @@ export function LeadFormDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     full_name: '',
     phone: '',
     email: '',
-    sales_value: '',
+    sales_value: 0,
     source: 'whatsapp',
     notes: '',
   });
 
-  const reset = () => setForm({ full_name: '', phone: '', email: '', sales_value: '', source: 'whatsapp', notes: '' });
+  const reset = () => setForm({ full_name: '', phone: '', email: '', sales_value: 0, source: 'whatsapp', notes: '' });
 
   const submit = async () => {
     if (!form.full_name.trim()) return;
@@ -26,7 +27,7 @@ export function LeadFormDialog({ open, onOpenChange }: { open: boolean; onOpenCh
       full_name: form.full_name.trim(),
       phone: form.phone || undefined,
       email: form.email || undefined,
-      sales_value: form.sales_value ? Number(form.sales_value) : 0,
+      sales_value: form.sales_value,
       source: form.source,
       notes: form.notes || undefined,
     });
@@ -58,7 +59,7 @@ export function LeadFormDialog({ open, onOpenChange }: { open: boolean; onOpenCh
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label>Valor estimado (R$)</Label>
-              <Input type="number" value={form.sales_value} onChange={(e) => setForm({ ...form, sales_value: e.target.value })} placeholder="0" />
+              <CurrencyInput value={form.sales_value} onChange={(v) => setForm({ ...form, sales_value: v })} />
             </div>
             <div className="grid gap-2">
               <Label>Origem</Label>

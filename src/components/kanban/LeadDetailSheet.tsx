@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -56,7 +57,7 @@ export function LeadDetailSheet({
         full_name: form.full_name,
         phone: form.phone || null,
         email: form.email || null,
-        sales_value: Number(form.sales_value),
+        sales_value: form.sales_value,
         status: form.status as any,
         source: form.source,
         notes: form.notes || null,
@@ -79,10 +80,8 @@ export function LeadDetailSheet({
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
-          {/* Painel unificado — mesma visão usada no Chat */}
           <LeadProfilePanel lead={lead} />
 
-          {/* Edição rápida dos dados */}
           <div className="space-y-4 pt-4 border-t border-gray-100">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Editar dados</h4>
 
@@ -105,7 +104,7 @@ export function LeadDetailSheet({
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <Label>Valor (R$)</Label>
-                <Input type="number" value={form.sales_value} onChange={(e) => setForm({ ...form, sales_value: Number(e.target.value) })} />
+                <CurrencyInput value={form.sales_value} onChange={(v) => setForm({ ...form, sales_value: v })} />
               </div>
               <div className="grid gap-2">
                 <Label>Estágio</Label>
@@ -137,7 +136,6 @@ export function LeadDetailSheet({
             </div>
           </div>
 
-          {/* Botão para editar resumo da consulta */}
           <Button
             variant="outline"
             onClick={() => setShowConsultationDialog(true)}
@@ -152,8 +150,6 @@ export function LeadDetailSheet({
             open={showConsultationDialog}
             onOpenChange={setShowConsultationDialog}
           />
-
-
 
           <div className="flex gap-2 pt-4 border-t border-gray-100">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { DBLead, useUpdateLead } from '@/hooks/use-leads';
 
@@ -26,7 +26,7 @@ export function LeadValueDialog({ lead, open, onOpenChange }: { lead: DBLead | n
         </DialogHeader>
         <div className="grid gap-2 py-3">
           <Label>Valor (R$)</Label>
-          <Input type="number" autoFocus value={value} onChange={(e) => setValue(Number(e.target.value))} />
+          <CurrencyInput autoFocus value={value} onChange={setValue} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
