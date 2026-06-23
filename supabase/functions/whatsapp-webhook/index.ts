@@ -67,7 +67,7 @@ async function generateSdrReply(
         "X-Lovable-AIG-SDK": "edge-function",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-mini",
         messages: [...systemMessages, ...history],
         temperature,
       }),
@@ -473,7 +473,7 @@ async function extractNameFromMessage(message: string): Promise<string | null> {
         "Lovable-API-Key": LOVABLE_API_KEY,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
