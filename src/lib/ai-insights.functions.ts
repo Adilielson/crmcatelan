@@ -81,7 +81,7 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
       try {
         const { data: signed } = await supabaseAdmin.storage
           .from("whatsapp-media")
-          .createSignedUrl(m.media_storage_path, 600);
+          .createSignedUrl(String(m.media_storage_path), 600);
         if (!signed?.signedUrl) continue;
 
         const audioRes = await fetch(signed.signedUrl);
