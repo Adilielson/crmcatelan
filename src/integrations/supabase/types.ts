@@ -376,8 +376,11 @@ export type Database = {
       ai_learning_insights: {
         Row: {
           agent_id: string | null
+          audio_messages_analyzed: number | null
           conversation_id: string | null
           created_at: string
+          decision_blockers: Json | null
+          fears: Json | null
           frequent_questions: Json | null
           id: string
           intent: string | null
@@ -387,6 +390,7 @@ export type Database = {
           model: string | null
           objections: Json | null
           outcome: string | null
+          pain_points: Json | null
           sentiment: string | null
           successful_responses: Json | null
           summary: string | null
@@ -396,8 +400,11 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
+          audio_messages_analyzed?: number | null
           conversation_id?: string | null
           created_at?: string
+          decision_blockers?: Json | null
+          fears?: Json | null
           frequent_questions?: Json | null
           id?: string
           intent?: string | null
@@ -407,6 +414,7 @@ export type Database = {
           model?: string | null
           objections?: Json | null
           outcome?: string | null
+          pain_points?: Json | null
           sentiment?: string | null
           successful_responses?: Json | null
           summary?: string | null
@@ -416,8 +424,11 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
+          audio_messages_analyzed?: number | null
           conversation_id?: string | null
           created_at?: string
+          decision_blockers?: Json | null
+          fears?: Json | null
           frequent_questions?: Json | null
           id?: string
           intent?: string | null
@@ -427,6 +438,7 @@ export type Database = {
           model?: string | null
           objections?: Json | null
           outcome?: string | null
+          pain_points?: Json | null
           sentiment?: string | null
           successful_responses?: Json | null
           summary?: string | null
@@ -2422,6 +2434,7 @@ export type Database = {
           sent_at: string
           status: string
           tenant_id: string
+          transcription: string | null
         }
         Insert: {
           error_message?: string | null
@@ -2436,6 +2449,7 @@ export type Database = {
           sent_at?: string
           status: string
           tenant_id: string
+          transcription?: string | null
         }
         Update: {
           error_message?: string | null
@@ -2450,6 +2464,7 @@ export type Database = {
           sent_at?: string
           status?: string
           tenant_id?: string
+          transcription?: string | null
         }
         Relationships: []
       }

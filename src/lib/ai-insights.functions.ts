@@ -40,19 +40,26 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
   // Mensagens (whatsapp_message_logs é a fonte real do sistema)
   const { data: logs, error: logsErr } = await supabaseAdmin
     .from("whatsapp_message_logs")
-    .select("status, sender_name, error_message, sent_at")
+    .select("id, status, sender_name, error_message, sent_at, message_type, media_mime, media_storage_path, transcription")
     .eq("tenant_id", tenantId)
     .eq("recipient_phone", lead.phone)
     .order("sent_at", { ascending: true })
     .limit(200);
   if (logsErr) throw new Error(logsErr.message);
 
+  // Considera mensagem válida se tem texto OU é áudio do lead (PTT/audio recebido)
+  const isInboundAudio = (m: any) =>
+    m.status === "received" &&
+    !!m.media_storage_path &&
+    (String(m.media_mime || "").startsWith("audio/") ||
+      ["audio", "ptt"].includes(String(m.message_type || "").toLowerCase()));
+
   const filtered = (logs ?? []).filter(
-    (m: any) => typeof m.error_message === "string" && m.error_message.trim().length > 0,
+    (m: any) =>
+      (typeof m.error_message === "string" && m.error_message.trim().length > 0) ||
+      isInboundAudio(m),
   );
   if (filtered.length < 4) {
-    // Retorno suave: ainda não há conversa suficiente para análise.
-    // Não lançamos exceção pra não estourar overlay de erro no chat.
     return {
       ok: false as const,
       skipped: true as const,
@@ -63,6 +70,56 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     };
   }
 
+  // ── Transcrição dos áudios do lead (Lovable AI Gateway) ──────────────
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  let audiosAnalyzed = 0;
+  const audiosToTranscribe = filtered.filter(
+    (m: any) => isInboundAudio(m) && !m.transcription,
+  );
+  if (lovableKey && audiosToTranscribe.length) {
+    for (const m of audiosToTranscribe) {
+      try {
+        const { data: signed } = await supabaseAdmin.storage
+          .from("whatsapp-media")
+          .createSignedUrl(String(m.media_storage_path), 600);
+        if (!signed?.signedUrl) continue;
+
+        const audioRes = await fetch(signed.signedUrl);
+        if (!audioRes.ok) continue;
+        const audioBlob = await audioRes.blob();
+
+        const form = new FormData();
+        const ext = (m.media_mime || "audio/ogg").includes("mp4") ? "mp4"
+                  : (m.media_mime || "audio/ogg").includes("mpeg") ? "mp3"
+                  : (m.media_mime || "audio/ogg").includes("webm") ? "webm"
+                  : "ogg";
+        form.append("file", audioBlob, `audio.${ext}`);
+        form.append("model", "openai/gpt-4o-mini-transcribe");
+
+        const sttRes = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${lovableKey}` },
+          body: form,
+        });
+        if (!sttRes.ok) {
+          console.warn("[ai-insights] STT falhou:", sttRes.status, await sttRes.text().catch(() => ""));
+          continue;
+        }
+        const sttJson = await sttRes.json();
+        const text = String(sttJson?.text ?? "").trim();
+        if (!text) continue;
+
+        await supabaseAdmin
+          .from("whatsapp_message_logs")
+          .update({ transcription: text })
+          .eq("id", m.id);
+        m.transcription = text;
+        audiosAnalyzed++;
+      } catch (e: any) {
+        console.warn("[ai-insights] erro ao transcrever áudio:", e?.message ?? e);
+      }
+    }
+  }
 
   // Precisamos de pelo menos uma mensagem do atendente HUMANO (não IA SDR)
   const hasHuman = filtered.some(
@@ -77,6 +134,10 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
           : (m.sender_name ?? "") === "IA SDR"
           ? "IA"
           : "ATENDENTE";
+      if (isInboundAudio(m)) {
+        const t = m.transcription ? m.transcription : "(áudio sem transcrição)";
+        return `[${who} • ÁUDIO] ${t}`;
+      }
       return `[${who}] ${m.error_message}`;
     })
     .join("\n");
@@ -84,9 +145,9 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
   const { getTenantAiKey, logAiUsage } = await import("./ai-credentials.server");
   const cred = await getTenantAiKey(tenantId, "openai");
 
-  const systemPrompt = `Você é um analista de atendimento ao cliente. Analise a conversa abaixo entre um cliente e um atendente humano de uma ótica/clínica${
-    hasHuman ? "" : " (atendimento feito pela IA — analise mesmo assim)"
-  }. Extraia aprendizados em JSON puro (sem markdown). Responda APENAS com o objeto:
+  const systemPrompt = `Você é um analista sênior de vendas consultivas em ótica/clínica oftalmológica. Analise a conversa abaixo entre o CLIENTE (lead) e o ATENDENTE${
+    hasHuman ? "" : " (atendimento pela IA — analise mesmo assim)"
+  }. As mensagens marcadas com "• ÁUDIO" foram transcritas de áudios enviados pelo próprio lead — trate-as como fala dele e dê atenção especial ao tom, hesitações e palavras emocionais (ex: "tô com medo", "não sei se vale", "tá caro", "preciso pensar", "minha vista tá ruim"). Extraia aprendizados em JSON puro (sem markdown). Responda APENAS com o objeto:
 {
   "summary": "resumo em 1-2 frases sobre o estado atual da negociação",
   "sentiment": "positive" | "neutral" | "negative",
@@ -95,9 +156,12 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
   "intent": "intenção principal em poucas palavras",
   "interests": ["produto/serviço de interesse 1", "produto 2"],
   "frequent_questions": ["pergunta 1", "pergunta 2"],
-  "objections": ["objeção 1"],
+  "objections": ["objeção concreta levantada pelo lead — ex: 'achou o preço alto', 'quer comparar com concorrente'"],
+  "pain_points": ["dor / problema real que o lead enfrenta — ex: 'dor de cabeça ao ler', 'enxerga embaçado a 2m', 'já trocou de óculos 3x esse ano'"],
+  "fears": ["medo ou insegurança expressa — ex: 'medo de cirurgia', 'medo de gastar à toa', 'receio do óculos não resolver'"],
+  "decision_blockers": ["o que está travando a decisão — ex: 'precisa falar com o marido', 'aguardando salário', 'comparando com outra ótica', 'sem tempo essa semana'"],
   "keywords": ["palavra1", "palavra2"],
-  "successful_responses": ["frase do atendente humano que funcionou bem"]
+  "successful_responses": ["frase do atendente humano que funcionou bem para avançar a venda"]
 }`;
 
   const resp = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -154,6 +218,10 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     intent: parsed.intent ?? null,
     frequent_questions: parsed.frequent_questions ?? [],
     objections: parsed.objections ?? [],
+    pain_points: parsed.pain_points ?? [],
+    fears: parsed.fears ?? [],
+    decision_blockers: parsed.decision_blockers ?? [],
+    audio_messages_analyzed: audiosAnalyzed,
     keywords: parsed.keywords ?? [],
     successful_responses: parsed.successful_responses ?? [],
     outcome: lead.status,
@@ -226,7 +294,7 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
     maybeRebuildStyleProfile(tenantId);
   }
 
-  return { ok: true, insight: parsed, tokens: tokensIn + tokensOut, messageCount: filtered.length };
+  return { ok: true, insight: parsed, tokens: tokensIn + tokensOut, messageCount: filtered.length, audiosAnalyzed };
 }
 
 // =================== ANALISAR CONVERSA (manual via UI) ===================
@@ -323,6 +391,15 @@ async function aggregatePatterns(
   );
   (parsed.objections || []).forEach((o: string) =>
     items.push({ type: "objection", content: String(o).trim() }),
+  );
+  (parsed.pain_points || []).forEach((p: string) =>
+    items.push({ type: "pain_point", content: String(p).trim() }),
+  );
+  (parsed.fears || []).forEach((f: string) =>
+    items.push({ type: "fear", content: String(f).trim() }),
+  );
+  (parsed.decision_blockers || []).forEach((d: string) =>
+    items.push({ type: "decision_blocker", content: String(d).trim() }),
   );
   (parsed.keywords || []).forEach((k: string) =>
     items.push({ type: "keyword", content: String(k).trim() }),
@@ -424,6 +501,9 @@ export const getInsightsDashboard = createServerFn({ method: "GET" })
       sentimentBreakdown,
       topQuestions: top("frequent_question"),
       topObjections: top("objection"),
+      topPainPoints: top("pain_point"),
+      topFears: top("fear"),
+      topDecisionBlockers: top("decision_blocker"),
       topKeywords: top("keyword", 20),
       winningPhrases: top("winning_phrase"),
       recentInsights: recentRes.data || [],
@@ -445,7 +525,7 @@ export const getLeadInsight = createServerFn({ method: "GET" })
     );
     const { data: row } = await context.supabase
       .from("ai_learning_insights")
-      .select("summary, sentiment, intent, frequent_questions, objections, successful_responses, updated_at")
+      .select("summary, sentiment, intent, frequent_questions, objections, pain_points, fears, decision_blockers, audio_messages_analyzed, successful_responses, updated_at")
       .eq("tenant_id", tenantId)
       .eq("lead_id", data.leadId)
       .maybeSingle();

@@ -6,7 +6,7 @@ import { getReferenceStyleProfile, rebuildReferenceStyleProfile } from '@/lib/ai
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown, Star, RefreshCw } from 'lucide-react';
+import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown, Star, RefreshCw, HeartCrack, ShieldAlert, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -117,6 +117,63 @@ function AiInsightsPage() {
           ) : (
             <ul className="space-y-2">
               {data.topObjections.map((q: any) => (
+                <li key={q.id} className="flex items-start justify-between gap-3 text-sm">
+                  <span className="text-slate-700 flex-1">{q.content}</span>
+                  <Badge variant="secondary">{q.occurrences}x</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      {/* Dores, medos e bloqueios de decisão (extraídos de texto + áudios dos leads) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-3">
+            <HeartCrack className="w-4 h-4 text-rose-600" /> Dores e problemas reais
+          </h2>
+          {(data.topPainPoints ?? []).length === 0 ? (
+            <p className="text-sm text-slate-400">Ainda sem dados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {(data.topPainPoints ?? []).map((q: any) => (
+                <li key={q.id} className="flex items-start justify-between gap-3 text-sm">
+                  <span className="text-slate-700 flex-1">{q.content}</span>
+                  <Badge variant="secondary">{q.occurrences}x</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="p-4">
+          <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-3">
+            <ShieldAlert className="w-4 h-4 text-orange-600" /> Medos e inseguranças
+          </h2>
+          {(data.topFears ?? []).length === 0 ? (
+            <p className="text-sm text-slate-400">Ainda sem dados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {(data.topFears ?? []).map((q: any) => (
+                <li key={q.id} className="flex items-start justify-between gap-3 text-sm">
+                  <span className="text-slate-700 flex-1">{q.content}</span>
+                  <Badge variant="secondary">{q.occurrences}x</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="p-4">
+          <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-3">
+            <Ban className="w-4 h-4 text-fuchsia-600" /> Bloqueios na decisão
+          </h2>
+          {(data.topDecisionBlockers ?? []).length === 0 ? (
+            <p className="text-sm text-slate-400">Ainda sem dados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {(data.topDecisionBlockers ?? []).map((q: any) => (
                 <li key={q.id} className="flex items-start justify-between gap-3 text-sm">
                   <span className="text-slate-700 flex-1">{q.content}</span>
                   <Badge variant="secondary">{q.occurrences}x</Badge>
