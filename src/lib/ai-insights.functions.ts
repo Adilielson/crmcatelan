@@ -525,7 +525,7 @@ export const getLeadInsight = createServerFn({ method: "GET" })
     );
     const { data: row } = await context.supabase
       .from("ai_learning_insights")
-      .select("summary, sentiment, intent, frequent_questions, objections, successful_responses, updated_at")
+      .select("summary, sentiment, intent, frequent_questions, objections, pain_points, fears, decision_blockers, audio_messages_analyzed, successful_responses, updated_at")
       .eq("tenant_id", tenantId)
       .eq("lead_id", data.leadId)
       .maybeSingle();
