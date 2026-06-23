@@ -174,14 +174,37 @@ function pickString(...vals: unknown[]): string | null {
 }
 
 function extractText(msg: Record<string, unknown>): string | null {
-  return pickString(
-    msg.text,
-    msg.body,
-    msg.content,
-    msg.caption,
-    (asObject(msg.message) as any).conversation,
-    (asObject(msg.message) as any).text,
-    (asObject(asObject(msg.message).extendedTextMessage) as any).text,
+  // uazapi às vezes envia `content` como string JSON: '{"text":"...","contextInfo":...}'
+  // — extrai o `text` interno quando for o caso.
+  const tryParseContent = (v: unknown): string | null => {
+    if (typeof v !== "string") return null;
+    const trimmed = v.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith("{") && trimmed.includes('"text"')) {
+      try {
+        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+        const inner = pickString(parsed.text, parsed.body, parsed.caption,
+          (asObject(parsed.message) as any)?.conversation);
+        if (inner) return inner;
+      } catch { /* fallthrough */ }
+    }
+    return trimmed;
+  };
+  const msgMsg = asObject(msg.message);
+  const ext = asObject(msgMsg.extendedTextMessage);
+  return (
+    pickString(msg.text, msg.body, msg.caption) ||
+    tryParseContent(msg.content) ||
+    pickString(
+      msgMsg.conversation,
+      msgMsg.text,
+      msgMsg.body,
+      msgMsg.caption,
+      ext.text,
+      (asObject(msgMsg.imageMessage) as any).caption,
+      (asObject(msgMsg.videoMessage) as any).caption,
+      (asObject(msgMsg.documentMessage) as any).caption,
+    )
   );
 }
 
@@ -776,19 +799,27 @@ Deno.serve(async (req) => {
           }
         }
 
-        const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
-          tenant_id: tenantId,
-          recipient_phone: senderPhone,
-          message_type: msgType,
-          status: "received",
-          error_message: text ? text.slice(0, 500) : null,
-          sender_name: senderName,
-          sender_avatar_url: senderAvatarUrl,
-          media_url: mediaUrl,
-          media_mime: finalMime,
-          media_storage_path: mediaStoragePath,
-        });
-        if (logErr) console.error("[webhook] log insert error:", logErr.message);
+        // Não polui o histórico com mensagens vazias (sem texto e sem mídia) —
+        // geralmente são eventos de status/notificação mal classificados.
+        const hasText = !!(text && text.trim());
+        const hasMedia = !!(mediaUrl || mediaStoragePath);
+        if (!hasText && !hasMedia) {
+          console.log(`[webhook] ignorando msg sem texto/mídia phone=${senderPhone} type=${msgType}`);
+        } else {
+          const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
+            tenant_id: tenantId,
+            recipient_phone: senderPhone,
+            message_type: msgType,
+            status: "received",
+            error_message: hasText ? text!.slice(0, 500) : null,
+            sender_name: senderName,
+            sender_avatar_url: senderAvatarUrl,
+            media_url: mediaUrl,
+            media_mime: finalMime,
+            media_storage_path: mediaStoragePath,
+          });
+          if (logErr) console.error("[webhook] log insert error:", logErr.message);
+        }
 
 
 

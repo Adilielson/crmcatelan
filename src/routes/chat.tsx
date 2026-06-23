@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useLeads } from '@/hooks/use-leads'
-import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials } from '@/hooks/use-whatsapp-chat'
+import { useWhatsAppChat, formatChatTime, formatPhoneDisplay, getContactInitials, mediaLabel } from '@/hooks/use-whatsapp-chat'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -876,7 +876,7 @@ function Chat() {
                             "text-sm leading-relaxed font-medium whitespace-pre-wrap break-words pl-2.5 pr-3.5 py-1.5",
                             m.fromMe ? "text-primary-foreground font-bold" : "text-ink"
                           )}>
-                            {m.text || <span className="italic opacity-60">[{m.type}]</span>}
+                            {m.text || <span className="italic opacity-60">{mediaLabel(m.type, m.mediaMime)}</span>}
                           </p>
                         )}
                       </div>
