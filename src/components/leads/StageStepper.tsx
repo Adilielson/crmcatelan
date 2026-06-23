@@ -1,8 +1,9 @@
-import { Check, SkipForward } from 'lucide-react';
+import { Check, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { STAGES, stageLabel, type LeadStage } from '@/hooks/use-leads';
 import { getStageColors } from './StageBadge';
 import { useLeadHistory } from '@/hooks/use-lead-history';
+
 
 /**
  * Trilha visual do funil do lead — mostra estágios concluídos, atual, pulados e futuros.
