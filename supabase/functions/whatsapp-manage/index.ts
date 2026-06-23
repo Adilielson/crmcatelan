@@ -125,6 +125,59 @@ async function uazapiDelete(path: string, token: string) {
   return parseUazapiResponse(path, res);
 }
 
+// ── Avatar helpers (mirror do whatsapp-webhook) ───────────────────────────
+const MEDIA_BUCKET = "whatsapp-media";
+
+function pickString(...values: unknown[]): string | null {
+  for (const v of values) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  }
+  return null;
+}
+
+function extFromMime(mime: string): string {
+  const m = mime.toLowerCase();
+  if (m.includes("png")) return "png";
+  if (m.includes("webp")) return "webp";
+  if (m.includes("gif")) return "gif";
+  return "jpg";
+}
+
+async function fetchContactImage(token: string, phone: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${UAZAPI_BASE_URL}/chat/GetNameAndImageURL`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", token },
+      body: JSON.stringify({ number: phone, preview: false }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return pickString(
+      data?.image, data?.imageUrl, data?.imgUrl, data?.profilePicUrl,
+      data?.picture, data?.url, data?.result?.image, data?.result?.imageUrl,
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function persistAvatar(tenantId: string, phone: string, imageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(imageUrl);
+    if (!res.ok) return null;
+    const mime = res.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const path = `avatars/${tenantId}/${phone}.${extFromMime(mime)}`;
+    const { error } = await adminClient.storage
+      .from(MEDIA_BUCKET)
+      .upload(path, bytes, { contentType: mime, upsert: true });
+    if (error) return null;
+    return path;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
