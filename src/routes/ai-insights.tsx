@@ -6,7 +6,7 @@ import { getReferenceStyleProfile, rebuildReferenceStyleProfile } from '@/lib/ai
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown, Star, RefreshCw } from 'lucide-react';
+import { Brain, TrendingUp, MessageSquare, AlertTriangle, Sparkles, Smile, Meh, Frown, Star, RefreshCw, HeartCrack, ShieldAlert, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
