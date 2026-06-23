@@ -225,7 +225,7 @@ export function useWhatsAppChat() {
       if (!m.fromMe && m.senderAvatarUrl) c.avatarUrl = m.senderAvatarUrl;
       if (m.at >= c.lastAt) {
         c.lastAt = m.at;
-        c.lastText = m.text || `[${m.type}]`;
+        c.lastText = m.text || mediaLabel(m.type, m.mediaMime);
       }
       if (!m.fromMe) c.unread += 1;
       map.set(m.phone, c);
