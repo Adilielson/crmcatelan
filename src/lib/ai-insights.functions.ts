@@ -392,6 +392,15 @@ async function aggregatePatterns(
   (parsed.objections || []).forEach((o: string) =>
     items.push({ type: "objection", content: String(o).trim() }),
   );
+  (parsed.pain_points || []).forEach((p: string) =>
+    items.push({ type: "pain_point", content: String(p).trim() }),
+  );
+  (parsed.fears || []).forEach((f: string) =>
+    items.push({ type: "fear", content: String(f).trim() }),
+  );
+  (parsed.decision_blockers || []).forEach((d: string) =>
+    items.push({ type: "decision_blocker", content: String(d).trim() }),
+  );
   (parsed.keywords || []).forEach((k: string) =>
     items.push({ type: "keyword", content: String(k).trim() }),
   );
