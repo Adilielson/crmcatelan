@@ -144,9 +144,33 @@ export function mediaLabel(type: string | null | undefined, mime?: string | null
   return 'Mensagem';
 }
 
+// Cache de avatares assinados por lead/path, para evitar regenerar URL a cada poll.
+const avatarSignedCache = new Map<string, CachedUrl>();
+async function resolveAvatarPath(path: string | null): Promise<string | null> {
+  if (!path) return null;
+  // Se já é uma URL HTTP (avatar legado direto do WhatsApp), devolve como veio.
+  if (/^https?:\/\//i.test(path)) return path;
+  const cached = avatarSignedCache.get(path);
+  if (cached && cached.expiresAt - Date.now() > SIGNED_URL_REFRESH_BEFORE_MS) {
+    return cached.url;
+  }
+  const { data } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SEC);
+  if (data?.signedUrl) {
+    avatarSignedCache.set(path, {
+      url: data.signedUrl,
+      expiresAt: Date.now() + SIGNED_URL_TTL_SEC * 1000,
+    });
+    return data.signedUrl;
+  }
+  return null;
+}
+
 export function useWhatsAppChat() {
   const { tenant } = useAuthStore();
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
+  const [leadAvatars, setLeadAvatars] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async (silent = false) => {
@@ -176,6 +200,29 @@ export function useWhatsAppChat() {
     } else {
       setMessages([]);
     }
+
+    // Carrega avatares dos leads (foto de perfil real do WhatsApp).
+    // Indexado por telefone para casar com as conversas.
+    const { data: leadsData } = await db
+      .from('leads')
+      .select('phone, avatar_url')
+      .eq('tenant_id', tenant.id)
+      .not('avatar_url', 'is', null);
+    if (leadsData) {
+      const entries = await Promise.all(
+        (leadsData as { phone: string; avatar_url: string }[]).map(async (l) => {
+          const url = await resolveAvatarPath(l.avatar_url);
+          const cleanPhone = (l.phone || '').replace(/\D+/g, '');
+          return [cleanPhone, url] as const;
+        })
+      );
+      const map = new Map<string, string>();
+      for (const [phone, url] of entries) {
+        if (phone && url) map.set(phone, url);
+      }
+      setLeadAvatars(map);
+    }
+
     setLoading(false);
   }, [tenant?.id]);
 
@@ -217,7 +264,8 @@ export function useWhatsAppChat() {
   }, [tenant?.id]);
 
 
-  // Agrupa por número, escolhendo o nome/avatar mais recente disponível
+  // Agrupa por número, escolhendo o nome/avatar mais recente disponível.
+  // Prioridade do avatar: foto persistida em leads.avatar_url > sender_avatar_url da última mensagem.
   const conversations: WhatsAppConversation[] = (() => {
     const map = new Map<string, WhatsAppConversation>();
     for (const m of messages) {
@@ -231,16 +279,20 @@ export function useWhatsAppChat() {
         messages: [],
       };
       c.messages.push(m);
-      // Apenas mensagens recebidas (do lead) definem o nome/avatar do contato.
-      // Mensagens enviadas têm sender_name do atendente/IA ("Atendente", "IA SDR", etc.).
       if (!m.fromMe && m.senderName) c.name = m.senderName;
-      if (!m.fromMe && m.senderAvatarUrl) c.avatarUrl = m.senderAvatarUrl;
+      if (!m.fromMe && m.senderAvatarUrl && !c.avatarUrl) c.avatarUrl = m.senderAvatarUrl;
       if (m.at >= c.lastAt) {
         c.lastAt = m.at;
         c.lastText = m.text || mediaLabel(m.type, m.mediaMime);
       }
       if (!m.fromMe) c.unread += 1;
       map.set(m.phone, c);
+    }
+    // Sobrescreve com o avatar persistido em leads (mais estável que URL temporária)
+    for (const c of map.values()) {
+      const cleanPhone = (c.phone || '').replace(/\D+/g, '');
+      const leadAvatar = leadAvatars.get(cleanPhone);
+      if (leadAvatar) c.avatarUrl = leadAvatar;
     }
     return Array.from(map.values()).sort((a, b) =>
       a.lastAt < b.lastAt ? 1 : -1
@@ -249,3 +301,4 @@ export function useWhatsAppChat() {
 
   return { conversations, loading, reload: load };
 }
+

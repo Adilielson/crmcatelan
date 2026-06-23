@@ -447,6 +447,67 @@ async function persistMediaToStorage(
   }
 }
 
+// Busca foto de perfil do contato via uazapi (POST /chat/GetNameAndImageURL).
+// Retorna URL pública (CDN da uazapi/WhatsApp). Pode retornar null se o contato
+// não tiver foto, se a privacidade impedir, ou se o endpoint falhar.
+async function fetchUazapiContactImage(
+  instanceToken: string,
+  phone: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`${UAZAPI_BASE_URL}/chat/GetNameAndImageURL`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        token: instanceToken,
+      },
+      body: JSON.stringify({ number: phone, preview: false }),
+    });
+    if (!res.ok) {
+      console.warn(`[avatar] uazapi ${res.status} para ${phone}`);
+      return null;
+    }
+    const data = await res.json().catch(() => ({}));
+    const url = pickString(
+      data?.image, data?.imageUrl, data?.imgUrl, data?.profilePicUrl,
+      data?.picture, data?.url, data?.result?.image, data?.result?.imageUrl,
+    );
+    return url || null;
+  } catch (e) {
+    console.warn("[avatar] fetch erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
+// Baixa a foto de perfil e salva permanentemente no Storage (bucket whatsapp-media)
+// em avatars/{tenantId}/{phone}.{ext}. Devolve o storage path.
+async function persistAvatarToStorage(
+  tenantId: string,
+  phone: string,
+  imageUrl: string,
+): Promise<{ path: string; mime: string } | null> {
+  try {
+    await ensureMediaBucket();
+    const res = await fetch(imageUrl);
+    if (!res.ok) return null;
+    const mime = res.headers.get("content-type") || "image/jpeg";
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const path = `avatars/${tenantId}/${phone}.${extFromMime(mime)}`;
+    const { error } = await adminClient.storage
+      .from(MEDIA_BUCKET)
+      .upload(path, bytes, { contentType: mime, upsert: true });
+    if (error) {
+      console.error("[avatar] upload erro:", error.message);
+      return null;
+    }
+    return { path, mime };
+  } catch (e) {
+    console.warn("[avatar] persist erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
+
 // Limpa um identificador de WhatsApp (JID ou telefone) e devolve apenas o número.
 // Retorna null se não for um telefone individual válido (10-13 dígitos).
 function cleanPhone(raw: string | null): string | null {
@@ -912,9 +973,51 @@ Deno.serve(async (req) => {
             }
           }
 
+          // ── Foto de perfil ────────────────────────────────────────────
+          // Se o webhook trouxe avatar, usa direto. Caso contrário, busca
+          // ativamente via uazapi (só se o lead ainda não tem foto ou se
+          // a foto tem mais de 30 dias). Persiste no Storage (privado) — a
+          // URL bruta do WhatsApp expira; o storage não.
+          try {
+            if (leadId) {
+              const { data: curAvatar } = await adminClient
+                .from("leads")
+                .select("avatar_url, avatar_updated_at")
+                .eq("id", leadId)
+                .maybeSingle();
+              const ageMs = curAvatar?.avatar_updated_at
+                ? Date.now() - new Date(curAvatar.avatar_updated_at as string).getTime()
+                : Infinity;
+              const STALE_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+              const needsAvatar = !curAvatar?.avatar_url || ageMs > STALE_MS;
+              if (needsAvatar) {
+                let avatarSourceUrl = senderAvatarUrl;
+                if (!avatarSourceUrl) {
+                  const instanceToken = pickString(b.token);
+                  if (instanceToken) {
+                    avatarSourceUrl = await fetchUazapiContactImage(instanceToken, senderPhone);
+                  }
+                }
+                if (avatarSourceUrl) {
+                  const saved = await persistAvatarToStorage(tenantId, senderPhone, avatarSourceUrl);
+                  if (saved) {
+                    await adminClient.from("leads").update({
+                      avatar_url: saved.path,
+                      avatar_updated_at: new Date().toISOString(),
+                    }).eq("id", leadId);
+                    console.log(`[avatar] lead ${leadId} atualizado (${saved.path})`);
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("[avatar] erro:", e instanceof Error ? e.message : String(e));
+          }
+
         } catch (e) {
           console.error("[lead] erro localizar/criar:", e instanceof Error ? e.message : String(e));
         }
+
 
 
         // ── Detecta resposta de confirmação de agendamento ───────────────
