@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CurrencyInputProps {
@@ -17,13 +17,11 @@ function centsToDisplay(cents: number): string {
 
 export function CurrencyInput({ value, onChange, autoFocus, className }: CurrencyInputProps) {
   const [digits, setDigits] = useState(() => String(Math.round(value * 100)));
-  const isExternalUpdate = useRef(false);
 
   useEffect(() => {
     const external = Math.round(value * 100);
     const internal = parseInt(digits || '0', 10);
     if (external !== internal) {
-      isExternalUpdate.current = true;
       setDigits(String(external));
     }
   }, [value]);
