@@ -684,35 +684,83 @@ Deno.serve(async (req) => {
 
       // ── Mensagem ENVIADA manualmente pelo atendente humano (fromMe) ──
       // Logamos para que a IA tenha visão completa da conversa quando o
-      // "Modo de Aprendizado" estiver ligado (observa atendimentos humanos).
-      if (fromMe && senderPhone && text && text.trim()) {
+      // "Modo de Aprendizado" estiver ligado (observa atendimentos humanos)
+      // E, principalmente, para que o CRM reflita em tempo real qualquer
+      // resposta que a atendente digitou no celular (SLA / "Parado em
+      // Leads Prontos há Xh" precisa zerar a contagem nesses casos).
+      if (fromMe && senderPhone) {
         try {
-          // Confere se já temos um log idêntico nos últimos 30s
-          // (evita duplicação quando a própria IA SDR acabou de responder).
-          const { data: recent } = await adminClient
-            .from("whatsapp_message_logs")
-            .select("id, sender_name, error_message, sent_at")
+          // 1) DEFESA EM PROFUNDIDADE: atualiza diretamente o lead.
+          //    Mesmo que a inserção no log seja deduplicada ou falhe, o
+          //    cronômetro de SLA precisa ser zerado imediatamente — caso
+          //    contrário o CRM mostra "lead parado há Xh" mesmo após a
+          //    atendente já ter respondido pelo WhatsApp.
+          const nowIso = new Date().toISOString();
+          const { data: leadRow } = await adminClient
+            .from("leads")
+            .select("id, status, last_outbound_at")
             .eq("tenant_id", tenantId)
-            .eq("recipient_phone", senderPhone)
-            .eq("status", "sent")
-            .gte("sent_at", new Date(Date.now() - 30_000).toISOString())
-            .order("sent_at", { ascending: false })
-            .limit(5);
-          const dup = (recent ?? []).some(
-            (r: any) => (r.error_message ?? "").trim() === text.trim(),
-          );
-          if (!dup) {
-            await adminClient.from("whatsapp_message_logs").insert({
-              tenant_id: tenantId,
-              recipient_phone: senderPhone,
-              message_type: msgType,
-              status: "sent",
-              error_message: text.slice(0, 500),
-              sender_name: "Atendente",
-            });
+            .eq("phone", senderPhone)
+            .maybeSingle();
+          if (leadRow) {
+            const leadUpdate: Record<string, unknown> = {
+              last_outbound_at: nowIso,
+              updated_at: nowIso,
+            };
+            // Se ainda estava em "Leads Prontos" (open), move para
+            // "Em Atendimento" — humana já assumiu a conversa.
+            if (leadRow.status === "open") {
+              leadUpdate.status = "in_progress";
+              leadUpdate.custom_column_id = null;
+            }
+            const { error: leadErr } = await adminClient
+              .from("leads")
+              .update(leadUpdate)
+              .eq("id", leadRow.id);
+            if (leadErr) {
+              console.error("[webhook] fromMe lead update erro:", leadErr.message);
+            } else {
+              console.log(`[webhook] fromMe → lead ${leadRow.id} sincronizado (last_outbound_at)`);
+            }
+          }
+
+          // 2) Loga a mensagem (para a IA enxergar o histórico humano).
+          //    Sem dedupe por texto: é mais seguro registrar duplicado do que
+          //    silenciar a mensagem do atendente. Dedupe apenas por
+          //    whatsapp_message_id quando ele existir.
+          if (text && text.trim()) {
+            const waMsgId = pickString(message.messageid, message.id);
+            let dup = false;
+            if (waMsgId) {
+              const { data: existing } = await adminClient
+                .from("whatsapp_message_logs")
+                .select("id")
+                .eq("tenant_id", tenantId)
+                .eq("recipient_phone", senderPhone)
+                .eq("status", "sent")
+                .gte("sent_at", new Date(Date.now() - 5 * 60_000).toISOString())
+                .eq("error_message", text.slice(0, 500))
+                .limit(1);
+              dup = !!(existing && existing.length);
+            }
+            if (!dup) {
+              const { error: insErr } = await adminClient
+                .from("whatsapp_message_logs")
+                .insert({
+                  tenant_id: tenantId,
+                  recipient_phone: senderPhone,
+                  message_type: msgType,
+                  status: "sent",
+                  error_message: text.slice(0, 500),
+                  sender_name: "Atendente",
+                });
+              if (insErr) {
+                console.error("[webhook] fromMe log insert erro:", insErr.message);
+              }
+            }
           }
         } catch (e) {
-          console.error("[webhook] log fromMe erro:", e instanceof Error ? e.message : String(e));
+          console.error("[webhook] fromMe erro:", e instanceof Error ? e.message : String(e));
         }
       }
 
