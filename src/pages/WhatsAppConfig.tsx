@@ -61,6 +61,31 @@ export function WhatsAppConfig() {
   const [showTokenText, setShowTokenText] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [backfillLoading, setBackfillLoading] = useState(false);
+  const { tenant } = useAuthStore();
+
+  const handleBackfillAvatars = async () => {
+    if (!tenant?.id) {
+      toast.error('Sem tenant ativo.');
+      return;
+    }
+    setBackfillLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-manage', {
+        body: { action: 'backfill-avatars', tenant_id: tenant.id, limit: 50 },
+      });
+      if (error) throw new Error(error.message);
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      const r = data as { processed: number; updated: number; without_photo: number; remaining: number };
+      toast.success(
+        `${r.updated} foto(s) sincronizada(s). ${r.without_photo} sem foto disponível. ${r.remaining} restantes.`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao sincronizar fotos.');
+    } finally {
+      setBackfillLoading(false);
+    }
+  };
 
   // Quando QR é exibido, faz polling a cada 10s para detectar conexão
   useEffect(() => {
