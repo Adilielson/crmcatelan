@@ -250,7 +250,7 @@ function Dashboard() {
               Performance do Funil (CRM)
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[320px]">
+          <CardContent className="h-[260px] sm:h-[300px] md:h-[320px] p-3 md:p-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={funnelData} layout="vertical" margin={{ left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
@@ -277,7 +277,7 @@ function Dashboard() {
               Origem dos Leads
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[280px] flex flex-col items-center">
+          <CardContent className="h-auto sm:h-[280px] flex flex-col items-center p-3 md:p-6">
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
@@ -312,15 +312,15 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Atividade da IA SDR */}
         <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-4 border-b border-border/50 bg-gray-50/50">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-primary/10 rounded-xl shrink-0">
                 <Brain className="w-5 h-5 text-primary" />
               </div>
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Atividade Recente IA SDR</CardTitle>
+              <CardTitle className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-gray-400 truncate">Atividade IA SDR</CardTitle>
             </div>
-            <Link to="/performance">
-              <Button variant="ghost" size="sm" className="text-xs h-8">Ver métricas de IA</Button>
+            <Link to="/performance" className="shrink-0">
+              <Button variant="ghost" size="sm" className="text-xs h-8 px-2 sm:px-3"><span className="hidden sm:inline">Ver métricas de IA</span><span className="sm:hidden">Ver</span></Button>
             </Link>
           </CardHeader>
           <CardContent>
@@ -354,15 +354,15 @@ function Dashboard() {
 
         {/* Alertas de SLA e Estagnação */}
         <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-danger/10 rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-4 border-b border-border/50 bg-gray-50/50">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-danger/10 rounded-xl shrink-0">
                 <AlertTriangle className="w-5 h-5 text-danger" />
               </div>
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Alertas de SLA / Estagnação</CardTitle>
+              <CardTitle className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-gray-400 truncate">Alertas SLA</CardTitle>
             </div>
-            <Link to="/chat" search={{ stage: 'open' }}>
-              <Button size="sm" className="h-8 text-[11px] font-black uppercase tracking-wider">Atender Leads</Button>
+            <Link to="/chat" search={{ stage: 'open' }} className="shrink-0">
+              <Button size="sm" className="h-8 text-[11px] font-black uppercase tracking-wider px-2 sm:px-3"><span className="hidden sm:inline">Atender Leads</span><span className="sm:hidden">Atender</span></Button>
             </Link>
           </CardHeader>
           <CardContent>
@@ -371,21 +371,24 @@ function Dashboard() {
                 <p className="text-xs text-gray-400 italic p-4 text-center">Nenhum lead estagnado. ✓</p>
               )}
               {slaAlerts.map((alert, i) => (
-                <div key={i} className="flex items-center justify-between p-4 border border-danger/20 rounded-[14px] bg-danger/5 hover:bg-danger/10 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 md:p-4 border border-danger/20 rounded-[14px] bg-danger/5 hover:bg-danger/10 transition-all">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 shrink-0 rounded-full bg-red-100 flex items-center justify-center">
                       <Clock className="w-4 h-4 text-red-600" />
                     </div>
-                    <div>
-                      <p className="text-sm font-black text-ink font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
-                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.waitHours}h</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="text-sm font-black text-ink font-jakarta truncate min-w-0">{alert.name}</p>
+                        <Badge className="bg-danger/20 text-danger text-[9px] border-none font-black shrink-0">{alert.priority}</Badge>
+                      </div>
+                      <p className="text-[10px] text-[#6C727C] truncate">Parado em {alert.stage} há {alert.waitHours}h</p>
                       {alert.firstContactAt && (
-                        <p className="text-[9px] text-gray-400 font-medium">1º contato: {new Date(alert.firstContactAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[9px] text-gray-400 font-medium truncate">1º contato: {new Date(alert.firstContactAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                       )}
                     </div>
                   </div>
-                  <Link to="/chat" search={alert.phone ? { phone: alert.phone } : undefined}>
-                    <Button size="sm" className="h-7 text-[10px] font-bold">Assumir Chat</Button>
+                  <Link to="/chat" search={alert.phone ? { phone: alert.phone } : undefined} className="shrink-0 self-stretch sm:self-auto">
+                    <Button size="sm" className="h-8 w-full sm:w-auto text-[10px] font-bold">Assumir Chat</Button>
                   </Link>
 
                 </div>

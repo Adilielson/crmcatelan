@@ -454,17 +454,17 @@ function Chat() {
 
   const insightsPanel = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
-      <TabsList className="w-full justify-start rounded-none border-b border-gray-100 bg-white h-[73px] px-4 gap-2">
-        <TabsTrigger value="ia" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+      <TabsList className="w-full justify-start rounded-none border-b border-gray-100 bg-white h-auto min-h-[60px] px-3 sm:px-4 py-2 gap-2 flex-wrap">
+        <TabsTrigger value="ia" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-3 sm:px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
           <Brain className="w-4 h-4 mr-2" /> SDR Insight
         </TabsTrigger>
-        <TabsTrigger value="lead" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+        <TabsTrigger value="lead" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-3 sm:px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
           <User className="w-4 h-4 mr-2" /> Perfil
         </TabsTrigger>
       </TabsList>
 
       <ScrollArea className="flex-1">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <TabsContent value="ia" className="m-0 space-y-8 outline-none">
             {currentLead ? (
               <>
@@ -539,20 +539,20 @@ function Chat() {
   )
 
   return (
-    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-72px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
+    <div className="bg-white border border-[#E3E6EB] rounded-[18px] md:rounded-[24px] h-[calc(100dvh-72px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
 
 
 
       {/* Coluna 1: Lista de Sessões */}
       <div className={cn(
-        "w-full md:w-[360px] md:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
+        "w-full md:w-[320px] lg:w-[360px] md:shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50 min-w-0",
         hasSelection ? "hidden md:flex" : "flex",
       )}>
 
-        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20 gap-3">
-          <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
+        <div className="px-4 sm:px-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20 gap-2 min-w-0">
+          <h2 className="font-jakarta font-black text-base sm:text-xl text-ink uppercase tracking-wider truncate min-w-0">Conversas</h2>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-10 w-[150px] rounded-xl bg-gray-50 border-transparent text-xs font-bold uppercase">
+            <SelectTrigger className="h-10 w-[120px] sm:w-[150px] shrink-0 rounded-xl bg-gray-50 border-transparent text-xs font-bold uppercase">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -783,7 +783,7 @@ function Chat() {
 
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50/50 mobile-no-scrollbar thin-scrollbar">
-              <div className="p-8 space-y-4 min-h-full">
+              <div className="p-3 sm:p-6 md:p-8 space-y-4 min-h-full">
                 {currentLead && (currentLead.ad_id || currentLead.ad_name || currentLead.ad_headline || currentLead.ad_body || currentLead.ad_thumbnail_url || currentLead.ad_source_url || currentLead.ctwa_clid) && (() => {
                   const src = (currentLead.ad_source_url || '').toLowerCase()
                   const platform = src.includes('instagram') ? 'Instagram' : src.includes('facebook') || src.includes('fb.') ? 'Facebook' : 'Meta Ads'
@@ -853,7 +853,7 @@ function Chat() {
                   const isVideo = m.mediaUrl && (m.mediaMime?.startsWith('video/') || m.type === 'video')
                   return (
                   <div key={m.id} className={cn("flex", m.fromMe ? "justify-end" : "justify-start")}>
-                    <div className="max-w-[70%]">
+                    <div className="max-w-[85%] sm:max-w-[75%] md:max-w-[70%] min-w-0">
                       <div className={cn(
                         "p-2 rounded-2xl shadow-sm overflow-hidden",
                         m.fromMe
@@ -898,7 +898,7 @@ function Chat() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-white">
+            <div className="p-3 sm:p-4 border-t border-gray-100 bg-white">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -923,9 +923,9 @@ function Chat() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex gap-2 items-center">
-                  <div className="flex-1 flex gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:bg-white focus-within:border-primary/30 focus-within:shadow-sm transition-all items-center">
-                    <Button variant="ghost" size="icon" className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl">
+                <div className="flex gap-2 items-center min-w-0">
+                  <div className="flex-1 min-w-0 flex gap-1 sm:gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:bg-white focus-within:border-primary/30 focus-within:shadow-sm transition-all items-center">
+                    <Button variant="ghost" size="icon" className="hidden sm:inline-flex text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl shrink-0">
                       <Smile className="w-5 h-5" />
                     </Button>
                     <Button
@@ -933,7 +933,7 @@ function Chat() {
                       disabled={sending}
                       variant="ghost"
                       size="icon"
-                      className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl"
+                      className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl shrink-0"
                       title="Anexar imagem"
                     >
                       <ImageIcon className="w-5 h-5" />
@@ -943,7 +943,7 @@ function Chat() {
                       disabled={sending || suggestReply.isPending || !currentLead}
                       variant="ghost"
                       size="icon"
-                      className="text-violet-500 h-9 w-9 hover:text-violet-600 hover:bg-violet-50 rounded-xl"
+                      className="text-violet-500 h-9 w-9 hover:text-violet-600 hover:bg-violet-50 rounded-xl shrink-0"
                       title={draft.trim() ? 'Refinar com IA (usa seu texto como direcionamento)' : 'Sugerir resposta com IA'}
                     >
                       {suggestReply.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
@@ -955,14 +955,14 @@ function Chat() {
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                       placeholder={suggestReply.isPending ? 'IA está pensando uma sugestão...' : 'Digite sua mensagem...'}
                       disabled={sending}
-                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none disabled:opacity-50"
+                      className="flex-1 min-w-0 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-ink font-medium placeholder:text-gray-400 outline-none disabled:opacity-50"
                     />
                   </div>
                   {draft.trim() ? (
                     <Button
                       onClick={handleSend}
                       disabled={sending}
-                      className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
+                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all shrink-0 disabled:opacity-40"
                     >
                       {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </Button>
@@ -970,7 +970,7 @@ function Chat() {
                     <Button
                       onClick={startRecording}
                       disabled={sending}
-                      className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
+                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all shrink-0 disabled:opacity-40"
                       title="Gravar áudio"
                     >
                       <Mic className="w-5 h-5" />
