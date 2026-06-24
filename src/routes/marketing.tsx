@@ -40,27 +40,27 @@ function MarketingPartnerDashboard() {
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
       {/* Header com Filtros Globais */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-8 bg-white p-5 sm:p-8 md:p-10 rounded-[18px] md:rounded-[24px] border border-[#E3E6EB] shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
-        <div className="relative z-10">
+        <div className="relative z-10 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-1 rounded-full bg-primary" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Inteligência de Tráfego</span>
           </div>
-          <h1 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none mb-3">Painel de Marketing</h1>
-          <p className="text-[15px] text-gray-500 font-medium italic">Visão estratégica para parceiros e gestores de performance.</p>
+          <h1 className="text-2xl sm:text-3xl md:text-[36px] font-black text-ink tracking-tight font-jakarta leading-tight md:leading-none mb-2 md:mb-3">Painel de Marketing</h1>
+          <p className="text-sm md:text-[15px] text-gray-500 font-medium italic">Visão estratégica para parceiros e gestores de performance.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 relative z-10">
-          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mr-2">
-            <TabsList className="bg-[#F6F7F9] p-1 rounded-[16px] border border-[#E3E6EB] h-14">
-              <TabsTrigger value="performance" className="px-6 h-11 text-[11px] font-black uppercase tracking-widest rounded-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Performance</TabsTrigger>
-              <TabsTrigger value="integrations" className="px-6 h-11 text-[11px] font-black uppercase tracking-widest rounded-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Pixels {'&'} CAPI</TabsTrigger>
+        <div className="flex flex-wrap items-center gap-3 md:gap-4 relative z-10 w-full md:w-auto">
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="md:mr-2 w-full md:w-auto">
+            <TabsList className="bg-[#F6F7F9] p-1 rounded-[14px] md:rounded-[16px] border border-[#E3E6EB] h-12 md:h-14 w-full md:w-auto">
+              <TabsTrigger value="performance" className="flex-1 md:flex-none px-3 md:px-6 h-10 md:h-11 text-[10px] md:text-[11px] font-black uppercase tracking-widest rounded-[10px] md:rounded-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Performance</TabsTrigger>
+              <TabsTrigger value="integrations" className="flex-1 md:flex-none px-3 md:px-6 h-10 md:h-11 text-[10px] md:text-[11px] font-black uppercase tracking-widest rounded-[10px] md:rounded-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Pixels {'&'} CAPI</TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex items-center gap-3 bg-white px-6 h-14 rounded-[16px] border border-[#E3E6EB] shadow-sm hover:border-primary/50 transition-all cursor-pointer">
-            <Filter className="w-4 h-4 text-primary" />
-            <select 
-              className="bg-transparent border-none text-[11px] font-black uppercase tracking-widest focus:ring-0 cursor-pointer text-ink outline-none pr-8"
+          <div className="flex items-center gap-3 bg-white px-4 md:px-6 h-12 md:h-14 rounded-[14px] md:rounded-[16px] border border-[#E3E6EB] shadow-sm hover:border-primary/50 transition-all cursor-pointer w-full md:w-auto min-w-0">
+            <Filter className="w-4 h-4 text-primary shrink-0" />
+            <select
+              className="bg-transparent border-none text-[11px] font-black uppercase tracking-widest focus:ring-0 cursor-pointer text-ink outline-none pr-8 min-w-0 flex-1"
               value={selectedLoja}
               onChange={(e) => setSelectedLoja(e.target.value)}
             >
@@ -430,13 +430,13 @@ function MetricCard({ title, value, change, icon, color }: { title: string; valu
       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-24 h-24" })}
       </div>
-      <CardContent className="p-8 relative z-10">
-        <div className="flex justify-between items-start mb-6">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] font-jakarta">{title}</p>
-            <h3 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none">{value}</h3>
+      <CardContent className="p-5 sm:p-6 md:p-8 relative z-10">
+        <div className="flex justify-between items-start gap-3 mb-4 sm:mb-6">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] font-jakarta truncate">{title}</p>
+            <h3 className="text-2xl sm:text-3xl md:text-[36px] font-black text-ink tracking-tight font-jakarta leading-tight md:leading-none">{value}</h3>
           </div>
-          <div className={cn("p-4 rounded-[18px] border transition-all group-hover:scale-110", colorMap[color])}>
+          <div className={cn("p-3 md:p-4 rounded-[14px] md:rounded-[18px] border transition-all group-hover:scale-110 shrink-0", colorMap[color])}>
             {icon}
           </div>
         </div>

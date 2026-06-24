@@ -38,19 +38,19 @@ function IAMetrics() {
 
   return (
     <div className="space-y-10 text-ink animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-8 bg-white p-5 sm:p-8 md:p-10 rounded-[18px] md:rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-1 rounded-full bg-primary" />
-            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Performance de Qualificação</span>
+        <div className="relative z-10 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div className="w-6 sm:w-10 h-1 rounded-full bg-primary" />
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-primary">Performance de Qualificação</span>
           </div>
-          <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">Inteligência Artificial</h1>
-          <p className="text-gray-500 font-medium text-[15px] max-w-xl">Análise granular da eficiência operacional da sua IA SDR em tempo real com métricas preditivas.</p>
+          <h1 className="text-2xl sm:text-3xl md:text-[44px] font-black text-ink tracking-tight font-jakarta leading-tight md:leading-none mb-2 md:mb-4">Inteligência Artificial</h1>
+          <p className="text-gray-500 font-medium text-sm md:text-[15px] max-w-xl">Análise granular da eficiência operacional da sua IA SDR em tempo real com métricas preditivas.</p>
         </div>
-        <div className="flex items-center gap-4 relative z-10">
+        <div className="flex items-center gap-3 md:gap-4 relative z-10 w-full md:w-auto">
           <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <SelectTrigger className="w-[160px] h-11 rounded-xl border-[#E3E6EB] bg-white">
+            <SelectTrigger className="flex-1 md:flex-none md:w-[160px] h-11 rounded-xl border-[#E3E6EB] bg-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -59,26 +59,26 @@ function IAMetrics() {
               <SelectItem value="yearly">Últimos 12 meses</SelectItem>
             </SelectContent>
           </Select>
-          <div className="p-4 bg-green-50 rounded-[18px] border border-green-100 shadow-sm relative overflow-hidden">
+          <div className="p-3 md:p-4 bg-green-50 rounded-[16px] md:rounded-[18px] border border-green-100 shadow-sm relative overflow-hidden shrink-0">
             <div className="w-4 h-4 bg-[#1FA463] rounded-full animate-pulse shadow-[0_0_15px_rgba(31,164,99,0.5)]" />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
         {stats.map((stat, i) => (
-          <Card key={i} className="border border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] bg-white rounded-[24px] overflow-hidden hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-all duration-500 group relative">
+          <Card key={i} className="border border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] bg-white rounded-[18px] md:rounded-[24px] overflow-hidden hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-all duration-500 group relative">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                <stat.icon className="w-24 h-24" />
             </div>
-            <CardHeader className="flex flex-row items-center justify-between pb-6 pt-8 px-8 relative z-10">
-              <CardTitle className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em]">{stat.title}</CardTitle>
-              <div className={cn("p-4 rounded-[18px] border transition-all group-hover:scale-110 shadow-sm", stat.color.replace('text-', 'bg-').replace('-600', '-50'), stat.color.replace('text-', 'border-').replace('-600', '-100'))}>
-                <stat.icon className={cn("w-6 h-6", stat.color)} />
+            <CardHeader className="flex flex-row items-center justify-between gap-3 pb-4 md:pb-6 pt-5 md:pt-8 px-5 md:px-8 relative z-10">
+              <CardTitle className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] min-w-0 truncate">{stat.title}</CardTitle>
+              <div className={cn("p-3 md:p-4 rounded-[14px] md:rounded-[18px] border transition-all group-hover:scale-110 shadow-sm shrink-0", stat.color.replace('text-', 'bg-').replace('-600', '-50'), stat.color.replace('text-', 'border-').replace('-600', '-100'))}>
+                <stat.icon className={cn("w-5 h-5 md:w-6 md:h-6", stat.color)} />
               </div>
             </CardHeader>
-            <CardContent className="px-8 pb-8 relative z-10">
-              <div className="text-[42px] font-black text-ink tracking-tight mb-3 leading-none">{isLoading ? '—' : stat.value}</div>
+            <CardContent className="px-5 md:px-8 pb-5 md:pb-8 relative z-10">
+              <div className="text-3xl md:text-[42px] font-black text-ink tracking-tight mb-3 leading-none">{isLoading ? '—' : stat.value}</div>
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-sm",
