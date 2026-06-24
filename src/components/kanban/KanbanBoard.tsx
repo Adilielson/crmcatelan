@@ -259,27 +259,27 @@ export function KanbanBoard() {
         <div className="relative">
           <div
             ref={scrollRef}
-            className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none scroll-smooth"
+            className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100dvh-320px)] md:h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none scroll-smooth"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {columns.map((col) => {
               const colLeads = leadsForColumn(col);
               const isCheckedIn = col.system_key === 'checked_in';
               return (
-                <div key={col.id} data-kanban-col className="min-w-[280px] md:min-w-[320px] flex-1 flex flex-col gap-5 snap-start">
-                  <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+                <div key={col.id} data-kanban-col className="w-[88vw] sm:w-[300px] md:w-auto md:min-w-[320px] shrink-0 md:shrink md:flex-1 flex flex-col gap-4 md:gap-5 snap-start min-w-0">
+                  <div className="flex justify-between items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 rounded-[16px] sm:rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden min-w-0">
                     <div
                       className="absolute left-0 top-0 bottom-0 w-1.5"
                       style={{ backgroundColor: col.color }}
                     />
-                    <div className="flex items-center gap-3">
-                      <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.name}</span>
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta truncate">{col.name}</span>
                       {isCheckedIn && (
-                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 shrink-0">
                           Qualificado
                         </span>
                       )}
-                      <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
+                      <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB] shrink-0">
                         {colLeads.length}
                       </div>
                     </div>
@@ -488,7 +488,7 @@ function LeadCard({
       draggable
       onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)}
       onClick={onClick}
-      className="bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer active:cursor-grabbing hover:border-[#FFC400]/50 hover:shadow-[0_12px_24px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group relative"
+      className="bg-white p-4 sm:p-6 rounded-[16px] sm:rounded-[20px] border border-[#E3E6EB] shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer active:cursor-grabbing hover:border-[#FFC400]/50 hover:shadow-[0_12px_24px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group relative min-w-0"
     >
       <AnimatePresence>
         {(lead.score_ia ?? 0) >= 80 && (
