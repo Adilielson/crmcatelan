@@ -488,7 +488,7 @@ function LeadCard({
       draggable
       onDragStart={(e) => e.dataTransfer.setData('leadId', lead.id)}
       onClick={onClick}
-      className="bg-white p-6 rounded-[20px] border border-[#E3E6EB] shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer active:cursor-grabbing hover:border-[#FFC400]/50 hover:shadow-[0_12px_24px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group relative"
+      className="bg-white p-4 sm:p-6 rounded-[16px] sm:rounded-[20px] border border-[#E3E6EB] shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer active:cursor-grabbing hover:border-[#FFC400]/50 hover:shadow-[0_12px_24px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group relative min-w-0"
     >
       <AnimatePresence>
         {(lead.score_ia ?? 0) >= 80 && (
