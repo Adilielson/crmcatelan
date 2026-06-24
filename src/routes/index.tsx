@@ -250,7 +250,7 @@ function Dashboard() {
               Performance do Funil (CRM)
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[320px]">
+          <CardContent className="h-[260px] sm:h-[300px] md:h-[320px] p-3 md:p-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={funnelData} layout="vertical" margin={{ left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
