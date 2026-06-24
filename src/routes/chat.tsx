@@ -783,7 +783,7 @@ function Chat() {
 
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50/50 mobile-no-scrollbar thin-scrollbar">
-              <div className="p-8 space-y-4 min-h-full">
+              <div className="p-3 sm:p-6 md:p-8 space-y-4 min-h-full">
                 {currentLead && (currentLead.ad_id || currentLead.ad_name || currentLead.ad_headline || currentLead.ad_body || currentLead.ad_thumbnail_url || currentLead.ad_source_url || currentLead.ctwa_clid) && (() => {
                   const src = (currentLead.ad_source_url || '').toLowerCase()
                   const platform = src.includes('instagram') ? 'Instagram' : src.includes('facebook') || src.includes('fb.') ? 'Facebook' : 'Meta Ads'
