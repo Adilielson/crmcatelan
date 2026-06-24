@@ -454,11 +454,11 @@ function Chat() {
 
   const insightsPanel = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
-      <TabsList className="w-full justify-start rounded-none border-b border-gray-100 bg-white h-[73px] px-4 gap-2">
-        <TabsTrigger value="ia" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+      <TabsList className="w-full justify-start rounded-none border-b border-gray-100 bg-white h-auto min-h-[60px] px-3 sm:px-4 py-2 gap-2 flex-wrap">
+        <TabsTrigger value="ia" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-3 sm:px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
           <Brain className="w-4 h-4 mr-2" /> SDR Insight
         </TabsTrigger>
-        <TabsTrigger value="lead" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
+        <TabsTrigger value="lead" className="h-10 data-[state=active]:bg-primary/5 data-[state=active]:text-primary rounded-xl px-3 sm:px-4 text-xs font-bold font-jakarta transition-all border border-transparent data-[state=active]:border-primary/10">
           <User className="w-4 h-4 mr-2" /> Perfil
         </TabsTrigger>
       </TabsList>
