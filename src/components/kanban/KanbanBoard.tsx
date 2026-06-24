@@ -259,15 +259,15 @@ export function KanbanBoard() {
         <div className="relative">
           <div
             ref={scrollRef}
-            className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none scroll-smooth"
+            className="flex gap-4 md:gap-8 overflow-x-auto pb-8 scrollbar-hide -mx-4 px-4 h-[calc(100dvh-320px)] md:h-[calc(100vh-280px)] snap-x snap-mandatory md:snap-none scroll-smooth"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {columns.map((col) => {
               const colLeads = leadsForColumn(col);
               const isCheckedIn = col.system_key === 'checked_in';
               return (
-                <div key={col.id} data-kanban-col className="min-w-[280px] md:min-w-[320px] flex-1 flex flex-col gap-5 snap-start">
-                  <div className="flex justify-between items-center px-6 py-4 rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden">
+                <div key={col.id} data-kanban-col className="w-[88vw] sm:w-[300px] md:w-auto md:min-w-[320px] shrink-0 md:shrink md:flex-1 flex flex-col gap-4 md:gap-5 snap-start min-w-0">
+                  <div className="flex justify-between items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 rounded-[16px] sm:rounded-[20px] bg-white border border-[#E3E6EB] shadow-sm relative overflow-hidden min-w-0">
                     <div
                       className="absolute left-0 top-0 bottom-0 w-1.5"
                       style={{ backgroundColor: col.color }}
