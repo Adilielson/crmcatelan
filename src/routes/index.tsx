@@ -277,7 +277,7 @@ function Dashboard() {
               Origem dos Leads
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[280px] flex flex-col items-center">
+          <CardContent className="h-auto sm:h-[280px] flex flex-col items-center p-3 md:p-6">
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
