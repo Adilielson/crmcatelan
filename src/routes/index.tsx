@@ -312,15 +312,15 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Atividade da IA SDR */}
         <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-4 border-b border-border/50 bg-gray-50/50">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-primary/10 rounded-xl shrink-0">
                 <Brain className="w-5 h-5 text-primary" />
               </div>
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Atividade Recente IA SDR</CardTitle>
+              <CardTitle className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-gray-400 truncate">Atividade IA SDR</CardTitle>
             </div>
-            <Link to="/performance">
-              <Button variant="ghost" size="sm" className="text-xs h-8">Ver métricas de IA</Button>
+            <Link to="/performance" className="shrink-0">
+              <Button variant="ghost" size="sm" className="text-xs h-8 px-2 sm:px-3"><span className="hidden sm:inline">Ver métricas de IA</span><span className="sm:hidden">Ver</span></Button>
             </Link>
           </CardHeader>
           <CardContent>
