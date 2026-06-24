@@ -272,14 +272,14 @@ export function KanbanBoard() {
                       className="absolute left-0 top-0 bottom-0 w-1.5"
                       style={{ backgroundColor: col.color }}
                     />
-                    <div className="flex items-center gap-3">
-                      <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta">{col.name}</span>
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <span className="font-black uppercase tracking-[0.15em] text-[11px] text-[#A7ADB8] font-jakarta truncate">{col.name}</span>
                       {isCheckedIn && (
-                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 shrink-0">
                           Qualificado
                         </span>
                       )}
-                      <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB]">
+                      <div className="bg-[#F6F7F9] text-ink text-[10px] px-2.5 py-1 rounded-full font-black min-w-[28px] text-center border border-[#E3E6EB] shrink-0">
                         {colLeads.length}
                       </div>
                     </div>
