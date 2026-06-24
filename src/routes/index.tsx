@@ -402,9 +402,9 @@ function Dashboard() {
 
 function StatCard({ title, value, change, changeDesc, icon, highlight, link }: { title: string; value: string; change: string; changeDesc: string; icon: React.ReactNode; highlight?: boolean; link: string }) {
   return (
-    <Link to={link} className="block group">
+    <Link to={link} className="block group h-full">
       <Card className={cn(
-        "transition-all duration-500 cursor-pointer border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 group-active:scale-[0.98] overflow-hidden relative rounded-[18px] md:rounded-[24px]",
+        "h-full transition-all duration-500 cursor-pointer border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 group-active:scale-[0.98] overflow-hidden relative rounded-[18px] md:rounded-[24px]",
         highlight
           ? "bg-gradient-to-br from-[#FFC400] via-[#FFD60A] to-[#E0A500] border-none" 
           : "bg-white"
