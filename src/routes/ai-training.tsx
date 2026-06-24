@@ -140,28 +140,28 @@ function AITrainingSettings() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-8 bg-white p-5 sm:p-8 md:p-10 rounded-[18px] md:rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl" />
-        <div className="relative z-10 flex items-center gap-8">
-          <div className="p-5 bg-[#FFC400]/10 rounded-[24px] border border-[#FFC400]/20 shadow-inner">
-            <Brain className="w-12 h-12 text-primary" />
+        <div className="relative z-10 flex items-start sm:items-center gap-4 sm:gap-6 md:gap-8 min-w-0">
+          <div className="p-3 sm:p-4 md:p-5 bg-[#FFC400]/10 rounded-[18px] md:rounded-[24px] border border-[#FFC400]/20 shadow-inner shrink-0">
+            <Brain className="w-7 h-7 sm:w-9 sm:h-9 md:w-12 md:h-12 text-primary" />
           </div>
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-1 rounded-full bg-primary" />
-              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Inteligência SDR Ativa</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className="w-6 sm:w-10 h-1 rounded-full bg-primary" />
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-primary truncate">Inteligência SDR Ativa</span>
             </div>
-            <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">Treinamento IA</h1>
-            <p className="text-gray-500 font-medium text-[15px] max-w-xl">Personalize o comportamento, tom de voz e base de conhecimento da inteligência de atendimento da Ótica Catelan.</p>
+            <h1 className="text-2xl sm:text-3xl md:text-[44px] font-black text-ink tracking-tight font-jakarta leading-tight md:leading-none mb-2 md:mb-4">Treinamento IA</h1>
+            <p className="text-gray-500 font-medium text-sm md:text-[15px] max-w-xl">Personalize o comportamento, tom de voz e base de conhecimento da inteligência de atendimento da Ótica Catelan.</p>
           </div>
         </div>
-        <div className="flex gap-3 items-center">
-          <div className="flex items-center gap-2 mr-4">
-            <Label htmlFor="training-mode" className="text-sm">Modo de Aprendizado</Label>
+        <div className="flex flex-wrap gap-3 items-center w-full md:w-auto">
+          <div className="flex items-center gap-2 md:mr-4">
+            <Label htmlFor="training-mode" className="text-xs sm:text-sm">Modo de Aprendizado</Label>
             <Switch id="training-mode" checked={form.training_mode} onCheckedChange={(v) => setField('training_mode', v)} />
           </div>
-          <Button onClick={handleSave} disabled={saveMut.isPending} className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-14 px-10 rounded-[16px] shadow-xl shadow-primary/20 uppercase tracking-widest border-none">
-            {saveMut.isPending ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
+          <Button onClick={handleSave} disabled={saveMut.isPending} className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-12 md:h-14 px-5 md:px-10 rounded-[14px] md:rounded-[16px] shadow-xl shadow-primary/20 uppercase tracking-widest border-none text-[11px] flex-1 md:flex-none">
+            {saveMut.isPending ? 'SALVANDO...' : 'SALVAR'}
           </Button>
         </div>
       </div>
