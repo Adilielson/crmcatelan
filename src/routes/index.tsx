@@ -226,17 +226,15 @@ function Dashboard() {
           icon={<Calendar className="w-5 h-5" />}
           link="/agenda"
         />
-        <div className="col-span-2 lg:col-span-1">
-          <StatCard 
-            title="Qualificação IA" 
-            value={stats.qualRate} 
-            change={`${kpis?.qualRate?.toFixed(0) ?? 0}%`} 
-            changeDesc="leads com score ≥ 70"
-            icon={<Brain className="w-5 h-5" />}
-            highlight
-            link="/performance"
-          />
-        </div>
+        <StatCard
+          title="Qualificação IA"
+          value={stats.qualRate}
+          change={`${kpis?.qualRate?.toFixed(0) ?? 0}%`}
+          changeDesc="leads com score ≥ 70"
+          icon={<Brain className="w-5 h-5" />}
+          highlight
+          link="/performance"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
