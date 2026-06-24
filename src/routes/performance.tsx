@@ -38,19 +38,19 @@ function IAMetrics() {
 
   return (
     <div className="space-y-10 text-ink animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white p-10 rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-8 bg-white p-5 sm:p-8 md:p-10 rounded-[18px] md:rounded-[24px] border border-[#E3E6EB] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl transition-all group-hover:bg-primary/10" />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-1 rounded-full bg-primary" />
-            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary">Performance de Qualificação</span>
+        <div className="relative z-10 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div className="w-6 sm:w-10 h-1 rounded-full bg-primary" />
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-primary">Performance de Qualificação</span>
           </div>
-          <h1 className="text-[44px] font-black text-ink tracking-tight font-jakarta leading-none mb-4">Inteligência Artificial</h1>
-          <p className="text-gray-500 font-medium text-[15px] max-w-xl">Análise granular da eficiência operacional da sua IA SDR em tempo real com métricas preditivas.</p>
+          <h1 className="text-2xl sm:text-3xl md:text-[44px] font-black text-ink tracking-tight font-jakarta leading-tight md:leading-none mb-2 md:mb-4">Inteligência Artificial</h1>
+          <p className="text-gray-500 font-medium text-sm md:text-[15px] max-w-xl">Análise granular da eficiência operacional da sua IA SDR em tempo real com métricas preditivas.</p>
         </div>
-        <div className="flex items-center gap-4 relative z-10">
+        <div className="flex items-center gap-3 md:gap-4 relative z-10 w-full md:w-auto">
           <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-            <SelectTrigger className="w-[160px] h-11 rounded-xl border-[#E3E6EB] bg-white">
+            <SelectTrigger className="flex-1 md:flex-none md:w-[160px] h-11 rounded-xl border-[#E3E6EB] bg-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -59,7 +59,7 @@ function IAMetrics() {
               <SelectItem value="yearly">Últimos 12 meses</SelectItem>
             </SelectContent>
           </Select>
-          <div className="p-4 bg-green-50 rounded-[18px] border border-green-100 shadow-sm relative overflow-hidden">
+          <div className="p-3 md:p-4 bg-green-50 rounded-[16px] md:rounded-[18px] border border-green-100 shadow-sm relative overflow-hidden shrink-0">
             <div className="w-4 h-4 bg-[#1FA463] rounded-full animate-pulse shadow-[0_0_15px_rgba(31,164,99,0.5)]" />
           </div>
         </div>
