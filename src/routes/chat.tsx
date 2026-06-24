@@ -539,20 +539,20 @@ function Chat() {
   )
 
   return (
-    <div className="bg-white border border-[#E3E6EB] rounded-[24px] h-[calc(100vh-72px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
+    <div className="bg-white border border-[#E3E6EB] rounded-[18px] md:rounded-[24px] h-[calc(100dvh-72px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
 
 
 
       {/* Coluna 1: Lista de Sessões */}
       <div className={cn(
-        "w-full md:w-[360px] md:flex-shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50",
+        "w-full md:w-[320px] lg:w-[360px] md:shrink-0 border-r border-[#E3E6EB] flex-col bg-gray-50/50 min-w-0",
         hasSelection ? "hidden md:flex" : "flex",
       )}>
 
-        <div className="p-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20 gap-3">
-          <h2 className="font-jakarta font-black text-xl text-ink tracking-tight uppercase tracking-wider">Conversas</h2>
+        <div className="px-4 sm:px-6 border-b border-[#E3E6EB] bg-white flex justify-between items-center h-20 gap-2 min-w-0">
+          <h2 className="font-jakarta font-black text-base sm:text-xl text-ink uppercase tracking-wider truncate min-w-0">Conversas</h2>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-10 w-[150px] rounded-xl bg-gray-50 border-transparent text-xs font-bold uppercase">
+            <SelectTrigger className="h-10 w-[120px] sm:w-[150px] shrink-0 rounded-xl bg-gray-50 border-transparent text-xs font-bold uppercase">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
