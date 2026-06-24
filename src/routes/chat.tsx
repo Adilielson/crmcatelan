@@ -464,7 +464,7 @@ function Chat() {
       </TabsList>
 
       <ScrollArea className="flex-1">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <TabsContent value="ia" className="m-0 space-y-8 outline-none">
             {currentLead ? (
               <>
