@@ -962,7 +962,7 @@ function Chat() {
                     <Button
                       onClick={handleSend}
                       disabled={sending}
-                      className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
+                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all shrink-0 disabled:opacity-40"
                     >
                       {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </Button>
@@ -970,7 +970,7 @@ function Chat() {
                     <Button
                       onClick={startRecording}
                       disabled={sending}
-                      className="h-12 w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all flex-shrink-0 disabled:opacity-40"
+                      className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-primary hover:bg-yellow-bright text-primary-foreground shadow-lg shadow-primary/20 transition-all shrink-0 disabled:opacity-40"
                       title="Gravar áudio"
                     >
                       <Mic className="w-5 h-5" />
