@@ -371,21 +371,24 @@ function Dashboard() {
                 <p className="text-xs text-gray-400 italic p-4 text-center">Nenhum lead estagnado. ✓</p>
               )}
               {slaAlerts.map((alert, i) => (
-                <div key={i} className="flex items-center justify-between p-4 border border-danger/20 rounded-[14px] bg-danger/5 hover:bg-danger/10 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 md:p-4 border border-danger/20 rounded-[14px] bg-danger/5 hover:bg-danger/10 transition-all">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 shrink-0 rounded-full bg-red-100 flex items-center justify-center">
                       <Clock className="w-4 h-4 text-red-600" />
                     </div>
-                    <div>
-                      <p className="text-sm font-black text-ink font-jakarta">{alert.name} <Badge className="ml-2 bg-danger/20 text-danger text-[9px] border-none font-black">{alert.priority}</Badge></p>
-                      <p className="text-[10px] text-[#6C727C]">Parado em {alert.stage} há {alert.waitHours}h</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="text-sm font-black text-ink font-jakarta truncate min-w-0">{alert.name}</p>
+                        <Badge className="bg-danger/20 text-danger text-[9px] border-none font-black shrink-0">{alert.priority}</Badge>
+                      </div>
+                      <p className="text-[10px] text-[#6C727C] truncate">Parado em {alert.stage} há {alert.waitHours}h</p>
                       {alert.firstContactAt && (
-                        <p className="text-[9px] text-gray-400 font-medium">1º contato: {new Date(alert.firstContactAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[9px] text-gray-400 font-medium truncate">1º contato: {new Date(alert.firstContactAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                       )}
                     </div>
                   </div>
-                  <Link to="/chat" search={alert.phone ? { phone: alert.phone } : undefined}>
-                    <Button size="sm" className="h-7 text-[10px] font-bold">Assumir Chat</Button>
+                  <Link to="/chat" search={alert.phone ? { phone: alert.phone } : undefined} className="shrink-0 self-stretch sm:self-auto">
+                    <Button size="sm" className="h-8 w-full sm:w-auto text-[10px] font-bold">Assumir Chat</Button>
                   </Link>
 
                 </div>
