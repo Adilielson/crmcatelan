@@ -275,7 +275,7 @@ function Dashboard() {
               Origem dos Leads
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-auto sm:h-[280px] flex flex-col items-center p-3 md:p-6">
+          <CardContent className="h-auto sm:h-[300px] flex flex-col items-center p-3 md:p-6 pb-6 md:pb-8">
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
@@ -321,7 +321,7 @@ function Dashboard() {
               <Button variant="ghost" size="sm" className="text-xs h-8 px-2 sm:px-3"><span className="hidden sm:inline">Ver métricas de IA</span><span className="sm:hidden">Ver</span></Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-4">
               {recentAi.length === 0 && (
                 <p className="text-xs text-gray-400 italic p-4 text-center">Sem atividade da IA ainda.</p>
@@ -363,7 +363,7 @@ function Dashboard() {
               <Button size="sm" className="h-8 text-[11px] font-black uppercase tracking-wider px-2 sm:px-3"><span className="hidden sm:inline">Atender Leads</span><span className="sm:hidden">Atender</span></Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-3">
               {slaAlerts.length === 0 && (
                 <p className="text-xs text-gray-400 italic p-4 text-center">Nenhum lead estagnado. ✓</p>
