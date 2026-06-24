@@ -923,9 +923,9 @@ function Chat() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex gap-2 items-center">
-                  <div className="flex-1 flex gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:bg-white focus-within:border-primary/30 focus-within:shadow-sm transition-all items-center">
-                    <Button variant="ghost" size="icon" className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl">
+                <div className="flex gap-2 items-center min-w-0">
+                  <div className="flex-1 min-w-0 flex gap-1 sm:gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:bg-white focus-within:border-primary/30 focus-within:shadow-sm transition-all items-center">
+                    <Button variant="ghost" size="icon" className="hidden sm:inline-flex text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl shrink-0">
                       <Smile className="w-5 h-5" />
                     </Button>
                     <Button
@@ -933,7 +933,7 @@ function Chat() {
                       disabled={sending}
                       variant="ghost"
                       size="icon"
-                      className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl"
+                      className="text-gray-400 h-9 w-9 hover:text-primary hover:bg-primary/5 rounded-xl shrink-0"
                       title="Anexar imagem"
                     >
                       <ImageIcon className="w-5 h-5" />
