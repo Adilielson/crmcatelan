@@ -430,13 +430,13 @@ function MetricCard({ title, value, change, icon, color }: { title: string; valu
       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-24 h-24" })}
       </div>
-      <CardContent className="p-8 relative z-10">
-        <div className="flex justify-between items-start mb-6">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] font-jakarta">{title}</p>
-            <h3 className="text-[36px] font-black text-ink tracking-tight font-jakarta leading-none">{value}</h3>
+      <CardContent className="p-5 sm:p-6 md:p-8 relative z-10">
+        <div className="flex justify-between items-start gap-3 mb-4 sm:mb-6">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] font-jakarta truncate">{title}</p>
+            <h3 className="text-2xl sm:text-3xl md:text-[36px] font-black text-ink tracking-tight font-jakarta leading-tight md:leading-none">{value}</h3>
           </div>
-          <div className={cn("p-4 rounded-[18px] border transition-all group-hover:scale-110", colorMap[color])}>
+          <div className={cn("p-3 md:p-4 rounded-[14px] md:rounded-[18px] border transition-all group-hover:scale-110 shrink-0", colorMap[color])}>
             {icon}
           </div>
         </div>
