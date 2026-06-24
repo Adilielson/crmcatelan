@@ -65,20 +65,20 @@ function IAMetrics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
         {stats.map((stat, i) => (
-          <Card key={i} className="border border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] bg-white rounded-[24px] overflow-hidden hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-all duration-500 group relative">
+          <Card key={i} className="border border-[#E3E6EB] shadow-[0_4px_20px_rgba(0,0,0,0.02)] bg-white rounded-[18px] md:rounded-[24px] overflow-hidden hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-all duration-500 group relative">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                <stat.icon className="w-24 h-24" />
             </div>
-            <CardHeader className="flex flex-row items-center justify-between pb-6 pt-8 px-8 relative z-10">
-              <CardTitle className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em]">{stat.title}</CardTitle>
-              <div className={cn("p-4 rounded-[18px] border transition-all group-hover:scale-110 shadow-sm", stat.color.replace('text-', 'bg-').replace('-600', '-50'), stat.color.replace('text-', 'border-').replace('-600', '-100'))}>
-                <stat.icon className={cn("w-6 h-6", stat.color)} />
+            <CardHeader className="flex flex-row items-center justify-between gap-3 pb-4 md:pb-6 pt-5 md:pt-8 px-5 md:px-8 relative z-10">
+              <CardTitle className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] min-w-0 truncate">{stat.title}</CardTitle>
+              <div className={cn("p-3 md:p-4 rounded-[14px] md:rounded-[18px] border transition-all group-hover:scale-110 shadow-sm shrink-0", stat.color.replace('text-', 'bg-').replace('-600', '-50'), stat.color.replace('text-', 'border-').replace('-600', '-100'))}>
+                <stat.icon className={cn("w-5 h-5 md:w-6 md:h-6", stat.color)} />
               </div>
             </CardHeader>
-            <CardContent className="px-8 pb-8 relative z-10">
-              <div className="text-[42px] font-black text-ink tracking-tight mb-3 leading-none">{isLoading ? '—' : stat.value}</div>
+            <CardContent className="px-5 md:px-8 pb-5 md:pb-8 relative z-10">
+              <div className="text-3xl md:text-[42px] font-black text-ink tracking-tight mb-3 leading-none">{isLoading ? '—' : stat.value}</div>
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-sm",
