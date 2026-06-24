@@ -354,15 +354,15 @@ function Dashboard() {
 
         {/* Alertas de SLA e Estagnação */}
         <Card className="shadow-card border-border bg-card rounded-[14px] overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50 bg-gray-50/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-danger/10 rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-4 border-b border-border/50 bg-gray-50/50">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-danger/10 rounded-xl shrink-0">
                 <AlertTriangle className="w-5 h-5 text-danger" />
               </div>
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Alertas de SLA / Estagnação</CardTitle>
+              <CardTitle className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-gray-400 truncate">Alertas SLA</CardTitle>
             </div>
-            <Link to="/chat" search={{ stage: 'open' }}>
-              <Button size="sm" className="h-8 text-[11px] font-black uppercase tracking-wider">Atender Leads</Button>
+            <Link to="/chat" search={{ stage: 'open' }} className="shrink-0">
+              <Button size="sm" className="h-8 text-[11px] font-black uppercase tracking-wider px-2 sm:px-3"><span className="hidden sm:inline">Atender Leads</span><span className="sm:hidden">Atender</span></Button>
             </Link>
           </CardHeader>
           <CardContent>
