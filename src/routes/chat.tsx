@@ -898,7 +898,7 @@ function Chat() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-white">
+            <div className="p-3 sm:p-4 border-t border-gray-100 bg-white">
               <input
                 ref={fileInputRef}
                 type="file"
