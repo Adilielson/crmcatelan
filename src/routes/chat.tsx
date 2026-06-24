@@ -853,7 +853,7 @@ function Chat() {
                   const isVideo = m.mediaUrl && (m.mediaMime?.startsWith('video/') || m.type === 'video')
                   return (
                   <div key={m.id} className={cn("flex", m.fromMe ? "justify-end" : "justify-start")}>
-                    <div className="max-w-[70%]">
+                    <div className="max-w-[85%] sm:max-w-[75%] md:max-w-[70%] min-w-0">
                       <div className={cn(
                         "p-2 rounded-2xl shadow-sm overflow-hidden",
                         m.fromMe
