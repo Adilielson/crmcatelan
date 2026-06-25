@@ -559,6 +559,9 @@ function SimulationTab() {
     setLoading(true)
     try {
       const res = await sim({ data: { messages: nextMessages } })
+      // Simula tempo de digitação humana: 600ms base + ~22ms por caractere, máx 5s
+      const typingDelay = Math.min(5000, 600 + (res.reply?.length ?? 0) * 22)
+      await new Promise((r) => setTimeout(r, typingDelay))
       setMessages([...nextMessages, { role: 'assistant', content: res.reply }])
     } catch (e: any) {
       toast.error(e?.message ?? 'Erro na simulação')
@@ -603,7 +606,12 @@ function SimulationTab() {
           {loading && (
             <div className="flex gap-3 max-w-[80%]">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white">IA</div>
-              <div className="p-3 bg-primary/10 rounded-2xl rounded-tl-none"><Loader2 className="w-4 h-4 animate-spin" /></div>
+              <div className="p-3 bg-primary/10 rounded-2xl rounded-tl-none flex items-center gap-1">
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" />
+                <span className="ml-2 text-xs text-gray-500">digitando…</span>
+              </div>
             </div>
           )}
         </div>
