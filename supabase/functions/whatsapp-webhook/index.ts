@@ -836,6 +836,7 @@ Deno.serve(async (req) => {
                   message_type: msgType,
                   status: "sent",
                   error_message: text.slice(0, 500),
+                  body: text,
                   sender_name: "Atendente",
                 });
               if (insErr) {
