@@ -559,10 +559,24 @@ function SimulationTab() {
     setLoading(true)
     try {
       const res = await sim({ data: { messages: nextMessages } })
-      // Simula tempo de digitação humana: 600ms base + ~22ms por caractere, máx 5s
-      const typingDelay = Math.min(5000, 600 + (res.reply?.length ?? 0) * 22)
-      await new Promise((r) => setTimeout(r, typingDelay))
-      setMessages([...nextMessages, { role: 'assistant', content: res.reply }])
+      // Quebra a resposta em mensagens menores (estilo WhatsApp): por parágrafos
+      // e, se ainda assim ficar grande, por frases.
+      const chunks = (res.reply ?? '')
+        .split(/\n{2,}/)
+        .flatMap((p: string) =>
+          p.length > 220 ? p.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/) : [p]
+        )
+        .map((c: string) => c.trim())
+        .filter(Boolean)
+
+      let acc: Msg[] = nextMessages
+      for (let i = 0; i < chunks.length; i++) {
+        const c = chunks[i]
+        const delay = Math.min(3500, 500 + c.length * 22)
+        await new Promise((r) => setTimeout(r, delay))
+        acc = [...acc, { role: 'assistant', content: c }]
+        setMessages(acc)
+      }
     } catch (e: any) {
       toast.error(e?.message ?? 'Erro na simulação')
       setMessages(nextMessages.slice(0, -1))
