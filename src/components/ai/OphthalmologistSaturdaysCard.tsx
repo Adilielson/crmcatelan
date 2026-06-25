@@ -50,9 +50,9 @@ export function OphthalmologistSaturdaysCard() {
     setSaving(true);
     const sorted = Array.from(new Set(next)).sort();
     setDates(sorted);
-    const { error } = await supabase
-      .from('ai_configs')
-      .update({ ophthalmologist_saturdays: sorted as any })
+    const { error } = await (supabase
+      .from('ai_configs') as any)
+      .update({ ophthalmologist_saturdays: sorted })
       .eq('tenant_id', tenantId);
     setSaving(false);
     if (error) {
