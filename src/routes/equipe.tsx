@@ -77,6 +77,7 @@ const ROLE_LABELS: Record<string, string> = {
   seller: 'Vendedor',
   consultant: 'Consultor',
   attendant: 'Atendente',
+  manager: 'Gerente',
   admin: 'Admin',
   super_admin: 'Super Admin',
   marketing_partner: 'Parceiro',
@@ -103,7 +104,7 @@ const ACTIVE_STATUSES = new Set([
 ]);
 
 // Roles que aparecem na aba Equipe (atendentes, equipe e gerentes)
-const VISIBLE_ROLES = ['attendant', 'seller', 'consultant', 'admin', 'super_admin', 'owner'];
+const VISIBLE_ROLES = ['attendant', 'seller', 'consultant', 'manager', 'admin', 'super_admin', 'owner'];
 
 // SLA: alerta se lead ativo está parado há mais de X horas
 const STALE_HOURS = 4;
