@@ -1150,6 +1150,7 @@ Deno.serve(async (req) => {
                   message_type: "text",
                   status: sent ? "sent" : "failed",
                   error_message: reply.slice(0, 500),
+                  body: reply,
                   sender_name: "IA SDR",
                 });
                 console.log(`[sdr] resposta ${sent ? "enviada" : "falhou"} para ${senderPhone}`);
