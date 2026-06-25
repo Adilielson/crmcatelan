@@ -874,6 +874,7 @@ Deno.serve(async (req) => {
             message_type: msgType,
             status: "received",
             error_message: hasText ? text!.slice(0, 500) : null,
+            body: hasText ? text : null,
             sender_name: senderName,
             sender_avatar_url: senderAvatarUrl,
             media_url: mediaUrl,
