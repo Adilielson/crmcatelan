@@ -466,13 +466,13 @@ function Equipe() {
                   : 'border-[#E3E6EB]'
               }`}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-black text-violet-700">
-                IA
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-black text-amber-700">
+                ?
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-ink">Atendimento IA</p>
+                <p className="truncate text-sm font-bold text-ink">Sem atendente</p>
                 <p className="text-[10px] uppercase tracking-wider text-[#6B7280]">
-                  Automático
+                  Aguardando atribuição
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className="font-bold text-ink">
