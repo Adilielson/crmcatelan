@@ -526,7 +526,7 @@ function Equipe() {
               <SelectContent>
                 <SelectItem value="all">Todos os atendentes</SelectItem>
                 <SelectItem value={FREE_FILTER_ID}>Livres (sem atendente)</SelectItem>
-                <SelectItem value={AI_FILTER_ID}>Atendimento IA</SelectItem>
+                <SelectItem value={AI_FILTER_ID}>Sem atendente (não atribuídos)</SelectItem>
                 {profiles.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.full_name || 'Sem nome'}
