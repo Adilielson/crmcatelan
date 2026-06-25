@@ -217,8 +217,31 @@ function Equipe() {
     },
   });
 
+  // Quem efetivamente FECHOU cada lead (último stage_change → showed_up)
+  const closersQ = useQuery({
+    queryKey: ['equipe-closers', tenantId],
+    enabled: !!tenantId,
+    queryFn: async (): Promise<Map<string, string>> => {
+      const { data, error } = await supabase
+        .from('lead_pipeline_history')
+        .select('lead_id, changed_by, created_at')
+        .eq('tenant_id', tenantId!)
+        .eq('event_type', 'stage_change')
+        .eq('stage_to', 'showed_up')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const m = new Map<string, string>();
+      for (const row of (data ?? []) as Array<{ lead_id: string; changed_by: string | null }>) {
+        if (row.changed_by && !m.has(row.lead_id)) m.set(row.lead_id, row.changed_by);
+      }
+      return m;
+    },
+  });
+
   const profiles = profilesQ.data ?? [];
   const leads = leadsQ.data ?? [];
+  const closersByLead = closersQ.data ?? new Map<string, string>();
+
 
   const profileById = useMemo(() => {
     const m = new Map<string, TeamProfile>();
@@ -251,22 +274,25 @@ function Equipe() {
       if (oldestCandidate > cur.oldestHrs) cur.oldestHrs = oldestCandidate;
       byUser.set(l.assigned_user_id, cur);
     }
-    // Soma vendas fechadas (status = showed_up) por atendente, com base no valor da ficha
+    // Soma vendas fechadas (status = showed_up) por atendente.
+    // Atribuição: assigned_user_id; se ausente, usa quem moveu o lead para "Fechado".
     for (const l of leads) {
       if (l.status !== 'showed_up') continue;
       const val = Number(l.sales_value ?? 0) || 0;
-      if (!l.assigned_user_id) {
+      const effectiveSeller = l.assigned_user_id ?? closersByLead.get(l.id) ?? null;
+      if (!effectiveSeller) {
         aiSales += val;
         aiSalesCount += 1;
         continue;
       }
-      const cur = byUser.get(l.assigned_user_id) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
+      const cur = byUser.get(effectiveSeller) ?? { count: 0, stale: 0, oldestHrs: 0, sales: 0, salesCount: 0 };
       cur.sales += val;
       cur.salesCount += 1;
-      byUser.set(l.assigned_user_id, cur);
+      byUser.set(effectiveSeller, cur);
     }
     return { byUser, aiCount, aiStale, aiOldest, aiSales, aiSalesCount, totalActive: active.length };
-  }, [leads]);
+  }, [leads, closersByLead]);
+
 
   const kpis = useMemo(() => {
     const busyUserIds = new Set(workload.byUser.keys());
