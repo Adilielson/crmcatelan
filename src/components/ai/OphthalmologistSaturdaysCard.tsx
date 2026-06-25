@@ -21,7 +21,7 @@ function nextSaturdays(count = 16): string[] {
 }
 
 export function OphthalmologistSaturdaysCard() {
-  const tenantId = useUserStore((s) => s.profile?.tenant_id);
+  const tenantId = useAuthStore((s) => s.user?.tenant_id) ?? DEV_TENANT_ID;
   const [dates, setDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
