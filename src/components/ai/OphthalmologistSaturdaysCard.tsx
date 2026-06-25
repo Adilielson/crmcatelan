@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserStore } from '@/store/useUserStore';
+import { useAuthStore, DEV_TENANT_ID } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
 function nextSaturdays(count = 16): string[] {
