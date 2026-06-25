@@ -559,6 +559,9 @@ function SimulationTab() {
     setLoading(true)
     try {
       const res = await sim({ data: { messages: nextMessages } })
+      // Simula tempo de digitação humana: 600ms base + ~22ms por caractere, máx 5s
+      const typingDelay = Math.min(5000, 600 + (res.reply?.length ?? 0) * 22)
+      await new Promise((r) => setTimeout(r, typingDelay))
       setMessages([...nextMessages, { role: 'assistant', content: res.reply }])
     } catch (e: any) {
       toast.error(e?.message ?? 'Erro na simulação')
