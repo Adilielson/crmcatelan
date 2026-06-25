@@ -204,6 +204,7 @@ export type Database = {
           knowledge_base_faq: string | null
           lead_expiration_limit: number | null
           model_temperature: number | null
+          ophthalmologist_saturdays: Json
           prompt_system: string | null
           qualification_questions: Json | null
           qualification_threshold: number | null
@@ -225,6 +226,7 @@ export type Database = {
           knowledge_base_faq?: string | null
           lead_expiration_limit?: number | null
           model_temperature?: number | null
+          ophthalmologist_saturdays?: Json
           prompt_system?: string | null
           qualification_questions?: Json | null
           qualification_threshold?: number | null
@@ -246,6 +248,7 @@ export type Database = {
           knowledge_base_faq?: string | null
           lead_expiration_limit?: number | null
           model_temperature?: number | null
+          ophthalmologist_saturdays?: Json
           prompt_system?: string | null
           qualification_questions?: Json | null
           qualification_threshold?: number | null
