@@ -217,8 +217,31 @@ function Equipe() {
     },
   });
 
+  // Quem efetivamente FECHOU cada lead (último stage_change → showed_up)
+  const closersQ = useQuery({
+    queryKey: ['equipe-closers', tenantId],
+    enabled: !!tenantId,
+    queryFn: async (): Promise<Map<string, string>> => {
+      const { data, error } = await supabase
+        .from('lead_pipeline_history')
+        .select('lead_id, changed_by, created_at')
+        .eq('tenant_id', tenantId!)
+        .eq('event_type', 'stage_change')
+        .eq('stage_to', 'showed_up')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const m = new Map<string, string>();
+      for (const row of (data ?? []) as Array<{ lead_id: string; changed_by: string | null }>) {
+        if (row.changed_by && !m.has(row.lead_id)) m.set(row.lead_id, row.changed_by);
+      }
+      return m;
+    },
+  });
+
   const profiles = profilesQ.data ?? [];
   const leads = leadsQ.data ?? [];
+  const closersByLead = closersQ.data ?? new Map<string, string>();
+
 
   const profileById = useMemo(() => {
     const m = new Map<string, TeamProfile>();
