@@ -836,6 +836,7 @@ Deno.serve(async (req) => {
                   message_type: msgType,
                   status: "sent",
                   error_message: text.slice(0, 500),
+                  body: text,
                   sender_name: "Atendente",
                 });
               if (insErr) {
@@ -873,6 +874,7 @@ Deno.serve(async (req) => {
             message_type: msgType,
             status: "received",
             error_message: hasText ? text!.slice(0, 500) : null,
+            body: hasText ? text : null,
             sender_name: senderName,
             sender_avatar_url: senderAvatarUrl,
             media_url: mediaUrl,
@@ -1148,6 +1150,7 @@ Deno.serve(async (req) => {
                   message_type: "text",
                   status: sent ? "sent" : "failed",
                   error_message: reply.slice(0, 500),
+                  body: reply,
                   sender_name: "IA SDR",
                 });
                 console.log(`[sdr] resposta ${sent ? "enviada" : "falhou"} para ${senderPhone}`);

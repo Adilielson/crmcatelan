@@ -2428,6 +2428,7 @@ export type Database = {
       }
       whatsapp_message_logs: {
         Row: {
+          body: string | null
           error_message: string | null
           id: string
           media_mime: string | null
@@ -2443,6 +2444,7 @@ export type Database = {
           transcription: string | null
         }
         Insert: {
+          body?: string | null
           error_message?: string | null
           id?: string
           media_mime?: string | null
@@ -2458,6 +2460,7 @@ export type Database = {
           transcription?: string | null
         }
         Update: {
+          body?: string | null
           error_message?: string | null
           id?: string
           media_mime?: string | null
