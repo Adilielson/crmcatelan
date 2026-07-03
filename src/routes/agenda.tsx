@@ -802,6 +802,23 @@ function Agenda() {
                 />
               </div>
             </div>
+
+            <div className="flex items-start gap-2 rounded-md border border-input bg-muted/30 px-3 py-2">
+              <Checkbox
+                id="reschedule-notify"
+                checked={rescheduleNotify}
+                onCheckedChange={(v) => setRescheduleNotify(v === true)}
+                className="mt-0.5"
+              />
+              <div className="grid gap-0.5">
+                <Label htmlFor="reschedule-notify" className="cursor-pointer text-sm font-medium">
+                  Avisar o cliente por WhatsApp sobre o novo horário
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Deixe desmarcado para apenas atualizar internamente, sem enviar mensagem.
+                </span>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRescheduleAppt(null)}>Cancelar</Button>
