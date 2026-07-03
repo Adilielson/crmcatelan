@@ -78,6 +78,7 @@ export function NewAppointmentDialog({
     notes: "",
     customField: "",
   });
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
 
   // Load consultation types when dialog opens
   useEffect(() => {
