@@ -358,6 +358,23 @@ export function NewAppointmentDialog({
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
           </div>
+
+          <div className="flex items-start gap-2 rounded-md border border-input bg-muted/30 px-3 py-2">
+            <Checkbox
+              id="send-whatsapp"
+              checked={sendWhatsApp}
+              onCheckedChange={(v) => setSendWhatsApp(v === true)}
+              className="mt-0.5"
+            />
+            <div className="grid gap-0.5">
+              <Label htmlFor="send-whatsapp" className="cursor-pointer text-sm font-medium">
+                Enviar mensagem no WhatsApp para o cliente
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                Avisa o cliente sobre o agendamento. Deixe desmarcado para não enviar nada agora.
+              </span>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -370,8 +387,10 @@ export function NewAppointmentDialog({
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Salvando...
               </>
-            ) : (
+            ) : sendWhatsApp ? (
               "Confirmar e Enviar WhatsApp"
+            ) : (
+              "Confirmar agendamento"
             )}
           </Button>
         </DialogFooter>
