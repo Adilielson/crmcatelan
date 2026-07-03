@@ -635,7 +635,7 @@ function Agenda() {
                     </div>
 
                     {isOverdue(appt) ? (
-                      <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border/50">
+                      <div onClick={(e) => e.stopPropagation()} className="grid grid-cols-2 gap-2 pt-4 border-t border-border/50">
                         <Button
                           variant="outline"
                           size="sm"
