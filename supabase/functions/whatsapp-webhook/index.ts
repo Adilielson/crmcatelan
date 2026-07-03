@@ -516,6 +516,12 @@ function cleanPhone(raw: string | null): string | null {
   if (raw.includes("@g.us") || raw.includes("broadcast") || raw.includes("status@")) return null;
   // Remove sufixos JID e device-id: "5527...@s.whatsapp.net", "5527...:1@..."
   const noSuffix = raw.split("@")[0].split(":")[0];
+  // Rejeita identificadores internos da uazapi como "r1c11cee3080708" —
+  // ao remover letras, resultam em uma sequência de dígitos que pode ter
+  // 10-13 caracteres e ser erroneamente tratada como telefone brasileiro.
+  // Um telefone real só contém dígitos e caracteres de formatação
+  // ( +, -, espaço, parênteses e ponto).
+  if (/[a-zA-Z]/.test(noSuffix)) return null;
   let d = noSuffix.replace(/\D+/g, "");
   if (d.length < 10 || d.length > 13) return null;
   // Normaliza para sempre ter DDI 55 (BR) quando o número vier sem código de país.
@@ -718,11 +724,16 @@ Deno.serve(async (req) => {
 
       // Tenta vários campos onde o telefone do contato pode estar.
       // Prioriza chat.id (que normalmente é o JID do contato real).
+      // Prioriza campos que sempre são JIDs reais do WhatsApp
+      // (wa_chatid, message.chatid, remoteJid). O `chat.id` da uazapi pode
+      // ser um identificador interno alfanumérico ("r1c11cee3080708") e vai
+      // por último como fallback.
       const candidates = [
-        chat.id, chat.wa_chatid, chat.jid, chat.remoteJid, chat.phone, chat.wa_id,
+        chat.wa_chatid, chat.jid, chat.remoteJid, chat.phone, chat.wa_id,
+        message.chatId, message.chatid, message.remoteJid, message.from, message.sender, message.author,
         sender.id, sender.jid, sender.phone, sender.wa_id,
-        message.chatId, message.remoteJid, message.from, message.sender, message.author,
         b.sender, b.from, b.phone, b.chatId, b.remoteJid,
+        chat.id,
       ];
       let senderPhone: string | null = null;
       for (const c of candidates) {
