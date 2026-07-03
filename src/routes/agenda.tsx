@@ -670,7 +670,7 @@ function Agenda() {
                         </Button>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
+                      <div onClick={(e) => e.stopPropagation()} className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
                         {appt.status === 'pendente' && (
                           <Button
                             variant="outline"
