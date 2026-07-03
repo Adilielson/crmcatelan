@@ -596,7 +596,12 @@ function Agenda() {
                 </div>
               ) : (
                 dayAppointments.map(appt => (
-                  <div key={appt.id} className="bg-white border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 transition-all group relative overflow-hidden">
+                  <div
+                    key={appt.id}
+                    onClick={() => openReschedule(appt)}
+                    title="Clique para editar horário"
+                    className="bg-white border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+                  >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div className="bg-gray-50 p-2.5 rounded-xl border border-border shadow-inner">
@@ -607,7 +612,8 @@ function Agenda() {
                           <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{appt.examType}</span>
                         </div>
                       </div>
-                      <div className="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 rounded-lg border border-primary/20 shadow-sm">
+                      <div className="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 rounded-lg border border-primary/20 shadow-sm inline-flex items-center gap-1">
+                        <CalendarClock className="w-3 h-3" />
                         {appt.startTime}
                       </div>
                     </div>
