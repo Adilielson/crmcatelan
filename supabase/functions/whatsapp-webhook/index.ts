@@ -724,11 +724,16 @@ Deno.serve(async (req) => {
 
       // Tenta vários campos onde o telefone do contato pode estar.
       // Prioriza chat.id (que normalmente é o JID do contato real).
+      // Prioriza campos que sempre são JIDs reais do WhatsApp
+      // (wa_chatid, message.chatid, remoteJid). O `chat.id` da uazapi pode
+      // ser um identificador interno alfanumérico ("r1c11cee3080708") e vai
+      // por último como fallback.
       const candidates = [
-        chat.id, chat.wa_chatid, chat.jid, chat.remoteJid, chat.phone, chat.wa_id,
+        chat.wa_chatid, chat.jid, chat.remoteJid, chat.phone, chat.wa_id,
+        message.chatId, message.chatid, message.remoteJid, message.from, message.sender, message.author,
         sender.id, sender.jid, sender.phone, sender.wa_id,
-        message.chatId, message.remoteJid, message.from, message.sender, message.author,
         b.sender, b.from, b.phone, b.chatId, b.remoteJid,
+        chat.id,
       ];
       let senderPhone: string | null = null;
       for (const c of candidates) {
