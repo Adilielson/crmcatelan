@@ -554,8 +554,10 @@ function Agenda() {
                       {dayAppts.slice(0, 2).map(appt => (
                         <div 
                           key={appt.id} 
+                          onClick={(e) => { e.stopPropagation(); openReschedule(appt) }}
+                          title="Clique para editar horário"
                           className={cn(
-                            "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight",
+                            "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight cursor-pointer hover:brightness-110 transition",
                             appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30 shadow-sm" :
                             appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30 shadow-sm" :
                             "bg-white text-gray-500 border-border shadow-sm"
