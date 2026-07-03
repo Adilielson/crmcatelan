@@ -202,10 +202,12 @@ function Agenda() {
 
   const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
   const [rescheduleData, setRescheduleData] = useState({ date: '', startTime: '', endTime: '' })
+  const [rescheduleNotify, setRescheduleNotify] = useState(false)
 
   const openReschedule = (appt: Appointment) => {
     setRescheduleAppt(appt)
     setRescheduleData({ date: appt.date, startTime: appt.startTime, endTime: appt.endTime })
+    setRescheduleNotify(false)
   }
 
   const confirmReschedule = async () => {
@@ -224,6 +226,28 @@ function Agenda() {
       reminderSent: false,
     })
     toast.success('Agendamento remarcado!')
+
+    if (rescheduleNotify) {
+      const lead = leads.find(l => l.id === rescheduleAppt.leadId)
+      const phone = lead?.phone
+      if (phone && waConnected) {
+        try {
+          const dateBr = format(new Date(date + 'T00:00:00'), 'dd/MM/yyyy')
+          await sendText(
+            phone,
+            `Olá ${rescheduleAppt.leadName}! Seu agendamento de *${rescheduleAppt.examType}* foi remarcado para ${dateBr} às ${startTime}. Qualquer dúvida, estamos à disposição. 💛`,
+          )
+          toast.info('Aviso de reagendamento enviado por WhatsApp')
+        } catch {
+          toast.warning('Remarcado, mas falha ao enviar WhatsApp')
+        }
+      } else if (phone && !waConnected) {
+        toast.warning('WhatsApp não conectado — mensagem não enviada')
+      } else if (!phone) {
+        toast.warning('Lead sem telefone — mensagem não enviada')
+      }
+    }
+
     setRescheduleAppt(null)
   }
 
