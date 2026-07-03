@@ -131,6 +131,7 @@ export function NewAppointmentDialog({
       notes: "",
       customField: "",
     });
+    setSendWhatsApp(false);
   }, [open, defaultDate, defaultLeadId]);
 
   const selectedLead = useMemo(
