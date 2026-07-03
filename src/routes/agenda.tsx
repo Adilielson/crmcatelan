@@ -369,12 +369,17 @@ function Agenda() {
                   "bg-[#0E0E11] border rounded-xl p-3 flex items-center gap-3",
                   overdue ? "border-[#D64545]/40" : "border-white/5"
                 )}>
-                  <div className={cn(
-                    "text-xs font-bold px-2.5 py-1 rounded-lg shrink-0",
-                    overdue ? "bg-[#D64545]/15 text-[#FF8A8A]" : "bg-[#FFC400]/15 text-[#FFC400]"
-                  )}>
+                  <button
+                    onClick={() => openReschedule(appt)}
+                    aria-label="Editar horário"
+                    className={cn(
+                      "text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 inline-flex items-center gap-1 active:scale-95 transition",
+                      overdue ? "bg-[#D64545]/15 text-[#FF8A8A]" : "bg-[#FFC400]/15 text-[#FFC400]"
+                    )}
+                  >
+                    <CalendarClock className="w-3 h-3" />
                     {appt.startTime}
-                  </div>
+                  </button>
                   <div className="min-w-0 flex-1">
                     <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
