@@ -206,21 +206,25 @@ export function NewAppointmentDialog({
         }
       }
 
-      // REAL WhatsApp dispatch — no longer mocked
+      // Envio de WhatsApp somente se o usuário optou explicitamente
       const phone = selectedLead.phone;
-      if (phone && waConnected) {
-        try {
-          const dateBr = format(new Date(formData.date + "T00:00:00"), "dd/MM/yyyy");
-          await sendText(
-            phone,
-            `Olá ${selectedLead.full_name}! Seu agendamento de *${formData.examTypeName}* foi marcado para ${dateBr} às ${formData.startTime}. Em breve enviaremos a confirmação. 💛`,
-          );
-          toast.info("Mensagem enviada via WhatsApp");
-        } catch {
-          toast.warning("Agendado, mas falha ao enviar WhatsApp");
+      if (sendWhatsApp) {
+        if (phone && waConnected) {
+          try {
+            const dateBr = format(new Date(formData.date + "T00:00:00"), "dd/MM/yyyy");
+            await sendText(
+              phone,
+              `Olá ${selectedLead.full_name}! Seu agendamento de *${formData.examTypeName}* foi marcado para ${dateBr} às ${formData.startTime}. Em breve enviaremos a confirmação. 💛`,
+            );
+            toast.info("Mensagem enviada via WhatsApp");
+          } catch {
+            toast.warning("Agendado, mas falha ao enviar WhatsApp");
+          }
+        } else if (phone && !waConnected) {
+          toast.warning("WhatsApp não conectado — mensagem não enviada");
+        } else if (!phone) {
+          toast.warning("Lead sem telefone — mensagem não enviada");
         }
-      } else if (phone && !waConnected) {
-        toast.warning("WhatsApp não conectado — mensagem não enviada");
       }
 
       onCreated?.();
