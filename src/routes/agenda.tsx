@@ -35,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -202,10 +203,12 @@ function Agenda() {
 
   const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null)
   const [rescheduleData, setRescheduleData] = useState({ date: '', startTime: '', endTime: '' })
+  const [rescheduleNotify, setRescheduleNotify] = useState(false)
 
   const openReschedule = (appt: Appointment) => {
     setRescheduleAppt(appt)
     setRescheduleData({ date: appt.date, startTime: appt.startTime, endTime: appt.endTime })
+    setRescheduleNotify(false)
   }
 
   const confirmReschedule = async () => {
@@ -224,6 +227,28 @@ function Agenda() {
       reminderSent: false,
     })
     toast.success('Agendamento remarcado!')
+
+    if (rescheduleNotify) {
+      const lead = leads.find(l => l.id === rescheduleAppt.leadId)
+      const phone = lead?.phone
+      if (phone && waConnected) {
+        try {
+          const dateBr = format(new Date(date + 'T00:00:00'), 'dd/MM/yyyy')
+          await sendText(
+            phone,
+            `Olá ${rescheduleAppt.leadName}! Seu agendamento de *${rescheduleAppt.examType}* foi remarcado para ${dateBr} às ${startTime}. Qualquer dúvida, estamos à disposição. 💛`,
+          )
+          toast.info('Aviso de reagendamento enviado por WhatsApp')
+        } catch {
+          toast.warning('Remarcado, mas falha ao enviar WhatsApp')
+        }
+      } else if (phone && !waConnected) {
+        toast.warning('WhatsApp não conectado — mensagem não enviada')
+      } else if (!phone) {
+        toast.warning('Lead sem telefone — mensagem não enviada')
+      }
+    }
+
     setRescheduleAppt(null)
   }
 
@@ -345,12 +370,17 @@ function Agenda() {
                   "bg-[#0E0E11] border rounded-xl p-3 flex items-center gap-3",
                   overdue ? "border-[#D64545]/40" : "border-white/5"
                 )}>
-                  <div className={cn(
-                    "text-xs font-bold px-2.5 py-1 rounded-lg shrink-0",
-                    overdue ? "bg-[#D64545]/15 text-[#FF8A8A]" : "bg-[#FFC400]/15 text-[#FFC400]"
-                  )}>
+                  <button
+                    onClick={() => openReschedule(appt)}
+                    aria-label="Editar horário"
+                    className={cn(
+                      "text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 inline-flex items-center gap-1 active:scale-95 transition",
+                      overdue ? "bg-[#D64545]/15 text-[#FF8A8A]" : "bg-[#FFC400]/15 text-[#FFC400]"
+                    )}
+                  >
+                    <CalendarClock className="w-3 h-3" />
                     {appt.startTime}
-                  </div>
+                  </button>
                   <div className="min-w-0 flex-1">
                     <p className="text-white text-sm font-semibold truncate">{appt.leadName}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -530,8 +560,10 @@ function Agenda() {
                       {dayAppts.slice(0, 2).map(appt => (
                         <div 
                           key={appt.id} 
+                          onClick={(e) => { e.stopPropagation(); openReschedule(appt) }}
+                          title="Clique para editar horário"
                           className={cn(
-                            "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight",
+                            "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight cursor-pointer hover:brightness-110 transition",
                             appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30 shadow-sm" :
                             appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30 shadow-sm" :
                             "bg-white text-gray-500 border-border shadow-sm"
@@ -570,7 +602,12 @@ function Agenda() {
                 </div>
               ) : (
                 dayAppointments.map(appt => (
-                  <div key={appt.id} className="bg-white border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 transition-all group relative overflow-hidden">
+                  <div
+                    key={appt.id}
+                    onClick={() => openReschedule(appt)}
+                    title="Clique para editar horário"
+                    className="bg-white border border-border rounded-[14px] p-5 shadow-card hover:border-primary/50 hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+                  >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div className="bg-gray-50 p-2.5 rounded-xl border border-border shadow-inner">
@@ -581,7 +618,8 @@ function Agenda() {
                           <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{appt.examType}</span>
                         </div>
                       </div>
-                      <div className="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 rounded-lg border border-primary/20 shadow-sm">
+                      <div className="bg-primary/20 text-primary text-[10px] font-black px-3 py-1 rounded-lg border border-primary/20 shadow-sm inline-flex items-center gap-1">
+                        <CalendarClock className="w-3 h-3" />
                         {appt.startTime}
                       </div>
                     </div>
@@ -603,7 +641,7 @@ function Agenda() {
                     </div>
 
                     {isOverdue(appt) ? (
-                      <div className="grid grid-cols-2 gap-2 pt-4 border-t border-border/50">
+                      <div onClick={(e) => e.stopPropagation()} className="grid grid-cols-2 gap-2 pt-4 border-t border-border/50">
                         <Button
                           variant="outline"
                           size="sm"
@@ -638,7 +676,7 @@ function Agenda() {
                         </Button>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
+                      <div onClick={(e) => e.stopPropagation()} className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
                         {appt.status === 'pendente' && (
                           <Button
                             variant="outline"
@@ -762,6 +800,23 @@ function Agenda() {
                   value={rescheduleData.endTime}
                   onChange={(e) => setRescheduleData(p => ({ ...p, endTime: e.target.value }))}
                 />
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 rounded-md border border-input bg-muted/30 px-3 py-2">
+              <Checkbox
+                id="reschedule-notify"
+                checked={rescheduleNotify}
+                onCheckedChange={(v) => setRescheduleNotify(v === true)}
+                className="mt-0.5"
+              />
+              <div className="grid gap-0.5">
+                <Label htmlFor="reschedule-notify" className="cursor-pointer text-sm font-medium">
+                  Avisar o cliente por WhatsApp sobre o novo horário
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Deixe desmarcado para apenas atualizar internamente, sem enviar mensagem.
+                </span>
               </div>
             </div>
           </div>
