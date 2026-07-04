@@ -1154,10 +1154,15 @@ Deno.serve(async (req) => {
                 (cfg as any).business_hours as BusinessHours | null,
                 ((cfg as any).timezone as string) || "America/Sao_Paulo",
               );
-              const nameCtx = leadName
-                ? `O cliente se chama ${leadName}. Use o primeiro nome dele (${firstName(leadName)}) naturalmente nas respostas, sem repetir em toda mensagem.`
-                : `Você ainda NÃO sabe o nome do cliente. Antes de qualquer qualificação, pergunte o nome dele de forma curta e cordial (uma frase). Quando ele responder, use o primeiro nome dele nas próximas mensagens.`;
-              const contextNote = [hoursCtx, nameCtx].filter(Boolean).join("\n\n");
+              const iaParts: string[] = [];
+              if (leadIaSummary?.trim()) iaParts.push(`- Resumo do comportamento anterior: ${leadIaSummary.trim()}`);
+              if (leadIaProfile?.trim()) iaParts.push(`- Perfil comportamental: ${leadIaProfile.trim()}`);
+              if (leadIaSentiment?.trim()) iaParts.push(`- Sentimento do cliente: ${leadIaSentiment.trim()}`);
+              if (leadIaUrgency?.trim()) iaParts.push(`- Urgência detectada: ${leadIaUrgency.trim()}`);
+              const iaCtx = iaParts.length
+                ? `CONTEXTO COMPORTAMENTAL DO LEAD (use para personalizar o tom e a abordagem, sem citar literalmente ao cliente):\n${iaParts.join("\n")}`
+                : "";
+              const contextNote = [hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(systemPrompt, history, contextNote || undefined, temperature);
               if (reply) {
                 // 4) Envia pelo WhatsApp
