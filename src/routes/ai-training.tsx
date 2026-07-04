@@ -362,33 +362,50 @@ function KnowledgeTab({ faq, onFaqChange }: { faq: string; onFaqChange: (v: stri
     }
     setUploading(true)
     try {
-      let text = ''
       const buf = await file.arrayBuffer()
-      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        text = await extractPdfText(buf)
-      } else {
-        text = new TextDecoder().decode(buf)
+      // Cópias independentes evitam ArrayBuffer detach pelo pdfjs.
+      const bytesForStore = new Uint8Array(buf.slice(0))
+      let text = ''
+      let extractError: string | null = null
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      try {
+        if (isPdf) {
+          text = await extractPdfText(buf.slice(0))
+        } else {
+          text = new TextDecoder().decode(bytesForStore)
+        }
+      } catch (err: any) {
+        extractError = err?.message ?? 'Falha ao extrair texto'
+        console.error('[knowledge] extract failed', err)
       }
-      if (!text.trim()) {
-        toast.error('Não foi possível extrair texto do arquivo')
-        setUploading(false)
-        return
-      }
-      // base64 do binário pra storage
-      const bytes = new Uint8Array(buf)
+
+      const cleanText = (text || '').trim()
+      // Se o PDF for scan/imagem, persistimos mesmo assim com um marcador para a IA saber que o documento existe.
+      const contentForDb = cleanText.length > 0
+        ? cleanText.slice(0, 200000)
+        : `[DOCUMENTO ANEXADO SEM TEXTO EXTRAÍVEL]\nArquivo: ${file.name}\nTipo: ${file.type || 'desconhecido'}\nTamanho: ${(file.size / 1024).toFixed(1)} KB\nObservação: o PDF parece ser escaneado (imagem) ou protegido. Reenvie em versão com texto selecionável, ou cole o conteúdo no FAQ ao lado para a IA usar.`
+
+      // base64 para storage
       let bin = ''
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+      for (let i = 0; i < bytesForStore.length; i++) bin += String.fromCharCode(bytesForStore[i])
       const b64 = btoa(bin)
+
       await upload({ data: {
         name: file.name,
         file_type: file.type || 'application/octet-stream',
-        content: text.slice(0, 200000),
+        content: contentForDb,
         file_base64: b64,
         file_size_bytes: file.size,
       }})
-      toast.success(`${file.name} processado (${text.length.toLocaleString()} caracteres)`)
+
+      if (cleanText.length > 0) {
+        toast.success(`${file.name} salvo (${cleanText.length.toLocaleString()} caracteres) — já compõe a IA`)
+      } else {
+        toast.warning(`${file.name} salvo, mas sem texto extraível${extractError ? ` (${extractError})` : ''}. Cole o texto no FAQ ao lado para a IA usar o conteúdo.`, { duration: 9000 })
+      }
       qc.invalidateQueries({ queryKey: ['knowledge-docs'] })
     } catch (err: any) {
+      console.error('[knowledge] upload failed', err)
       toast.error(err?.message ?? 'Falha no upload')
     } finally {
       setUploading(false)
