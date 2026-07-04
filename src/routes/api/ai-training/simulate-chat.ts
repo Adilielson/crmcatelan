@@ -245,56 +245,71 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
           const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts, styleBlock)
           const { getTenantAiKey, logAiUsage } = await import('@/lib/ai-credentials.server')
 
-          // Preferir Lovable AI Gateway (LOVABLE_API_KEY é auto-provisionada e sempre válida).
-          // Fallback para OpenAI direto (chave do tenant ou master) caso o gateway não esteja disponível.
+          // Prioridade: OpenAI (chave do tenant ou master OPENAI_API_KEY).
+          // Fallback automático para Lovable AI Gateway se OpenAI retornar 401/403/429.
           const lovableKey = process.env.LOVABLE_API_KEY
-          let apiUrl: string
-          let apiKey: string
-          let model: string
-          let source: 'tenant' | 'master' = 'master'
-          let credentials: Awaited<ReturnType<typeof getTenantAiKey>> | null = null
 
-          if (lovableKey) {
-            apiUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions'
-            apiKey = lovableKey
-            model = 'google/gemini-3-flash-preview'
-          } else {
-            credentials = await getTenantAiKey(tenantId, 'openai')
-            apiUrl = 'https://api.openai.com/v1/chat/completions'
-            apiKey = credentials.apiKey
-            model = credentials.model || 'gpt-4o-mini'
-            source = credentials.source
+          async function callOpenAI() {
+            const credentials = await getTenantAiKey(tenantId, 'openai')
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${credentials.apiKey}`,
+              },
+              body: JSON.stringify({
+                model: credentials.model || 'gpt-4o-mini',
+                messages: [{ role: 'system', content: systemPrompt }, ...messages],
+                temperature: Number((cfg as any).model_temperature) || 0.7,
+              }),
+            })
+            return { res, model: credentials.model || 'gpt-4o-mini', source: credentials.source, provider: 'openai' as const }
           }
 
-          const aiResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              model,
-              messages: [{ role: 'system', content: systemPrompt }, ...messages],
-              temperature: Number((cfg as any).model_temperature) || 0.7,
-            }),
-          })
+          async function callLovableGateway() {
+            const model = 'google/gemini-3-flash-preview'
+            const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${lovableKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages: [{ role: 'system', content: systemPrompt }, ...messages],
+                temperature: Number((cfg as any).model_temperature) || 0.7,
+              }),
+            })
+            return { res, model, source: 'master' as const, provider: 'lovable-gateway' as const }
+          }
 
-          if (!aiResponse.ok) {
-            const text = await aiResponse.text()
-            console.error('[ai-training/simulate-chat] AI error', aiResponse.status, text.slice(0, 400))
-            if (aiResponse.status === 429) {
+          let attempt: { res: Response; model: string; source: 'tenant' | 'master'; provider: 'openai' | 'lovable-gateway' } = await callOpenAI()
+          let usedFallback = false
+
+          // Se OpenAI falhou por chave/quota e temos Lovable Gateway, cai no fallback silenciosamente
+          if (!attempt.res.ok && lovableKey && [401, 403, 429, 402].includes(attempt.res.status)) {
+            const failText = await attempt.res.text().catch(() => '')
+            console.warn('[ai-training/simulate-chat] OpenAI falhou, usando Lovable Gateway como fallback:', attempt.res.status, failText.slice(0, 200))
+            attempt = await callLovableGateway()
+            usedFallback = true
+          }
+
+          if (!attempt.res.ok) {
+            const text = await attempt.res.text()
+            console.error('[ai-training/simulate-chat] AI error', attempt.provider, attempt.res.status, text.slice(0, 400))
+            if (attempt.res.status === 429) {
               return json({ error: 'Limite de requisições atingido. Tente novamente em alguns segundos.' }, { status: 429 })
             }
-            if (aiResponse.status === 402) {
-              return json({ error: 'Créditos de IA esgotados. Adicione créditos no workspace.' }, { status: 402 })
+            if (attempt.res.status === 402) {
+              return json({ error: 'Créditos de IA esgotados.' }, { status: 402 })
             }
-            if (aiResponse.status === 401) {
+            if (attempt.res.status === 401) {
               return json({ error: 'Chave da IA inválida ou expirada.' }, { status: 502 })
             }
-            throw new Error(`AI ${aiResponse.status}: ${text.slice(0, 200)}`)
+            throw new Error(`AI ${attempt.res.status}: ${text.slice(0, 200)}`)
           }
 
-          const aiJson = await aiResponse.json()
+          const aiJson = await attempt.res.json()
           const reply = aiJson?.choices?.[0]?.message?.content
           if (typeof reply !== 'string' || !reply.trim()) {
             throw new Error('Sem resposta do modelo')
@@ -304,13 +319,14 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
           await logAiUsage({
             tenantId,
             provider: 'openai',
-            model,
+            model: attempt.model,
             tokensInput: Number(usage.prompt_tokens || 0),
             tokensOutput: Number(usage.completion_tokens || 0),
-            usedFallback: source === 'master',
-            source,
-            feature: 'ai-training-simulation',
+            usedFallback: usedFallback || attempt.source === 'master',
+            source: attempt.source,
+            feature: usedFallback ? 'ai-training-simulation:fallback-gateway' : 'ai-training-simulation',
           })
+
 
 
           return json({ reply: reply.trim() })
