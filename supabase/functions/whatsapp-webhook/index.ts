@@ -1149,6 +1149,17 @@ Deno.serve(async (req) => {
               const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts);
               const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
 
+              // Marcador de versão do prompt (auditoria em runtime — não há cache no webhook)
+              try {
+                const rawPs = String((aiCfg as any)?.prompt_system ?? "");
+                let h = 0;
+                for (let i = 0; i < rawPs.length; i++) h = ((h << 5) - h + rawPs.charCodeAt(i)) | 0;
+                const promptHash = (h >>> 0).toString(16).padStart(8, "0");
+                console.log(
+                  `[ai_configs] tenant=${tenantId} updated_at=${(aiCfg as any)?.updated_at ?? "?"} prompt_len=${rawPs.length} prompt_hash=${promptHash}`,
+                );
+              } catch (_) { /* noop */ }
+
               // 4) Monta contexto de horário + nome do lead
               const hoursCtx = buildHoursContext(
                 (cfg as any).business_hours as BusinessHours | null,
