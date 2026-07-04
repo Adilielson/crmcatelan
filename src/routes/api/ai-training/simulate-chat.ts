@@ -244,16 +244,36 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
 
           const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts, styleBlock)
           const { getTenantAiKey, logAiUsage } = await import('@/lib/ai-credentials.server')
-          const credentials = await getTenantAiKey(tenantId, 'openai')
 
-          const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          // Preferir Lovable AI Gateway (LOVABLE_API_KEY é auto-provisionada e sempre válida).
+          // Fallback para OpenAI direto (chave do tenant ou master) caso o gateway não esteja disponível.
+          const lovableKey = process.env.LOVABLE_API_KEY
+          let apiUrl: string
+          let apiKey: string
+          let model: string
+          let source: 'tenant' | 'master' = 'master'
+          let credentials: Awaited<ReturnType<typeof getTenantAiKey>> | null = null
+
+          if (lovableKey) {
+            apiUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions'
+            apiKey = lovableKey
+            model = 'google/gemini-3-flash-preview'
+          } else {
+            credentials = await getTenantAiKey(tenantId, 'openai')
+            apiUrl = 'https://api.openai.com/v1/chat/completions'
+            apiKey = credentials.apiKey
+            model = credentials.model || 'gpt-4o-mini'
+            source = credentials.source
+          }
+
+          const aiResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${credentials.apiKey}`,
+              Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: credentials.model || 'gpt-4o-mini',
+              model,
               messages: [{ role: 'system', content: systemPrompt }, ...messages],
               temperature: Number((cfg as any).model_temperature) || 0.7,
             }),
@@ -261,13 +281,17 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
 
           if (!aiResponse.ok) {
             const text = await aiResponse.text()
+            console.error('[ai-training/simulate-chat] AI error', aiResponse.status, text.slice(0, 400))
             if (aiResponse.status === 429) {
               return json({ error: 'Limite de requisições atingido. Tente novamente em alguns segundos.' }, { status: 429 })
+            }
+            if (aiResponse.status === 402) {
+              return json({ error: 'Créditos de IA esgotados. Adicione créditos no workspace.' }, { status: 402 })
             }
             if (aiResponse.status === 401) {
               return json({ error: 'Chave da IA inválida ou expirada.' }, { status: 502 })
             }
-            throw new Error(`OpenAI ${aiResponse.status}: ${text.slice(0, 200)}`)
+            throw new Error(`AI ${aiResponse.status}: ${text.slice(0, 200)}`)
           }
 
           const aiJson = await aiResponse.json()
@@ -280,13 +304,14 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
           await logAiUsage({
             tenantId,
             provider: 'openai',
-            model: credentials.model || 'gpt-4o-mini',
+            model,
             tokensInput: Number(usage.prompt_tokens || 0),
             tokensOutput: Number(usage.completion_tokens || 0),
-            usedFallback: credentials.source === 'master',
-            source: credentials.source,
+            usedFallback: source === 'master',
+            source,
             feature: 'ai-training-simulation',
           })
+
 
           return json({ reply: reply.trim() })
         } catch (error) {
