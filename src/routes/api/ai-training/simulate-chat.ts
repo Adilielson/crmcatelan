@@ -283,7 +283,7 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
             return { res, model, source: 'master' as const, provider: 'lovable-gateway' as const }
           }
 
-          let attempt = await callOpenAI()
+          let attempt: { res: Response; model: string; source: 'tenant' | 'master'; provider: 'openai' | 'lovable-gateway' } = await callOpenAI()
           let usedFallback = false
 
           // Se OpenAI falhou por chave/quota e temos Lovable Gateway, cai no fallback silenciosamente
