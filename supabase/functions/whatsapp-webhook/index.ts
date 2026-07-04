@@ -1154,6 +1154,9 @@ Deno.serve(async (req) => {
                 (cfg as any).business_hours as BusinessHours | null,
                 ((cfg as any).timezone as string) || "America/Sao_Paulo",
               );
+              const nameCtx = leadName
+                ? `O cliente se chama ${leadName}. Use o primeiro nome dele (${firstName(leadName)}) naturalmente nas respostas, sem repetir em toda mensagem.`
+                : `Você ainda NÃO sabe o nome do cliente. Antes de qualquer qualificação, pergunte o nome dele de forma curta e cordial (uma frase). Quando ele responder, use o primeiro nome dele nas próximas mensagens.`;
               const iaParts: string[] = [];
               if (leadIaSummary?.trim()) iaParts.push(`- Resumo do comportamento anterior: ${leadIaSummary.trim()}`);
               if (leadIaProfile?.trim()) iaParts.push(`- Perfil comportamental: ${leadIaProfile.trim()}`);
