@@ -608,12 +608,12 @@ function SimulationTab() {
 
   return (
     <Card className="bg-white border-border shadow-card">
-      <CardHeader className="border-b border-border bg-gray-50/50 flex flex-row items-center justify-between">
-        <div>
+      <CardHeader className="border-b border-border bg-gray-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Chat de Simulação</CardTitle>
           <CardDescription>Testa a configuração SALVA — chama o mesmo modelo do atendimento real.</CardDescription>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center shrink-0">
           <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Sandbox</Badge>
           <Button variant="outline" size="sm" onClick={() => setMessages([])} disabled={!messages.length}>
             Limpar
@@ -621,24 +621,24 @@ function SimulationTab() {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div ref={scrollRef} className="h-[420px] overflow-y-auto p-4 space-y-3">
+        <div ref={scrollRef} className="h-[60vh] sm:h-[420px] overflow-y-auto p-4 space-y-3 flex flex-col">
           {messages.length === 0 && (
             <div className="text-center text-gray-400 text-sm py-16">
               Comece digitando uma mensagem como se fosse um cliente.
             </div>
           )}
           {messages.map((m, i) => (
-            <div key={i} className={`flex gap-3 max-w-[80%] ${m.role === 'assistant' ? 'self-start' : 'self-end flex-row-reverse ml-auto'}`}>
+            <div key={i} className={`flex gap-3 max-w-[85%] sm:max-w-[80%] ${m.role === 'assistant' ? 'self-start' : 'self-end flex-row-reverse'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${m.role === 'assistant' ? 'bg-primary text-white' : 'bg-slate-200'}`}>
                 {m.role === 'assistant' ? 'IA' : 'L'}
               </div>
-              <div className={`p-3 rounded-2xl text-sm whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-primary/10 text-ink rounded-tl-none' : 'bg-slate-100 text-ink rounded-tr-none'}`}>
+              <div className={`p-3 rounded-2xl text-sm whitespace-pre-wrap break-words ${m.role === 'assistant' ? 'bg-primary/10 text-ink rounded-tl-none' : 'bg-slate-100 text-ink rounded-tr-none'}`}>
                 {m.content}
               </div>
             </div>
           ))}
           {loading && (
-            <div className="flex gap-3 max-w-[80%]">
+            <div className="flex gap-3 max-w-[80%] self-start">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white">IA</div>
               <div className="p-3 bg-primary/10 rounded-2xl rounded-tl-none flex items-center gap-1">
                 <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]" />
@@ -649,20 +649,30 @@ function SimulationTab() {
             </div>
           )}
         </div>
-        <div className="p-4 border-t bg-slate-50/50">
+        <form
+          onSubmit={(e) => { e.preventDefault(); send() }}
+          className="p-4 border-t bg-slate-50/50"
+        >
           <div className="flex gap-2">
             <Input
+              type="text"
+              enterKeyHint="send"
+              autoComplete="off"
               placeholder="Digite uma mensagem de teste..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
               disabled={loading}
+              className="flex-1 h-12"
             />
-            <Button size="icon" onClick={send} disabled={loading || !input.trim()}>
+            <Button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="h-12 px-4 shrink-0"
+            >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-        </div>
+        </form>
       </CardContent>
     </Card>
   )
