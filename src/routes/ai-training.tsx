@@ -23,13 +23,14 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  getAiConfig, updateAiConfig, simulateChat,
+  getAiConfig, updateAiConfig,
   listAiVersions, restoreAiVersion,
 } from '@/lib/ai-training.functions'
 import {
   listKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc,
 } from '@/lib/ai-knowledge.functions'
 import { processTrainingObservations } from '@/lib/ai-insights.functions'
+import { supabase } from '@/integrations/supabase/client'
 
 
 export const Route = createFileRoute('/ai-training')({
@@ -559,7 +560,6 @@ function QualificationTab(props: {
 
 // ============= Simulation Tab =============
 function SimulationTab() {
-  const sim = useServerFn(simulateChat)
   type Msg = { role: 'user' | 'assistant'; content: string }
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState('')
@@ -570,6 +570,39 @@ function SimulationTab() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [messages, loading])
 
+  const runSimulation = async (nextMessages: Msg[]) => {
+    const { data, error } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+
+    if (error || !token) {
+      throw new Error('Sua sessão expirou. Faça login novamente para testar a IA.')
+    }
+
+    const response = await fetch('/api/ai-training/simulate-chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ messages: nextMessages }),
+    })
+
+    const contentType = response.headers.get('content-type') ?? ''
+    const body = contentType.includes('application/json')
+      ? await response.json().catch(() => null)
+      : { error: await response.text().catch(() => '') }
+
+    if (!response.ok) {
+      throw new Error(body?.error || 'A simulação não respondeu. Tente novamente.')
+    }
+
+    if (typeof body?.reply !== 'string' || !body.reply.trim()) {
+      throw new Error('A IA retornou uma resposta vazia.')
+    }
+
+    return body.reply.trim() as string
+  }
+
   const send = async () => {
     const text = input.trim()
     if (!text || loading) return
@@ -578,10 +611,10 @@ function SimulationTab() {
     setInput('')
     setLoading(true)
     try {
-      const res = await sim({ data: { messages: nextMessages } })
+      const reply = await runSimulation(nextMessages)
       // Quebra a resposta em mensagens menores (estilo WhatsApp): por parágrafos
       // e, se ainda assim ficar grande, por frases.
-      const chunks = (res.reply ?? '')
+      const chunks = reply
         .split(/\n{2,}/)
         .flatMap((p: string) =>
           p.length > 220 ? p.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/) : [p]
@@ -598,9 +631,15 @@ function SimulationTab() {
         setMessages(acc)
       }
     } catch (e: any) {
-      toast.error(e?.message ?? 'Erro na simulação')
-      setMessages(nextMessages.slice(0, -1))
-      setInput(text)
+      const message = e?.message ?? 'Erro na simulação'
+      toast.error(message)
+      setMessages([
+        ...nextMessages,
+        {
+          role: 'assistant',
+          content: `Não consegui processar a simulação agora. ${message}`,
+        },
+      ])
     } finally {
       setLoading(false)
     }

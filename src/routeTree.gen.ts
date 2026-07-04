@@ -36,6 +36,7 @@ import { Route as RelatoriosComparecimentoRouteImport } from './routes/relatorio
 import { Route as RelatoriosAtendentesRouteImport } from './routes/relatorios.atendentes'
 import { Route as RelatoriosAgendamentosRouteImport } from './routes/relatorios.agendamentos'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
+import { Route as ApiAiTrainingSimulateChatRouteImport } from './routes/api/ai-training/simulate-chat'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 import { Route as ApiPublicHooksProcessAppointmentRemindersRouteImport } from './routes/api/public/hooks/process-appointment-reminders'
 import { Route as ApiPublicHooksBuildReferenceStyleRouteImport } from './routes/api/public/hooks/build-reference-style'
@@ -176,6 +177,12 @@ const AnalyticsNoShowRoute = AnalyticsNoShowRouteImport.update({
   path: '/analytics/no-show',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiTrainingSimulateChatRoute =
+  ApiAiTrainingSimulateChatRouteImport.update({
+    id: '/api/ai-training/simulate-chat',
+    path: '/api/ai-training/simulate-chat',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksProcessFollowupsRoute =
   ApiPublicHooksProcessFollowupsRouteImport.update({
     id: '/api/public/hooks/process-followups',
@@ -223,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/ltv': typeof RelatoriosLtvRoute
   '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios/': typeof RelatoriosIndexRoute
+  '/api/ai-training/simulate-chat': typeof ApiAiTrainingSimulateChatRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -254,6 +262,7 @@ export interface FileRoutesByTo {
   '/relatorios/ltv': typeof RelatoriosLtvRoute
   '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios': typeof RelatoriosIndexRoute
+  '/api/ai-training/simulate-chat': typeof ApiAiTrainingSimulateChatRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -287,6 +296,7 @@ export interface FileRoutesById {
   '/relatorios/ltv': typeof RelatoriosLtvRoute
   '/relatorios/perdidos': typeof RelatoriosPerdidosRoute
   '/relatorios/': typeof RelatoriosIndexRoute
+  '/api/ai-training/simulate-chat': typeof ApiAiTrainingSimulateChatRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
@@ -321,6 +331,7 @@ export interface FileRouteTypes {
     | '/relatorios/ltv'
     | '/relatorios/perdidos'
     | '/relatorios/'
+    | '/api/ai-training/simulate-chat'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -352,6 +363,7 @@ export interface FileRouteTypes {
     | '/relatorios/ltv'
     | '/relatorios/perdidos'
     | '/relatorios'
+    | '/api/ai-training/simulate-chat'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -384,6 +396,7 @@ export interface FileRouteTypes {
     | '/relatorios/ltv'
     | '/relatorios/perdidos'
     | '/relatorios/'
+    | '/api/ai-training/simulate-chat'
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
@@ -411,6 +424,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   WhatsappRoute: typeof WhatsappRoute
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
+  ApiAiTrainingSimulateChatRoute: typeof ApiAiTrainingSimulateChatRoute
   ApiPublicHooksBuildReferenceStyleRoute: typeof ApiPublicHooksBuildReferenceStyleRoute
   ApiPublicHooksProcessAppointmentRemindersRoute: typeof ApiPublicHooksProcessAppointmentRemindersRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
@@ -607,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsNoShowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai-training/simulate-chat': {
+      id: '/api/ai-training/simulate-chat'
+      path: '/api/ai-training/simulate-chat'
+      fullPath: '/api/ai-training/simulate-chat'
+      preLoaderRoute: typeof ApiAiTrainingSimulateChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/process-followups': {
       id: '/api/public/hooks/process-followups'
       path: '/api/public/hooks/process-followups'
@@ -675,6 +696,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   WhatsappRoute: WhatsappRoute,
   AnalyticsNoShowRoute: AnalyticsNoShowRoute,
+  ApiAiTrainingSimulateChatRoute: ApiAiTrainingSimulateChatRoute,
   ApiPublicHooksBuildReferenceStyleRoute:
     ApiPublicHooksBuildReferenceStyleRoute,
   ApiPublicHooksProcessAppointmentRemindersRoute:
