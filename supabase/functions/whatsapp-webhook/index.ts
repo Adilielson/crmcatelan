@@ -901,10 +901,14 @@ Deno.serve(async (req) => {
         let leadId: string | null = null;
         let leadName: string | null = null;
         let leadAssignedUserId: string | null = null;
+        let leadIaSummary: string | null = null;
+        let leadIaProfile: string | null = null;
+        let leadIaSentiment: string | null = null;
+        let leadIaUrgency: string | null = null;
         try {
           const { data: existingLead } = await adminClient
             .from("leads")
-            .select("id, full_name, assigned_user_id, status, updated_at")
+            .select("id, full_name, assigned_user_id, status, updated_at, ia_summary, ia_profile, ia_sentiment, ia_urgency")
             .eq("tenant_id", tenantId)
             .eq("phone", senderPhone)
             .maybeSingle();
@@ -913,6 +917,10 @@ Deno.serve(async (req) => {
             leadId = existingLead.id as string;
             leadName = (existingLead.full_name as string | null) ?? null;
             leadAssignedUserId = (existingLead.assigned_user_id as string | null) ?? null;
+            leadIaSummary = ((existingLead as any).ia_summary as string | null) ?? null;
+            leadIaProfile = ((existingLead as any).ia_profile as string | null) ?? null;
+            leadIaSentiment = ((existingLead as any).ia_sentiment as string | null) ?? null;
+            leadIaUrgency = ((existingLead as any).ia_urgency as string | null) ?? null;
 
             // ── REATIVAÇÃO AUTOMÁTICA (30 dias) ──────────────────────────
             // Se o lead está em status terminal (lost/showed_up) e o cliente
