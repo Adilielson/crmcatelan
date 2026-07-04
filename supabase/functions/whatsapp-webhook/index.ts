@@ -901,10 +901,14 @@ Deno.serve(async (req) => {
         let leadId: string | null = null;
         let leadName: string | null = null;
         let leadAssignedUserId: string | null = null;
+        let leadIaSummary: string | null = null;
+        let leadIaProfile: string | null = null;
+        let leadIaSentiment: string | null = null;
+        let leadIaUrgency: string | null = null;
         try {
           const { data: existingLead } = await adminClient
             .from("leads")
-            .select("id, full_name, assigned_user_id, status, updated_at")
+            .select("id, full_name, assigned_user_id, status, updated_at, ia_summary, ia_profile, ia_sentiment, ia_urgency")
             .eq("tenant_id", tenantId)
             .eq("phone", senderPhone)
             .maybeSingle();
@@ -913,6 +917,10 @@ Deno.serve(async (req) => {
             leadId = existingLead.id as string;
             leadName = (existingLead.full_name as string | null) ?? null;
             leadAssignedUserId = (existingLead.assigned_user_id as string | null) ?? null;
+            leadIaSummary = ((existingLead as any).ia_summary as string | null) ?? null;
+            leadIaProfile = ((existingLead as any).ia_profile as string | null) ?? null;
+            leadIaSentiment = ((existingLead as any).ia_sentiment as string | null) ?? null;
+            leadIaUrgency = ((existingLead as any).ia_urgency as string | null) ?? null;
 
             // ── REATIVAÇÃO AUTOMÁTICA (30 dias) ──────────────────────────
             // Se o lead está em status terminal (lost/showed_up) e o cliente
@@ -1149,7 +1157,15 @@ Deno.serve(async (req) => {
               const nameCtx = leadName
                 ? `O cliente se chama ${leadName}. Use o primeiro nome dele (${firstName(leadName)}) naturalmente nas respostas, sem repetir em toda mensagem.`
                 : `Você ainda NÃO sabe o nome do cliente. Antes de qualquer qualificação, pergunte o nome dele de forma curta e cordial (uma frase). Quando ele responder, use o primeiro nome dele nas próximas mensagens.`;
-              const contextNote = [hoursCtx, nameCtx].filter(Boolean).join("\n\n");
+              const iaParts: string[] = [];
+              if (leadIaSummary?.trim()) iaParts.push(`- Resumo do comportamento anterior: ${leadIaSummary.trim()}`);
+              if (leadIaProfile?.trim()) iaParts.push(`- Perfil comportamental: ${leadIaProfile.trim()}`);
+              if (leadIaSentiment?.trim()) iaParts.push(`- Sentimento do cliente: ${leadIaSentiment.trim()}`);
+              if (leadIaUrgency?.trim()) iaParts.push(`- Urgência detectada: ${leadIaUrgency.trim()}`);
+              const iaCtx = iaParts.length
+                ? `CONTEXTO COMPORTAMENTAL DO LEAD (use para personalizar o tom e a abordagem, sem citar literalmente ao cliente):\n${iaParts.join("\n")}`
+                : "";
+              const contextNote = [hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(systemPrompt, history, contextNote || undefined, temperature);
               if (reply) {
                 // 4) Envia pelo WhatsApp
