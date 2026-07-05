@@ -1,100 +1,129 @@
-# Histórico completo do Lead + LTV real
+# Fluxo No-Show com confirmação humana
 
-Vamos entregar em duas fases sequenciais, **sempre com dados reais do banco** (nada de mockup). Nada de placeholder — se um dado não existir, simplesmente não aparece.
+Baseado nas suas escolhas: alertas vão para o **atendente que agendou**, com **configuração em Configurações**, **resumo no fim do dia** e coluna **"Recuperação No-Show"** ativa.
 
 ---
 
-## Fase A — Timeline unificada de eventos reais
+## 1. Antes da consulta (já existe — só ajustar)
 
-Hoje o painel do lead mostra **só mudanças de etapa**. Vamos juntar tudo que já existe no banco numa única timeline cronológica, com ícone e cor por tipo de evento.
+Já temos `appointment_reminders` com `confirm_24h`, `confirm_retry_2h`, `day_morning`, `final_1h`. Mantém como está.
 
-### Eventos que vão entrar na timeline
+---
 
-| Tipo | Fonte (dados reais já existentes) |
+## 2. Na hora da consulta — sem marcar no-show automático
+
+Quando o horário passa **sem check-in** e **sem status "compareceu/cancelado"**, o card entra em modo "aguardando confirmação":
+
+- Badge amarelo **"Aguardando check-in"** + cronômetro (T+15, T+30, T+45, T+60…)
+- Card **NÃO sai** da coluna Agendado
+- Sistema **nunca** marca no-show sozinho
+
+### Alertas escalonados (todos vão para o atendente que agendou o `appointment`)
+
+| Momento | Canal | Mensagem |
+|---|---|---|
+| T+15min | In-app (sino + toast) | "Ataíde estava marcado 14h. Já chegou?" |
+| T+30min | In-app + **WhatsApp do atendente** | "⚠️ Confirmar presença: Ataíde (14h). Responda: 1-Compareceu / 2-Não veio / 3-Remarcar" |
+| T+45min | In-app + WhatsApp (2ª tentativa) | Mesma pergunta, tom mais urgente |
+| T+60min | Card fica **vermelho piscando** + entrada no resumo do dia | — |
+
+**Nada é automático.** Só o atendente ou gerente resolve pelos 3 botões do card:
+- ✅ **Compareceu** → check-in retroativo, fluxo normal
+- ❌ **Não compareceu** → dialog de motivo obrigatório → coluna "Recuperação No-Show"
+- 🔄 **Remarcar** → escolhe nova data → volta pra "Agendado"
+
+---
+
+## 3. Resumo diário às 19h
+
+WhatsApp para cada atendente com agendamentos do dia **sem resolução**:
+
+```
+📋 Resumo 15/12 – Fim do dia
+Você tem 2 agendamentos sem confirmação:
+• Ataíde – 14h (aguardando há 5h)
+• Maria Silva – 16h (aguardando há 3h)
+Resolva agora no CRM: [link]
+```
+
+Se o atendente responder pelo WhatsApp ("1 Ataíde compareceu"), o webhook processa e atualiza o card.
+
+---
+
+## 4. Coluna "Recuperação No-Show" (nova)
+
+Entra automático quando o atendente marca "Não compareceu". Fica **entre "Agendado" e "Em Negociação"**.
+
+**Motivos obrigatórios** (definem a cadência):
+
+| Motivo | O que acontece |
 |---|---|
-| Lead criado | `leads.created_at` |
-| Mudança de etapa | `lead_pipeline_history` |
-| Atendente atribuído / transferido | **novo log** em `lead_pipeline_history` via trigger (quando `assigned_user_id` muda) |
-| Agendamento criado | `appointments` (insert) |
-| Agendamento remarcado | `appointments` (mudança de `scheduled_at`) |
-| Agendamento cancelado | `appointments.status = 'cancelled'` |
-| Check-in / Check-out | `appointments.checkin_at` / `checkout_at` |
-| Compareceu / No-show | `appointments.status = 'completed' | 'no_show'` |
-| Consulta resumida | `lead_consultation_summary.created_at` |
-| Venda fechada | `leads.closed_at` + `sales_value` (Fase A) / `lead_purchases` (Fase B) |
-| Lead perdido | `leads.lost_reason` + `closed_at` |
-| Reativação | `leads.last_reactivated_at` |
+| Doente/imprevisto | T+0 empatia, retomada em 15d |
+| Esqueceu | T+0 remarcação suave, retomada em 7d |
+| Sem tempo agora | Retomada em 30d |
+| Desistiu do exame | Vai pra **Perdido** com nutrição em 60d |
+| Comprou fora | Vai pra **Perdido** sem reengajamento |
+| Não respondeu | Cadência automática (ver abaixo) |
 
-### Como será montado
+### Cadência "Recuperação No-Show" (WhatsApp em rascunho para a atendente aprovar)
 
-- **Server function** `getLeadTimeline(leadId)` que faz `UNION ALL` de todas as fontes acima e devolve uma lista única ordenada por data, já com label, ícone e ator (quem fez).
-- O painel do lead (`LeadProfilePanel`) passa a renderizar essa lista no lugar da timeline atual de etapas.
-- Filtros visuais por categoria (Etapas / Agendamentos / Vendas / Atendente) no topo da timeline.
+- **T+0h:** "Oi Ataíde, senti sua falta hoje na consulta. Tudo bem contigo?"
+- **T+48h:** "Consegue vir amanhã ou quinta? Tenho 10h e 15h."
+- **T+7d:** "Última chance essa semana pra ajustar sua visão. Posso reservar?"
 
-### Mudança de banco (Fase A)
-
-1. Trigger `log_lead_assignment_change` em `leads`: quando `assigned_user_id` muda, insere linha em `lead_pipeline_history` com `reason = 'assignment_change'` e os IDs envolvidos.
-2. Trigger `log_appointment_events` em `appointments`: registra criação, remarcação, cancelamento, no-show e comparecimento no histórico do lead.
-3. Coluna `event_type` (text) opcional em `lead_pipeline_history` para diferenciar `stage_change` / `assignment_change` / `appointment` na consulta.
-
-Sem alteração nos dados existentes — só adiciona estrutura.
+Sem resposta em 7d → **Perdido** com motivo `nao_respondeu`.
 
 ---
 
-## Fase B — LTV real (tabela de compras + indicadores)
+## 5. Configurações → nova aba "Alertas de No-Show"
 
-LTV de verdade precisa de uma tabela própria de compras (um lead pode comprar várias vezes ao longo dos anos).
+Página `/settings` ganha aba onde o admin controla:
 
-### Nova tabela `lead_purchases`
+- **Ligar/desligar alertas no-show** (switch geral)
+- **Intervalos:** T+15/T+30/T+45 (padrão) ou T+30/T+60 (menos ruído)
+- **Enviar WhatsApp para o atendente:** on/off
+- **Enviar WhatsApp para o gerente também:** on/off + campo do número
+- **Resumo diário 19h:** on/off + horário customizável
+- **Cadência de recuperação:** editar textos dos 3 toques (T+0/T+48h/T+7d)
 
-Campos principais:
-- `lead_id`, `tenant_id`, `unit_id`
-- `purchase_date` (data da venda)
-- `amount` (valor)
-- `product_description` (texto livre — "armação + lente antirreflexo")
-- `payment_method`, `installments`
-- `attendant_id` (quem fechou)
-- `appointment_id` (opcional — vincula à consulta que originou)
-- `notes`
-
-RLS por tenant. Service role + admin/manager podem inserir/editar; sellers só veem.
-
-### UI
-
-1. **No painel do lead** — novo bloco "LTV & Compras":
-   - LTV total (soma de `amount`)
-   - Nº de compras
-   - Ticket médio
-   - Última compra (data + valor)
-   - Lista das compras (data, valor, produto, atendente)
-   - Botão "Registrar compra"
-2. **Dialog "Registrar compra"** — formulário simples para inserir uma venda.
-3. **Quando o lead vai para "Fechado"** no Kanban — abre automaticamente o dialog de compra (substitui o `CloseLeadDialog` atual, que só pedia valor solto).
-4. **Compras entram na timeline** da Fase A (com ícone de cifrão, valor e produto).
-
-### Relatório novo `/relatorios/ltv`
-
-Adicionado ao menu lateral de Relatórios:
-- KPIs: LTV total da base, ticket médio geral, nº de clientes recorrentes (>1 compra), taxa de recompra
-- Top clientes por LTV (tabela)
-- Filtros: período, atendente, unidade
-- Export Excel + PDF (mesmo padrão dos outros relatórios)
+Tudo salvo em nova tabela `noshow_settings` (1 linha por tenant).
 
 ---
 
-## Ordem de execução
+## 6. Banco — o que precisa mudar
 
-1. Migration Fase A (triggers + coluna `event_type`)
-2. Server fn `getLeadTimeline` + nova UI da timeline em `LeadProfilePanel`
-3. Migration Fase B (`lead_purchases` + RLS + grants)
-4. Dialog de registrar compra + bloco LTV no painel + integração no Kanban
-5. Relatório `/relatorios/ltv` + entrada no menu
-6. Compras aparecem na timeline unificada
+### Novas colunas / tabelas
+1. **Coluna kanban "Recuperação No-Show"** — via `seed_kanban_columns_for_tenant` + insert para tenants existentes (posição 35, entre Agendado e Negociação, `system_key='noshow_recovery'`)
+2. **`noshow_settings`** — configurações da aba
+3. **`noshow_alerts`** — fila de alertas pendentes (appointment_id, kind='t15|t30|t45', scheduled_at, sent_at, channel)
+4. **`noshow_reason` enum** — `doente`, `esqueceu`, `sem_tempo`, `desistiu`, `comprou_fora`, `nao_respondeu`
+5. **`appointments.noshow_reason`** — coluna opcional
+6. **`leads.noshow_recovery_step`** — 0/1/2 para saber qual toque enviar
+
+### Trigger novo
+Quando `appointments.scheduled_at + 15/30/45min < now()` sem check-in → cria linhas em `noshow_alerts`. Isso já tem infra parecida em `appointment_reminders` — dá pra reaproveitar o padrão.
+
+### Cron (pg_cron a cada 5min)
+Chama `/api/public/hooks/process-noshow-alerts` que:
+- Envia in-app + WhatsApp para o atendente
+- Cria cadência de recuperação quando marcado no-show
+- Manda resumo às 19h
 
 ---
 
-## Pontos para você decidir antes
+## 7. Ordem de implementação
 
-- **Substituir** o `CloseLeadDialog` atual pelo novo "Registrar compra" quando o lead vai pra Fechado, ou **manter os dois** (rápido = só valor, completo = registrar compra)?
-- Vendedor comum (`seller`) pode **registrar compra** dos próprios leads, ou só admin/manager?
-- Compra precisa estar vinculada a um **agendamento existente** ou pode ser avulsa (ex: cliente passou na loja sem agendar)?
+1. Migration: coluna kanban + `noshow_settings` + `noshow_alerts` + enum
+2. UI do card: badge "Aguardando check-in" + cronômetro + 3 botões (Compareceu / Não compareceu / Remarcar)
+3. Dialog "Marcar No-Show" com motivo obrigatório
+4. Página `/settings` → aba "Alertas de No-Show"
+5. Server route `/api/public/hooks/process-noshow-alerts` + pg_cron 5min
+6. Resumo diário 19h (mesma rota, branch por horário)
+7. Webhook WhatsApp entende respostas "1/2/3 nome" e atualiza card
+
+---
+
+## Duas confirmações rápidas antes de codar
+
+1. **Aba de config:** faz sentido criar dentro de `/settings` existente (nova tab) ou preferir página separada `/settings/noshow`?
+2. **WhatsApp para o atendente:** ele precisa ter **número cadastrado no `profiles`** (hoje só tem email). Adiciono campo `phone` em profiles e um input no perfil do usuário?
