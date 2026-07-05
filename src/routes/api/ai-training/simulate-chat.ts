@@ -283,11 +283,20 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
             return { res, model, source: 'master' as const, provider: 'lovable-gateway' as const }
           }
 
-          let attempt: { res: Response; model: string; source: 'tenant' | 'master'; provider: 'openai' | 'lovable-gateway' } = await callOpenAI()
+          let attempt: { res: Response; model: string; source: 'tenant' | 'master'; provider: 'openai' | 'lovable-gateway' }
           let usedFallback = false
 
-          // Se OpenAI falhou por chave/quota e temos Lovable Gateway, cai no fallback silenciosamente
-          if (!attempt.res.ok && lovableKey && [401, 403, 429, 402].includes(attempt.res.status)) {
+          try {
+            attempt = await callOpenAI()
+          } catch (openaiErr: any) {
+            console.warn('[ai-training/simulate-chat] OpenAI lançou exceção, tentando Lovable Gateway:', openaiErr?.message)
+            if (!lovableKey) throw openaiErr
+            attempt = await callLovableGateway()
+            usedFallback = true
+          }
+
+          // Se OpenAI respondeu com qualquer erro e temos Lovable Gateway, cai no fallback silenciosamente
+          if (!attempt.res.ok && !usedFallback && lovableKey) {
             const failText = await attempt.res.text().catch(() => '')
             console.warn('[ai-training/simulate-chat] OpenAI falhou, usando Lovable Gateway como fallback:', attempt.res.status, failText.slice(0, 200))
             attempt = await callLovableGateway()
