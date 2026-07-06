@@ -506,6 +506,16 @@ export function KanbanBoard() {
         onConfirm={confirmLoss}
       />
 
+      {/* No-Show dialog — motivo obrigatório */}
+      <NoShowReasonDialog
+        open={!!noShowLead}
+        leadName={noShowLead?.full_name ?? null}
+        isSubmitting={updateLead.isPending}
+        onOpenChange={(v) => !v && setNoShowLead(null)}
+        onConfirm={confirmNoShow}
+      />
+
+
       {/* Column create/edit dialog (per-column from dropdown menu) */}
       <KanbanColumnDialog
         open={columnDialogOpen}
