@@ -97,6 +97,8 @@ export function KanbanBoard() {
   const [deletingColumn, setDeletingColumn] = useState<KanbanColumn | null>(null);
   const [closingLead, setClosingLead] = useState<DBLead | null>(null);
   const [followupLead, setFollowupLead] = useState<DBLead | null>(null);
+  const [noShowLead, setNoShowLead] = useState<DBLead | null>(null);
+  const [rescheduleLead, setRescheduleLead] = useState<DBLead | null>(null);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
