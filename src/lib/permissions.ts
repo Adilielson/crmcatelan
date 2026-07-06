@@ -13,6 +13,7 @@ export const MODULE_CATALOG = [
   { key: 'ranking', label: 'Ranking', path: '/ranking' },
   { key: 'no_show', label: 'Métricas No-Show', path: '/analytics/no-show' },
   { key: 'reports', label: 'Relatórios' },
+  { key: 'resultados', label: 'Resultados (Ganhos/Perdidos)', path: '/resultados' },
   { key: 'report_attendants', label: 'Relatório de Atendentes', path: '/relatorios/atendentes' },
   { key: 'report_appointments', label: 'Relatório de Agendamentos', path: '/relatorios/agendamentos' },
   { key: 'report_attendance', label: 'Relatório de Comparecimento', path: '/relatorios/comparecimento' },
@@ -33,7 +34,7 @@ export const ALL_MODULE_KEYS = MODULE_CATALOG.map((m) => m.key) as ModuleKey[];
 export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   admin: [...ALL_MODULE_KEYS],
   manager: ALL_MODULE_KEYS.filter((k) => k !== 'saas'),
-  seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes', 'metas', 'ranking', 'report_attendants', 'report_appointments'],
+  seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes', 'resultados', 'metas', 'ranking', 'report_attendants', 'report_appointments'],
   marketing_partner: ['home', 'marketing', 'performance', 'no_show', 'reports', 'ai_insights'],
   super_admin: [...ALL_MODULE_KEYS],
 };

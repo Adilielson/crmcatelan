@@ -49,10 +49,13 @@ const sourceIcon = (s: string | null) => {
   }
 };
 
+// Colunas removidas do quadro (viraram tela /resultados)
+const HIDDEN_SYSTEM_KEYS = new Set(['showed_up', 'lost']);
+
 export function KanbanBoard() {
   const navigate = useNavigate();
-  const { data: leads = [], isLoading } = useLeads();
-  const { data: columns = [] } = useKanbanColumns();
+  const { data: allLeads = [], isLoading } = useLeads();
+  const { data: allColumns = [] } = useKanbanColumns();
   const { data: profiles = [] } = useTenantProfiles();
   const { data: remindersByLead } = useLeadReminders();
   const profileMap = useMemo(() => {
@@ -64,6 +67,16 @@ export function KanbanBoard() {
   const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
   const { appointments, addAppointment, updateAppointment } = useAgenda();
+
+  // Esconde do quadro colunas de Fechado/Perdido e leads já resolvidos.
+  const columns = useMemo(
+    () => allColumns.filter((c) => !HIDDEN_SYSTEM_KEYS.has(c.system_key ?? '')),
+    [allColumns],
+  );
+  const leads = useMemo(
+    () => allLeads.filter((l) => l.status !== 'showed_up' && l.status !== 'lost'),
+    [allLeads],
+  );
 
   // Map: leadId -> latest active appointment (not terminal, not checked-in yet)
   const pendingApptByLead = useMemo(() => {
@@ -441,6 +454,8 @@ export function KanbanBoard() {
                         onMarkAttended={() => handleMarkAttended(lead)}
                         onMarkNoShow={() => setNoShowLead(lead)}
                         onReschedule={() => { setRescheduleLead(lead); setScheduleLead(lead); setScheduleData({ date: '', time: '' }); }}
+                        onMarkWon={() => setClosingLead(lead)}
+                        onMarkLost={() => setLossLead(lead)}
                       />
                     ))}
 
@@ -566,6 +581,8 @@ function LeadCard({
   onMarkAttended,
   onMarkNoShow,
   onReschedule,
+  onMarkWon,
+  onMarkLost,
 }: {
   lead: DBLead;
   assigneeName: string | null;
@@ -579,6 +596,8 @@ function LeadCard({
   onMarkAttended: () => void;
   onMarkNoShow: () => void;
   onReschedule: () => void;
+  onMarkWon: () => void;
+  onMarkLost: () => void;
 }) {
   const [showAllReminders, setShowAllReminders] = useState(false);
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
@@ -858,6 +877,24 @@ function LeadCard({
             </DialogContent>
           </Dialog>
         )}
+      </div>
+
+      {/* Ações fixas de resultado (padrão CRMs) */}
+      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-dashed border-[#E3E6EB]">
+        <button
+          onClick={stop(onMarkWon)}
+          title="Marcar como venda fechada"
+          className="flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-wider py-2 rounded-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition"
+        >
+          <DollarSign className="w-3.5 h-3.5" /> Vendeu
+        </button>
+        <button
+          onClick={stop(onMarkLost)}
+          title="Marcar como perdido"
+          className="flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-wider py-2 rounded-[10px] bg-red-50 text-red-700 border border-red-200 hover:bg-red-600 hover:text-white hover:border-red-600 transition"
+        >
+          <XIcon className="w-3.5 h-3.5" /> Perdeu
+        </button>
       </div>
 
     </div>

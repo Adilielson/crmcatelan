@@ -23,6 +23,7 @@ import {
   Bell,
   Target,
   Trophy,
+  Award,
 } from 'lucide-react';
 
 /* ============ MOBILE BOTTOM NAV ============ */
@@ -124,6 +125,7 @@ const useNavItems = (isSuperAdmin: boolean): NavItem[] => {
     { label: 'Fila', icon: Inbox, href: '/fila', module: 'fila' },
     { label: 'Agenda', icon: Calendar, href: '/agenda', module: 'agenda' },
     { label: 'Clientes', icon: Contact, href: '/clientes', module: 'clientes' },
+    { label: 'Resultados', icon: Award, href: '/resultados', module: 'resultados' },
     {
       label: 'Performance',
       icon: BarChart3,
