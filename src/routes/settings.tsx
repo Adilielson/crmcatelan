@@ -408,6 +408,10 @@ function Settings() {
           <WhatsAppConfig />
         </TabsContent>
 
+        <TabsContent value="noshow">
+          <NoShowSettingsSection />
+        </TabsContent>
+
         <TabsContent value="goals">
           <GoalsSettings />
         </TabsContent>
