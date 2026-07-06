@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus, Bell, Check, Clock, X as XIcon, ChevronLeft, ChevronRight, Settings2 } from 'lucide-react';
+import { Calendar, MessageSquare, MapPin, DollarSign, MessageCircle, MoreVertical, AlertCircle, PlusCircle, Database, Pencil, Trash2, Plus, Bell, Check, Clock, X as XIcon, ChevronLeft, ChevronRight, Settings2, AlarmClock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -29,6 +29,8 @@ import { RegisterPurchaseDialog } from '@/components/leads/RegisterPurchaseDialo
 import { LostLeadDialog } from '@/components/leads/LostLeadDialog';
 import { ConsultationSummaryDialog } from './ConsultationSummaryDialog';
 import { NewAppointmentDialog } from '@/components/agenda/NewAppointmentDialog';
+import { NoShowReasonDialog, type NoShowReasonKey } from './NoShowReasonDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const InstagramIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -61,7 +63,22 @@ export function KanbanBoard() {
   const updateLead = useUpdateLead();
   const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
-  const { addAppointment } = useAgenda();
+  const { appointments, addAppointment, updateAppointment } = useAgenda();
+
+  // Map: leadId -> latest active appointment (not terminal, not checked-in yet)
+  const pendingApptByLead = useMemo(() => {
+    const m = new Map<string, typeof appointments[number]>();
+    for (const a of appointments) {
+      if (!a.leadId) continue;
+      if (a.checkinAt) continue;
+      if (a.status === 'realizado' || a.status === 'cancelado' || a.status === 'no-show') continue;
+      const cur = m.get(a.leadId);
+      if (!cur || new Date(`${a.date}T${a.startTime}`).getTime() > new Date(`${cur.date}T${cur.startTime}`).getTime()) {
+        m.set(a.leadId, a);
+      }
+    }
+    return m;
+  }, [appointments]);
   const userRole = useAuthStore((s) => s.user?.role ?? null);
   const canManageColumns = userRole === 'admin' || userRole === 'super_admin' || userRole === 'manager';
 
@@ -80,6 +97,8 @@ export function KanbanBoard() {
   const [deletingColumn, setDeletingColumn] = useState<KanbanColumn | null>(null);
   const [closingLead, setClosingLead] = useState<DBLead | null>(null);
   const [followupLead, setFollowupLead] = useState<DBLead | null>(null);
+  const [noShowLead, setNoShowLead] = useState<DBLead | null>(null);
+  const [rescheduleLead, setRescheduleLead] = useState<DBLead | null>(null);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -114,6 +133,10 @@ export function KanbanBoard() {
   };
 
   const leadsForColumn = (col: KanbanColumn): DBLead[] => {
+    if (col.is_system && col.system_key === 'noshow_recovery') {
+      // Special: leads.status enum doesn't have 'noshow_recovery' — we place leads here via custom_column_id.
+      return leads.filter((l) => l.custom_column_id === col.id);
+    }
     if (col.is_system && col.system_key) {
       return leads.filter((l) => l.custom_column_id == null && l.status === col.system_key);
     }
@@ -126,6 +149,14 @@ export function KanbanBoard() {
 
     // Custom column: just set custom_column_id
     if (!col.is_system) {
+      if (lead.custom_column_id === col.id) return;
+      await updateLead.mutateAsync({ id: leadId, updates: { custom_column_id: col.id } });
+      toast.success(`Lead movido para ${col.name}`);
+      return;
+    }
+
+    // Recuperação No-Show — trata como coluna especial (via custom_column_id)
+    if (col.system_key === 'noshow_recovery') {
       if (lead.custom_column_id === col.id) return;
       await updateLead.mutateAsync({ id: leadId, updates: { custom_column_id: col.id } });
       toast.success(`Lead movido para ${col.name}`);
@@ -223,6 +254,82 @@ export function KanbanBoard() {
     setScheduleLead(lead);
     setScheduleData({ date: '', time: '' });
   };
+
+  const handleMarkAttended = async (lead: DBLead) => {
+    const appt = pendingApptByLead.get(lead.id);
+    if (!appt) return;
+    await updateAppointment(appt.id, { checkinAt: new Date().toISOString(), status: 'confirmado' });
+    await updateLead.mutateAsync({ id: lead.id, updates: { status: 'checked_in', custom_column_id: null } });
+    toast.success(`${lead.full_name} marcado como presente`);
+  };
+
+  const confirmNoShow = async (reason: NoShowReasonKey, outcome: 'recovery' | 'lost') => {
+    const lead = noShowLead;
+    if (!lead) return;
+    const appt = pendingApptByLead.get(lead.id);
+    if (appt) {
+      await updateAppointment(appt.id, { status: 'no-show' });
+      await (supabase as any)
+        .from('appointments')
+        .update({ noshow_reason: reason })
+        .eq('id', appt.id);
+    }
+
+    if (outcome === 'lost') {
+      await updateLead.mutateAsync({
+        id: lead.id,
+        updates: {
+          status: 'lost',
+          custom_column_id: null,
+          lost_reason: reason,
+          lost_reason_note: `No-show: ${reason}`,
+        },
+      });
+      toast.error('Lead marcado como perdido');
+    } else {
+      // Move to Recuperação No-Show custom column? Use status='in_progress' as fallback, and rely on system_key mapping.
+      // The new kanban column uses system_key 'noshow_recovery' — but leads.status enum may not include it.
+      // Keep status untouched; move via custom_column_id.
+      const recoveryCol = columns.find((c) => c.system_key === 'noshow_recovery');
+      if (recoveryCol) {
+        // Column is is_system with system_key — leadsForColumn filters by status match. To display in that column,
+        // we need to set status = the system_key OR add a custom_column_id path. Since noshow_recovery isn't in the
+        // leads status enum, we fall back to keeping the lead's status but assigning custom_column_id to the recovery column.
+        // But leadsForColumn only picks custom_column_id when col.is_system=false. We need to override the col to non-system OR
+        // change the query. Simpler: mark lead custom_column_id to the recovery column and treat it as override.
+        await updateLead.mutateAsync({
+          id: lead.id,
+          updates: {
+            custom_column_id: recoveryCol.id,
+            noshow_recovery_step: 0,
+          } as any,
+        });
+      }
+
+      // Enqueue recovery cadence
+      if (appt) {
+        const now = Date.now();
+        const rows = [
+          { kind: 'recovery_t0',   at: now },
+          { kind: 'recovery_t48h', at: now + 48 * 3600 * 1000 },
+          { kind: 'recovery_t7d',  at: now + 7 * 24 * 3600 * 1000 },
+        ];
+        await (supabase as any).from('noshow_alerts').insert(
+          rows.map((r) => ({
+            tenant_id: lead.tenant_id,
+            appointment_id: appt.id,
+            lead_id: lead.id,
+            kind: r.kind,
+            scheduled_at: new Date(r.at).toISOString(),
+            status: 'pending',
+          })),
+        );
+      }
+      toast.success('Lead movido para Recuperação No-Show');
+    }
+    setNoShowLead(null);
+  };
+
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -325,11 +432,15 @@ export function KanbanBoard() {
                         lead={lead}
                         assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
                         reminders={remindersByLead?.get(lead.id) ?? []}
+                        pendingAppt={pendingApptByLead.get(lead.id) ?? null}
                         onClick={() => setDetailLead(lead)}
                         onCalendar={() => openAgenda(lead)}
                         onChat={() => openChat(lead)}
                         onLocation={() => setLocationLead(lead)}
                         onValue={() => setValueLead(lead)}
+                        onMarkAttended={() => handleMarkAttended(lead)}
+                        onMarkNoShow={() => setNoShowLead(lead)}
+                        onReschedule={() => { setRescheduleLead(lead); setScheduleLead(lead); setScheduleData({ date: '', time: '' }); }}
                       />
                     ))}
 
@@ -395,6 +506,16 @@ export function KanbanBoard() {
         onConfirm={confirmLoss}
       />
 
+      {/* No-Show dialog — motivo obrigatório */}
+      <NoShowReasonDialog
+        open={!!noShowLead}
+        leadName={noShowLead?.full_name ?? null}
+        isSubmitting={updateLead.isPending}
+        onOpenChange={(v) => !v && setNoShowLead(null)}
+        onConfirm={confirmNoShow}
+      />
+
+
       {/* Column create/edit dialog (per-column from dropdown menu) */}
       <KanbanColumnDialog
         open={columnDialogOpen}
@@ -436,20 +557,28 @@ function LeadCard({
   lead,
   assigneeName,
   reminders,
+  pendingAppt,
   onClick,
   onCalendar,
   onChat,
   onLocation,
   onValue,
+  onMarkAttended,
+  onMarkNoShow,
+  onReschedule,
 }: {
   lead: DBLead;
   assigneeName: string | null;
   reminders: LeadReminder[];
+  pendingAppt: import('@/hooks/use-agenda').Appointment | null;
   onClick: () => void;
   onCalendar: () => void;
   onChat: () => void;
   onLocation: () => void;
   onValue: () => void;
+  onMarkAttended: () => void;
+  onMarkNoShow: () => void;
+  onReschedule: () => void;
 }) {
   const [showAllReminders, setShowAllReminders] = useState(false);
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
@@ -463,6 +592,18 @@ function LeadCard({
   const isScheduled = lead.status === 'scheduled';
   const isAi = !lead.assigned_user_id;
   const attendantLabel = isAi ? 'SDR' : firstName(assigneeName) || 'Vendedor';
+
+  // Aguardando check-in: appointment com scheduled_at já passado e sem checkin
+  const apptStartMs = pendingAppt
+    ? new Date(`${pendingAppt.date}T${pendingAppt.startTime}:00`).getTime()
+    : null;
+  const minutesElapsed = apptStartMs ? Math.floor((Date.now() - apptStartMs) / 60000) : null;
+  const awaitingCheckin = pendingAppt && minutesElapsed !== null && minutesElapsed >= 0;
+  const awaitingTone =
+    !awaitingCheckin ? '' :
+    minutesElapsed! >= 60 ? 'bg-red-50 text-red-700 border-red-300 animate-pulse' :
+    minutesElapsed! >= 30 ? 'bg-orange-50 text-orange-700 border-orange-300' :
+    'bg-amber-50 text-amber-700 border-amber-200';
 
   const hasReminders = reminders.length > 0;
   const recentReminders = reminders.slice(-5).reverse();
@@ -540,6 +681,40 @@ function LeadCard({
           {sourceIcon(lead.source)}
         </div>
       </div>
+
+      {awaitingCheckin && (
+        <div className={cn('mb-3 p-3 rounded-xl border', awaitingTone)}>
+          <div className="flex items-center gap-2 mb-2">
+            <AlarmClock className="w-4 h-4" />
+            <span className="text-[11px] font-black uppercase tracking-wider">
+              Aguardando check-in — {minutesElapsed}min
+            </span>
+          </div>
+          <p className="text-[10px] opacity-80 mb-2">
+            Agendado para {pendingAppt!.startTime}. Confirme a presença abaixo.
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              onClick={stop(onMarkAttended)}
+              className="text-[10px] font-black uppercase tracking-wide py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
+            >
+              ✅ Compareceu
+            </button>
+            <button
+              onClick={stop(onMarkNoShow)}
+              className="text-[10px] font-black uppercase tracking-wide py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+            >
+              ❌ Não veio
+            </button>
+            <button
+              onClick={stop(onReschedule)}
+              className="text-[10px] font-black uppercase tracking-wide py-1.5 rounded-lg bg-white border border-current hover:bg-gray-50 transition"
+            >
+              🔄 Remarcar
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         {actions.map((action) => {

@@ -576,6 +576,7 @@ export type Database = {
           lead_id: string | null
           lead_name: string | null
           needs_transport: boolean | null
+          noshow_reason: Database["public"]["Enums"]["noshow_reason"] | null
           notes: string | null
           notification_channel: string | null
           origin: string | null
@@ -604,6 +605,7 @@ export type Database = {
           lead_id?: string | null
           lead_name?: string | null
           needs_transport?: boolean | null
+          noshow_reason?: Database["public"]["Enums"]["noshow_reason"] | null
           notes?: string | null
           notification_channel?: string | null
           origin?: string | null
@@ -632,6 +634,7 @@ export type Database = {
           lead_id?: string | null
           lead_name?: string | null
           needs_transport?: boolean | null
+          noshow_reason?: Database["public"]["Enums"]["noshow_reason"] | null
           notes?: string | null
           notification_channel?: string | null
           origin?: string | null
@@ -1275,6 +1278,7 @@ export type Database = {
           lost_reason: string | null
           lost_reason_note: string | null
           next_contact_at: string | null
+          noshow_recovery_step: number
           notes: string | null
           payment_method: string | null
           phone: string | null
@@ -1337,6 +1341,7 @@ export type Database = {
           lost_reason?: string | null
           lost_reason_note?: string | null
           next_contact_at?: string | null
+          noshow_recovery_step?: number
           notes?: string | null
           payment_method?: string | null
           phone?: string | null
@@ -1399,6 +1404,7 @@ export type Database = {
           lost_reason?: string | null
           lost_reason_note?: string | null
           next_contact_at?: string | null
+          noshow_recovery_step?: number
           notes?: string | null
           payment_method?: string | null
           phone?: string | null
@@ -1692,6 +1698,142 @@ export type Database = {
             foreignKeyName: "module_permissions_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      noshow_alerts: {
+        Row: {
+          appointment_id: string
+          attendant_id: string | null
+          channel: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          kind: string
+          lead_id: string | null
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id: string
+          attendant_id?: string | null
+          channel?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          kind: string
+          lead_id?: string | null
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          attendant_id?: string | null
+          channel?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          kind?: string
+          lead_id?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "noshow_alerts_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "noshow_alerts_attendant_id_fkey"
+            columns: ["attendant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "noshow_alerts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "noshow_alerts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      noshow_settings: {
+        Row: {
+          created_at: string
+          daily_summary_enabled: boolean
+          daily_summary_time: string
+          enabled: boolean
+          id: string
+          interval_preset: string
+          manager_phone: string | null
+          notify_attendant_whatsapp: boolean
+          notify_manager_whatsapp: boolean
+          recovery_msg_t0: string
+          recovery_msg_t48h: string
+          recovery_msg_t7d: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_summary_enabled?: boolean
+          daily_summary_time?: string
+          enabled?: boolean
+          id?: string
+          interval_preset?: string
+          manager_phone?: string | null
+          notify_attendant_whatsapp?: boolean
+          notify_manager_whatsapp?: boolean
+          recovery_msg_t0?: string
+          recovery_msg_t48h?: string
+          recovery_msg_t7d?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_summary_enabled?: boolean
+          daily_summary_time?: string
+          enabled?: boolean
+          id?: string
+          interval_preset?: string
+          manager_phone?: string | null
+          notify_attendant_whatsapp?: boolean
+          notify_manager_whatsapp?: boolean
+          recovery_msg_t0?: string
+          recovery_msg_t48h?: string
+          recovery_msg_t7d?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "noshow_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -2737,6 +2879,13 @@ export type Database = {
       log_severity: "info" | "warning" | "critical"
       marketing_platform: "facebook_ads" | "google_ads" | "tiktok_ads"
       message_direction: "inbound" | "outbound"
+      noshow_reason:
+        | "doente"
+        | "esqueceu"
+        | "sem_tempo"
+        | "desistiu"
+        | "comprou_fora"
+        | "nao_respondeu"
       notification_category:
         | "ai_training"
         | "performance"
@@ -2907,6 +3056,14 @@ export const Constants = {
       log_severity: ["info", "warning", "critical"],
       marketing_platform: ["facebook_ads", "google_ads", "tiktok_ads"],
       message_direction: ["inbound", "outbound"],
+      noshow_reason: [
+        "doente",
+        "esqueceu",
+        "sem_tempo",
+        "desistiu",
+        "comprou_fora",
+        "nao_respondeu",
+      ],
       notification_category: [
         "ai_training",
         "performance",
