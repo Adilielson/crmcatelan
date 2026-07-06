@@ -49,10 +49,13 @@ const sourceIcon = (s: string | null) => {
   }
 };
 
+// Colunas removidas do quadro (viraram tela /resultados)
+const HIDDEN_SYSTEM_KEYS = new Set(['showed_up', 'lost']);
+
 export function KanbanBoard() {
   const navigate = useNavigate();
-  const { data: leads = [], isLoading } = useLeads();
-  const { data: columns = [] } = useKanbanColumns();
+  const { data: allLeads = [], isLoading } = useLeads();
+  const { data: allColumns = [] } = useKanbanColumns();
   const { data: profiles = [] } = useTenantProfiles();
   const { data: remindersByLead } = useLeadReminders();
   const profileMap = useMemo(() => {
@@ -64,6 +67,16 @@ export function KanbanBoard() {
   const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
   const { appointments, addAppointment, updateAppointment } = useAgenda();
+
+  // Esconde do quadro colunas de Fechado/Perdido e leads já resolvidos.
+  const columns = useMemo(
+    () => allColumns.filter((c) => !HIDDEN_SYSTEM_KEYS.has(c.system_key ?? '')),
+    [allColumns],
+  );
+  const leads = useMemo(
+    () => allLeads.filter((l) => l.status !== 'showed_up' && l.status !== 'lost'),
+    [allLeads],
+  );
 
   // Map: leadId -> latest active appointment (not terminal, not checked-in yet)
   const pendingApptByLead = useMemo(() => {
