@@ -133,6 +133,10 @@ export function KanbanBoard() {
   };
 
   const leadsForColumn = (col: KanbanColumn): DBLead[] => {
+    if (col.is_system && col.system_key === 'noshow_recovery') {
+      // Special: leads.status enum doesn't have 'noshow_recovery' — we place leads here via custom_column_id.
+      return leads.filter((l) => l.custom_column_id === col.id);
+    }
     if (col.is_system && col.system_key) {
       return leads.filter((l) => l.custom_column_id == null && l.status === col.system_key);
     }
@@ -145,6 +149,14 @@ export function KanbanBoard() {
 
     // Custom column: just set custom_column_id
     if (!col.is_system) {
+      if (lead.custom_column_id === col.id) return;
+      await updateLead.mutateAsync({ id: leadId, updates: { custom_column_id: col.id } });
+      toast.success(`Lead movido para ${col.name}`);
+      return;
+    }
+
+    // Recuperação No-Show — trata como coluna especial (via custom_column_id)
+    if (col.system_key === 'noshow_recovery') {
       if (lead.custom_column_id === col.id) return;
       await updateLead.mutateAsync({ id: leadId, updates: { custom_column_id: col.id } });
       toast.success(`Lead movido para ${col.name}`);
