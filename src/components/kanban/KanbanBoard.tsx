@@ -581,6 +581,8 @@ function LeadCard({
   onMarkAttended,
   onMarkNoShow,
   onReschedule,
+  onMarkWon,
+  onMarkLost,
 }: {
   lead: DBLead;
   assigneeName: string | null;
@@ -594,6 +596,8 @@ function LeadCard({
   onMarkAttended: () => void;
   onMarkNoShow: () => void;
   onReschedule: () => void;
+  onMarkWon: () => void;
+  onMarkLost: () => void;
 }) {
   const [showAllReminders, setShowAllReminders] = useState(false);
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
