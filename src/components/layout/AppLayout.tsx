@@ -23,6 +23,7 @@ import {
   Bell,
   Target,
   Trophy,
+  Award,
 } from 'lucide-react';
 
 /* ============ MOBILE BOTTOM NAV ============ */
