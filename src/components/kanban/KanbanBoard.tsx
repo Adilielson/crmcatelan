@@ -63,7 +63,7 @@ export function KanbanBoard() {
   const updateLead = useUpdateLead();
   const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
-  const { appointments, updateAppointment } = useAgenda();
+  const { appointments, addAppointment, updateAppointment } = useAgenda();
 
   // Map: leadId -> latest active appointment (not terminal, not checked-in yet)
   const pendingApptByLead = useMemo(() => {
