@@ -13,6 +13,7 @@ export const MODULE_CATALOG = [
   { key: 'ranking', label: 'Ranking', path: '/ranking' },
   { key: 'no_show', label: 'Métricas No-Show', path: '/analytics/no-show' },
   { key: 'reports', label: 'Relatórios' },
+  { key: 'resultados', label: 'Resultados (Ganhos/Perdidos)', path: '/resultados' },
   { key: 'report_attendants', label: 'Relatório de Atendentes', path: '/relatorios/atendentes' },
   { key: 'report_appointments', label: 'Relatório de Agendamentos', path: '/relatorios/agendamentos' },
   { key: 'report_attendance', label: 'Relatório de Comparecimento', path: '/relatorios/comparecimento' },
