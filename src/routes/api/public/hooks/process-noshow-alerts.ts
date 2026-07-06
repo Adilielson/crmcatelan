@@ -168,10 +168,6 @@ export const Route = createFileRoute('/api/public/hooks/process-noshow-alerts')(
             .not('status', 'in', '(cancelled,completed,no_show)');
 
           if (!opens || opens.length === 0) {
-            await supabaseAdmin.from('noshow_alerts').insert({
-              tenant_id: t.tenant_id, appointment_id: null as any, kind: 'daily_summary',
-              scheduled_at: nowIso, status: 'skipped', error_message: 'no pending appts',
-            }).select().maybeSingle().then(() => null).catch(() => null);
             continue;
           }
 

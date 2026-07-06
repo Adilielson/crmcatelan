@@ -37,6 +37,7 @@ import { Route as RelatoriosAtendentesRouteImport } from './routes/relatorios.at
 import { Route as RelatoriosAgendamentosRouteImport } from './routes/relatorios.agendamentos'
 import { Route as AnalyticsNoShowRouteImport } from './routes/analytics/no-show'
 import { Route as ApiAiTrainingSimulateChatRouteImport } from './routes/api/ai-training/simulate-chat'
+import { Route as ApiPublicHooksProcessNoshowAlertsRouteImport } from './routes/api/public/hooks/process-noshow-alerts'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 import { Route as ApiPublicHooksProcessAppointmentRemindersRouteImport } from './routes/api/public/hooks/process-appointment-reminders'
 import { Route as ApiPublicHooksBuildReferenceStyleRouteImport } from './routes/api/public/hooks/build-reference-style'
@@ -183,6 +184,12 @@ const ApiAiTrainingSimulateChatRoute =
     path: '/api/ai-training/simulate-chat',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksProcessNoshowAlertsRoute =
+  ApiPublicHooksProcessNoshowAlertsRouteImport.update({
+    id: '/api/public/hooks/process-noshow-alerts',
+    path: '/api/public/hooks/process-noshow-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksProcessFollowupsRoute =
   ApiPublicHooksProcessFollowupsRouteImport.update({
     id: '/api/public/hooks/process-followups',
@@ -234,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
+  '/api/public/hooks/process-noshow-alerts': typeof ApiPublicHooksProcessNoshowAlertsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -266,6 +274,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
+  '/api/public/hooks/process-noshow-alerts': typeof ApiPublicHooksProcessNoshowAlertsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -300,6 +309,7 @@ export interface FileRoutesById {
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
+  '/api/public/hooks/process-noshow-alerts': typeof ApiPublicHooksProcessNoshowAlertsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
+    | '/api/public/hooks/process-noshow-alerts'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
+    | '/api/public/hooks/process-noshow-alerts'
   id:
     | '__root__'
     | '/'
@@ -400,6 +412,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/build-reference-style'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
+    | '/api/public/hooks/process-noshow-alerts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -428,6 +441,7 @@ export interface RootRouteChildren {
   ApiPublicHooksBuildReferenceStyleRoute: typeof ApiPublicHooksBuildReferenceStyleRoute
   ApiPublicHooksProcessAppointmentRemindersRoute: typeof ApiPublicHooksProcessAppointmentRemindersRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
+  ApiPublicHooksProcessNoshowAlertsRoute: typeof ApiPublicHooksProcessNoshowAlertsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -628,6 +642,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiTrainingSimulateChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/process-noshow-alerts': {
+      id: '/api/public/hooks/process-noshow-alerts'
+      path: '/api/public/hooks/process-noshow-alerts'
+      fullPath: '/api/public/hooks/process-noshow-alerts'
+      preLoaderRoute: typeof ApiPublicHooksProcessNoshowAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/process-followups': {
       id: '/api/public/hooks/process-followups'
       path: '/api/public/hooks/process-followups'
@@ -702,6 +723,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksProcessAppointmentRemindersRoute:
     ApiPublicHooksProcessAppointmentRemindersRoute,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,
+  ApiPublicHooksProcessNoshowAlertsRoute:
+    ApiPublicHooksProcessNoshowAlertsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
