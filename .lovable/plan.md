@@ -1,129 +1,67 @@
-# Fluxo No-Show com confirmação humana
+# Limpeza do Kanban + Tela única de Resultados
 
-Baseado nas suas escolhas: alertas vão para o **atendente que agendou**, com **configuração em Configurações**, **resumo no fim do dia** e coluna **"Recuperação No-Show"** ativa.
-
----
-
-## 1. Antes da consulta (já existe — só ajustar)
-
-Já temos `appointment_reminders` com `confirm_24h`, `confirm_retry_2h`, `day_morning`, `final_1h`. Mantém como está.
+Fechamos as 4 decisões:
+1. Tela única `/resultados` com abas Ganhos | Perdidos | Todos
+2. Coluna "Re-agendar" removida
+3. Motivo de perda usa o dropdown que já existe no `LostLeadDialog`
+4. Botão fixo **Vendeu** (💰) + **Perdeu** (❌) em todo card do kanban
 
 ---
 
-## 2. Na hora da consulta — sem marcar no-show automático
+## 1. Migração (banco)
 
-Quando o horário passa **sem check-in** e **sem status "compareceu/cancelado"**, o card entra em modo "aguardando confirmação":
+- Remover do kanban as colunas de sistema `won`, `lost`, `rescheduled` (marcar `is_active = false` ou deletar do `kanban_columns` por tenant — leads mantêm `status='showed_up'/'lost'`, só somem do board).
+- Manter o enum de status intacto — os leads Ganhos/Perdidos continuam existindo, só não aparecem no board.
+- Ajustar `seed_kanban_columns_for_tenant` para não recriar essas 3 colunas em novos tenants.
 
-- Badge amarelo **"Aguardando check-in"** + cronômetro (T+15, T+30, T+45, T+60…)
-- Card **NÃO sai** da coluna Agendado
-- Sistema **nunca** marca no-show sozinho
+## 2. Kanban (`KanbanBoard.tsx` + card)
 
-### Alertas escalonados (todos vão para o atendente que agendou o `appointment`)
+- Filtrar o board para esconder colunas com `system_key in ('won','lost','rescheduled')`.
+- Esconder do board leads com `status in ('showed_up','lost')` mesmo que estejam em coluna custom.
+- Card ganha **2 botões fixos** no rodapé (ao lado dos QuickActions):
+  - 💰 **Vendeu** → abre `RegisterPurchaseDialog` com `closeLead={true}` (já existe, marca `status='showed_up'`)
+  - ❌ **Perdeu** → abre `LostLeadDialog` existente (dropdown de motivos + campo livre)
+- Ao salvar em qualquer um dos dois, o card desaparece do board automaticamente (pelo filtro de status acima).
 
-| Momento | Canal | Mensagem |
-|---|---|---|
-| T+15min | In-app (sino + toast) | "Ataíde estava marcado 14h. Já chegou?" |
-| T+30min | In-app + **WhatsApp do atendente** | "⚠️ Confirmar presença: Ataíde (14h). Responda: 1-Compareceu / 2-Não veio / 3-Remarcar" |
-| T+45min | In-app + WhatsApp (2ª tentativa) | Mesma pergunta, tom mais urgente |
-| T+60min | Card fica **vermelho piscando** + entrada no resumo do dia | — |
+## 3. Nova rota `/resultados`
 
-**Nada é automático.** Só o atendente ou gerente resolve pelos 3 botões do card:
-- ✅ **Compareceu** → check-in retroativo, fluxo normal
-- ❌ **Não compareceu** → dialog de motivo obrigatório → coluna "Recuperação No-Show"
-- 🔄 **Remarcar** → escolhe nova data → volta pra "Agendado"
+Substitui a navegação para "vendas/perdidos separados". Estrutura:
 
----
-
-## 3. Resumo diário às 19h
-
-WhatsApp para cada atendente com agendamentos do dia **sem resolução**:
-
-```
-📋 Resumo 15/12 – Fim do dia
-Você tem 2 agendamentos sem confirmação:
-• Ataíde – 14h (aguardando há 5h)
-• Maria Silva – 16h (aguardando há 3h)
-Resolva agora no CRM: [link]
+```text
+/resultados          → aba Todos (default)
+/resultados/ganhos   → só showed_up
+/resultados/perdidos → só lost
 ```
 
-Se o atendente responder pelo WhatsApp ("1 Ataíde compareceu"), o webhook processa e atualiza o card.
+Cada aba tem:
+- KPIs no topo (total, valor total R$, ticket médio, taxa de conversão)
+- Filtros: período, atendente, unidade, motivo (só na aba Perdidos)
+- Tabela: lead, atendente, data, valor / motivo, ações (ver detalhes, reengajar)
+- Botão "Exportar CSV"
 
----
+Sidebar da app ganha item **Resultados** no lugar de qualquer link antigo para vendas/perdidos.
 
-## 4. Coluna "Recuperação No-Show" (nova)
+## 4. Onde aplicar o dropdown de motivo de perda
 
-Entra automático quando o atendente marca "Não compareceu". Fica **entre "Agendado" e "Em Negociação"**.
+O `LostLeadDialog` já tem o dropdown. Precisa garantir que ele seja usado em **todos os pontos** onde um lead pode virar Perdido:
+- Kanban → botão ❌ Perdeu (novo)
+- Kanban → drag para coluna Perdido (removido, então N/A)
+- `NoShowReasonDialog` → motivos `desistiu`/`comprou_fora` já geram `status='lost'` — reaproveitar o mesmo enum de motivos do `LostLeadDialog` para consistência de relatório
+- `LeadDetailSheet` / `LeadProfilePanel` → botão "Marcar como perdido" usa o mesmo dialog
+- Chat / Fila / Follow-ups → onde houver ação "descartar lead", trocar por abrir o `LostLeadDialog`
 
-**Motivos obrigatórios** (definem a cadência):
+## 5. Ordem de implementação
 
-| Motivo | O que acontece |
-|---|---|
-| Doente/imprevisto | T+0 empatia, retomada em 15d |
-| Esqueceu | T+0 remarcação suave, retomada em 7d |
-| Sem tempo agora | Retomada em 30d |
-| Desistiu do exame | Vai pra **Perdido** com nutrição em 60d |
-| Comprou fora | Vai pra **Perdido** sem reengajamento |
-| Não respondeu | Cadência automática (ver abaixo) |
+1. Migration: desativar 3 colunas + ajustar seed
+2. `KanbanBoard`: filtro de colunas + filtro de status
+3. Card: 2 botões fixos + wiring dos dialogs existentes
+4. Rota `/resultados` + subrotas Ganhos/Perdidos/Todos + tabela + CSV
+5. Sidebar: item "Resultados", remover links antigos
+6. Auditar telas listadas em §4 e trocar por `LostLeadDialog`
 
-### Cadência "Recuperação No-Show" (WhatsApp em rascunho para a atendente aprovar)
+## Detalhes técnicos
 
-- **T+0h:** "Oi Ataíde, senti sua falta hoje na consulta. Tudo bem contigo?"
-- **T+48h:** "Consegue vir amanhã ou quinta? Tenho 10h e 15h."
-- **T+7d:** "Última chance essa semana pra ajustar sua visão. Posso reservar?"
-
-Sem resposta em 7d → **Perdido** com motivo `nao_respondeu`.
-
----
-
-## 5. Configurações → nova aba "Alertas de No-Show"
-
-Página `/settings` ganha aba onde o admin controla:
-
-- **Ligar/desligar alertas no-show** (switch geral)
-- **Intervalos:** T+15/T+30/T+45 (padrão) ou T+30/T+60 (menos ruído)
-- **Enviar WhatsApp para o atendente:** on/off
-- **Enviar WhatsApp para o gerente também:** on/off + campo do número
-- **Resumo diário 19h:** on/off + horário customizável
-- **Cadência de recuperação:** editar textos dos 3 toques (T+0/T+48h/T+7d)
-
-Tudo salvo em nova tabela `noshow_settings` (1 linha por tenant).
-
----
-
-## 6. Banco — o que precisa mudar
-
-### Novas colunas / tabelas
-1. **Coluna kanban "Recuperação No-Show"** — via `seed_kanban_columns_for_tenant` + insert para tenants existentes (posição 35, entre Agendado e Negociação, `system_key='noshow_recovery'`)
-2. **`noshow_settings`** — configurações da aba
-3. **`noshow_alerts`** — fila de alertas pendentes (appointment_id, kind='t15|t30|t45', scheduled_at, sent_at, channel)
-4. **`noshow_reason` enum** — `doente`, `esqueceu`, `sem_tempo`, `desistiu`, `comprou_fora`, `nao_respondeu`
-5. **`appointments.noshow_reason`** — coluna opcional
-6. **`leads.noshow_recovery_step`** — 0/1/2 para saber qual toque enviar
-
-### Trigger novo
-Quando `appointments.scheduled_at + 15/30/45min < now()` sem check-in → cria linhas em `noshow_alerts`. Isso já tem infra parecida em `appointment_reminders` — dá pra reaproveitar o padrão.
-
-### Cron (pg_cron a cada 5min)
-Chama `/api/public/hooks/process-noshow-alerts` que:
-- Envia in-app + WhatsApp para o atendente
-- Cria cadência de recuperação quando marcado no-show
-- Manda resumo às 19h
-
----
-
-## 7. Ordem de implementação
-
-1. Migration: coluna kanban + `noshow_settings` + `noshow_alerts` + enum
-2. UI do card: badge "Aguardando check-in" + cronômetro + 3 botões (Compareceu / Não compareceu / Remarcar)
-3. Dialog "Marcar No-Show" com motivo obrigatório
-4. Página `/settings` → aba "Alertas de No-Show"
-5. Server route `/api/public/hooks/process-noshow-alerts` + pg_cron 5min
-6. Resumo diário 19h (mesma rota, branch por horário)
-7. Webhook WhatsApp entende respostas "1/2/3 nome" e atualiza card
-
----
-
-## Duas confirmações rápidas antes de codar
-
-1. **Aba de config:** faz sentido criar dentro de `/settings` existente (nova tab) ou preferir página separada `/settings/noshow`?
-2. **WhatsApp para o atendente:** ele precisa ter **número cadastrado no `profiles`** (hoje só tem email). Adiciono campo `phone` em profiles e um input no perfil do usuário?
+- Filtro do board: `columns.filter(c => !['won','lost','rescheduled'].includes(c.system_key))` + `leads.filter(l => !['showed_up','lost'].includes(l.status))`
+- Botões do card ficam no `LeadQuickActions` como novos itens só em variant compact, ou num rodapé separado (prefiro rodapé pra não misturar com Agendar/Conversar/Valor)
+- `/resultados` reaproveita `useLeads` com filtro `status in (...)` + `useLeadPurchases` agregado
+- CSV via `lib/report-export.ts` que já existe
