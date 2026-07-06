@@ -547,20 +547,28 @@ function LeadCard({
   lead,
   assigneeName,
   reminders,
+  pendingAppt,
   onClick,
   onCalendar,
   onChat,
   onLocation,
   onValue,
+  onMarkAttended,
+  onMarkNoShow,
+  onReschedule,
 }: {
   lead: DBLead;
   assigneeName: string | null;
   reminders: LeadReminder[];
+  pendingAppt: import('@/hooks/use-agenda').Appointment | null;
   onClick: () => void;
   onCalendar: () => void;
   onChat: () => void;
   onLocation: () => void;
   onValue: () => void;
+  onMarkAttended: () => void;
+  onMarkNoShow: () => void;
+  onReschedule: () => void;
 }) {
   const [showAllReminders, setShowAllReminders] = useState(false);
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
@@ -574,6 +582,18 @@ function LeadCard({
   const isScheduled = lead.status === 'scheduled';
   const isAi = !lead.assigned_user_id;
   const attendantLabel = isAi ? 'SDR' : firstName(assigneeName) || 'Vendedor';
+
+  // Aguardando check-in: appointment com scheduled_at já passado e sem checkin
+  const apptStartMs = pendingAppt
+    ? new Date(`${pendingAppt.date}T${pendingAppt.startTime}:00`).getTime()
+    : null;
+  const minutesElapsed = apptStartMs ? Math.floor((Date.now() - apptStartMs) / 60000) : null;
+  const awaitingCheckin = pendingAppt && minutesElapsed !== null && minutesElapsed >= 0;
+  const awaitingTone =
+    !awaitingCheckin ? '' :
+    minutesElapsed! >= 60 ? 'bg-red-50 text-red-700 border-red-300 animate-pulse' :
+    minutesElapsed! >= 30 ? 'bg-orange-50 text-orange-700 border-orange-300' :
+    'bg-amber-50 text-amber-700 border-amber-200';
 
   const hasReminders = reminders.length > 0;
   const recentReminders = reminders.slice(-5).reverse();
