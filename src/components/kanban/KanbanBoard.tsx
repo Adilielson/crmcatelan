@@ -454,6 +454,8 @@ export function KanbanBoard() {
                         onMarkAttended={() => handleMarkAttended(lead)}
                         onMarkNoShow={() => setNoShowLead(lead)}
                         onReschedule={() => { setRescheduleLead(lead); setScheduleLead(lead); setScheduleData({ date: '', time: '' }); }}
+                        onMarkWon={() => setClosingLead(lead)}
+                        onMarkLost={() => setLossLead(lead)}
                       />
                     ))}
 
