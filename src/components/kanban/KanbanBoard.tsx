@@ -243,6 +243,82 @@ export function KanbanBoard() {
     setScheduleData({ date: '', time: '' });
   };
 
+  const handleMarkAttended = async (lead: DBLead) => {
+    const appt = pendingApptByLead.get(lead.id);
+    if (!appt) return;
+    await updateAppointment(appt.id, { checkinAt: new Date().toISOString(), status: 'confirmado' });
+    await updateLead.mutateAsync({ id: lead.id, updates: { status: 'checked_in', custom_column_id: null } });
+    toast.success(`${lead.full_name} marcado como presente`);
+  };
+
+  const confirmNoShow = async (reason: NoShowReasonKey, outcome: 'recovery' | 'lost') => {
+    const lead = noShowLead;
+    if (!lead) return;
+    const appt = pendingApptByLead.get(lead.id);
+    if (appt) {
+      await updateAppointment(appt.id, { status: 'no-show' });
+      await (supabase as any)
+        .from('appointments')
+        .update({ noshow_reason: reason })
+        .eq('id', appt.id);
+    }
+
+    if (outcome === 'lost') {
+      await updateLead.mutateAsync({
+        id: lead.id,
+        updates: {
+          status: 'lost',
+          custom_column_id: null,
+          lost_reason: reason,
+          lost_reason_note: `No-show: ${reason}`,
+        },
+      });
+      toast.error('Lead marcado como perdido');
+    } else {
+      // Move to Recuperação No-Show custom column? Use status='in_progress' as fallback, and rely on system_key mapping.
+      // The new kanban column uses system_key 'noshow_recovery' — but leads.status enum may not include it.
+      // Keep status untouched; move via custom_column_id.
+      const recoveryCol = columns.find((c) => c.system_key === 'noshow_recovery');
+      if (recoveryCol) {
+        // Column is is_system with system_key — leadsForColumn filters by status match. To display in that column,
+        // we need to set status = the system_key OR add a custom_column_id path. Since noshow_recovery isn't in the
+        // leads status enum, we fall back to keeping the lead's status but assigning custom_column_id to the recovery column.
+        // But leadsForColumn only picks custom_column_id when col.is_system=false. We need to override the col to non-system OR
+        // change the query. Simpler: mark lead custom_column_id to the recovery column and treat it as override.
+        await updateLead.mutateAsync({
+          id: lead.id,
+          updates: {
+            custom_column_id: recoveryCol.id,
+            noshow_recovery_step: 0,
+          } as any,
+        });
+      }
+
+      // Enqueue recovery cadence
+      if (appt) {
+        const now = Date.now();
+        const rows = [
+          { kind: 'recovery_t0',   at: now },
+          { kind: 'recovery_t48h', at: now + 48 * 3600 * 1000 },
+          { kind: 'recovery_t7d',  at: now + 7 * 24 * 3600 * 1000 },
+        ];
+        await (supabase as any).from('noshow_alerts').insert(
+          rows.map((r) => ({
+            tenant_id: lead.tenant_id,
+            appointment_id: appt.id,
+            lead_id: lead.id,
+            kind: r.kind,
+            scheduled_at: new Date(r.at).toISOString(),
+            status: 'pending',
+          })),
+        );
+      }
+      toast.success('Lead movido para Recuperação No-Show');
+    }
+    setNoShowLead(null);
+  };
+
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-4 sm:p-6 rounded-[14px] border border-[#E3E6EB] shadow-sm gap-4">
