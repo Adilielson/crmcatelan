@@ -672,6 +672,40 @@ function LeadCard({
         </div>
       </div>
 
+      {awaitingCheckin && (
+        <div className={cn('mb-3 p-3 rounded-xl border', awaitingTone)}>
+          <div className="flex items-center gap-2 mb-2">
+            <AlarmClock className="w-4 h-4" />
+            <span className="text-[11px] font-black uppercase tracking-wider">
+              Aguardando check-in — {minutesElapsed}min
+            </span>
+          </div>
+          <p className="text-[10px] opacity-80 mb-2">
+            Agendado para {pendingAppt!.startTime}. Confirme a presença abaixo.
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              onClick={stop(onMarkAttended)}
+              className="text-[10px] font-black uppercase tracking-wide py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
+            >
+              ✅ Compareceu
+            </button>
+            <button
+              onClick={stop(onMarkNoShow)}
+              className="text-[10px] font-black uppercase tracking-wide py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+            >
+              ❌ Não veio
+            </button>
+            <button
+              onClick={stop(onReschedule)}
+              className="text-[10px] font-black uppercase tracking-wide py-1.5 rounded-lg bg-white border border-current hover:bg-gray-50 transition"
+            >
+              🔄 Remarcar
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 flex-wrap">
         {actions.map((action) => {
           const Icon = action.icon;
