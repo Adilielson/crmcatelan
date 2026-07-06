@@ -432,11 +432,15 @@ export function KanbanBoard() {
                         lead={lead}
                         assigneeName={lead.assigned_user_id ? (profileMap.get(lead.assigned_user_id) ?? null) : null}
                         reminders={remindersByLead?.get(lead.id) ?? []}
+                        pendingAppt={pendingApptByLead.get(lead.id) ?? null}
                         onClick={() => setDetailLead(lead)}
                         onCalendar={() => openAgenda(lead)}
                         onChat={() => openChat(lead)}
                         onLocation={() => setLocationLead(lead)}
                         onValue={() => setValueLead(lead)}
+                        onMarkAttended={() => handleMarkAttended(lead)}
+                        onMarkNoShow={() => setNoShowLead(lead)}
+                        onReschedule={() => { setRescheduleLead(lead); setScheduleLead(lead); setScheduleData({ date: '', time: '' }); }}
                       />
                     ))}
 
