@@ -63,7 +63,22 @@ export function KanbanBoard() {
   const updateLead = useUpdateLead();
   const deleteColumn = useDeleteKanbanColumn();
   const seed = useSeedSampleLeads();
-  const { addAppointment } = useAgenda();
+  const { appointments, updateAppointment } = useAgenda();
+
+  // Map: leadId -> latest active appointment (not terminal, not checked-in yet)
+  const pendingApptByLead = useMemo(() => {
+    const m = new Map<string, typeof appointments[number]>();
+    for (const a of appointments) {
+      if (!a.leadId) continue;
+      if (a.checkinAt) continue;
+      if (a.status === 'realizado' || a.status === 'cancelado' || a.status === 'no-show') continue;
+      const cur = m.get(a.leadId);
+      if (!cur || new Date(`${a.date}T${a.startTime}`).getTime() > new Date(`${cur.date}T${cur.startTime}`).getTime()) {
+        m.set(a.leadId, a);
+      }
+    }
+    return m;
+  }, [appointments]);
   const userRole = useAuthStore((s) => s.user?.role ?? null);
   const canManageColumns = userRole === 'admin' || userRole === 'super_admin' || userRole === 'manager';
 
