@@ -166,22 +166,11 @@ async function listAvailableSlots(
     blockedByDate.get(key)!.push(b as Blocked);
   }
 
-  const { data: apptsRows } = await admin
-    .from("appointments")
-    .select("scheduled_at,end_at,status")
-    .eq("tenant_id", tenantId)
-    .gte("scheduled_at", startDateStr)
-    .lte("scheduled_at", dateOnly(endDate) + "T23:59:59Z")
-    .in("status", ["pending", "confirmed", "in_progress"]);
+  // NOTA: atendimento é rápido e permite paralelismo — não filtramos por
+  // colisão. Todos os slots do horário comercial (fora de bloqueios/almoço)
+  // são ofertados; se o cliente pedir um horário específico, a IA deve
+  // adaptar (ex.: 15:10 se 15:00 estiver "cheio" na percepção humana).
 
-  const busy: { start: number; end: number }[] = ((apptsRows ?? []) as any[])
-    .map((a) => {
-      const s = new Date(a.scheduled_at as string).getTime();
-      const e = a.end_at
-        ? new Date(a.end_at as string).getTime()
-        : s + SLOT_MINUTES * 60_000;
-      return { start: s, end: e };
-    });
 
   const wantMorning = opts.periodo === "manha";
   const wantAfternoon = opts.periodo === "tarde";
