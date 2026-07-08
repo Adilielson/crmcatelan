@@ -469,16 +469,15 @@ async function updateLeadQualification(
     updated.push("interesses");
   }
 
-  // Tags: adiciona plano/objecao/uso de óculos como flags rastreáveis
+  // Tags: adiciona objecao/uso de óculos/produto como flags rastreáveis
   const prevTags = new Set((current?.ia_tags ?? []).map((s: string) => s.toLowerCase()));
   const newTags = [...(current?.ia_tags ?? [])];
   const addTag = (t: string) => {
     if (!prevTags.has(t.toLowerCase())) { newTags.push(t); prevTags.add(t.toLowerCase()); }
   };
-  if (args.plano_saude) {
-    const p = args.plano_saude.trim();
-    addTag(/nenhum|particular|sus|não/i.test(p) ? `plano:${p.toLowerCase()}` : `plano:${p.toLowerCase()}`);
-    updated.push("plano_saude");
+  if (args.tipo_produto) {
+    addTag(`produto:${args.tipo_produto.trim().toLowerCase()}`);
+    updated.push("tipo_produto");
   }
   if (typeof args.usa_oculos === "boolean") {
     addTag(args.usa_oculos ? "usa-oculos" : "sem-oculos");
