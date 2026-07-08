@@ -37,14 +37,14 @@ export const AGENT_TOOLS = [
     function: {
       name: "criar_agendamento",
       description:
-        "Cria o agendamento no sistema DEPOIS que o cliente confirmou explicitamente um horário retornado por listar_horarios_disponiveis. Nunca invente horários. Nunca chame sem confirmação do cliente.",
+        "Cria o agendamento no sistema DEPOIS que o cliente confirmou explicitamente um horário. IMPORTANTE: o horário pode ser QUALQUER minuto dentro do horário comercial (ex.: 15:10, 15:25). Se o cliente pedir um horário específico que NÃO apareceu na lista de slots, você pode agendar mesmo assim, contanto que esteja dentro do horário comercial e não seja no passado. Só recuse se estiver fora do horário comercial, em bloqueio ou no passado.",
       parameters: {
         type: "object",
         required: ["scheduled_at_iso", "tipo_consulta"],
         properties: {
           scheduled_at_iso: {
             type: "string",
-            description: "Horário exato em ISO 8601 (ex: 2026-07-10T14:00:00-03:00). Copie de um slot retornado por listar_horarios_disponiveis.",
+            description: "Horário exato em ISO 8601 com offset -03:00 (ex: 2026-07-10T15:10:00-03:00). Pode ser um slot da lista OU um horário customizado que o cliente pediu, desde que esteja dentro do horário comercial.",
           },
           tipo_consulta: {
             type: "string",
@@ -57,6 +57,7 @@ export const AGENT_TOOLS = [
         },
       },
     },
+
   },
   {
     type: "function" as const,
@@ -166,22 +167,11 @@ async function listAvailableSlots(
     blockedByDate.get(key)!.push(b as Blocked);
   }
 
-  const { data: apptsRows } = await admin
-    .from("appointments")
-    .select("scheduled_at,end_at,status")
-    .eq("tenant_id", tenantId)
-    .gte("scheduled_at", startDateStr)
-    .lte("scheduled_at", dateOnly(endDate) + "T23:59:59Z")
-    .in("status", ["pending", "confirmed", "in_progress"]);
+  // NOTA: atendimento é rápido e permite paralelismo — não filtramos por
+  // colisão. Todos os slots do horário comercial (fora de bloqueios/almoço)
+  // são ofertados; se o cliente pedir um horário específico, a IA deve
+  // adaptar (ex.: 15:10 se 15:00 estiver "cheio" na percepção humana).
 
-  const busy: { start: number; end: number }[] = ((apptsRows ?? []) as any[])
-    .map((a) => {
-      const s = new Date(a.scheduled_at as string).getTime();
-      const e = a.end_at
-        ? new Date(a.end_at as string).getTime()
-        : s + SLOT_MINUTES * 60_000;
-      return { start: s, end: e };
-    });
 
   const wantMorning = opts.periodo === "manha";
   const wantAfternoon = opts.periodo === "tarde";
@@ -228,7 +218,6 @@ async function listAvailableSlots(
 
       const iso = isoAt(dayStr, slotStart);
       const startMs = new Date(iso).getTime();
-      const endMs = startMs + SLOT_MINUTES * 60_000;
 
       // Passado (para hoje)
       if (startMs < Date.now() + 60 * 60_000) {
@@ -236,12 +225,8 @@ async function listAvailableSlots(
         continue;
       }
 
-      // Colisão com appointment existente
-      const collides = busy.some((b) => startMs < b.end && endMs > b.start);
-      if (collides) {
-        cursor += SLOT_MINUTES;
-        continue;
-      }
+      // (sem checagem de colisão — múltiplos agendamentos no mesmo horário são permitidos)
+
 
       slots.push({
         iso,
@@ -264,19 +249,10 @@ async function createAppointment(
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
   if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível agendar no passado." };
 
-  // Revalida colisão (defesa em profundidade)
+  // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário.
   const startMs = scheduled.getTime();
   const endMs = startMs + SLOT_MINUTES * 60_000;
-  const { data: colliding } = await admin
-    .from("appointments")
-    .select("id")
-    .eq("tenant_id", ctx.tenantId)
-    .in("status", ["pending", "confirmed", "in_progress"])
-    .gte("scheduled_at", new Date(startMs - SLOT_MINUTES * 60_000).toISOString())
-    .lte("scheduled_at", new Date(endMs).toISOString());
-  if (colliding && colliding.length > 0) {
-    return { ok: false, message: "Esse horário já foi ocupado. Peça outro." };
-  }
+
 
   // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
   const { data: types } = await admin
