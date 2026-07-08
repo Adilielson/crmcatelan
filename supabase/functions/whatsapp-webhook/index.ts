@@ -1215,11 +1215,17 @@ Deno.serve(async (req) => {
                 : "";
               const toolsInstructions =
                 "AÇÕES QUE VOCÊ PODE EXECUTAR:\n" +
-                "1) listar_horarios_disponiveis — use para ter referência de horários dentro do expediente. Os slots retornados são SUGESTÕES, não uma grade rígida.\n" +
-                "2) criar_agendamento — chame depois que o cliente confirmar um horário.\n" +
-                "3) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente' ou algo fora do escopo.\n\n" +
+                "1) atualizar_qualificacao_lead — CHAME SEMPRE que o cliente responder qualquer pergunta de qualificação (nome, idade, uso de óculos, dificuldade, último exame, receita, plano, objeção, urgência). Salve campo a campo, sem esperar ter tudo. Nunca invente dados — só salve o que o cliente REALMENTE disse.\n" +
+                "2) listar_horarios_disponiveis — use para ter referência de horários dentro do expediente. Os slots retornados são SUGESTÕES, não uma grade rígida.\n" +
+                "3) criar_agendamento — chame depois que o cliente confirmar um horário.\n" +
+                "4) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente' ou algo fora do escopo.\n\n" +
+                "FLUXO DE QUALIFICAÇÃO (MUITO IMPORTANTE):\n" +
+                "• Faça UMA pergunta de qualificação por vez, no tom da persona.\n" +
+                "• Ao receber a resposta, PRIMEIRO chame atualizar_qualificacao_lead para salvar, DEPOIS responda ao cliente e faça a próxima pergunta.\n" +
+                "• Priorize entender ANTES de propor horário. Só chame listar_horarios_disponiveis quando já entendeu a necessidade (dor + uso atual + urgência) e o cliente sinalizou querer marcar.\n\n" +
                 "REGRA DE FLEXIBILIDADE DE HORÁRIO (MUITO IMPORTANTE): o atendimento é rápido e admite paralelismo. SEMPRE priorize o horário que o cliente PODE. Se ele pedir 15h e você tinha oferecido 14h, agende 15h. Se ele pedir 15h05 ou 15h10, agende exatamente esse horário — pode marcar em qualquer minuto (ex.: 14:20, 15:10, 16:35). NUNCA diga que 'esse horário está ocupado' — não recuse por conflito com outro agendamento. Só recuse se estiver fora do horário comercial, em dia bloqueado ou no passado.\n\n" +
-                "Fluxo esperado: qualificar → propor 2-3 opções em português natural → aceitar o horário que o cliente escolher (mesmo customizado) → criar_agendamento → confirmar por texto ao cliente.";
+                "Fluxo esperado: qualificar (salvando com atualizar_qualificacao_lead a cada resposta) → propor 2-3 opções em português natural → aceitar o horário que o cliente escolher (mesmo customizado) → criar_agendamento → confirmar por texto ao cliente.";
+
 
               const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(
