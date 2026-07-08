@@ -257,7 +257,7 @@ async function createAppointment(
   // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
   const { data: types } = await admin
     .from("consultation_types")
-    .select("id,name")
+    .select("id,name,default_value")
     .eq("tenant_id", ctx.tenantId)
     .eq("is_active", true);
   const norm = args.tipo_consulta.trim().toLowerCase();
@@ -265,23 +265,49 @@ async function createAppointment(
     (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
   );
 
+  // Unidade default: primeira do tenant (quando houver mais de uma, gestor pode reatribuir)
+  const { data: unitRow } = await admin
+    .from("units")
+    .select("id,name")
+    .eq("tenant_id", ctx.tenantId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  // Profissional default: primeiro ativo com papel clínico/atendente do tenant
+  const { data: profRow } = await admin
+    .from("profiles")
+    .select("id,full_name")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("status", "active")
+    .in("role", ["consultant", "attendant", "manager", "admin"])
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   const { data: inserted, error } = await admin
     .from("appointments")
     .insert({
       tenant_id: ctx.tenantId,
       lead_id: ctx.leadId,
       lead_name: ctx.leadName,
+      unit_id: (unitRow as any)?.id ?? null,
+      unit_name: (unitRow as any)?.name ?? null,
+      professional_id: (profRow as any)?.id ?? null,
       scheduled_at: scheduled.toISOString(),
       end_at: new Date(endMs).toISOString(),
       status: "pending",
       type_exam: args.tipo_consulta,
       consultation_type_id: (match as any)?.id ?? null,
+      value: (match as any)?.default_value ?? null,
+      notification_channel: "whatsapp",
       notes: args.observacao ?? null,
       origin: "ai_whatsapp",
       created_by_ai: true,
     })
     .select("id")
     .single();
+
 
   if (error) {
     return { ok: false, message: `Erro ao salvar: ${error.message}` };
