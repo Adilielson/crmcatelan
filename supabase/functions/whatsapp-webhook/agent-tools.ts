@@ -502,7 +502,7 @@ async function updateLeadQualification(
   if (args.idade) newFacts.push(`Idade: ${args.idade}`);
   if (args.dificuldade_visual) newFacts.push(`Dificuldade: ${args.dificuldade_visual}`);
   if (args.ultimo_exame) newFacts.push(`Último exame: ${args.ultimo_exame}`);
-  if (args.plano_saude) newFacts.push(`Plano: ${args.plano_saude}`);
+  if (args.tipo_produto) newFacts.push(`Produto de interesse: ${args.tipo_produto}`);
   if (args.objecao) newFacts.push(`Objeção: ${args.objecao}`);
   if (args.notas) newFacts.push(args.notas);
   if (newFacts.length) {
