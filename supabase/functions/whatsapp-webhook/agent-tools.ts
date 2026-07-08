@@ -64,7 +64,7 @@ export const AGENT_TOOLS = [
     function: {
       name: "atualizar_qualificacao_lead",
       description:
-        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder uma pergunta de qualificação (nome, idade, uso de óculos, dificuldade visual, último exame, receita, plano de saúde, urgência, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa.",
+        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
       parameters: {
         type: "object",
         properties: {
