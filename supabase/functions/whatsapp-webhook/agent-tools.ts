@@ -248,19 +248,10 @@ async function createAppointment(
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
   if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível agendar no passado." };
 
-  // Revalida colisão (defesa em profundidade)
+  // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário.
   const startMs = scheduled.getTime();
   const endMs = startMs + SLOT_MINUTES * 60_000;
-  const { data: colliding } = await admin
-    .from("appointments")
-    .select("id")
-    .eq("tenant_id", ctx.tenantId)
-    .in("status", ["pending", "confirmed", "in_progress"])
-    .gte("scheduled_at", new Date(startMs - SLOT_MINUTES * 60_000).toISOString())
-    .lte("scheduled_at", new Date(endMs).toISOString());
-  if (colliding && colliding.length > 0) {
-    return { ok: false, message: "Esse horário já foi ocupado. Peça outro." };
-  }
+
 
   // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
   const { data: types } = await admin
