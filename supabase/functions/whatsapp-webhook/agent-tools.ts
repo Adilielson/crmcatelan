@@ -62,6 +62,51 @@ export const AGENT_TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "atualizar_qualificacao_lead",
+      description:
+        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder uma pergunta de qualificação (nome, idade, uso de óculos, dificuldade visual, último exame, receita, plano de saúde, urgência, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa.",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string", description: "Nome do cliente." },
+          idade: { type: "integer", description: "Idade em anos, se mencionada." },
+          usa_oculos: { type: "boolean", description: "Cliente usa óculos hoje?" },
+          dificuldade_visual: {
+            type: "string",
+            description: "Sintomas relatados (ex.: 'não enxerga de longe', 'dor de cabeça ao ler', 'vista cansada').",
+          },
+          ultimo_exame: {
+            type: "string",
+            description: "Quando fez o último exame (texto livre: 'ano passado', 'nunca', '2 anos').",
+          },
+          tem_receita: { type: "boolean", description: "Tem receita recente?" },
+          grau_receita: { type: "string", description: "Grau da receita se citado (ex.: '-1,25 / -1,50 cil')." },
+          plano_saude: { type: "string", description: "Nome do plano ('Unimed', 'particular', 'SUS') ou 'nenhum'." },
+          urgencia: {
+            type: "string",
+            enum: ["baixa", "media", "alta"],
+            description: "Nível de urgência inferido da conversa.",
+          },
+          interesses: {
+            type: "array",
+            items: { type: "string" },
+            description: "Interesses/objetivos citados (ex.: 'lente multifocal', 'óculos de sol', 'transitions', 'armação titânio').",
+          },
+          objecao: {
+            type: "string",
+            description: "Objeção principal que o cliente levantou (ex.: 'preço alto', 'sem tempo', 'quer pesquisar').",
+          },
+          notas: {
+            type: "string",
+            description: "Qualquer informação extra relevante ao contexto do lead.",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "transferir_para_humano",
       description:
         "Transfere a conversa para um atendente humano. Use APENAS em: reclamação séria, dúvida clínica complexa, pedido explícito de 'falar com humano/atendente', ou situação fora do escopo. Cria notificação para a equipe.",
@@ -78,6 +123,7 @@ export const AGENT_TOOLS = [
     },
   },
 ];
+
 
 // ── Utilitários de horário comercial ────────────────────────────────────
 type Hours = {
@@ -365,6 +411,121 @@ async function transferToHuman(
   return { ok: true, message: "Conversa transferida para atendente humano." };
 }
 
+async function updateLeadQualification(
+  admin: Supa,
+  ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
+  args: {
+    nome?: string;
+    idade?: number;
+    usa_oculos?: boolean;
+    dificuldade_visual?: string;
+    ultimo_exame?: string;
+    tem_receita?: boolean;
+    grau_receita?: string;
+    plano_saude?: string;
+    urgencia?: "baixa" | "media" | "alta";
+    interesses?: string[];
+    objecao?: string;
+    notas?: string;
+  },
+): Promise<{ ok: boolean; message: string; updated: string[] }> {
+  if (!ctx.leadId) return { ok: false, message: "Lead não identificado.", updated: [] };
+
+  // Carrega estado atual para mesclar arrays/notas sem sobrescrever
+  const { data: current } = await admin
+    .from("leads")
+    .select("full_name, notes, ia_summary, ia_interesses, ia_tags, ia_urgencia, ia_receita_grau")
+    .eq("id", ctx.leadId)
+    .maybeSingle();
+
+  const patch: Record<string, unknown> = {};
+  const updated: string[] = [];
+
+  if (args.nome && (!current?.full_name || current.full_name.trim() === "" || /^lead\b/i.test(current.full_name))) {
+    patch.full_name = args.nome.trim();
+    updated.push("nome");
+  }
+  if (args.urgencia) {
+    patch.ia_urgencia = args.urgencia;
+    patch.ia_urgency = args.urgencia;
+    updated.push("urgencia");
+  }
+  if (args.grau_receita) {
+    patch.ia_receita_grau = args.grau_receita.trim();
+    updated.push("grau_receita");
+  }
+
+  // Interesses: merge case-insensitive
+  if (Array.isArray(args.interesses) && args.interesses.length) {
+    const prev = new Set((current?.ia_interesses ?? []).map((s: string) => s.toLowerCase()));
+    const merged = [...(current?.ia_interesses ?? [])];
+    for (const it of args.interesses) {
+      if (it && !prev.has(it.toLowerCase())) {
+        merged.push(it);
+        prev.add(it.toLowerCase());
+      }
+    }
+    patch.ia_interesses = merged;
+    updated.push("interesses");
+  }
+
+  // Tags: adiciona plano/objecao/uso de óculos como flags rastreáveis
+  const prevTags = new Set((current?.ia_tags ?? []).map((s: string) => s.toLowerCase()));
+  const newTags = [...(current?.ia_tags ?? [])];
+  const addTag = (t: string) => {
+    if (!prevTags.has(t.toLowerCase())) { newTags.push(t); prevTags.add(t.toLowerCase()); }
+  };
+  if (args.plano_saude) {
+    const p = args.plano_saude.trim();
+    addTag(/nenhum|particular|sus|não/i.test(p) ? `plano:${p.toLowerCase()}` : `plano:${p.toLowerCase()}`);
+    updated.push("plano_saude");
+  }
+  if (typeof args.usa_oculos === "boolean") {
+    addTag(args.usa_oculos ? "usa-oculos" : "sem-oculos");
+    updated.push("usa_oculos");
+  }
+  if (typeof args.tem_receita === "boolean") {
+    addTag(args.tem_receita ? "receita:sim" : "receita:nao");
+    updated.push("tem_receita");
+  }
+  if (args.objecao) {
+    addTag(`objecao:${args.objecao.trim().toLowerCase()}`);
+    updated.push("objecao");
+  }
+  if (newTags.length !== (current?.ia_tags?.length ?? 0)) {
+    patch.ia_tags = newTags;
+  }
+
+  // ia_summary: acumula um resumo curto e legível
+  const summaryLines: string[] = [];
+  if (current?.ia_summary?.trim()) summaryLines.push(current.ia_summary.trim());
+  const newFacts: string[] = [];
+  if (args.idade) newFacts.push(`Idade: ${args.idade}`);
+  if (args.dificuldade_visual) newFacts.push(`Dificuldade: ${args.dificuldade_visual}`);
+  if (args.ultimo_exame) newFacts.push(`Último exame: ${args.ultimo_exame}`);
+  if (args.plano_saude) newFacts.push(`Plano: ${args.plano_saude}`);
+  if (args.objecao) newFacts.push(`Objeção: ${args.objecao}`);
+  if (args.notas) newFacts.push(args.notas);
+  if (newFacts.length) {
+    summaryLines.push(newFacts.join(" • "));
+    patch.ia_summary = summaryLines.join("\n").slice(0, 2000);
+    updated.push("resumo");
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return { ok: true, message: "Nada novo pra salvar.", updated: [] };
+  }
+
+  (patch as any).updated_at = new Date().toISOString();
+
+  const { error } = await admin.from("leads").update(patch).eq("id", ctx.leadId);
+  if (error) return { ok: false, message: `Erro ao salvar: ${error.message}`, updated: [] };
+
+  return { ok: true, message: `Salvei: ${updated.join(", ")}`, updated };
+}
+
+
+
 export async function executeToolCall(
   admin: Supa,
   ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
@@ -393,7 +554,12 @@ export async function executeToolCall(
       const res = await transferToHuman(admin, ctx, args);
       return JSON.stringify(res);
     }
+    if (name === "atualizar_qualificacao_lead") {
+      const res = await updateLeadQualification(admin, ctx, args);
+      return JSON.stringify(res);
+    }
     return JSON.stringify({ ok: false, message: `Tool desconhecida: ${name}` });
+
   } catch (e) {
     return JSON.stringify({
       ok: false,
