@@ -217,7 +217,6 @@ async function listAvailableSlots(
 
       const iso = isoAt(dayStr, slotStart);
       const startMs = new Date(iso).getTime();
-      const endMs = startMs + SLOT_MINUTES * 60_000;
 
       // Passado (para hoje)
       if (startMs < Date.now() + 60 * 60_000) {
@@ -225,12 +224,8 @@ async function listAvailableSlots(
         continue;
       }
 
-      // Colisão com appointment existente
-      const collides = busy.some((b) => startMs < b.end && endMs > b.start);
-      if (collides) {
-        cursor += SLOT_MINUTES;
-        continue;
-      }
+      // (sem checagem de colisão — múltiplos agendamentos no mesmo horário são permitidos)
+
 
       slots.push({
         iso,
