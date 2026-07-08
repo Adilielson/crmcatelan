@@ -3,6 +3,7 @@
 // URL: {SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=00000000-0000-0000-0000-000000000001
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AGENT_TOOLS, executeToolCall } from "./agent-tools.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -48,6 +49,7 @@ async function generateSdrReply(
   history: { role: "user" | "assistant"; content: string }[],
   contextNote: string | undefined,
   temperature: number,
+  toolCtx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string } | null,
 ): Promise<string | null> {
   if (!LOVABLE_API_KEY) {
     console.error("[sdr] LOVABLE_API_KEY ausente");
@@ -59,28 +61,63 @@ async function generateSdrReply(
     ];
     if (contextNote) systemMessages.push({ role: "system", content: contextNote });
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": LOVABLE_API_KEY,
-        "X-Lovable-AIG-SDK": "edge-function",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-5-mini",
-        messages: [...systemMessages, ...history],
-        temperature,
-      }),
-    });
+    // Loop de function-calling — máx 4 iterações
+    const messages: any[] = [...systemMessages, ...history];
+    const useTools = !!toolCtx;
 
-    if (!res.ok) {
-      const txt = await res.text();
-      console.error(`[sdr] gateway ${res.status}: ${txt.slice(0, 300)}`);
-      return null;
+    for (let iter = 0; iter < 4; iter++) {
+      const body: Record<string, unknown> = {
+        model: "openai/gpt-5-mini",
+        messages,
+        temperature,
+      };
+      if (useTools) {
+        body.tools = AGENT_TOOLS;
+        body.tool_choice = "auto";
+      }
+
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Lovable-API-Key": LOVABLE_API_KEY,
+          "X-Lovable-AIG-SDK": "edge-function",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error(`[sdr] gateway ${res.status}: ${txt.slice(0, 300)}`);
+        return null;
+      }
+      const data = await res.json();
+      const msg = data?.choices?.[0]?.message;
+      const toolCalls = msg?.tool_calls;
+
+      if (Array.isArray(toolCalls) && toolCalls.length > 0 && useTools) {
+        // Anexa a mensagem do assistant (com tool_calls) e resultados
+        messages.push(msg);
+        for (const tc of toolCalls) {
+          const name = tc?.function?.name;
+          const argsJson = tc?.function?.arguments ?? "{}";
+          console.log(`[sdr:tool] iter=${iter} lead=${toolCtx!.leadId} call=${name} args=${String(argsJson).slice(0, 200)}`);
+          const result = await executeToolCall(adminClient, toolCtx!, name, argsJson);
+          console.log(`[sdr:tool] iter=${iter} result=${result.slice(0, 200)}`);
+          messages.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            content: result,
+          });
+        }
+        continue; // pede a próxima geração à IA com os resultados
+      }
+
+      const reply = msg?.content;
+      return typeof reply === "string" && reply.trim() ? reply.trim() : null;
     }
-    const data = await res.json();
-    const reply = data?.choices?.[0]?.message?.content;
-    return typeof reply === "string" && reply.trim() ? reply.trim() : null;
+    console.warn("[sdr] loop de tools esgotou 4 iterações");
+    return null;
   } catch (e) {
     console.error("[sdr] erro chamando gateway:", e instanceof Error ? e.message : String(e));
     return null;
@@ -1176,8 +1213,20 @@ Deno.serve(async (req) => {
               const iaCtx = iaParts.length
                 ? `CONTEXTO COMPORTAMENTAL DO LEAD (use para personalizar o tom e a abordagem, sem citar literalmente ao cliente):\n${iaParts.join("\n")}`
                 : "";
-              const contextNote = [hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
-              const reply = await generateSdrReply(systemPrompt, history, contextNote || undefined, temperature);
+              const toolsInstructions =
+                "AÇÕES QUE VOCÊ PODE EXECUTAR:\n" +
+                "1) listar_horarios_disponiveis — chame SEMPRE antes de propor um horário. Nunca invente horários.\n" +
+                "2) criar_agendamento — só chame depois que o cliente confirmar EXPLICITAMENTE um dos horários retornados.\n" +
+                "3) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente' ou algo fora do escopo.\n" +
+                "Fluxo esperado: qualificar → listar_horarios_disponiveis → propor 2-3 opções em português natural → aguardar confirmação → criar_agendamento → confirmar por texto ao cliente.";
+              const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
+              const reply = await generateSdrReply(
+                systemPrompt,
+                history,
+                contextNote || undefined,
+                temperature,
+                leadId ? { tenantId, leadId, leadName, leadPhone: senderPhone } : null,
+              );
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
