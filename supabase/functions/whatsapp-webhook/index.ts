@@ -1213,8 +1213,20 @@ Deno.serve(async (req) => {
               const iaCtx = iaParts.length
                 ? `CONTEXTO COMPORTAMENTAL DO LEAD (use para personalizar o tom e a abordagem, sem citar literalmente ao cliente):\n${iaParts.join("\n")}`
                 : "";
-              const contextNote = [hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
-              const reply = await generateSdrReply(systemPrompt, history, contextNote || undefined, temperature);
+              const toolsInstructions =
+                "AÇÕES QUE VOCÊ PODE EXECUTAR:\n" +
+                "1) listar_horarios_disponiveis — chame SEMPRE antes de propor um horário. Nunca invente horários.\n" +
+                "2) criar_agendamento — só chame depois que o cliente confirmar EXPLICITAMENTE um dos horários retornados.\n" +
+                "3) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente' ou algo fora do escopo.\n" +
+                "Fluxo esperado: qualificar → listar_horarios_disponiveis → propor 2-3 opções em português natural → aguardar confirmação → criar_agendamento → confirmar por texto ao cliente.";
+              const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
+              const reply = await generateSdrReply(
+                systemPrompt,
+                history,
+                contextNote || undefined,
+                temperature,
+                leadId ? { tenantId, leadId, leadName, leadPhone: senderPhone } : null,
+              );
               if (reply) {
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
