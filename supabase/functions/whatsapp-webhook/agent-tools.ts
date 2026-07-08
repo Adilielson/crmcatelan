@@ -439,7 +439,12 @@ export async function executeToolCall(
       const res = await transferToHuman(admin, ctx, args);
       return JSON.stringify(res);
     }
+    if (name === "atualizar_qualificacao_lead") {
+      const res = await updateLeadQualification(admin, ctx, args);
+      return JSON.stringify(res);
+    }
     return JSON.stringify({ ok: false, message: `Tool desconhecida: ${name}` });
+
   } catch (e) {
     return JSON.stringify({
       ok: false,
