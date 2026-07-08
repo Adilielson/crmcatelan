@@ -62,6 +62,51 @@ export const AGENT_TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "atualizar_qualificacao_lead",
+      description:
+        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder uma pergunta de qualificação (nome, idade, uso de óculos, dificuldade visual, último exame, receita, plano de saúde, urgência, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa.",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string", description: "Nome do cliente." },
+          idade: { type: "integer", description: "Idade em anos, se mencionada." },
+          usa_oculos: { type: "boolean", description: "Cliente usa óculos hoje?" },
+          dificuldade_visual: {
+            type: "string",
+            description: "Sintomas relatados (ex.: 'não enxerga de longe', 'dor de cabeça ao ler', 'vista cansada').",
+          },
+          ultimo_exame: {
+            type: "string",
+            description: "Quando fez o último exame (texto livre: 'ano passado', 'nunca', '2 anos').",
+          },
+          tem_receita: { type: "boolean", description: "Tem receita recente?" },
+          grau_receita: { type: "string", description: "Grau da receita se citado (ex.: '-1,25 / -1,50 cil')." },
+          plano_saude: { type: "string", description: "Nome do plano ('Unimed', 'particular', 'SUS') ou 'nenhum'." },
+          urgencia: {
+            type: "string",
+            enum: ["baixa", "media", "alta"],
+            description: "Nível de urgência inferido da conversa.",
+          },
+          interesses: {
+            type: "array",
+            items: { type: "string" },
+            description: "Interesses/objetivos citados (ex.: 'lente multifocal', 'óculos de sol', 'transitions', 'armação titânio').",
+          },
+          objecao: {
+            type: "string",
+            description: "Objeção principal que o cliente levantou (ex.: 'preço alto', 'sem tempo', 'quer pesquisar').",
+          },
+          notas: {
+            type: "string",
+            description: "Qualquer informação extra relevante ao contexto do lead.",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "transferir_para_humano",
       description:
         "Transfere a conversa para um atendente humano. Use APENAS em: reclamação séria, dúvida clínica complexa, pedido explícito de 'falar com humano/atendente', ou situação fora do escopo. Cria notificação para a equipe.",
@@ -78,6 +123,7 @@ export const AGENT_TOOLS = [
     },
   },
 ];
+
 
 // ── Utilitários de horário comercial ────────────────────────────────────
 type Hours = {
