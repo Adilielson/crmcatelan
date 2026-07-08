@@ -81,7 +81,7 @@ export const AGENT_TOOLS = [
           },
           tem_receita: { type: "boolean", description: "Tem receita recente?" },
           grau_receita: { type: "string", description: "Grau da receita se citado (ex.: '-1,25 / -1,50 cil')." },
-          plano_saude: { type: "string", description: "Nome do plano ('Unimed', 'particular', 'SUS') ou 'nenhum'." },
+          tipo_produto: { type: "string", description: "Tipo de produto/lente/armação de interesse (ex.: 'multifocal', 'monofocal', 'óculos de sol', 'transitions', 'armação titânio', 'lente de contato')." },
           urgencia: {
             type: "string",
             enum: ["baixa", "media", "alta"],
