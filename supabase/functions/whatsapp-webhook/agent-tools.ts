@@ -411,6 +411,121 @@ async function transferToHuman(
   return { ok: true, message: "Conversa transferida para atendente humano." };
 }
 
+async function updateLeadQualification(
+  admin: Supa,
+  ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
+  args: {
+    nome?: string;
+    idade?: number;
+    usa_oculos?: boolean;
+    dificuldade_visual?: string;
+    ultimo_exame?: string;
+    tem_receita?: boolean;
+    grau_receita?: string;
+    plano_saude?: string;
+    urgencia?: "baixa" | "media" | "alta";
+    interesses?: string[];
+    objecao?: string;
+    notas?: string;
+  },
+): Promise<{ ok: boolean; message: string; updated: string[] }> {
+  if (!ctx.leadId) return { ok: false, message: "Lead não identificado.", updated: [] };
+
+  // Carrega estado atual para mesclar arrays/notas sem sobrescrever
+  const { data: current } = await admin
+    .from("leads")
+    .select("full_name, notes, ia_summary, ia_interesses, ia_tags, ia_urgencia, ia_receita_grau")
+    .eq("id", ctx.leadId)
+    .maybeSingle();
+
+  const patch: Record<string, unknown> = {};
+  const updated: string[] = [];
+
+  if (args.nome && (!current?.full_name || current.full_name.trim() === "" || /^lead\b/i.test(current.full_name))) {
+    patch.full_name = args.nome.trim();
+    updated.push("nome");
+  }
+  if (args.urgencia) {
+    patch.ia_urgencia = args.urgencia;
+    patch.ia_urgency = args.urgencia;
+    updated.push("urgencia");
+  }
+  if (args.grau_receita) {
+    patch.ia_receita_grau = args.grau_receita.trim();
+    updated.push("grau_receita");
+  }
+
+  // Interesses: merge case-insensitive
+  if (Array.isArray(args.interesses) && args.interesses.length) {
+    const prev = new Set((current?.ia_interesses ?? []).map((s: string) => s.toLowerCase()));
+    const merged = [...(current?.ia_interesses ?? [])];
+    for (const it of args.interesses) {
+      if (it && !prev.has(it.toLowerCase())) {
+        merged.push(it);
+        prev.add(it.toLowerCase());
+      }
+    }
+    patch.ia_interesses = merged;
+    updated.push("interesses");
+  }
+
+  // Tags: adiciona plano/objecao/uso de óculos como flags rastreáveis
+  const prevTags = new Set((current?.ia_tags ?? []).map((s: string) => s.toLowerCase()));
+  const newTags = [...(current?.ia_tags ?? [])];
+  const addTag = (t: string) => {
+    if (!prevTags.has(t.toLowerCase())) { newTags.push(t); prevTags.add(t.toLowerCase()); }
+  };
+  if (args.plano_saude) {
+    const p = args.plano_saude.trim();
+    addTag(/nenhum|particular|sus|não/i.test(p) ? `plano:${p.toLowerCase()}` : `plano:${p.toLowerCase()}`);
+    updated.push("plano_saude");
+  }
+  if (typeof args.usa_oculos === "boolean") {
+    addTag(args.usa_oculos ? "usa-oculos" : "sem-oculos");
+    updated.push("usa_oculos");
+  }
+  if (typeof args.tem_receita === "boolean") {
+    addTag(args.tem_receita ? "receita:sim" : "receita:nao");
+    updated.push("tem_receita");
+  }
+  if (args.objecao) {
+    addTag(`objecao:${args.objecao.trim().toLowerCase()}`);
+    updated.push("objecao");
+  }
+  if (newTags.length !== (current?.ia_tags?.length ?? 0)) {
+    patch.ia_tags = newTags;
+  }
+
+  // ia_summary: acumula um resumo curto e legível
+  const summaryLines: string[] = [];
+  if (current?.ia_summary?.trim()) summaryLines.push(current.ia_summary.trim());
+  const newFacts: string[] = [];
+  if (args.idade) newFacts.push(`Idade: ${args.idade}`);
+  if (args.dificuldade_visual) newFacts.push(`Dificuldade: ${args.dificuldade_visual}`);
+  if (args.ultimo_exame) newFacts.push(`Último exame: ${args.ultimo_exame}`);
+  if (args.plano_saude) newFacts.push(`Plano: ${args.plano_saude}`);
+  if (args.objecao) newFacts.push(`Objeção: ${args.objecao}`);
+  if (args.notas) newFacts.push(args.notas);
+  if (newFacts.length) {
+    summaryLines.push(newFacts.join(" • "));
+    patch.ia_summary = summaryLines.join("\n").slice(0, 2000);
+    updated.push("resumo");
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return { ok: true, message: "Nada novo pra salvar.", updated: [] };
+  }
+
+  (patch as any).updated_at = new Date().toISOString();
+
+  const { error } = await admin.from("leads").update(patch).eq("id", ctx.leadId);
+  if (error) return { ok: false, message: `Erro ao salvar: ${error.message}`, updated: [] };
+
+  return { ok: true, message: `Salvei: ${updated.join(", ")}`, updated };
+}
+
+
+
 export async function executeToolCall(
   admin: Supa,
   ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
