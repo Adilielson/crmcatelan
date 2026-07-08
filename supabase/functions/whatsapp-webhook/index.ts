@@ -1215,10 +1215,12 @@ Deno.serve(async (req) => {
                 : "";
               const toolsInstructions =
                 "AÇÕES QUE VOCÊ PODE EXECUTAR:\n" +
-                "1) listar_horarios_disponiveis — chame SEMPRE antes de propor um horário. Nunca invente horários.\n" +
-                "2) criar_agendamento — só chame depois que o cliente confirmar EXPLICITAMENTE um dos horários retornados.\n" +
-                "3) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente' ou algo fora do escopo.\n" +
-                "Fluxo esperado: qualificar → listar_horarios_disponiveis → propor 2-3 opções em português natural → aguardar confirmação → criar_agendamento → confirmar por texto ao cliente.";
+                "1) listar_horarios_disponiveis — use para ter referência de horários dentro do expediente. Os slots retornados são SUGESTÕES, não uma grade rígida.\n" +
+                "2) criar_agendamento — chame depois que o cliente confirmar um horário.\n" +
+                "3) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente' ou algo fora do escopo.\n\n" +
+                "REGRA DE FLEXIBILIDADE DE HORÁRIO (MUITO IMPORTANTE): o atendimento é rápido e admite paralelismo. SEMPRE priorize o horário que o cliente PODE. Se ele pedir 15h e você tinha oferecido 14h, agende 15h. Se ele pedir 15h05 ou 15h10, agende exatamente esse horário — pode marcar em qualquer minuto (ex.: 14:20, 15:10, 16:35). NUNCA diga que 'esse horário está ocupado' — não recuse por conflito com outro agendamento. Só recuse se estiver fora do horário comercial, em dia bloqueado ou no passado.\n\n" +
+                "Fluxo esperado: qualificar → propor 2-3 opções em português natural → aceitar o horário que o cliente escolher (mesmo customizado) → criar_agendamento → confirmar por texto ao cliente.";
+
               const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(
                 systemPrompt,
