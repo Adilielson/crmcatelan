@@ -64,7 +64,7 @@ export const AGENT_TOOLS = [
     function: {
       name: "atualizar_qualificacao_lead",
       description:
-        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder uma pergunta de qualificação (nome, idade, uso de óculos, dificuldade visual, último exame, receita, plano de saúde, urgência, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa.",
+        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
       parameters: {
         type: "object",
         properties: {
@@ -81,7 +81,7 @@ export const AGENT_TOOLS = [
           },
           tem_receita: { type: "boolean", description: "Tem receita recente?" },
           grau_receita: { type: "string", description: "Grau da receita se citado (ex.: '-1,25 / -1,50 cil')." },
-          plano_saude: { type: "string", description: "Nome do plano ('Unimed', 'particular', 'SUS') ou 'nenhum'." },
+          tipo_produto: { type: "string", description: "Tipo de produto/lente/armação de interesse (ex.: 'multifocal', 'monofocal', 'óculos de sol', 'transitions', 'armação titânio', 'lente de contato')." },
           urgencia: {
             type: "string",
             enum: ["baixa", "media", "alta"],
@@ -422,7 +422,7 @@ async function updateLeadQualification(
     ultimo_exame?: string;
     tem_receita?: boolean;
     grau_receita?: string;
-    plano_saude?: string;
+    tipo_produto?: string;
     urgencia?: "baixa" | "media" | "alta";
     interesses?: string[];
     objecao?: string;
@@ -469,16 +469,15 @@ async function updateLeadQualification(
     updated.push("interesses");
   }
 
-  // Tags: adiciona plano/objecao/uso de óculos como flags rastreáveis
+  // Tags: adiciona objecao/uso de óculos/produto como flags rastreáveis
   const prevTags = new Set((current?.ia_tags ?? []).map((s: string) => s.toLowerCase()));
   const newTags = [...(current?.ia_tags ?? [])];
   const addTag = (t: string) => {
     if (!prevTags.has(t.toLowerCase())) { newTags.push(t); prevTags.add(t.toLowerCase()); }
   };
-  if (args.plano_saude) {
-    const p = args.plano_saude.trim();
-    addTag(/nenhum|particular|sus|não/i.test(p) ? `plano:${p.toLowerCase()}` : `plano:${p.toLowerCase()}`);
-    updated.push("plano_saude");
+  if (args.tipo_produto) {
+    addTag(`produto:${args.tipo_produto.trim().toLowerCase()}`);
+    updated.push("tipo_produto");
   }
   if (typeof args.usa_oculos === "boolean") {
     addTag(args.usa_oculos ? "usa-oculos" : "sem-oculos");
@@ -503,7 +502,7 @@ async function updateLeadQualification(
   if (args.idade) newFacts.push(`Idade: ${args.idade}`);
   if (args.dificuldade_visual) newFacts.push(`Dificuldade: ${args.dificuldade_visual}`);
   if (args.ultimo_exame) newFacts.push(`Último exame: ${args.ultimo_exame}`);
-  if (args.plano_saude) newFacts.push(`Plano: ${args.plano_saude}`);
+  if (args.tipo_produto) newFacts.push(`Produto de interesse: ${args.tipo_produto}`);
   if (args.objecao) newFacts.push(`Objeção: ${args.objecao}`);
   if (args.notas) newFacts.push(args.notas);
   if (newFacts.length) {
