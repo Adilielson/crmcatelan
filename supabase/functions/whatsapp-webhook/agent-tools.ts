@@ -422,7 +422,7 @@ async function updateLeadQualification(
     ultimo_exame?: string;
     tem_receita?: boolean;
     grau_receita?: string;
-    plano_saude?: string;
+    tipo_produto?: string;
     urgencia?: "baixa" | "media" | "alta";
     interesses?: string[];
     objecao?: string;
