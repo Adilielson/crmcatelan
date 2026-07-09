@@ -405,7 +405,91 @@ async function createAppointment(
 
   if (error) {
     return { ok: false, message: `Erro ao salvar: ${error.message}` };
+}
+
+async function rescheduleAppointment(
+  admin: Supa,
+  ctx: { tenantId: string; leadId: string | null },
+  args: { appointment_id?: string; novo_horario_iso: string; motivo?: string },
+): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
+  if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
+  const scheduled = new Date(args.novo_horario_iso);
+  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
+  if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível remarcar para o passado." };
+
+  let apptId = args.appointment_id;
+  if (!apptId) {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id, scheduled_at, status")
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .in("status", ["pending", "confirmed"])
+      .gte("scheduled_at", new Date(Date.now() - 60 * 60_000).toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para remarcar. Use criar_agendamento." };
+    apptId = (found as any).id;
   }
+
+  const endMs = scheduled.getTime() + SLOT_MINUTES * 60_000;
+  const { data: updated, error } = await admin
+    .from("appointments")
+    .update({
+      scheduled_at: scheduled.toISOString(),
+      end_at: new Date(endMs).toISOString(),
+      status: "pending",
+      notes: args.motivo ? `Remarcado via IA: ${args.motivo}` : "Remarcado via IA (WhatsApp)",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", apptId!)
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId)
+    .select("id")
+    .single();
+
+  if (error) return { ok: false, message: `Erro ao remarcar: ${error.message}` };
+  return { ok: true, message: "Agendamento remarcado com sucesso.", appointment_id: (updated as any).id };
+}
+
+async function cancelAppointment(
+  admin: Supa,
+  ctx: { tenantId: string; leadId: string | null },
+  args: { appointment_id?: string; motivo?: string },
+): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
+  if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
+
+  let apptId = args.appointment_id;
+  if (!apptId) {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id")
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .in("status", ["pending", "confirmed"])
+      .gte("scheduled_at", new Date(Date.now() - 60 * 60_000).toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para cancelar." };
+    apptId = (found as any).id;
+  }
+
+  const { error } = await admin
+    .from("appointments")
+    .update({
+      status: "cancelled",
+      notes: args.motivo ? `Cancelado via IA: ${args.motivo}` : "Cancelado via IA (WhatsApp)",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", apptId!)
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId);
+
+  if (error) return { ok: false, message: `Erro ao cancelar: ${error.message}` };
+  return { ok: true, message: "Agendamento cancelado.", appointment_id: apptId };
+}
 
   // Move lead para 'scheduled'
   await admin
