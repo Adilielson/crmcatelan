@@ -430,9 +430,52 @@ async function createAppointment(
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
   if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível agendar no passado." };
 
-  // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário.
+  // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário entre leads distintos.
   const startMs = scheduled.getTime();
   const endMs = startMs + DEFAULT_SLOT_MINUTES * 60_000;
+
+  // ── Deduplicação: evita a IA criar múltiplos registros para o MESMO lead
+  // no mesmo horário (janela ±5min) durante o loop de function-calling.
+  const dedupWindowMs = 5 * 60_000;
+  const { data: existingSame } = await admin
+    .from("appointments")
+    .select("id, scheduled_at, status")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", new Date(startMs - dedupWindowMs).toISOString())
+    .lte("scheduled_at", new Date(startMs + dedupWindowMs).toISOString())
+    .limit(1)
+    .maybeSingle();
+  if (existingSame) {
+    return {
+      ok: true,
+      message: "Já existe agendamento ativo deste lead nesse horário — nada novo criado.",
+      appointment_id: (existingSame as any).id,
+    };
+  }
+
+  // Se o lead já tem outro agendamento futuro ativo em horário diferente,
+  // orienta a IA a REMARCAR em vez de duplicar.
+  const { data: existingOther } = await admin
+    .from("appointments")
+    .select("id, scheduled_at")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", new Date(Date.now() - 60 * 60_000).toISOString())
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (existingOther) {
+    return {
+      ok: false,
+      message: `Lead já tem agendamento futuro ativo (id=${(existingOther as any).id} em ${(existingOther as any).scheduled_at}). Use remarcar_agendamento com esse appointment_id em vez de criar outro.`,
+      appointment_id: (existingOther as any).id,
+    };
+  }
+
+
 
 
   // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
