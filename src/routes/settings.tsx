@@ -194,6 +194,72 @@ function StoreAddressField() {
 }
 
 // ============================================================
+// Social links (Instagram / Site / Facebook) - fed to AI SDR
+// ============================================================
+function SocialLinksFields() {
+  const { instagram, setInstagram, website, setWebsite, facebook, setFacebook, loading } = useUnit()
+  return (
+    <>
+      <div className="space-y-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <AtSign className="w-3 h-3" /> Instagram
+        </Label>
+        <Input
+          value={instagram}
+          onChange={(e) => setInstagram(e.target.value)}
+          placeholder="@oticacatelan ou instagram.com/oticacatelan"
+          disabled={loading}
+          className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <LinkIcon className="w-3 h-3" /> Site
+        </Label>
+        <Input
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          placeholder="https://oticacatelan.com.br"
+          disabled={loading}
+          className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner"
+        />
+      </div>
+      <div className="space-y-2 sm:col-span-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <Share2 className="w-3 h-3" /> Facebook
+        </Label>
+        <Input
+          value={facebook}
+          onChange={(e) => setFacebook(e.target.value)}
+          placeholder="facebook.com/oticacatelan"
+          disabled={loading}
+          className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner"
+        />
+        <p className="text-[10px] text-gray-400">
+          A IA SDR envia estes links automaticamente quando o cliente pedir Instagram, site ou Facebook da loja.
+        </p>
+      </div>
+    </>
+  )
+}
+
+function SaveUnitInfoButton() {
+  const { save, saving, loading } = useUnit()
+  return (
+    <Button
+      onClick={save}
+      disabled={saving || loading}
+      size="sm"
+      className="h-10 text-[10px] font-black uppercase tracking-widest"
+    >
+      {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar informações'}
+    </Button>
+  )
+}
+
+
+
+// ============================================================
 // Weekly business hours
 // ============================================================
 function BusinessHoursSection() {
