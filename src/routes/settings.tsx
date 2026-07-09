@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings as SettingsIcon, Store, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2, KeyRound, Target, ShieldAlert } from 'lucide-react'
+import { Settings as SettingsIcon, Store, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2, KeyRound, Target, ShieldAlert, Link as LinkIcon, AtSign, Share2 } from 'lucide-react'
 import { GoalsSettings } from '@/components/settings/GoalsSettings'
 import { NoShowSettingsSection } from '@/components/settings/NoShowSettingsSection'
 import { WhatsAppConfig } from '@/pages/WhatsAppConfig'
@@ -46,6 +46,12 @@ type UnitCtx = {
   setHours: React.Dispatch<React.SetStateAction<BusinessHours>>
   address: string
   setAddress: (v: string) => void
+  instagram: string
+  setInstagram: (v: string) => void
+  website: string
+  setWebsite: (v: string) => void
+  facebook: string
+  setFacebook: (v: string) => void
   tz: string
   tzLocation: string | null
   loading: boolean
@@ -68,6 +74,9 @@ function UnitProvider({ children }: { children: ReactNode }) {
   const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS)
   const [tz, setTz] = useState('America/Sao_Paulo')
   const [address, setAddress] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [website, setWebsite] = useState('')
+  const [facebook, setFacebook] = useState('')
   const [tzLocation, setTzLocation] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -79,6 +88,9 @@ function UnitProvider({ children }: { children: ReactNode }) {
         if (r.business_hours) setHours(r.business_hours)
         if (r.timezone) setTz(r.timezone)
         if (r.address) setAddress(r.address)
+        if (r.instagram) setInstagram(r.instagram)
+        if (r.website) setWebsite(r.website)
+        if (r.facebook) setFacebook(r.facebook)
       })
       .catch((e) => toast.error('Erro ao carregar dados da loja: ' + (e instanceof Error ? e.message : String(e))))
       .finally(() => setLoading(false))
@@ -106,7 +118,7 @@ function UnitProvider({ children }: { children: ReactNode }) {
   const save = async () => {
     setSaving(true)
     try {
-      await saveHours({ data: { business_hours: hours, timezone: tz, address } })
+      await saveHours({ data: { business_hours: hours, timezone: tz, address, instagram, website, facebook } })
       toast.success('Loja atualizada. A IA SDR vai respeitar a partir de agora.')
     } catch (e) {
       toast.error('Erro ao salvar: ' + (e instanceof Error ? e.message : String(e)))
@@ -117,7 +129,14 @@ function UnitProvider({ children }: { children: ReactNode }) {
 
   return (
     <UnitContext.Provider
-      value={{ hours, setHours, address, setAddress, tz, tzLocation, loading, saving, detectingTz, detectTimezone, save }}
+      value={{
+        hours, setHours,
+        address, setAddress,
+        instagram, setInstagram,
+        website, setWebsite,
+        facebook, setFacebook,
+        tz, tzLocation, loading, saving, detectingTz, detectTimezone, save,
+      }}
     >
       {children}
     </UnitContext.Provider>
@@ -173,6 +192,72 @@ function StoreAddressField() {
     </>
   )
 }
+
+// ============================================================
+// Social links (Instagram / Site / Facebook) - fed to AI SDR
+// ============================================================
+function SocialLinksFields() {
+  const { instagram, setInstagram, website, setWebsite, facebook, setFacebook, loading } = useUnit()
+  return (
+    <>
+      <div className="space-y-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <AtSign className="w-3 h-3" /> Instagram
+        </Label>
+        <Input
+          value={instagram}
+          onChange={(e) => setInstagram(e.target.value)}
+          placeholder="@oticacatelan ou instagram.com/oticacatelan"
+          disabled={loading}
+          className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <LinkIcon className="w-3 h-3" /> Site
+        </Label>
+        <Input
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          placeholder="https://oticacatelan.com.br"
+          disabled={loading}
+          className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner"
+        />
+      </div>
+      <div className="space-y-2 sm:col-span-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
+          <Share2 className="w-3 h-3" /> Facebook
+        </Label>
+        <Input
+          value={facebook}
+          onChange={(e) => setFacebook(e.target.value)}
+          placeholder="facebook.com/oticacatelan"
+          disabled={loading}
+          className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner"
+        />
+        <p className="text-[10px] text-gray-400">
+          A IA SDR envia estes links automaticamente quando o cliente pedir Instagram, site ou Facebook da loja.
+        </p>
+      </div>
+    </>
+  )
+}
+
+function SaveUnitInfoButton() {
+  const { save, saving, loading } = useUnit()
+  return (
+    <Button
+      onClick={save}
+      disabled={saving || loading}
+      size="sm"
+      className="h-10 text-[10px] font-black uppercase tracking-widest"
+    >
+      {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar informações'}
+    </Button>
+  )
+}
+
+
 
 // ============================================================
 // Weekly business hours
@@ -290,6 +375,10 @@ function Settings() {
                     <Input type="email" defaultValue="contato@oticacatelan.com" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
                   <StoreAddressField />
+                  <SocialLinksFields />
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <SaveUnitInfoButton />
                 </div>
               </section>
 
