@@ -49,8 +49,8 @@ export const Route = createFileRoute('/api/public/hooks/process-appointment-remi
     handlers: {
       POST: async ({ request }) => {
         const secret = request.headers.get('x-cron-secret') ?? request.headers.get('apikey');
-        const expected = process.env.FOLLOWUPS_CRON_SECRET ?? process.env.SUPABASE_ANON_KEY;
-        if (!secret || !expected || secret !== expected) {
+        const allowed = [process.env.FOLLOWUPS_CRON_SECRET, process.env.SUPABASE_ANON_KEY].filter(Boolean) as string[];
+        if (!secret || !allowed.includes(secret)) {
           return new Response('Unauthorized', { status: 401 });
         }
 
