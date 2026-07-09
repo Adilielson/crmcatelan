@@ -236,7 +236,7 @@ export function useWhatsAppChat() {
     return () => window.clearInterval(id);
   }, [tenant?.id, load]);
 
-  // Realtime: novas mensagens
+  // Realtime: novas mensagens + updates (status, mídia, transcrição)
   useEffect(() => {
     if (!tenant?.id) return;
     const channel = supabase
@@ -257,6 +257,28 @@ export function useWhatsAppChat() {
               ? prev
               : [...prev, mapRowSync(row, resolved)].sort((a, b) => (a.at > b.at ? 1 : -1))
           );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'whatsapp_message_logs',
+          filter: `tenant_id=eq.${tenant.id}`,
+        },
+        async (payload) => {
+          const row = payload.new as LogRow;
+          const resolved = await resolveMediaUrl(row);
+          setMessages((prev) => {
+            const idx = prev.findIndex((m) => m.id === row.id);
+            if (idx === -1) {
+              return [...prev, mapRowSync(row, resolved)].sort((a, b) => (a.at > b.at ? 1 : -1));
+            }
+            const next = prev.slice();
+            next[idx] = mapRowSync(row, resolved);
+            return next;
+          });
         }
       )
       .subscribe();
