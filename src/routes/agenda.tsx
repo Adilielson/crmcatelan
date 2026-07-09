@@ -63,7 +63,7 @@ function Agenda() {
 
   
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [view, setView] = useState<'month' | 'day'>('month')
+  const [view, setView] = useState<'month' | 'week' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
