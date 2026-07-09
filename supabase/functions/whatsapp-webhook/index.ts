@@ -1001,9 +1001,24 @@ Deno.serve(async (req) => {
           }
         }
 
+        // ── Transcrição de áudio (voice notes / audio messages) ──────────
+        // Se veio áudio, transcreve com Gemini e mescla no texto pra que:
+        //  1) o chat mostre "🎙️ Áudio: <transcrição>"
+        //  2) a IA SDR receba o conteúdo falado no histórico (não só "áudio")
+        let effectiveText = text;
+        if ((media.kind === "audio") && mediaUrl) {
+          const transcript = await transcribeAudioFromUrl(mediaUrl, finalMime);
+          if (transcript) {
+            const prefix = "🎙️ Áudio: ";
+            effectiveText = effectiveText && effectiveText.trim()
+              ? `${effectiveText.trim()}\n${prefix}${transcript}`
+              : `${prefix}${transcript}`;
+          }
+        }
+
         // Não polui o histórico com mensagens vazias (sem texto e sem mídia) —
         // geralmente são eventos de status/notificação mal classificados.
-        const hasText = !!(text && text.trim());
+        const hasText = !!(effectiveText && effectiveText.trim());
         const hasMedia = !!(mediaUrl || mediaStoragePath);
         if (!hasText && !hasMedia) {
           console.log(`[webhook] ignorando msg sem texto/mídia phone=${senderPhone} type=${msgType}`);
@@ -1013,8 +1028,8 @@ Deno.serve(async (req) => {
             recipient_phone: senderPhone,
             message_type: msgType,
             status: "received",
-            error_message: hasText ? text!.slice(0, 500) : null,
-            body: hasText ? text : null,
+            error_message: hasText ? effectiveText!.slice(0, 500) : null,
+            body: hasText ? effectiveText : null,
             sender_name: senderName,
             sender_avatar_url: senderAvatarUrl,
             media_url: mediaUrl,
@@ -1023,6 +1038,12 @@ Deno.serve(async (req) => {
           });
           if (logErr) console.error("[webhook] log insert error:", logErr.message);
         }
+
+        // Sobrescreve `text` local pra que a IA SDR abaixo veja a transcrição
+        // no fluxo (extração de nome, etc.)
+        // eslint-disable-next-line no-param-reassign
+        // @ts-expect-error - text é usado adiante nesta closure
+        text = effectiveText;
 
 
 
