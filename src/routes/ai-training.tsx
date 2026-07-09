@@ -77,6 +77,7 @@ function AITrainingSettings() {
         goal: c.goal ?? 'appointment',
         model_temperature: Number(c.model_temperature ?? 0.7),
         training_mode: !!c.training_mode,
+        autopilot_enabled: (c as any).autopilot_enabled !== false,
         rejection_instructions: c.rejection_instructions ?? '',
       })
     }
