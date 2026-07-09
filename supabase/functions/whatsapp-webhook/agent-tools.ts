@@ -229,36 +229,87 @@ function ptWeekday(date: string): string {
   return `${wk} ${dd}/${mm}`;
 }
 
-// Gera candidatos e filtra por bloqueios + colisões com appointments existentes.
+// ISO week number (usado para "semanas pares/ímpares" do sábado do oftalmo)
+function isoWeekNumber(dateStr: string): number {
+  const d = new Date(dateStr + "T00:00:00Z");
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setUTCMonth(0, 1);
+  if (target.getUTCDay() !== 4) {
+    target.setUTCMonth(0, 1 + ((4 - target.getUTCDay()) + 7) % 7);
+  }
+  return 1 + Math.ceil((firstThursday - target.valueOf()) / (7 * 24 * 3600 * 1000));
+}
+
+type ExamHour = {
+  weekday: number;
+  is_active: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  slot_minutes: number;
+  saturday_recurrence: string;
+};
+
+type ExamOverride = {
+  override_date: string;
+  is_available: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+// Gera candidatos filtrando por: horário da loja ∩ janela do exame ∩ bloqueios ∩ recorrência do sábado ∩ exceções.
 async function listAvailableSlots(
   admin: Supa,
   tenantId: string,
-  opts: { data_preferida?: string; periodo?: string },
-): Promise<{ iso: string; label: string }[]> {
+  opts: { tipo_exame?: string; data_preferida?: string; periodo?: string },
+): Promise<{ iso: string; label: string; exam?: string }[]> {
+  // 1) horário da loja
   const { data: hoursRows } = await admin
     .from("agenda_business_hours")
     .select("weekday,is_open,open_time,close_time,lunch_start,lunch_end")
     .eq("tenant_id", tenantId);
-  const hoursByDow = new Map<number, Hours>();
-  for (const h of (hoursRows ?? []) as any[]) {
-    hoursByDow.set(h.weekday as number, h as Hours);
+  const storeByDow = new Map<number, Hours>();
+  for (const h of (hoursRows ?? []) as any[]) storeByDow.set(h.weekday as number, h as Hours);
+
+  // 2) tipo de exame (obrigatório)
+  const { data: types } = await admin
+    .from("consultation_types")
+    .select("id,name")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true);
+  const norm = (opts.tipo_exame ?? "").trim().toLowerCase();
+  const type = (types ?? []).find(
+    (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
+  );
+  if (!type) {
+    return [];
   }
+
+  // 3) janelas do exame por dia da semana
+  const { data: examRows } = await admin
+    .from("consultation_type_hours")
+    .select("weekday,is_active,start_time,end_time,slot_minutes,saturday_recurrence")
+    .eq("tenant_id", tenantId)
+    .eq("consultation_type_id", type.id);
+  const examByDow = new Map<number, ExamHour>();
+  for (const e of (examRows ?? []) as any[]) examByDow.set(e.weekday as number, e as ExamHour);
 
   const today = new Date();
   const startDate = opts.data_preferida
     ? new Date(opts.data_preferida + "T00:00:00Z")
     : today;
   const startDateStr = dateOnly(startDate < today ? today : startDate);
-
   const endDate = addDays(new Date(startDateStr + "T00:00:00Z"), LOOKAHEAD_DAYS);
 
+  // 4) bloqueios de agenda
   const { data: blockedRows } = await admin
     .from("agenda_blocked_dates")
     .select("blocked_date,all_day,block_start,block_end")
     .eq("tenant_id", tenantId)
     .gte("blocked_date", startDateStr)
     .lte("blocked_date", dateOnly(endDate));
-
   const blockedByDate = new Map<string, Blocked[]>();
   for (const b of (blockedRows ?? []) as any[]) {
     const key = b.blocked_date as string;
@@ -266,72 +317,103 @@ async function listAvailableSlots(
     blockedByDate.get(key)!.push(b as Blocked);
   }
 
-  // NOTA: atendimento é rápido e permite paralelismo — não filtramos por
-  // colisão. Todos os slots do horário comercial (fora de bloqueios/almoço)
-  // são ofertados; se o cliente pedir um horário específico, a IA deve
-  // adaptar (ex.: 15:10 se 15:00 estiver "cheio" na percepção humana).
-
+  // 5) exceções por data do exame
+  const { data: overrideRows } = await admin
+    .from("consultation_type_date_overrides")
+    .select("override_date,is_available,start_time,end_time")
+    .eq("tenant_id", tenantId)
+    .eq("consultation_type_id", type.id)
+    .gte("override_date", startDateStr)
+    .lte("override_date", dateOnly(endDate));
+  const overrideByDate = new Map<string, ExamOverride>();
+  for (const o of (overrideRows ?? []) as any[]) overrideByDate.set(o.override_date as string, o as ExamOverride);
 
   const wantMorning = opts.periodo === "manha";
   const wantAfternoon = opts.periodo === "tarde";
 
-  const slots: { iso: string; label: string }[] = [];
+  const slots: { iso: string; label: string; exam?: string }[] = [];
   for (let i = 0; i < LOOKAHEAD_DAYS && slots.length < MAX_SLOTS_RETURNED; i++) {
     const dayDate = addDays(new Date(startDateStr + "T12:00:00Z"), i);
     const dayStr = dateOnly(dayDate);
     const dow = dayDate.getUTCDay();
-    const h = hoursByDow.get(dow);
-    if (!h || !h.is_open || !h.open_time || !h.close_time) continue;
 
+    // loja aberta?
+    const store = storeByDow.get(dow);
+    if (!store || !store.is_open || !store.open_time || !store.close_time) continue;
+
+    // bloqueio full-day
     const dayBlocks = blockedByDate.get(dayStr) ?? [];
     if (dayBlocks.some((b) => b.all_day)) continue;
 
-    let cursor = toMin(h.open_time);
-    const close = toMin(h.close_time);
-    const lunchS = h.lunch_start ? toMin(h.lunch_start) : null;
-    const lunchE = h.lunch_end ? toMin(h.lunch_end) : null;
+    // exceção do exame
+    const ov = overrideByDate.get(dayStr);
+    let examStart: string | null = null;
+    let examEnd: string | null = null;
+    let slotMin = DEFAULT_SLOT_MINUTES;
 
-    while (cursor + SLOT_MINUTES <= close && slots.length < MAX_SLOTS_RETURNED) {
+    if (ov) {
+      if (!ov.is_available) continue;
+      const exam = examByDow.get(dow);
+      examStart = ov.start_time ?? exam?.start_time ?? null;
+      examEnd = ov.end_time ?? exam?.end_time ?? null;
+      slotMin = exam?.slot_minutes ?? DEFAULT_SLOT_MINUTES;
+    } else {
+      const exam = examByDow.get(dow);
+      if (!exam || !exam.is_active || !exam.start_time || !exam.end_time) continue;
+
+      // recorrência de sábado
+      if (dow === 6 && exam.saturday_recurrence && exam.saturday_recurrence !== "all") {
+        if (exam.saturday_recurrence === "none") continue;
+        const wk = isoWeekNumber(dayStr);
+        const parity = wk % 2 === 0 ? "even" : "odd";
+        if (exam.saturday_recurrence !== parity) continue;
+      }
+      examStart = exam.start_time;
+      examEnd = exam.end_time;
+      slotMin = exam.slot_minutes ?? DEFAULT_SLOT_MINUTES;
+    }
+    if (!examStart || !examEnd) continue;
+
+    // interseção loja ∩ exame
+    const windowStart = Math.max(toMin(store.open_time), toMin(examStart));
+    const windowEnd = Math.min(toMin(store.close_time), toMin(examEnd));
+    if (windowEnd <= windowStart) continue;
+
+    let cursor = windowStart;
+    const lunchS = store.lunch_start ? toMin(store.lunch_start) : null;
+    const lunchE = store.lunch_end ? toMin(store.lunch_end) : null;
+
+    while (cursor + slotMin <= windowEnd && slots.length < MAX_SLOTS_RETURNED) {
       const slotStart = cursor;
-      const slotEnd = cursor + SLOT_MINUTES;
+      const slotEnd = cursor + slotMin;
 
-      // Almoço
+      // almoço
       if (lunchS !== null && lunchE !== null && slotStart < lunchE && slotEnd > lunchS) {
         cursor = lunchE;
         continue;
       }
-
-      // Bloqueio parcial
+      // bloqueio parcial
       const conflictBlock = dayBlocks.some((b) => {
         if (b.all_day || !b.block_start || !b.block_end) return false;
         return slotStart < toMin(b.block_end) && slotEnd > toMin(b.block_start);
       });
-      if (conflictBlock) {
-        cursor += SLOT_MINUTES;
-        continue;
-      }
-
-      // Período preferido
-      if (wantMorning && slotStart >= 12 * 60) { cursor += SLOT_MINUTES; continue; }
-      if (wantAfternoon && slotStart < 12 * 60) { cursor += SLOT_MINUTES; continue; }
+      if (conflictBlock) { cursor += slotMin; continue; }
+      // período
+      if (wantMorning && slotStart >= 12 * 60) { cursor += slotMin; continue; }
+      if (wantAfternoon && slotStart < 12 * 60) { cursor += slotMin; continue; }
 
       const iso = isoAt(dayStr, slotStart);
-      const startMs = new Date(iso).getTime();
-
-      // Passado (para hoje)
-      if (startMs < Date.now() + 60 * 60_000) {
-        cursor += SLOT_MINUTES;
+      if (new Date(iso).getTime() < Date.now() + 60 * 60_000) {
+        cursor += slotMin;
         continue;
       }
-
-      // (sem checagem de colisão — múltiplos agendamentos no mesmo horário são permitidos)
-
 
       slots.push({
         iso,
         label: `${ptWeekday(dayStr)} às ${fmtMin(slotStart)}`,
+        exam: (type as any).name,
       });
-      cursor += SLOT_MINUTES;
+      cursor += slotMin;
     }
   }
   return slots;
