@@ -243,10 +243,10 @@ function Settings() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Email de Contato</Label>
                     <Input type="email" defaultValue="contato@oticacatelan.com" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
-                </div>
-                <p className="text-[10px] text-gray-400 sm:col-span-2 -mt-2">
-                  O endereço da loja é editado na seção <strong>Horário & Localização</strong> abaixo — é ele que define o fuso horário usado pela IA SDR.
-                </p>
+                  <div className="sm:col-span-2">
+                    <p className="text-[10px] text-gray-400">
+                      O endereço da loja é editado na seção <strong>Horário & Localização</strong> abaixo — é ele que define o fuso horário usado pela IA SDR.
+                    </p>
                   </div>
                 </div>
               </section>
