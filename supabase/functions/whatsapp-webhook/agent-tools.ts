@@ -5,8 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 type Supa = ReturnType<typeof createClient>;
 
-const SLOT_MINUTES = 40; // duração padrão da consulta
-const LOOKAHEAD_DAYS = 14;
+const DEFAULT_SLOT_MINUTES = 40; // fallback quando o tipo de exame não define
+const LOOKAHEAD_DAYS = 21;
 const MAX_SLOTS_RETURNED = 6;
 
 export const AGENT_TOOLS = [
