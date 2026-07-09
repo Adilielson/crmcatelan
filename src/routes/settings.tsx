@@ -203,7 +203,7 @@ function Settings() {
       <Tabs defaultValue="unit" className="w-full">
         <TabsList className="bg-white border border-border mb-8 w-full justify-start h-14 p-1.5 rounded-[14px] shadow-inner overflow-x-auto overflow-y-hidden scrollbar-hide">
           <TabsTrigger value="unit" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Store className="w-4 h-4" /> Unidade</TabsTrigger>
-          <TabsTrigger value="ia" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Shield className="w-4 h-4" /> IA SDR</TabsTrigger>
+          
           <TabsTrigger value="automations" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Zap className="w-4 h-4" /> Automações</TabsTrigger>
           <TabsTrigger value="notifications" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Bell className="w-4 h-4" /> Notificações</TabsTrigger>
           <TabsTrigger value="chat" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><MessageSquare className="w-4 h-4" /> WhatsApp</TabsTrigger>
@@ -278,41 +278,6 @@ function Settings() {
           </div>
         </TabsContent>
 
-        <TabsContent value="ia">
-          <section className="bg-white border rounded-xl p-6 shadow-sm max-w-4xl">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Configuração IA SDR</h3>
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <Label>Tom de Voz da Assistente</Label>
-                <select className="w-full bg-white border rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
-                  <option>Consultivo e Amigável (Recomendado)</option>
-                  <option>Formal e Profissional</option>
-                  <option>Persuasivo e Direto</option>
-                </select>
-              </div>
-              
-              <div className="space-y-1">
-                <Label>Instruções de Comportamento (System Prompt)</Label>
-                <textarea 
-                  className="w-full bg-white border rounded-lg px-3 py-2 text-sm h-40 outline-none focus:ring-1 focus:ring-primary leading-relaxed"
-                  defaultValue="Você é a assistente virtual da Ótica Catelan. Seu objetivo é realizar o pré-atendimento de forma cordial, identificar a necessidade do cliente (óculos de grau, sol, lentes) e encaminhar para agendamento presencial na unidade..."
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-bold text-blue-900">Modo Auto-Agendamento</p>
-                  <p className="text-xs text-blue-700">Permite que a IA agende horários diretamente na agenda.</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-
-              <div className="flex justify-end pt-4 border-t">
-                <Button className="bg-primary hover:bg-yellow-bright text-primary-foreground font-black text-xs h-12 px-10 rounded-[14px] shadow-lg shadow-primary/20 transition-all active:scale-95">SALVAR CONFIGURAÇÕES IA</Button>
-              </div>
-            </div>
-          </section>
-        </TabsContent>
 
         <TabsContent value="automations" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
