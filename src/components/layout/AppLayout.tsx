@@ -25,6 +25,11 @@ import {
   Trophy,
   Award,
 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { getAiConfig, updateAiConfig } from '@/lib/ai-training.functions';
+import { toast } from 'sonner';
+
 
 /* ============ MOBILE BOTTOM NAV ============ */
 const MobileBottomNav = ({ pathname }: { pathname: string }) => {
