@@ -29,8 +29,9 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = request.headers.get('x-cron-secret');
-        if (!secret || secret !== process.env.FOLLOWUPS_CRON_SECRET) {
+        const secret = request.headers.get('x-cron-secret') ?? request.headers.get('apikey');
+        const allowed = [process.env.FOLLOWUPS_CRON_SECRET, process.env.SUPABASE_ANON_KEY].filter(Boolean) as string[];
+        if (!secret || !allowed.includes(secret)) {
           return new Response('Unauthorized', { status: 401 });
         }
 
