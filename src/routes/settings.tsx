@@ -503,6 +503,10 @@ function Settings() {
           </div>
         </TabsContent>
 
+        <TabsContent value="notifications">
+          <ReminderTemplatesSection />
+        </TabsContent>
+
         <TabsContent value="chat">
           <WhatsAppConfig />
         </TabsContent>
