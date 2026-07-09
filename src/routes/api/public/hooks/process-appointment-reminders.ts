@@ -21,27 +21,21 @@ function fmtDateTime(iso: string) {
   }
 }
 
-function renderMessage(
-  kind: string,
-  lead: { full_name: string | null },
-  appt: { scheduled_at: string; status: string | null },
+function renderTemplate(
+  template: string,
+  lead: { full_name: string | null; phone?: string | null },
+  appt: { scheduled_at: string },
   unitAddress: string | null,
 ): string {
-  const nome = firstName(lead.full_name);
-  switch (kind) {
-    case 'confirm_24h':
-    case 'confirm_retry_2h':
-      return `Olá, ${nome}! Passando para confirmar seu agendamento amanhã (${fmtDateTime(appt.scheduled_at)}) na Ótica Catelã. Tudo certo para amanhã? Confirme aqui. Se não puder vir, nos avise.`;
-    case 'day_morning':
-      if (appt.status === 'confirmed') {
-        return `Ei, ${nome}! Hoje é o dia do nosso agendamento (${fmtDateTime(appt.scheduled_at)})! Estamos te esperando.`;
-      }
-      return `Ei, ${nome}! Hoje é o dia do nosso agendamento (${fmtDateTime(appt.scheduled_at)})! Aguardando sua confirmação.`;
-    case 'final_1h':
-      return `${nome}, falta só 1 hora! Estamos te esperando na Ótica Catelã${unitAddress ? ` (${unitAddress})` : ''}.`;
-    default:
-      return `Olá, ${nome}!`;
-  }
+  const nome = firstName(lead.full_name)
+  const dt = fmtDateTime(appt.scheduled_at)
+  const [data, hora] = dt.includes(' ') ? dt.split(' ') : [dt, dt]
+  return template
+    .replace(/\{nome\}/g, nome)
+    .replace(/\{data\}/g, data)
+    .replace(/\{hora\}/g, hora)
+    .replace(/\{telefone\}/g, lead.phone || '')
+    .replace(/\{endereco_opt\}/g, unitAddress ? ` (${unitAddress})` : '')
 }
 
 export const Route = createFileRoute('/api/public/hooks/process-appointment-reminders')({
