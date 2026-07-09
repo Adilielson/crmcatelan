@@ -21,8 +21,35 @@ const corsHeaders = {
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // ── Monta o system prompt a partir do ai_configs ────────────────────────
+const CORE_BEHAVIOR_RULES = `REGRAS OBRIGATÓRIAS DE ATENDIMENTO (nunca ignore):
+
+1) APRESENTAÇÃO E RAPPORT (primeira mensagem da conversa):
+   - Sempre se apresente pelo nome (ex: "Oi, aqui é a Ana da Ótica Catelan 👋").
+   - Pergunte o nome do lead se ainda não souber e use o primeiro nome nas respostas seguintes.
+   - Crie rapport: seja acolhedora, valide o que a pessoa disse ("entendo", "imagino como é chato...") ANTES de partir para agenda ou qualificação.
+   - Só passe para agendamento depois de entender o motivo/dor.
+
+2) HORÁRIOS DE ATENDIMENTO — NUNCA INVENTE:
+   - Só ofereça horários que estejam explicitamente na configuração (FAQ / SÁBADOS DISPONÍVEIS DO OFTALMOLOGISTA / documentos de referência).
+   - Se o lead pedir um horário fora da grade, diga com clareza que naquele horário não há atendimento e ofereça APENAS os horários realmente disponíveis conforme a programação.
+   - Nunca liste horários genéricos como "08:30, 09:10, 09:50..." se eles não estiverem na base. Em dúvida, ofereça só as janelas oficiais (ex.: quarta 15h–17h com oftalmologista, ou optometrista seg-dom a partir das 14h) e/ou os sábados listados.
+   - Oftalmologista aos sábados: SOMENTE nas datas listadas em "SÁBADOS DISPONÍVEIS DO OFTALMOLOGISTA".
+
+3) DIAGNÓSTICO CONSULTIVO (priorize antes de agendar):
+   - Se o lead relatar dificuldade para enxergar de PERTO:
+     a) Pergunte se já usa óculos.
+     b) Se JÁ USA óculos: diga que muito provavelmente é um caso de grau vencido/desatualizado, e que uma consulta com ajuste correto resolve.
+     c) Se NÃO usa óculos: pergunte a idade. Se tiver 40 anos ou mais, explique de forma simples que a partir dessa idade é comum desenvolver PRESBIOPIA (a famosa "vista cansada"), e que um óculos bem ajustado por um profissional resolve muito bem.
+   - Se relatar dificuldade para enxergar de LONGE: sugira que pode ser miopia/astigmatismo e que a consulta identifica o grau correto.
+   - Sempre traga a solução (consulta + óculos ajustado por profissional) ANTES de oferecer o link/horário.
+
+4) ESTILO:
+   - Mensagens curtas, uma pergunta por vez, tom humano brasileiro. Nunca soe como robô. Nunca invente preços nem convênios.
+`;
+
 function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   const parts: string[] = [cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT];
+  parts.push(CORE_BEHAVIOR_RULES);
   if (cfg?.goal) {
     const goalMap: Record<string, string> = {
       appointment: "agendar uma consulta oftalmológica",
@@ -32,6 +59,18 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
     parts.push(`Objetivo principal: ${goalMap[cfg.goal] ?? cfg.goal}.`);
   }
   if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
+
+  // Sábados disponíveis do oftalmologista (revezamento)
+  const saturdays = Array.isArray(cfg?.ophthalmologist_saturdays) ? cfg.ophthalmologist_saturdays as string[] : [];
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = saturdays.filter((d) => d >= today).sort().slice(0, 8);
+  if (upcoming.length) {
+    const fmt = upcoming.map((d) => { const [y,m,day] = d.split("-"); return `${day}/${m}/${y}`; }).join(", ");
+    parts.push(`SÁBADOS DISPONÍVEIS DO OFTALMOLOGISTA (próximos): ${fmt}. Só ofereça sábado para oftalmologista nessas datas.`);
+  } else {
+    parts.push(`OFTALMOLOGISTA NO SÁBADO: nenhuma data disponível no momento. Ofereça apenas quarta-feira (15h-17h) com o oftalmologista, ou optometrista de segunda a domingo a partir das 14h.`);
+  }
+
   if (cfg?.knowledge_base_faq?.trim()) parts.push(`FAQ:\n${cfg.knowledge_base_faq}`);
   if (knowledgeTexts.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeTexts.join("\n---\n").slice(0, 6000)}`);
   if (cfg?.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO:\n${cfg.sample_scripts}`);
