@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Settings as SettingsIcon, Store, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2, KeyRound, Target, ShieldAlert, Link as LinkIcon, AtSign, Share2 } from 'lucide-react'
 import { GoalsSettings } from '@/components/settings/GoalsSettings'
 import { NoShowSettingsSection } from '@/components/settings/NoShowSettingsSection'
+import { ReminderTemplatesSection } from '@/components/settings/ReminderTemplatesSection'
 import { WhatsAppConfig } from '@/pages/WhatsAppConfig'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from '@/components/ui/button'
@@ -501,6 +502,10 @@ function Settings() {
               </div>
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <ReminderTemplatesSection />
         </TabsContent>
 
         <TabsContent value="chat">

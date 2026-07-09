@@ -2243,6 +2243,59 @@ export type Database = {
           },
         ]
       }
+      reminder_templates: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          id: string
+          kind: string
+          label: string
+          message_template: string
+          offset_minutes: number
+          position: number
+          step_key: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          label: string
+          message_template: string
+          offset_minutes: number
+          position?: number
+          step_key: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          label?: string
+          message_template?: string
+          offset_minutes?: number
+          position?: number
+          step_key?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revenue_goals: {
         Row: {
           active_tier: string

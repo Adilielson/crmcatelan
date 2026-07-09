@@ -2,27 +2,10 @@ import { createFileRoute } from '@tanstack/react-router';
 
 const UAZAPI_BASE_URL = 'https://ipazua.uazapi.com';
 
-const TEMPLATES: Record<string, string> = {
-  followup_d1:
-    'Olá {nome}! Aqui é da Ótica Catelan 👋\nComo foi a experiência no exame? Já pensou no modelo de óculos que gostaria?',
-  followup_d3:
-    'Oi {nome}, tudo bem? Conseguiu pensar sobre o óculos? Temos várias opções na loja, posso separar algumas pra você ver 😊',
-  followup_d7:
-    'Olá {nome}! Essa semana estamos com uma condição especial em armações + lentes. Topa dar uma passada pra ver?',
-  followup_d15:
-    '[LIGAÇÃO] Atendente deve ligar para {nome} ({telefone}) — reativação de lead pós-exame.',
-  followup_d30:
-    'Oi {nome}! 🆕 Chegaram coleções novas na Ótica Catelan. Vem dar uma olhada quando puder!',
-  followup_d60:
-    'Olá {nome}, faz um tempo que não te vemos por aqui. Posso te ajudar com algo? Temos novidades 😊',
-  followup_d120:
-    'Oi {nome}! Lembrete: você fez exame há cerca de 4 meses. Já está usando óculos? Posso te dar uma dica especial.',
-  followup_d180:
-    'Olá {nome}! Já faz 6 meses do seu exame. Que tal agendar uma revisão? É rapidinho e sem custo.',
-};
-
 function render(template: string, data: { nome: string; telefone: string }) {
-  return template.replace(/\{nome\}/g, data.nome).replace(/\{telefone\}/g, data.telefone);
+  return template
+    .replace(/\{nome\}/g, data.nome)
+    .replace(/\{telefone\}/g, data.telefone);
 }
 
 export const Route = createFileRoute('/api/public/hooks/process-followups')({
@@ -100,7 +83,24 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
               continue;
             }
 
-            const text = render(TEMPLATES[f.template_key] ?? 'Olá {nome}!', {
+            const { data: tpl } = await supabaseAdmin
+              .from('reminder_templates')
+              .select('message_template, enabled')
+              .eq('tenant_id', f.tenant_id)
+              .eq('kind', 'followup')
+              .eq('step_key', f.template_key)
+              .maybeSingle();
+
+            if (tpl && tpl.enabled === false) {
+              await supabaseAdmin
+                .from('lead_followups')
+                .update({ status: 'skipped', error_message: 'Template desativado' })
+                .eq('id', f.id);
+              skipped++;
+              continue;
+            }
+
+            const text = render(tpl?.message_template ?? 'Olá {nome}!', {
               nome: lead.full_name.split(' ')[0],
               telefone: lead.phone,
             });
