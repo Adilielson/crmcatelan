@@ -62,6 +62,54 @@ export const AGENT_TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "remarcar_agendamento",
+      description:
+        "Remarca (reagenda) um agendamento EXISTENTE do lead para um novo horário. USE ESTA FERRAMENTA sempre que o cliente pedir para 'remarcar', 'mudar o horário', 'trocar para outra hora/dia' um agendamento que já foi criado. NUNCA chame criar_agendamento nesse caso — isso duplicaria o registro. Se não passar appointment_id, o sistema remarca automaticamente o próximo agendamento futuro pendente/confirmado do lead.",
+      parameters: {
+        type: "object",
+        required: ["novo_horario_iso"],
+        properties: {
+          appointment_id: {
+            type: "string",
+            description: "ID do agendamento a remarcar (opcional). Se omitido, remarca o próximo agendamento futuro pendente/confirmado do lead.",
+          },
+          novo_horario_iso: {
+            type: "string",
+            description: "Novo horário em ISO 8601 com offset -03:00 (ex: 2026-07-10T10:00:00-03:00).",
+          },
+          motivo: {
+            type: "string",
+            description: "Motivo da remarcação (opcional).",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "cancelar_agendamento",
+      description:
+        "Cancela um agendamento existente do lead. Use quando o cliente pedir para cancelar/desmarcar. Se não passar appointment_id, cancela o próximo agendamento futuro pendente/confirmado.",
+      parameters: {
+        type: "object",
+        properties: {
+          appointment_id: {
+            type: "string",
+            description: "ID do agendamento a cancelar (opcional).",
+          },
+          motivo: {
+            type: "string",
+            description: "Motivo do cancelamento (opcional).",
+          },
+        },
+      },
+    },
+  },
+
+  {
+    type: "function" as const,
+    function: {
       name: "atualizar_qualificacao_lead",
       description:
         "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
