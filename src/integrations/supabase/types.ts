@@ -197,6 +197,7 @@ export type Database = {
       }
       ai_configs: {
         Row: {
+          autopilot_enabled: boolean
           created_at: string | null
           goal: string | null
           id: string
@@ -219,6 +220,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          autopilot_enabled?: boolean
           created_at?: string | null
           goal?: string | null
           id?: string
@@ -241,6 +243,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          autopilot_enabled?: boolean
           created_at?: string | null
           goal?: string | null
           id?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.ai_configs ADD COLUMN IF NOT EXISTS autopilot_enabled BOOLEAN NOT NULL DEFAULT true;
