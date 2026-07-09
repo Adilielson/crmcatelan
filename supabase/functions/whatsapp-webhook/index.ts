@@ -33,7 +33,7 @@ const CORE_BEHAVIOR_RULES = `REGRAS OBRIGATÓRIAS DE ATENDIMENTO (nunca ignore):
    - NUNCA proponha um horário sem antes chamar a ferramenta 'listar_horarios_disponiveis' informando o 'tipo_exame' que o cliente pediu (Optometrista ou Oftalmológica).
    - Cada exame tem sua própria grade cadastrada em Agenda → Programação → "Horários por Exame". A ferramenta já cruza: horário da loja + janela do exame + bloqueios + recorrência de sábado + exceções por data.
    - Ofereça APENAS os horários retornados pela ferramenta. Nunca invente "08:30, 09:10, 09:50...".
-   - Se o cliente pedir um horário e ele não aparecer na resposta da ferramenta, diga com clareza que nesse horário não há atendimento para aquele exame e ofereça o que a ferramenta retornou (ou tente 'listar_horarios_disponiveis' com data_preferida).
+   - Se o cliente pedir um horário e ele não aparecer na response da ferramenta, diga com clareza que nesse horário não há atendimento para aquele exame e ofereça o que a ferramenta retornou (ou tente 'listar_horarios_disponiveis' com data_preferida).
    - Não repita janelas fixas de memória. Toda oferta vem da ferramenta, sempre.
 
 3) DIAGNÓSTICO CONSULTIVO (priorize antes de agendar):
@@ -46,6 +46,9 @@ const CORE_BEHAVIOR_RULES = `REGRAS OBRIGATÓRIAS DE ATENDIMENTO (nunca ignore):
 
 4) ESTILO:
    - Mensagens curtas, uma pergunta por vez, tom humano brasileiro. Nunca soe como robô. Nunca invente preços nem convênios.
+
+5) TRIAGEM E DOCUMENTOS:
+   - É estritamente PROIBIDO solicitar quaisquer documentos (RG, CPF, comprovante de residência, etc.) ao lead durante o processo de triagem ou atendimento.
 `;
 
 function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
@@ -328,7 +331,7 @@ function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown
   return { url, mime, kind };
 }
 
-// ── Extrai contexto de anúncio (Click-to-WhatsApp) do payload ───────────
+// Extrai contexto de anúncio (Click-to-WhatsApp) do payload ───────────
 // A uazapi propaga o referral do Meta em variações como:
 //   message.contextInfo.externalAdReply
 //   message.ctwaContext / message.adReply
@@ -528,7 +531,7 @@ async function persistMediaToStorage(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Transcrição de áudio (voice notes WhatsApp são OGG/Opus).
+// Transcrição de áudio (voice notes / audio messages) ──────────
 // Usamos Google Gemini via chat/completions com input_audio (aceita ogg
 // nativamente); openai/gpt-4o-mini-transcribe rejeita OGG/Opus.
 // ─────────────────────────────────────────────────────────────────────────
