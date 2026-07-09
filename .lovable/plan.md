@@ -1,67 +1,65 @@
-# Limpeza do Kanban + Tela única de Resultados
 
-Fechamos as 4 decisões:
-1. Tela única `/resultados` com abas Ganhos | Perdidos | Todos
-2. Coluna "Re-agendar" removida
-3. Motivo de perda usa o dropdown que já existe no `LostLeadDialog`
-4. Botão fixo **Vendeu** (💰) + **Perdeu** (❌) em todo card do kanban
+## Diagnóstico — o que já existe
+
+Antes de criar algo novo, mapeei tudo relacionado a lembretes/notificações:
+
+- **Aba "Notificações" em Configurações** → existe o `TabsTrigger` mas o `TabsContent` está **vazio**. É o local perfeito para plugar a Central.
+- **`NotificationCenter` (sininho no topo)** → só mostra alertas internos do sistema (lead parado, no-show, etc.). Não gerencia mensagens enviadas ao cliente.
+- **Lembretes de agendamento** → templates hard-coded em `process-appointment-reminders.ts` (função `renderMessage`) e prazos hard-coded no trigger `schedule_appointment_reminders` (−24h, −22h, −3h, −1h).
+- **Follow-ups pós-exame** → templates hard-coded no objeto `TEMPLATES` de `process-followups.ts` e prazos hard-coded no trigger `create_followup_schedule` (1, 3, 7, 15, 30, 60, 120, 180 dias).
+- **No-show** → parcialmente configurável em `noshow_settings` (preset light/normal), sem edição de texto.
+- **IA (agente WhatsApp)** → hoje não lê nenhum desses textos; responde livre.
+
+**Conclusão:** não existe uma central editável. Precisa ser criada, e nada precisa ser removido — apenas conectado.
 
 ---
 
-## 1. Migração (banco)
+## O que vou construir: "Central de Lembretes"
 
-- Remover do kanban as colunas de sistema `won`, `lost`, `rescheduled` (marcar `is_active = false` ou deletar do `kanban_columns` por tenant — leads mantêm `status='showed_up'/'lost'`, só somem do board).
-- Manter o enum de status intacto — os leads Ganhos/Perdidos continuam existindo, só não aparecem no board.
-- Ajustar `seed_kanban_columns_for_tenant` para não recriar essas 3 colunas em novos tenants.
+Um único lugar em **Configurações → Notificações** onde o admin edita:
+- **Mensagem** (com variáveis `{nome}`, `{data}`, `{hora}`, `{endereco}`, `{telefone}`)
+- **Quando disparar** (offset em minutos antes/depois do evento)
+- **Canal** (WhatsApp / ligação manual)
+- **Ativo/inativo** (liga/desliga o passo sem apagar)
 
-## 2. Kanban (`KanbanBoard.tsx` + card)
+Cobrindo os 3 fluxos: **Confirmação de agendamento**, **Follow-up pós-exame**, **Alerta de no-show**.
 
-- Filtrar o board para esconder colunas com `system_key in ('won','lost','rescheduled')`.
-- Esconder do board leads com `status in ('showed_up','lost')` mesmo que estejam em coluna custom.
-- Card ganha **2 botões fixos** no rodapé (ao lado dos QuickActions):
-  - 💰 **Vendeu** → abre `RegisterPurchaseDialog` com `closeLead={true}` (já existe, marca `status='showed_up'`)
-  - ❌ **Perdeu** → abre `LostLeadDialog` existente (dropdown de motivos + campo livre)
-- Ao salvar em qualquer um dos dois, o card desaparece do board automaticamente (pelo filtro de status acima).
-
-## 3. Nova rota `/resultados`
-
-Substitui a navegação para "vendas/perdidos separados". Estrutura:
-
-```text
-/resultados          → aba Todos (default)
-/resultados/ganhos   → só showed_up
-/resultados/perdidos → só lost
-```
-
-Cada aba tem:
-- KPIs no topo (total, valor total R$, ticket médio, taxa de conversão)
-- Filtros: período, atendente, unidade, motivo (só na aba Perdidos)
-- Tabela: lead, atendente, data, valor / motivo, ações (ver detalhes, reengajar)
-- Botão "Exportar CSV"
-
-Sidebar da app ganha item **Resultados** no lugar de qualquer link antigo para vendas/perdidos.
-
-## 4. Onde aplicar o dropdown de motivo de perda
-
-O `LostLeadDialog` já tem o dropdown. Precisa garantir que ele seja usado em **todos os pontos** onde um lead pode virar Perdido:
-- Kanban → botão ❌ Perdeu (novo)
-- Kanban → drag para coluna Perdido (removido, então N/A)
-- `NoShowReasonDialog` → motivos `desistiu`/`comprou_fora` já geram `status='lost'` — reaproveitar o mesmo enum de motivos do `LostLeadDialog` para consistência de relatório
-- `LeadDetailSheet` / `LeadProfilePanel` → botão "Marcar como perdido" usa o mesmo dialog
-- Chat / Fila / Follow-ups → onde houver ação "descartar lead", trocar por abrir o `LostLeadDialog`
-
-## 5. Ordem de implementação
-
-1. Migration: desativar 3 colunas + ajustar seed
-2. `KanbanBoard`: filtro de colunas + filtro de status
-3. Card: 2 botões fixos + wiring dos dialogs existentes
-4. Rota `/resultados` + subrotas Ganhos/Perdidos/Todos + tabela + CSV
-5. Sidebar: item "Resultados", remover links antigos
-6. Auditar telas listadas em §4 e trocar por `LostLeadDialog`
+---
 
 ## Detalhes técnicos
 
-- Filtro do board: `columns.filter(c => !['won','lost','rescheduled'].includes(c.system_key))` + `leads.filter(l => !['showed_up','lost'].includes(l.status))`
-- Botões do card ficam no `LeadQuickActions` como novos itens só em variant compact, ou num rodapé separado (prefiro rodapé pra não misturar com Agendar/Conversar/Valor)
-- `/resultados` reaproveita `useLeads` com filtro `status in (...)` + `useLeadPurchases` agregado
-- CSV via `lib/report-export.ts` que já existe
+### 1. Banco (migration)
+Nova tabela `reminder_templates`:
+- `tenant_id`, `kind` (`appointment` | `followup` | `noshow`), `step_key` (ex: `confirm_24h`, `followup_d3`, `noshow_t15`)
+- `label`, `message_template` (texto com placeholders), `channel` (`whatsapp` | `call`)
+- `offset_minutes` (negativo = antes do evento, positivo = depois), `enabled`, `position`
+- RLS: tenant admin/manager edita; service_role lê tudo
+- Trigger `seed_reminder_templates_for_tenant` popula os defaults atuais em novos tenants
+- Backfill: rodar seed para todos os tenants existentes
+
+Reescrever os triggers para lerem da tabela:
+- `schedule_appointment_reminders` → itera pelas linhas ativas de `kind='appointment'` e cria `appointment_reminders` com o `offset_minutes` da linha
+- `create_followup_schedule` → mesma coisa para `kind='followup'`
+- `schedule_noshow_alerts` → idem para `kind='noshow'` (substitui o preset light/normal)
+
+### 2. Processadores (server routes)
+- `process-appointment-reminders.ts`, `process-followups.ts`, `process-noshow-alerts.ts`: buscam o `message_template` da linha correspondente e renderizam com os placeholders reais. Fallback para o texto atual se a linha for removida.
+
+### 3. UI — `RemindersCenterTab.tsx`
+Layout mobile-first (CRM roda no celular):
+- 3 seções colapsáveis (Confirmação / Follow-up / No-show)
+- Cada passo: card com preview do texto, offset legível ("24h antes", "3 dias depois"), switch ativo, botão editar
+- Dialog de edição: textarea grande + chips clicáveis para inserir variáveis + input de offset com selector de unidade (min/h/dias) + preview renderizado com dados fake
+- Botão "Restaurar padrão" por passo
+
+### 4. IA lê os templates
+Adicionar em `supabase/functions/whatsapp-webhook/agent-tools.ts` uma tool `get_reminder_schedule` que retorna, para o tenant, quais lembretes o cliente vai receber e quando. Assim quando o cliente pergunta "vou receber lembrete?" a IA responde com dado real, e quando envia manualmente pode usar o mesmo texto padrão.
+
+### 5. Ordem de execução
+1. Migration (tabela + seed + reescrita dos 3 triggers + backfill)
+2. Atualizar os 3 processadores para ler o template do banco
+3. Criar `RemindersCenterTab.tsx` + hook `use-reminder-templates.ts`
+4. Plugar no `TabsContent value="notifications"` de `settings.tsx`
+5. Adicionar tool na IA do WhatsApp
+
+Confirma que sigo por aí?
