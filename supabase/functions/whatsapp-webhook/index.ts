@@ -1171,12 +1171,11 @@ Deno.serve(async (req) => {
                 .eq("tenant_id", tenantId)
                 .maybeSingle();
 
-              // Guard: Piloto Automático DESLIGADO → IA não responde de forma alguma
+              // Guard: apenas Piloto Automático controla se a IA responde.
+              // Modo Aprendizado é sempre-observador (não bloqueia respostas) —
+              // a extração de aprendizado acontece em pipeline separado, offline.
               if ((aiCfg as any)?.autopilot_enabled === false) {
                 console.log(`[sdr] pulado: piloto automático desligado (tenant=${tenantId})`);
-              } else if ((aiCfg as any)?.training_mode === true) {
-                // Guard: Modo de Aprendizado ativo → IA NÃO responde, apenas observa
-                console.log(`[sdr] pulado: modo de aprendizado ativo (tenant=${tenantId})`);
               } else {
               const { data: docs } = await adminClient
                 .from("ai_knowledge_documents")
