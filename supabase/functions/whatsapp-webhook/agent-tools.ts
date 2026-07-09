@@ -15,10 +15,15 @@ export const AGENT_TOOLS = [
     function: {
       name: "listar_horarios_disponiveis",
       description:
-        "Lista horários livres para agendar consulta oftalmológica ou de optometria nos próximos 14 dias. Use SEMPRE antes de propor um horário ao cliente. Retorna até 6 slots. Se o cliente pediu preferência (ex: 'quinta a tarde'), passe data_preferida no formato YYYY-MM-DD.",
+        "OBRIGATÓRIO chamar antes de propor qualquer horário. Lista horários livres para o exame indicado, cruzando: horário da loja + janelas do exame (Optometrista/Oftalmológica) + bloqueios + exceções por data + recorrência de sábado. NUNCA invente ou sugira horários sem chamar esta função. Se o cliente pedir um horário que não retornar aqui, informe que não há atendimento nesse horário.",
       parameters: {
         type: "object",
+        required: ["tipo_exame"],
         properties: {
+          tipo_exame: {
+            type: "string",
+            description: "Nome do tipo de exame (ex: 'Optometrista' ou 'Oftalmológica'). Cada exame tem sua própria grade.",
+          },
           data_preferida: {
             type: "string",
             description: "Data preferida no formato YYYY-MM-DD (opcional).",
