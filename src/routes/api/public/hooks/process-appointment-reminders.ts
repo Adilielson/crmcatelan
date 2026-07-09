@@ -136,7 +136,31 @@ export const Route = createFileRoute('/api/public/hooks/process-appointment-remi
               unitAddress = u?.address ?? null;
             }
 
-            const text = renderMessage(r.kind, lead, appt as any, unitAddress);
+            const { data: tpl } = await supabaseAdmin
+              .from('reminder_templates')
+              .select('message_template, enabled')
+              .eq('tenant_id', r.tenant_id)
+              .eq('kind', 'appointment')
+              .eq('step_key', r.kind)
+              .maybeSingle();
+
+            if (tpl && tpl.enabled === false) {
+              await supabaseAdmin
+                .from('appointment_reminders')
+                .update({ status: 'skipped', error_message: 'Template desativado' })
+                .eq('id', r.id);
+              skipped++;
+              continue;
+            }
+
+            const text = tpl?.message_template
+              ? renderTemplate(tpl.message_template, lead, appt as any, unitAddress)
+              : renderTemplate(
+                  'Olá, {nome}! Lembrete do seu agendamento em {data} às {hora}.',
+                  lead,
+                  appt as any,
+                  unitAddress,
+                );
 
             const res = await fetch(`${UAZAPI_BASE_URL}/send/text`, {
               method: 'POST',
