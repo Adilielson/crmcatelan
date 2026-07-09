@@ -105,6 +105,7 @@ export function useAgenda() {
         .from('appointments')
         .select('*')
         .eq('tenant_id', tenantId!)
+        .neq('status', 'cancelled')
         .order('scheduled_at', { ascending: true });
       if (error) throw error;
       return (data ?? []).map(rowToAppt);
