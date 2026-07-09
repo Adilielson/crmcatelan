@@ -432,7 +432,7 @@ async function createAppointment(
 
   // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário.
   const startMs = scheduled.getTime();
-  const endMs = startMs + SLOT_MINUTES * 60_000;
+  const endMs = startMs + DEFAULT_SLOT_MINUTES * 60_000;
 
 
   // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
@@ -533,7 +533,7 @@ async function rescheduleAppointment(
     apptId = (found as any).id;
   }
 
-  const endMs = scheduled.getTime() + SLOT_MINUTES * 60_000;
+  const endMs = scheduled.getTime() + DEFAULT_SLOT_MINUTES * 60_000;
   const { data: updated, error } = await admin
     .from("appointments")
     .update({
