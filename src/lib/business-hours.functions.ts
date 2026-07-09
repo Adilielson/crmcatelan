@@ -123,8 +123,10 @@ export const updateBusinessHours = createServerFn({ method: "POST" })
 
 /**
  * Resolve IANA timezone from a free-form address using public APIs:
- *  1) Nominatim (OpenStreetMap) -> lat/lng
+ *  1) Nominatim (OpenStreetMap) -> lat/lng (with abbreviation expansion + fallbacks)
  *  2) timeapi.io -> IANA timezone
+ * Helpers live in business-hours.server.ts so the server-fn split transform
+ * doesn't strip them.
  */
 export const resolveTimezoneFromAddress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -136,26 +138,14 @@ export const resolveTimezoneFromAddress = createServerFn({ method: "POST" })
     return { address: i.address.trim() };
   })
   .handler(async ({ data }) => {
-    const geoUrl =
-      "https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=" +
-      encodeURIComponent(data.address);
-
-    const geoRes = await fetch(geoUrl, {
-      headers: {
-        "User-Agent": "OticaCatelanCRM/1.0 (timezone-resolver)",
-        "Accept-Language": "pt-BR",
-      },
-    });
-    if (!geoRes.ok) throw new Error("Falha na geocodificação (Nominatim)");
-    const geo = (await geoRes.json()) as Array<{
-      lat: string;
-      lon: string;
-      display_name: string;
-    }>;
-    if (!Array.isArray(geo) || geo.length === 0) {
-      throw new Error("Endereço não encontrado");
+    const { geocodeAddress } = await import("./business-hours.server");
+    const hit = await geocodeAddress(data.address);
+    if (!hit) {
+      throw new Error(
+        `Endereço não encontrado no mapa. Tente incluir cidade e estado (ex.: "Rua X, 100, Campo Grande - MS").`,
+      );
     }
-    const { lat, lon, display_name } = geo[0];
+    const { lat, lon, display_name } = hit;
 
     const tzUrl = `https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lon}`;
     const tzRes = await fetch(tzUrl, { headers: { Accept: "application/json" } });
@@ -170,3 +160,5 @@ export const resolveTimezoneFromAddress = createServerFn({ method: "POST" })
       display_name,
     };
   });
+
+
