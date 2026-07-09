@@ -46,6 +46,12 @@ type UnitCtx = {
   setHours: React.Dispatch<React.SetStateAction<BusinessHours>>
   address: string
   setAddress: (v: string) => void
+  instagram: string
+  setInstagram: (v: string) => void
+  website: string
+  setWebsite: (v: string) => void
+  facebook: string
+  setFacebook: (v: string) => void
   tz: string
   tzLocation: string | null
   loading: boolean
@@ -68,6 +74,9 @@ function UnitProvider({ children }: { children: ReactNode }) {
   const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS)
   const [tz, setTz] = useState('America/Sao_Paulo')
   const [address, setAddress] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [website, setWebsite] = useState('')
+  const [facebook, setFacebook] = useState('')
   const [tzLocation, setTzLocation] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -79,6 +88,9 @@ function UnitProvider({ children }: { children: ReactNode }) {
         if (r.business_hours) setHours(r.business_hours)
         if (r.timezone) setTz(r.timezone)
         if (r.address) setAddress(r.address)
+        if (r.instagram) setInstagram(r.instagram)
+        if (r.website) setWebsite(r.website)
+        if (r.facebook) setFacebook(r.facebook)
       })
       .catch((e) => toast.error('Erro ao carregar dados da loja: ' + (e instanceof Error ? e.message : String(e))))
       .finally(() => setLoading(false))
@@ -106,7 +118,7 @@ function UnitProvider({ children }: { children: ReactNode }) {
   const save = async () => {
     setSaving(true)
     try {
-      await saveHours({ data: { business_hours: hours, timezone: tz, address } })
+      await saveHours({ data: { business_hours: hours, timezone: tz, address, instagram, website, facebook } })
       toast.success('Loja atualizada. A IA SDR vai respeitar a partir de agora.')
     } catch (e) {
       toast.error('Erro ao salvar: ' + (e instanceof Error ? e.message : String(e)))
@@ -117,7 +129,14 @@ function UnitProvider({ children }: { children: ReactNode }) {
 
   return (
     <UnitContext.Provider
-      value={{ hours, setHours, address, setAddress, tz, tzLocation, loading, saving, detectingTz, detectTimezone, save }}
+      value={{
+        hours, setHours,
+        address, setAddress,
+        instagram, setInstagram,
+        website, setWebsite,
+        facebook, setFacebook,
+        tz, tzLocation, loading, saving, detectingTz, detectTimezone, save,
+      }}
     >
       {children}
     </UnitContext.Provider>
