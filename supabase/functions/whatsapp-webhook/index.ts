@@ -484,6 +484,98 @@ async function persistMediaToStorage(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Transcrição de áudio (voice notes WhatsApp são OGG/Opus).
+// Usamos Google Gemini via chat/completions com input_audio (aceita ogg
+// nativamente); openai/gpt-4o-mini-transcribe rejeita OGG/Opus.
+// ─────────────────────────────────────────────────────────────────────────
+function audioFormatFromMime(mime: string | null | undefined): string | null {
+  if (!mime) return null;
+  const m = mime.split(";")[0].trim().toLowerCase();
+  if (m.startsWith("audio/ogg") || m.includes("opus")) return "ogg";
+  if (m === "audio/mpeg" || m === "audio/mp3") return "mp3";
+  if (m === "audio/wav" || m === "audio/x-wav") return "wav";
+  if (m === "audio/mp4" || m === "audio/m4a" || m === "audio/x-m4a") return "m4a";
+  if (m === "audio/webm") return "webm";
+  if (m === "audio/aac") return "aac";
+  if (m === "audio/flac") return "flac";
+  return null;
+}
+
+async function transcribeAudioFromUrl(
+  mediaUrl: string,
+  mime: string | null | undefined,
+): Promise<string | null> {
+  if (!LOVABLE_API_KEY) {
+    console.warn("[stt] LOVABLE_API_KEY ausente — pulando transcrição");
+    return null;
+  }
+  const fmt = audioFormatFromMime(mime);
+  if (!fmt) {
+    console.warn(`[stt] formato de áudio não suportado: ${mime}`);
+    return null;
+  }
+  try {
+    const res = await fetch(mediaUrl);
+    if (!res.ok) {
+      console.warn(`[stt] fetch áudio falhou: ${res.status}`);
+      return null;
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.length < 512) {
+      console.warn("[stt] áudio muito curto/vazio");
+      return null;
+    }
+    // Cap ~15 MiB pra evitar payloads absurdos
+    if (bytes.length > 15 * 1024 * 1024) {
+      console.warn("[stt] áudio > 15MiB, pulando");
+      return null;
+    }
+    // base64 em chunks (evita stack overflow com apply)
+    let bin = "";
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    const b64 = btoa(bin);
+
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Lovable-API-Key": LOVABLE_API_KEY,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Transcreva literalmente o áudio a seguir para português do Brasil. Retorne SOMENTE o texto falado, sem comentários, sem introdução, sem timestamps." },
+              { type: "input_audio", input_audio: { data: b64, format: fmt } },
+            ],
+          },
+        ],
+        temperature: 0,
+      }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      console.error(`[stt] gateway ${resp.status}: ${body.slice(0, 300)}`);
+      return null;
+    }
+    const j = await resp.json();
+    const text = String(j?.choices?.[0]?.message?.content ?? "").trim();
+    if (!text) return null;
+    console.log(`[stt] transcrição ok (${text.length} chars): ${text.slice(0, 120)}`);
+    return text;
+  } catch (e) {
+    console.error("[stt] erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 // Busca foto de perfil do contato via uazapi (POST /chat/GetNameAndImageURL).
 // Retorna URL pública (CDN da uazapi/WhatsApp). Pode retornar null se o contato
 // não tiver foto, se a privacidade impedir, ou se o endpoint falhar.
