@@ -259,6 +259,7 @@ function Settings() {
 
 
         <TabsContent value="unit">
+          <UnitProvider>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
               <section className="bg-white border border-border rounded-[14px] p-8 shadow-card relative overflow-hidden">
@@ -288,11 +289,7 @@ function Settings() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Email de Contato</Label>
                     <Input type="email" defaultValue="contato@oticacatelan.com" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
-                  <div className="sm:col-span-2">
-                    <p className="text-[10px] text-gray-400">
-                      O endereço da loja é editado na seção <strong>Horário & Localização</strong> abaixo — é ele que define o fuso horário usado pela IA SDR.
-                    </p>
-                  </div>
+                  <StoreAddressField />
                 </div>
               </section>
 
@@ -322,7 +319,9 @@ function Settings() {
               </div>
             </div>
           </div>
+          </UnitProvider>
         </TabsContent>
+
 
 
         <TabsContent value="automations" className="space-y-6">
