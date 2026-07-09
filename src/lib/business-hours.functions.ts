@@ -77,6 +77,9 @@ export const getBusinessHours = createServerFn({ method: "GET" })
       business_hours: (wc.data?.business_hours as BusinessHours | null) ?? null,
       timezone: (wc.data?.timezone as string | null) ?? "America/Sao_Paulo",
       address: (settings.address as string | null) ?? null,
+      instagram: (settings.instagram as string | null) ?? null,
+      website: (settings.website as string | null) ?? null,
+      facebook: (settings.facebook as string | null) ?? null,
     };
   });
 
