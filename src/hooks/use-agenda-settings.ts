@@ -24,6 +24,35 @@ export interface BlockedDate {
   reason: string | null;
 }
 
+export interface ConsultationType {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface ConsultationTypeHour {
+  id: string;
+  tenant_id: string;
+  consultation_type_id: string;
+  weekday: number;
+  is_active: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  slot_minutes: number;
+  saturday_recurrence: 'all' | 'even' | 'odd' | 'none';
+}
+
+export interface ConsultationTypeDateOverride {
+  id: string;
+  tenant_id: string;
+  consultation_type_id: string;
+  override_date: string;
+  is_available: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  note: string | null;
+}
+
 export const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 function useTenantId() {
