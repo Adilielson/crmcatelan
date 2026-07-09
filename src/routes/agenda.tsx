@@ -63,7 +63,7 @@ function Agenda() {
 
   
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [view, setView] = useState<'month' | 'day'>('month')
+  const [view, setView] = useState<'month' | 'week' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -87,10 +87,20 @@ function Agenda() {
   const monthEnd = endOfMonth(monthStart)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
-  
+
   const calendarDays = useMemo(() => {
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd })
   }, [calendarStart, calendarEnd])
+
+  const weekDays = useMemo(() => {
+    const ws = startOfWeek(currentDate, { weekStartsOn: 0 })
+    const we = endOfWeek(currentDate, { weekStartsOn: 0 })
+    return eachDayOfInterval({ start: ws, end: we })
+  }, [currentDate])
+
+  const dayHourSlots = useMemo(() => {
+    return Array.from({ length: 13 }, (_, i) => 8 + i) // 08h a 20h
+  }, [])
 
   const dayAppointments = useMemo(() => {
     return appointments.filter(appt => isSameDay(new Date(appt.date + 'T00:00:00'), selectedDay))
@@ -486,101 +496,180 @@ function Agenda() {
             <div className="p-8 border-b border-[#E3E6EB] flex items-center justify-between bg-white">
               <div className="flex items-center gap-6">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] leading-none mb-1">Mês de Referência</span>
+                  <span className="text-[10px] font-black text-[#A7ADB8] uppercase tracking-[0.2em] leading-none mb-1">
+                    {view === 'day' ? 'Dia' : view === 'week' ? 'Semana de' : 'Mês de Referência'}
+                  </span>
                   <h3 className="font-black text-xl text-ink capitalize tracking-tight">
-                    {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+                    {view === 'day'
+                      ? format(selectedDay, "EEEE, dd 'de' MMMM yyyy", { locale: ptBR })
+                      : view === 'week'
+                        ? `${format(weekDays[0], 'dd/MM', { locale: ptBR })} — ${format(weekDays[6], 'dd/MM/yyyy', { locale: ptBR })}`
+                        : format(currentDate, 'MMMM yyyy', { locale: ptBR })}
                   </h3>
                 </div>
                 <div className="flex border border-[#E3E6EB] rounded-[14px] bg-[#F6F7F9] p-1 shadow-inner">
-                  <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2.5 hover:bg-white hover:shadow-sm rounded-[10px] text-[#A7ADB8] hover:text-ink transition-all"><ChevronLeft className="w-5 h-5" /></button>
-                  <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2.5 hover:bg-white hover:shadow-sm rounded-[10px] text-[#A7ADB8] hover:text-ink transition-all"><ChevronRight className="w-5 h-5" /></button>
+                  <button
+                    onClick={() => {
+                      if (view === 'day') setSelectedDay(addDays(selectedDay, -1))
+                      else if (view === 'week') setCurrentDate(subWeeks(currentDate, 1))
+                      else setCurrentDate(subMonths(currentDate, 1))
+                    }}
+                    className="p-2.5 hover:bg-white hover:shadow-sm rounded-[10px] text-[#A7ADB8] hover:text-ink transition-all"
+                  ><ChevronLeft className="w-5 h-5" /></button>
+                  <button
+                    onClick={() => {
+                      if (view === 'day') setSelectedDay(addDays(selectedDay, 1))
+                      else if (view === 'week') setCurrentDate(addWeeks(currentDate, 1))
+                      else setCurrentDate(addMonths(currentDate, 1))
+                    }}
+                    className="p-2.5 hover:bg-white hover:shadow-sm rounded-[10px] text-[#A7ADB8] hover:text-ink transition-all"
+                  ><ChevronRight className="w-5 h-5" /></button>
                 </div>
               </div>
               <div className="flex bg-[#F6F7F9] p-1.5 rounded-[18px] border border-[#E3E6EB] shadow-inner">
-                <button 
+                <button
                   onClick={() => setView('month')}
                   className={cn("px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-[14px] transition-all", view === 'month' ? "bg-white shadow-md text-ink" : "text-[#A7ADB8] hover:text-ink")}
-                >
-                  Mês
-                </button>
-                <button 
-                   onClick={() => setView('day')}
+                >Mês</button>
+                <button
+                  onClick={() => setView('week')}
+                  className={cn("px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-[14px] transition-all", view === 'week' ? "bg-white shadow-md text-ink" : "text-[#A7ADB8] hover:text-ink")}
+                >Semana</button>
+                <button
+                  onClick={() => setView('day')}
                   className={cn("px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-[14px] transition-all", view === 'day' ? "bg-white shadow-md text-ink" : "text-[#A7ADB8] hover:text-ink")}
-                >
-                  Dia
-                </button>
+                >Dia</button>
               </div>
             </div>
-            
-            <div className="grid grid-cols-7 border-b border-border bg-black/10">
-              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-                <div key={day} className="p-4 text-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-600">
-                  {day}
+
+            {view === 'month' && (
+              <>
+                <div className="grid grid-cols-7 border-b border-border bg-black/10">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+                    <div key={day} className="p-4 text-center text-[10px] font-black uppercase tracking-[0.25em] text-gray-600">{day}</div>
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7">
-              {calendarDays.map((day, i) => {
-                const isSelected = isSameDay(day, selectedDay)
-                const isToday = isSameDay(day, new Date())
-                const dayAppts = appointments.filter(a => isSameDay(new Date(a.date + 'T00:00:00'), day))
-                const isCurrentMonth = format(day, 'MM') === format(currentDate, 'MM')
-                const closed = isDayFullyClosed(day, businessHours, blockedDates)
-
-                return (
-                  <div 
-                    key={i} 
-                    onClick={() => {
-                      setSelectedDay(day)
-                      setFormData(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') }))
-                    }}
-                    className={cn(
-                      "h-32 border-r border-b border-border p-3 transition-all cursor-pointer group relative overflow-hidden",
-                      !isCurrentMonth ? "bg-gray-50 opacity-40" : "bg-white hover:bg-gray-50/50",
-                      closed && isCurrentMonth && "bg-[repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6_6px,#ffffff_6px,#ffffff_12px)]",
-                      isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5"
-                    )}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <span className={cn(
-                        "text-[11px] font-black h-7 w-7 flex items-center justify-center rounded-lg transition-all",
-                        isToday ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "text-gray-400 group-hover:text-ink",
-                        !isCurrentMonth && "opacity-30"
-                      )}>
-                        {format(day, 'd')}
-                      </span>
-                      {closed && isCurrentMonth ? (
-                        <Badge className="text-[9px] h-5 px-1.5 bg-gray-200 text-gray-600 border-none font-black">FECHADO</Badge>
-                      ) : dayAppts.length > 0 && (
-                        <Badge className="text-[10px] h-5 px-1.5 bg-primary/20 text-primary border-none font-black">{dayAppts.length}</Badge>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      {dayAppts.slice(0, 2).map(appt => (
-                        <div 
-                          key={appt.id} 
-                          onClick={(e) => { e.stopPropagation(); openReschedule(appt) }}
-                          title="Clique para editar horário"
-                          className={cn(
-                            "text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight cursor-pointer hover:brightness-110 transition",
-                            appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30 shadow-sm" :
-                            appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30 shadow-sm" :
-                            "bg-white text-gray-500 border-border shadow-sm"
+                <div className="grid grid-cols-7">
+                  {calendarDays.map((day, i) => {
+                    const isSelected = isSameDay(day, selectedDay)
+                    const isToday = isSameDay(day, new Date())
+                    const dayAppts = appointments.filter(a => isSameDay(new Date(a.date + 'T00:00:00'), day))
+                    const isCurrentMonth = format(day, 'MM') === format(currentDate, 'MM')
+                    const closed = isDayFullyClosed(day, businessHours, blockedDates)
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => { setSelectedDay(day); setFormData(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') })) }}
+                        className={cn(
+                          "h-32 border-r border-b border-border p-3 transition-all cursor-pointer group relative overflow-hidden",
+                          !isCurrentMonth ? "bg-gray-50 opacity-40" : "bg-white hover:bg-gray-50/50",
+                          closed && isCurrentMonth && "bg-[repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6_6px,#ffffff_6px,#ffffff_12px)]",
+                          isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5"
+                        )}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className={cn("text-[11px] font-black h-7 w-7 flex items-center justify-center rounded-lg transition-all", isToday ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : "text-gray-400 group-hover:text-ink", !isCurrentMonth && "opacity-30")}>
+                            {format(day, 'd')}
+                          </span>
+                          {closed && isCurrentMonth ? (
+                            <Badge className="text-[9px] h-5 px-1.5 bg-gray-200 text-gray-600 border-none font-black">FECHADO</Badge>
+                          ) : dayAppts.length > 0 && (
+                            <Badge className="text-[10px] h-5 px-1.5 bg-primary/20 text-primary border-none font-black">{dayAppts.length}</Badge>
                           )}
-                        >
-                          <Clock className="w-2.5 h-2.5" />
-                          {appt.startTime} {appt.leadName}
                         </div>
-                      ))}
-                      {dayAppts.length > 2 && (
-                        <div className="text-[8px] text-slate-400 text-center font-bold">+{dayAppts.length - 2} mais</div>
-                      )}
+                        <div className="space-y-1">
+                          {dayAppts.slice(0, 2).map(appt => (
+                            <div key={appt.id} onClick={(e) => { e.stopPropagation(); openReschedule(appt) }} title="Clique para editar horário"
+                              className={cn("text-[9px] p-1.5 rounded-lg border truncate font-black flex items-center gap-1.5 uppercase tracking-tight cursor-pointer hover:brightness-110 transition",
+                                appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30 shadow-sm" :
+                                appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30 shadow-sm" :
+                                "bg-white text-gray-500 border-border shadow-sm")}>
+                              <Clock className="w-2.5 h-2.5" />
+                              {appt.startTime} {appt.leadName}
+                            </div>
+                          ))}
+                          {dayAppts.length > 2 && (<div className="text-[8px] text-slate-400 text-center font-bold">+{dayAppts.length - 2} mais</div>)}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {view === 'week' && (
+              <>
+                <div className="grid grid-cols-7 border-b border-border bg-black/10">
+                  {weekDays.map(day => (
+                    <div key={day.toISOString()} className="p-3 text-center">
+                      <div className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-600">{format(day, 'EEE', { locale: ptBR })}</div>
+                      <div className={cn("text-sm font-black mt-1", isSameDay(day, new Date()) ? "text-primary" : "text-ink")}>{format(day, 'dd/MM')}</div>
                     </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 min-h-[400px]">
+                  {weekDays.map((day, i) => {
+                    const isSelected = isSameDay(day, selectedDay)
+                    const dayAppts = appointments.filter(a => isSameDay(new Date(a.date + 'T00:00:00'), day)).sort((a, b) => a.startTime.localeCompare(b.startTime))
+                    const closed = isDayFullyClosed(day, businessHours, blockedDates)
+                    return (
+                      <div key={i}
+                        onClick={() => { setSelectedDay(day); setFormData(prev => ({ ...prev, date: format(day, 'yyyy-MM-dd') })) }}
+                        className={cn("border-r border-b border-border p-2 space-y-1.5 cursor-pointer transition-all overflow-y-auto",
+                          closed ? "bg-[repeating-linear-gradient(45deg,#f3f4f6,#f3f4f6_6px,#ffffff_6px,#ffffff_12px)]" : "bg-white hover:bg-gray-50/50",
+                          isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5")}>
+                        {closed && (<Badge className="text-[9px] bg-gray-200 text-gray-600 border-none font-black">FECHADO</Badge>)}
+                        {dayAppts.map(appt => (
+                          <div key={appt.id} onClick={(e) => { e.stopPropagation(); openReschedule(appt) }}
+                            className={cn("text-[10px] p-2 rounded-lg border font-black flex flex-col gap-0.5 cursor-pointer hover:brightness-110 transition",
+                              appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30" :
+                              appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30" :
+                              "bg-white text-gray-500 border-border")}>
+                            <div className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" />{appt.startTime}</div>
+                            <div className="truncate uppercase">{appt.leadName}</div>
+                          </div>
+                        ))}
+                        {!closed && dayAppts.length === 0 && (<div className="text-[9px] text-gray-300 text-center py-4">—</div>)}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {view === 'day' && (
+              <div className="p-4 max-h-[600px] overflow-y-auto">
+                {isDayFullyClosed(selectedDay, businessHours, blockedDates) ? (
+                  <div className="text-center py-12 text-gray-400"><Badge className="bg-gray-200 text-gray-600 border-none font-black">FECHADO</Badge></div>
+                ) : (
+                  <div className="space-y-1">
+                    {dayHourSlots.map(h => {
+                      const label = `${String(h).padStart(2, '0')}:00`
+                      const slotAppts = dayAppointments.filter(a => parseInt(a.startTime.split(':')[0], 10) === h)
+                      return (
+                        <div key={h} className="flex gap-3 border-b border-border/40 py-2 min-h-[52px]">
+                          <div className="w-14 text-[10px] font-black text-gray-400 uppercase tracking-widest pt-1">{label}</div>
+                          <div className="flex-1 space-y-1.5">
+                            {slotAppts.length === 0 ? (
+                              <div className="text-[10px] text-gray-300">—</div>
+                            ) : slotAppts.map(appt => (
+                              <div key={appt.id} onClick={() => openReschedule(appt)}
+                                className={cn("text-xs p-2.5 rounded-lg border font-black flex items-center justify-between cursor-pointer hover:brightness-110 transition",
+                                  appt.status === 'confirmado' ? "bg-success/10 text-success border-success/30" :
+                                  appt.status === 'pendente' ? "bg-primary/10 text-primary border-primary/30" :
+                                  "bg-white text-gray-500 border-border")}>
+                                <span className="uppercase tracking-tight"><Clock className="w-3 h-3 inline mr-1.5" />{appt.startTime} · {appt.leadName}</span>
+                                <span className="text-[9px] opacity-70">{appt.examType}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

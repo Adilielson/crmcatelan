@@ -62,6 +62,54 @@ export const AGENT_TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "remarcar_agendamento",
+      description:
+        "Remarca (reagenda) um agendamento EXISTENTE do lead para um novo horário. USE ESTA FERRAMENTA sempre que o cliente pedir para 'remarcar', 'mudar o horário', 'trocar para outra hora/dia' um agendamento que já foi criado. NUNCA chame criar_agendamento nesse caso — isso duplicaria o registro. Se não passar appointment_id, o sistema remarca automaticamente o próximo agendamento futuro pendente/confirmado do lead.",
+      parameters: {
+        type: "object",
+        required: ["novo_horario_iso"],
+        properties: {
+          appointment_id: {
+            type: "string",
+            description: "ID do agendamento a remarcar (opcional). Se omitido, remarca o próximo agendamento futuro pendente/confirmado do lead.",
+          },
+          novo_horario_iso: {
+            type: "string",
+            description: "Novo horário em ISO 8601 com offset -03:00 (ex: 2026-07-10T10:00:00-03:00).",
+          },
+          motivo: {
+            type: "string",
+            description: "Motivo da remarcação (opcional).",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "cancelar_agendamento",
+      description:
+        "Cancela um agendamento existente do lead. Use quando o cliente pedir para cancelar/desmarcar. Se não passar appointment_id, cancela o próximo agendamento futuro pendente/confirmado.",
+      parameters: {
+        type: "object",
+        properties: {
+          appointment_id: {
+            type: "string",
+            description: "ID do agendamento a cancelar (opcional).",
+          },
+          motivo: {
+            type: "string",
+            description: "Motivo do cancelamento (opcional).",
+          },
+        },
+      },
+    },
+  },
+
+  {
+    type: "function" as const,
+    function: {
       name: "atualizar_qualificacao_lead",
       description:
         "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
@@ -372,6 +420,91 @@ async function createAppointment(
   };
 }
 
+async function rescheduleAppointment(
+  admin: Supa,
+  ctx: { tenantId: string; leadId: string | null },
+  args: { appointment_id?: string; novo_horario_iso: string; motivo?: string },
+): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
+  if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
+  const scheduled = new Date(args.novo_horario_iso);
+  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
+  if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível remarcar para o passado." };
+
+  let apptId = args.appointment_id;
+  if (!apptId) {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id, scheduled_at, status")
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .in("status", ["pending", "confirmed"])
+      .gte("scheduled_at", new Date(Date.now() - 60 * 60_000).toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para remarcar. Use criar_agendamento." };
+    apptId = (found as any).id;
+  }
+
+  const endMs = scheduled.getTime() + SLOT_MINUTES * 60_000;
+  const { data: updated, error } = await admin
+    .from("appointments")
+    .update({
+      scheduled_at: scheduled.toISOString(),
+      end_at: new Date(endMs).toISOString(),
+      status: "pending",
+      notes: args.motivo ? `Remarcado via IA: ${args.motivo}` : "Remarcado via IA (WhatsApp)",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", apptId!)
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId)
+    .select("id")
+    .single();
+
+  if (error) return { ok: false, message: `Erro ao remarcar: ${error.message}` };
+  return { ok: true, message: "Agendamento remarcado com sucesso.", appointment_id: (updated as any).id };
+}
+
+async function cancelAppointment(
+  admin: Supa,
+  ctx: { tenantId: string; leadId: string | null },
+  args: { appointment_id?: string; motivo?: string },
+): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
+  if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
+
+  let apptId = args.appointment_id;
+  if (!apptId) {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id")
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .in("status", ["pending", "confirmed"])
+      .gte("scheduled_at", new Date(Date.now() - 60 * 60_000).toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para cancelar." };
+    apptId = (found as any).id;
+  }
+
+  const { error } = await admin
+    .from("appointments")
+    .update({
+      status: "cancelled",
+      notes: args.motivo ? `Cancelado via IA: ${args.motivo}` : "Cancelado via IA (WhatsApp)",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", apptId!)
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId);
+
+  if (error) return { ok: false, message: `Erro ao cancelar: ${error.message}` };
+  return { ok: true, message: "Agendamento cancelado.", appointment_id: apptId };
+}
+
+
 async function transferToHuman(
   admin: Supa,
   ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
@@ -547,6 +680,14 @@ export async function executeToolCall(
     }
     if (name === "criar_agendamento") {
       const res = await createAppointment(admin, ctx, args);
+      return JSON.stringify(res);
+    }
+    if (name === "remarcar_agendamento") {
+      const res = await rescheduleAppointment(admin, ctx, args);
+      return JSON.stringify(res);
+    }
+    if (name === "cancelar_agendamento") {
+      const res = await cancelAppointment(admin, ctx, args);
       return JSON.stringify(res);
     }
     if (name === "transferir_para_humano") {
