@@ -83,7 +83,24 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
               continue;
             }
 
-            const text = render(TEMPLATES[f.template_key] ?? 'Olá {nome}!', {
+            const { data: tpl } = await supabaseAdmin
+              .from('reminder_templates')
+              .select('message_template, enabled')
+              .eq('tenant_id', f.tenant_id)
+              .eq('kind', 'followup')
+              .eq('step_key', f.template_key)
+              .maybeSingle();
+
+            if (tpl && tpl.enabled === false) {
+              await supabaseAdmin
+                .from('lead_followups')
+                .update({ status: 'skipped', error_message: 'Template desativado' })
+                .eq('id', f.id);
+              skipped++;
+              continue;
+            }
+
+            const text = render(tpl?.message_template ?? 'Olá {nome}!', {
               nome: lead.full_name.split(' ')[0],
               telefone: lead.phone,
             });
