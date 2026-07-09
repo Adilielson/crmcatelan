@@ -87,10 +87,20 @@ function Agenda() {
   const monthEnd = endOfMonth(monthStart)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
-  
+
   const calendarDays = useMemo(() => {
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd })
   }, [calendarStart, calendarEnd])
+
+  const weekDays = useMemo(() => {
+    const ws = startOfWeek(currentDate, { weekStartsOn: 0 })
+    const we = endOfWeek(currentDate, { weekStartsOn: 0 })
+    return eachDayOfInterval({ start: ws, end: we })
+  }, [currentDate])
+
+  const dayHourSlots = useMemo(() => {
+    return Array.from({ length: 13 }, (_, i) => 8 + i) // 08h a 20h
+  }, [])
 
   const dayAppointments = useMemo(() => {
     return appointments.filter(appt => isSameDay(new Date(appt.date + 'T00:00:00'), selectedDay))
