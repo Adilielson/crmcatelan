@@ -21,6 +21,7 @@ import {
   BusinessHour,
 } from '@/hooks/use-agenda-settings';
 import { BR_TIMEZONES, useTenantTimezone, useUpdateTenantTimezone } from '@/hooks/use-tenant-timezone';
+import { ExamHoursTab } from './ExamHoursTab';
 
 
 interface Props {
