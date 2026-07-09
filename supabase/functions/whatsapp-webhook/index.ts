@@ -66,10 +66,13 @@ async function generateSdrReply(
     const useTools = !!toolCtx;
 
     for (let iter = 0; iter < 4; iter++) {
+      const model = "openai/gpt-5-mini";
+      // gpt-5* / o1 / o3 no gateway só aceitam temperature=1
+      const fixedTempModel = /^openai\/(gpt-5|o1|o3)/i.test(model);
       const body: Record<string, unknown> = {
-        model: "openai/gpt-5-mini",
+        model,
         messages,
-        temperature,
+        temperature: fixedTempModel ? 1 : temperature,
       };
       if (useTools) {
         body.tools = AGENT_TOOLS;
@@ -701,7 +704,7 @@ async function extractNameFromMessage(message: string): Promise<string | null> {
           },
           { role: "user", content: message.slice(0, 300) },
         ],
-        temperature: 0,
+        temperature: 1,
         response_format: { type: "json_object" },
       }),
     });
