@@ -704,7 +704,7 @@ async function extractNameFromMessage(message: string): Promise<string | null> {
           },
           { role: "user", content: message.slice(0, 300) },
         ],
-        temperature: 0,
+        temperature: 1,
         response_format: { type: "json_object" },
       }),
     });
