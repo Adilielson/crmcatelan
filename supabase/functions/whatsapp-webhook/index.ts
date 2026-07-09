@@ -884,7 +884,7 @@ Deno.serve(async (req) => {
         b.image, b.profilePicUrl, b.avatar,
       );
 
-      const text = extractText(message) || extractText(b);
+      let text = extractText(message) || extractText(b);
       const media = extractMedia(message, b);
       const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
