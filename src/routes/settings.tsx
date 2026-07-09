@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings as SettingsIcon, Store, Shield, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2, KeyRound, Target, ShieldAlert } from 'lucide-react'
+import { Settings as SettingsIcon, Store, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2, KeyRound, Target, ShieldAlert } from 'lucide-react'
 import { GoalsSettings } from '@/components/settings/GoalsSettings'
 import { NoShowSettingsSection } from '@/components/settings/NoShowSettingsSection'
 import { WhatsAppConfig } from '@/pages/WhatsAppConfig'
