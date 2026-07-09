@@ -405,6 +405,19 @@ async function createAppointment(
 
   if (error) {
     return { ok: false, message: `Erro ao salvar: ${error.message}` };
+  }
+
+  // Move lead para 'scheduled'
+  await admin
+    .from("leads")
+    .update({ status: "scheduled", custom_column_id: null, updated_at: new Date().toISOString() })
+    .eq("id", ctx.leadId);
+
+  return {
+    ok: true,
+    message: "Agendamento criado com sucesso.",
+    appointment_id: (inserted as any).id,
+  };
 }
 
 async function rescheduleAppointment(
@@ -491,18 +504,6 @@ async function cancelAppointment(
   return { ok: true, message: "Agendamento cancelado.", appointment_id: apptId };
 }
 
-  // Move lead para 'scheduled'
-  await admin
-    .from("leads")
-    .update({ status: "scheduled", custom_column_id: null, updated_at: new Date().toISOString() })
-    .eq("id", ctx.leadId);
-
-  return {
-    ok: true,
-    message: "Agendamento criado com sucesso.",
-    appointment_id: (inserted as any).id,
-  };
-}
 
 async function transferToHuman(
   admin: Supa,
