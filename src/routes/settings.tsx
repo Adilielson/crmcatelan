@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { useAutomations } from '@/hooks/use-automations'
 import { toast } from 'sonner'
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useServerFn } from '@tanstack/react-start'
 import { getBusinessHours, updateBusinessHours, resolveTimezoneFromAddress, type BusinessHours, type DayKey } from '@/lib/business-hours.functions'
 
@@ -38,7 +38,30 @@ const DEFAULT_HOURS: BusinessHours = {
   thu: ['09:00', '18:00'], fri: ['09:00', '18:00'], sat: ['09:00', '13:00'], sun: null,
 }
 
-function BusinessHoursSection() {
+// ============================================================
+// Shared state for Unidade tab: hours + address + timezone
+// ============================================================
+type UnitCtx = {
+  hours: BusinessHours
+  setHours: React.Dispatch<React.SetStateAction<BusinessHours>>
+  address: string
+  setAddress: (v: string) => void
+  tz: string
+  tzLocation: string | null
+  loading: boolean
+  saving: boolean
+  detectingTz: boolean
+  detectTimezone: () => Promise<void>
+  save: () => Promise<void>
+}
+const UnitContext = createContext<UnitCtx | null>(null)
+const useUnit = () => {
+  const ctx = useContext(UnitContext)
+  if (!ctx) throw new Error('useUnit must be used within UnitProvider')
+  return ctx
+}
+
+function UnitProvider({ children }: { children: ReactNode }) {
   const fetchHours = useServerFn(getBusinessHours)
   const saveHours = useServerFn(updateBusinessHours)
   const resolveTz = useServerFn(resolveTimezoneFromAddress)
@@ -57,20 +80,9 @@ function BusinessHoursSection() {
         if (r.timezone) setTz(r.timezone)
         if (r.address) setAddress(r.address)
       })
-      .catch((e) => toast.error('Erro ao carregar horário: ' + (e instanceof Error ? e.message : String(e))))
+      .catch((e) => toast.error('Erro ao carregar dados da loja: ' + (e instanceof Error ? e.message : String(e))))
       .finally(() => setLoading(false))
   }, [])
-
-  const toggleDay = (k: DayKey) => {
-    setHours((h) => ({ ...h, [k]: h[k] ? null : ['09:00', '18:00'] }))
-  }
-  const setTime = (k: DayKey, idx: 0 | 1, val: string) => {
-    setHours((h) => {
-      const cur = h[k] ?? ['09:00', '18:00']
-      const next: [string, string] = idx === 0 ? [val, cur[1]] : [cur[0], val]
-      return { ...h, [k]: next }
-    })
-  }
 
   const detectTimezone = async () => {
     const addr = address.trim()
@@ -95,12 +107,88 @@ function BusinessHoursSection() {
     setSaving(true)
     try {
       await saveHours({ data: { business_hours: hours, timezone: tz, address } })
-      toast.success('Horário e localização salvos. A IA SDR vai respeitar a partir de agora.')
+      toast.success('Loja atualizada. A IA SDR vai respeitar a partir de agora.')
     } catch (e) {
       toast.error('Erro ao salvar: ' + (e instanceof Error ? e.message : String(e)))
     } finally {
       setSaving(false)
     }
+  }
+
+  return (
+    <UnitContext.Provider
+      value={{ hours, setHours, address, setAddress, tz, tzLocation, loading, saving, detectingTz, detectTimezone, save }}
+    >
+      {children}
+    </UnitContext.Provider>
+  )
+}
+
+// ============================================================
+// Store address + auto-detected timezone (shown in Informações Gerais)
+// ============================================================
+function StoreAddressField() {
+  const { address, setAddress, tz, tzLocation, detectTimezone, detectingTz, loading } = useUnit()
+  return (
+    <>
+      <div className="space-y-2 sm:col-span-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Endereço da Loja</Label>
+        <div className="flex gap-2">
+          <Input
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            onBlur={detectTimezone}
+            placeholder="Rua, número, bairro, cidade - UF"
+            disabled={loading}
+            className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={detectTimezone}
+            disabled={detectingTz || loading || address.trim().length < 5}
+            className="h-12 text-[10px] font-black uppercase tracking-widest rounded-xl"
+          >
+            {detectingTz ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Detectar fuso'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2 sm:col-span-2">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Fuso Horário (detectado do endereço)</Label>
+        <div className="flex items-center gap-2 h-12 px-3 rounded-xl bg-gray-50 border border-border">
+          <Globe className="w-4 h-4 text-primary" />
+          <span className="text-xs font-black text-ink">{tz}</span>
+          {tzLocation && (
+            <span className="text-[10px] text-gray-500 truncate ml-2" title={tzLocation}>
+              · {tzLocation}
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-gray-400">
+          O fuso é resolvido automaticamente pelo endereço acima e persistido junto com o horário de funcionamento.
+        </p>
+      </div>
+    </>
+  )
+}
+
+// ============================================================
+// Weekly business hours
+// ============================================================
+function BusinessHoursSection() {
+  const { hours, setHours, save, saving, loading } = useUnit()
+
+  const toggleDay = (k: DayKey) => {
+    setHours((h) => ({ ...h, [k]: h[k] ? null : ['09:00', '18:00'] }))
+  }
+  const setTime = (k: DayKey, idx: 0 | 1, val: string) => {
+    setHours((h) => {
+      const cur = h[k] ?? ['09:00', '18:00']
+      const next: [string, string] = idx === 0 ? [val, cur[1]] : [cur[0], val]
+      return { ...h, [k]: next }
+    })
   }
 
   return (
@@ -113,7 +201,7 @@ function BusinessHoursSection() {
           Horário de Funcionamento
         </h3>
         <Button onClick={save} disabled={saving || loading} size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest">
-          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar'}
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar loja'}
         </Button>
       </div>
       <p className="text-[11px] text-gray-500 mb-4">
@@ -141,53 +229,10 @@ function BusinessHoursSection() {
           )
         })}
       </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-4">
-        <div>
-          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-            Endereço da Loja
-          </Label>
-          <p className="text-[10px] text-gray-400 mt-1 mb-2">
-            O fuso horário é detectado automaticamente a partir do endereço.
-          </p>
-          <div className="flex gap-2">
-            <Input
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              onBlur={detectTimezone}
-              placeholder="Rua, número, bairro, cidade - UF"
-              disabled={loading}
-              className="h-10 bg-white border-border text-ink flex-1"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={detectTimezone}
-              disabled={detectingTz || loading || address.trim().length < 5}
-              className="h-10 text-[10px] font-black uppercase tracking-widest"
-            >
-              {detectingTz ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Detectar fuso'}
-            </Button>
-          </div>
-        </div>
-
-        <div>
-          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Fuso Horário (detectado)</Label>
-          <div className="mt-2 flex items-center gap-2 h-10 px-3 rounded-lg bg-gray-50 border border-border">
-            <Globe className="w-4 h-4 text-primary" />
-            <span className="text-xs font-black text-ink">{tz}</span>
-            {tzLocation && (
-              <span className="text-[10px] text-gray-500 truncate ml-2" title={tzLocation}>
-                · {tzLocation}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
     </section>
   )
 }
+
 
 
 function Settings() {
@@ -214,6 +259,7 @@ function Settings() {
 
 
         <TabsContent value="unit">
+          <UnitProvider>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
               <section className="bg-white border border-border rounded-[14px] p-8 shadow-card relative overflow-hidden">
@@ -243,11 +289,7 @@ function Settings() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Email de Contato</Label>
                     <Input type="email" defaultValue="contato@oticacatelan.com" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
-                  <div className="sm:col-span-2">
-                    <p className="text-[10px] text-gray-400">
-                      O endereço da loja é editado na seção <strong>Horário & Localização</strong> abaixo — é ele que define o fuso horário usado pela IA SDR.
-                    </p>
-                  </div>
+                  <StoreAddressField />
                 </div>
               </section>
 
@@ -277,7 +319,9 @@ function Settings() {
               </div>
             </div>
           </div>
+          </UnitProvider>
         </TabsContent>
+
 
 
         <TabsContent value="automations" className="space-y-6">
