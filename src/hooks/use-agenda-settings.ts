@@ -24,6 +24,35 @@ export interface BlockedDate {
   reason: string | null;
 }
 
+export interface ConsultationType {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface ConsultationTypeHour {
+  id: string;
+  tenant_id: string;
+  consultation_type_id: string;
+  weekday: number;
+  is_active: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  slot_minutes: number;
+  saturday_recurrence: 'all' | 'even' | 'odd' | 'none';
+}
+
+export interface ConsultationTypeDateOverride {
+  id: string;
+  tenant_id: string;
+  consultation_type_id: string;
+  override_date: string;
+  is_available: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  note: string | null;
+}
+
 export const WEEKDAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 function useTenantId() {
@@ -113,6 +142,114 @@ export function useDeleteBlockedDate() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['blocked_dates', tenantId] });
       toast.success('Bloqueio removido');
+    },
+    onError: (e: any) => toast.error(`Erro: ${e.message}`),
+  });
+}
+
+// ============================================================
+// Consultation Types + Hours per Exam
+// ============================================================
+
+export function useConsultationTypes() {
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['consultation_types', tenantId],
+    enabled: !!tenantId,
+    queryFn: async (): Promise<ConsultationType[]> => {
+      const { data, error } = await (supabase as any)
+        .from('consultation_types')
+        .select('id,name,is_active')
+        .eq('tenant_id', tenantId!)
+        .order('name');
+      if (error) throw error;
+      return (data ?? []) as ConsultationType[];
+    },
+  });
+}
+
+export function useConsultationTypeHours() {
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['consultation_type_hours', tenantId],
+    enabled: !!tenantId,
+    queryFn: async (): Promise<ConsultationTypeHour[]> => {
+      const { data, error } = await (supabase as any)
+        .from('consultation_type_hours')
+        .select('*')
+        .eq('tenant_id', tenantId!);
+      if (error) throw error;
+      return (data ?? []) as ConsultationTypeHour[];
+    },
+  });
+}
+
+export function useUpsertConsultationTypeHour() {
+  const qc = useQueryClient();
+  const tenantId = useTenantId();
+  return useMutation({
+    mutationFn: async (row: Partial<ConsultationTypeHour> & { consultation_type_id: string; weekday: number }) => {
+      if (!tenantId) throw new Error('Tenant não identificado');
+      const { error } = await (supabase as any)
+        .from('consultation_type_hours')
+        .upsert(
+          { ...row, tenant_id: tenantId },
+          { onConflict: 'consultation_type_id,weekday' },
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['consultation_type_hours', tenantId] }),
+    onError: (e: any) => toast.error(`Erro ao salvar: ${e.message}`),
+  });
+}
+
+export function useConsultationTypeDateOverrides() {
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['consultation_type_date_overrides', tenantId],
+    enabled: !!tenantId,
+    queryFn: async (): Promise<ConsultationTypeDateOverride[]> => {
+      const { data, error } = await (supabase as any)
+        .from('consultation_type_date_overrides')
+        .select('*')
+        .eq('tenant_id', tenantId!)
+        .order('override_date');
+      if (error) throw error;
+      return (data ?? []) as ConsultationTypeDateOverride[];
+    },
+  });
+}
+
+export function useAddConsultationTypeOverride() {
+  const qc = useQueryClient();
+  const tenantId = useTenantId();
+  return useMutation({
+    mutationFn: async (input: Partial<ConsultationTypeDateOverride> & { consultation_type_id: string; override_date: string; is_available: boolean }) => {
+      if (!tenantId) throw new Error('Tenant não identificado');
+      const { error } = await (supabase as any)
+        .from('consultation_type_date_overrides')
+        .upsert({ ...input, tenant_id: tenantId }, { onConflict: 'consultation_type_id,override_date' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['consultation_type_date_overrides', tenantId] });
+      toast.success('Exceção adicionada');
+    },
+    onError: (e: any) => toast.error(`Erro: ${e.message}`),
+  });
+}
+
+export function useDeleteConsultationTypeOverride() {
+  const qc = useQueryClient();
+  const tenantId = useTenantId();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from('consultation_type_date_overrides').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['consultation_type_date_overrides', tenantId] });
+      toast.success('Exceção removida');
     },
     onError: (e: any) => toast.error(`Erro: ${e.message}`),
   });
