@@ -682,6 +682,14 @@ export async function executeToolCall(
       const res = await createAppointment(admin, ctx, args);
       return JSON.stringify(res);
     }
+    if (name === "remarcar_agendamento") {
+      const res = await rescheduleAppointment(admin, ctx, args);
+      return JSON.stringify(res);
+    }
+    if (name === "cancelar_agendamento") {
+      const res = await cancelAppointment(admin, ctx, args);
+      return JSON.stringify(res);
+    }
     if (name === "transferir_para_humano") {
       const res = await transferToHuman(admin, ctx, args);
       return JSON.stringify(res);
