@@ -1,0 +1,1 @@
+UPDATE public.appointments SET status='cancelled', notes = COALESCE(notes,'') || ' [duplicata cancelada em limpeza]', updated_at = now() WHERE id IN ('1822e836-9590-43f8-954a-ec988bf7e7a6','35ece68c-b708-412d-bcc9-7eea69dc314e','8d581cee-9ce7-4b04-afca-081e12540baa');
