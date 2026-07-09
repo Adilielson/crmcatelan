@@ -39,13 +39,17 @@ export function AgendaSettingsDialog({ open, onOpenChange }: Props) {
         </DialogHeader>
 
         <Tabs defaultValue="hours" className="mt-2">
-          <TabsList className="mb-4">
-            <TabsTrigger value="hours"><Clock className="w-3.5 h-3.5 mr-2" /> Horários da semana</TabsTrigger>
-            <TabsTrigger value="blocks"><Ban className="w-3.5 h-3.5 mr-2" /> Dias bloqueados</TabsTrigger>
+          <TabsList className="mb-4 flex flex-wrap h-auto gap-1">
+            <TabsTrigger value="hours"><Clock className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden sm:inline">Horários da </span>Loja</TabsTrigger>
+            <TabsTrigger value="exams"><Stethoscope className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden sm:inline">Horários por </span>Exame</TabsTrigger>
+            <TabsTrigger value="blocks"><Ban className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden sm:inline">Dias </span>Bloqueados</TabsTrigger>
           </TabsList>
 
           <TabsContent value="hours">
             <BusinessHoursTab />
+          </TabsContent>
+          <TabsContent value="exams">
+            <ExamHoursTab />
           </TabsContent>
           <TabsContent value="blocks">
             <BlockedDatesTab />
