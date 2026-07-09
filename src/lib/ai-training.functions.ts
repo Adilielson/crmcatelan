@@ -16,6 +16,7 @@ export type AiConfig = {
   goal: string;
   model_temperature: number;
   training_mode: boolean;
+  autopilot_enabled: boolean;
   rejection_instructions: string;
   response_restrictions: string[];
   updated_at: string;
