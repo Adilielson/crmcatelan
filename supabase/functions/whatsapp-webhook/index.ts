@@ -1039,10 +1039,7 @@ Deno.serve(async (req) => {
           if (logErr) console.error("[webhook] log insert error:", logErr.message);
         }
 
-        // Sobrescreve `text` local pra que a IA SDR abaixo veja a transcrição
-        // no fluxo (extração de nome, etc.)
-        // eslint-disable-next-line no-param-reassign
-        // @ts-expect-error - text é usado adiante nesta closure
+        // Propaga a transcrição pro fluxo da IA SDR abaixo (histórico, nome, etc.)
         text = effectiveText;
 
 
