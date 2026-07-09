@@ -229,14 +229,22 @@ export function useWhatsAppChat() {
   useEffect(() => { load(); }, [load]);
 
   // Fallback de sincronização: se o realtime perder algum evento enquanto a aba
-  // está em segundo plano, a lista se atualiza sozinha sem depender de reload.
+  // está em segundo plano, refetch periódico + refetch ao ganhar foco.
   useEffect(() => {
     if (!tenant?.id) return;
-    const id = window.setInterval(() => { void load(true); }, 15_000);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(() => { void load(true); }, 5_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') void load(true); };
+    const onFocus = () => { void load(true); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [tenant?.id, load]);
 
-  // Realtime: novas mensagens
+  // Realtime: novas mensagens + updates (status, mídia, transcrição)
   useEffect(() => {
     if (!tenant?.id) return;
     const channel = supabase
@@ -257,6 +265,28 @@ export function useWhatsAppChat() {
               ? prev
               : [...prev, mapRowSync(row, resolved)].sort((a, b) => (a.at > b.at ? 1 : -1))
           );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'whatsapp_message_logs',
+          filter: `tenant_id=eq.${tenant.id}`,
+        },
+        async (payload) => {
+          const row = payload.new as LogRow;
+          const resolved = await resolveMediaUrl(row);
+          setMessages((prev) => {
+            const idx = prev.findIndex((m) => m.id === row.id);
+            if (idx === -1) {
+              return [...prev, mapRowSync(row, resolved)].sort((a, b) => (a.at > b.at ? 1 : -1));
+            }
+            const next = prev.slice();
+            next[idx] = mapRowSync(row, resolved);
+            return next;
+          });
         }
       )
       .subscribe();

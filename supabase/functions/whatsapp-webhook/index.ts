@@ -484,6 +484,98 @@ async function persistMediaToStorage(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Transcrição de áudio (voice notes WhatsApp são OGG/Opus).
+// Usamos Google Gemini via chat/completions com input_audio (aceita ogg
+// nativamente); openai/gpt-4o-mini-transcribe rejeita OGG/Opus.
+// ─────────────────────────────────────────────────────────────────────────
+function audioFormatFromMime(mime: string | null | undefined): string | null {
+  if (!mime) return null;
+  const m = mime.split(";")[0].trim().toLowerCase();
+  if (m.startsWith("audio/ogg") || m.includes("opus")) return "ogg";
+  if (m === "audio/mpeg" || m === "audio/mp3") return "mp3";
+  if (m === "audio/wav" || m === "audio/x-wav") return "wav";
+  if (m === "audio/mp4" || m === "audio/m4a" || m === "audio/x-m4a") return "m4a";
+  if (m === "audio/webm") return "webm";
+  if (m === "audio/aac") return "aac";
+  if (m === "audio/flac") return "flac";
+  return null;
+}
+
+async function transcribeAudioFromUrl(
+  mediaUrl: string,
+  mime: string | null | undefined,
+): Promise<string | null> {
+  if (!LOVABLE_API_KEY) {
+    console.warn("[stt] LOVABLE_API_KEY ausente — pulando transcrição");
+    return null;
+  }
+  const fmt = audioFormatFromMime(mime);
+  if (!fmt) {
+    console.warn(`[stt] formato de áudio não suportado: ${mime}`);
+    return null;
+  }
+  try {
+    const res = await fetch(mediaUrl);
+    if (!res.ok) {
+      console.warn(`[stt] fetch áudio falhou: ${res.status}`);
+      return null;
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.length < 512) {
+      console.warn("[stt] áudio muito curto/vazio");
+      return null;
+    }
+    // Cap ~15 MiB pra evitar payloads absurdos
+    if (bytes.length > 15 * 1024 * 1024) {
+      console.warn("[stt] áudio > 15MiB, pulando");
+      return null;
+    }
+    // base64 em chunks (evita stack overflow com apply)
+    let bin = "";
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    const b64 = btoa(bin);
+
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Lovable-API-Key": LOVABLE_API_KEY,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Transcreva literalmente o áudio a seguir para português do Brasil. Retorne SOMENTE o texto falado, sem comentários, sem introdução, sem timestamps." },
+              { type: "input_audio", input_audio: { data: b64, format: fmt } },
+            ],
+          },
+        ],
+        temperature: 0,
+      }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      console.error(`[stt] gateway ${resp.status}: ${body.slice(0, 300)}`);
+      return null;
+    }
+    const j = await resp.json();
+    const text = String(j?.choices?.[0]?.message?.content ?? "").trim();
+    if (!text) return null;
+    console.log(`[stt] transcrição ok (${text.length} chars): ${text.slice(0, 120)}`);
+    return text;
+  } catch (e) {
+    console.error("[stt] erro:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 // Busca foto de perfil do contato via uazapi (POST /chat/GetNameAndImageURL).
 // Retorna URL pública (CDN da uazapi/WhatsApp). Pode retornar null se o contato
 // não tiver foto, se a privacidade impedir, ou se o endpoint falhar.
@@ -792,7 +884,7 @@ Deno.serve(async (req) => {
         b.image, b.profilePicUrl, b.avatar,
       );
 
-      const text = extractText(message) || extractText(b);
+      let text = extractText(message) || extractText(b);
       const media = extractMedia(message, b);
       const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
@@ -909,9 +1001,24 @@ Deno.serve(async (req) => {
           }
         }
 
+        // ── Transcrição de áudio (voice notes / audio messages) ──────────
+        // Se veio áudio, transcreve com Gemini e mescla no texto pra que:
+        //  1) o chat mostre "🎙️ Áudio: <transcrição>"
+        //  2) a IA SDR receba o conteúdo falado no histórico (não só "áudio")
+        let effectiveText = text;
+        if ((media.kind === "audio") && mediaUrl) {
+          const transcript = await transcribeAudioFromUrl(mediaUrl, finalMime);
+          if (transcript) {
+            const prefix = "🎙️ Áudio: ";
+            effectiveText = effectiveText && effectiveText.trim()
+              ? `${effectiveText.trim()}\n${prefix}${transcript}`
+              : `${prefix}${transcript}`;
+          }
+        }
+
         // Não polui o histórico com mensagens vazias (sem texto e sem mídia) —
         // geralmente são eventos de status/notificação mal classificados.
-        const hasText = !!(text && text.trim());
+        const hasText = !!(effectiveText && effectiveText.trim());
         const hasMedia = !!(mediaUrl || mediaStoragePath);
         if (!hasText && !hasMedia) {
           console.log(`[webhook] ignorando msg sem texto/mídia phone=${senderPhone} type=${msgType}`);
@@ -921,8 +1028,8 @@ Deno.serve(async (req) => {
             recipient_phone: senderPhone,
             message_type: msgType,
             status: "received",
-            error_message: hasText ? text!.slice(0, 500) : null,
-            body: hasText ? text : null,
+            error_message: hasText ? effectiveText!.slice(0, 500) : null,
+            body: hasText ? effectiveText : null,
             sender_name: senderName,
             sender_avatar_url: senderAvatarUrl,
             media_url: mediaUrl,
@@ -931,6 +1038,9 @@ Deno.serve(async (req) => {
           });
           if (logErr) console.error("[webhook] log insert error:", logErr.message);
         }
+
+        // Propaga a transcrição pro fluxo da IA SDR abaixo (histórico, nome, etc.)
+        text = effectiveText;
 
 
 
