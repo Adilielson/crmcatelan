@@ -692,6 +692,117 @@ export type Database = {
           },
         ]
       }
+      consultation_type_date_overrides: {
+        Row: {
+          consultation_type_id: string
+          created_at: string
+          end_time: string | null
+          id: string
+          is_available: boolean
+          note: string | null
+          override_date: string
+          start_time: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          consultation_type_id: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_available?: boolean
+          note?: string | null
+          override_date: string
+          start_time?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          consultation_type_id?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_available?: boolean
+          note?: string | null
+          override_date?: string
+          start_time?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_type_date_overrides_consultation_type_id_fkey"
+            columns: ["consultation_type_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultation_type_date_overrides_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultation_type_hours: {
+        Row: {
+          consultation_type_id: string
+          created_at: string
+          end_time: string | null
+          id: string
+          is_active: boolean
+          saturday_recurrence: string
+          slot_minutes: number
+          start_time: string | null
+          tenant_id: string
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          consultation_type_id: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          saturday_recurrence?: string
+          slot_minutes?: number
+          start_time?: string | null
+          tenant_id: string
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          consultation_type_id?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          saturday_recurrence?: string
+          slot_minutes?: number
+          start_time?: string | null
+          tenant_id?: string
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_type_hours_consultation_type_id_fkey"
+            columns: ["consultation_type_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultation_type_hours_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultation_types: {
         Row: {
           created_at: string
