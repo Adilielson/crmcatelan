@@ -309,6 +309,10 @@ function Settings() {
                     <Input type="email" defaultValue="contato@oticacatelan.com" className="bg-white border-border h-12 rounded-xl text-ink font-medium focus:ring-1 focus:ring-primary shadow-inner" />
                   </div>
                   <StoreAddressField />
+                  <SocialLinksFields />
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <SaveUnitInfoButton />
                 </div>
               </section>
 
