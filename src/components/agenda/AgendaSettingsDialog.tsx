@@ -1,26 +1,19 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Trash2, Plus, Clock, Ban, Globe2, Stethoscope } from 'lucide-react';
+import { Trash2, Plus, Ban, Stethoscope } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  useBusinessHours,
   useBlockedDates,
-  useUpsertBusinessHour,
   useAddBlockedDate,
   useDeleteBlockedDate,
-  WEEKDAY_LABELS,
   trimSec,
-  BusinessHour,
 } from '@/hooks/use-agenda-settings';
-import { BR_TIMEZONES, useTenantTimezone, useUpdateTenantTimezone } from '@/hooks/use-tenant-timezone';
 import { ExamHoursTab } from './ExamHoursTab';
 
 
@@ -35,19 +28,18 @@ export function AgendaSettingsDialog({ open, onOpenChange }: Props) {
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-black">Programação da Agenda</DialogTitle>
-          <DialogDescription>Defina horários de funcionamento por dia da semana e bloqueie datas específicas.</DialogDescription>
+          <DialogDescription>
+            Defina os horários de atendimento por tipo de exame e bloqueie datas específicas.
+            O horário de funcionamento da loja e o fuso são configurados em <b>Informações Gerais</b>.
+          </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="hours" className="mt-2">
+        <Tabs defaultValue="exams" className="mt-2">
           <TabsList className="mb-4 flex flex-wrap h-auto gap-1">
-            <TabsTrigger value="hours"><Clock className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden sm:inline">Horários da </span>Loja</TabsTrigger>
             <TabsTrigger value="exams"><Stethoscope className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden sm:inline">Horários por </span>Exame</TabsTrigger>
             <TabsTrigger value="blocks"><Ban className="w-3.5 h-3.5 mr-1.5" /> <span className="hidden sm:inline">Dias </span>Bloqueados</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="hours">
-            <BusinessHoursTab />
-          </TabsContent>
           <TabsContent value="exams">
             <ExamHoursTab />
           </TabsContent>
@@ -64,99 +56,6 @@ export function AgendaSettingsDialog({ open, onOpenChange }: Props) {
   );
 }
 
-function BusinessHoursTab() {
-  const { data: hours = [], isLoading } = useBusinessHours();
-  const upsert = useUpsertBusinessHour();
-  const { data: tz } = useTenantTimezone();
-  const updateTz = useUpdateTenantTimezone();
-
-  if (isLoading) return <div className="p-8 text-center text-sm text-gray-500">Carregando…</div>;
-
-  return (
-    <div className="space-y-4">
-      <div className="p-3 rounded-xl border border-[#E3E6EB] bg-gray-50/50">
-        <div className="flex items-center gap-3">
-          <Globe2 className="w-4 h-4 text-gray-500" />
-          <div className="flex-1">
-            <Label className="text-[10px] uppercase tracking-wider text-gray-500">Fuso horário da loja</Label>
-            <Select
-              value={tz ?? 'America/Sao_Paulo'}
-              onValueChange={(v) => updateTz.mutate(v)}
-              disabled={updateTz.isPending}
-            >
-              <SelectTrigger className="h-9 mt-1 text-sm">
-                <SelectValue placeholder="Selecione o fuso" />
-              </SelectTrigger>
-              <SelectContent>
-                {BR_TIMEZONES.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[11px] text-gray-500 mt-1">
-              Usado nos horários de funcionamento, lembretes e no cálculo de "lead parado em horário comercial".
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {Array.from({ length: 7 }).map((_, weekday) => {
-          const row = hours.find((h) => h.weekday === weekday) ?? {
-            weekday,
-            is_open: false,
-            open_time: null,
-            close_time: null,
-            lunch_start: null,
-            lunch_end: null,
-          } as Partial<BusinessHour>;
-          return <WeekdayRow key={weekday} row={row} onSave={(patch) => upsert.mutate({ weekday, ...row, ...patch })} />;
-        })}
-      </div>
-    </div>
-  );
-}
-
-
-function WeekdayRow({ row, onSave }: { row: Partial<BusinessHour>; onSave: (patch: Partial<BusinessHour>) => void }) {
-  return (
-    <div className="grid grid-cols-12 gap-3 items-center p-3 rounded-xl border border-[#E3E6EB] hover:bg-gray-50/50 transition">
-      <div className="col-span-3 flex items-center gap-3">
-        <Switch
-          checked={!!row.is_open}
-          onCheckedChange={(v) => onSave({ is_open: v })}
-        />
-        <span className={`text-sm font-black ${row.is_open ? 'text-ink' : 'text-gray-400'}`}>
-          {WEEKDAY_LABELS[row.weekday!]}
-        </span>
-      </div>
-      {row.is_open ? (
-        <>
-          <TimeField label="Abre" value={trimSec(row.open_time)} onChange={(v) => onSave({ open_time: v })} />
-          <TimeField label="Fecha" value={trimSec(row.close_time)} onChange={(v) => onSave({ close_time: v })} />
-          <TimeField label="Almoço início" value={trimSec(row.lunch_start)} onChange={(v) => onSave({ lunch_start: v || null })} />
-          <TimeField label="Almoço fim" value={trimSec(row.lunch_end)} onChange={(v) => onSave({ lunch_end: v || null })} />
-        </>
-      ) : (
-        <div className="col-span-9 text-xs text-gray-400 italic">Fechado</div>
-      )}
-    </div>
-  );
-}
-
-function TimeField({ label, value, onChange }: { label: string; value: string | null; onChange: (v: string) => void }) {
-  return (
-    <div className="col-span-2 space-y-1">
-      <Label className="text-[10px] uppercase tracking-wider text-gray-500">{label}</Label>
-      <Input
-        type="time"
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 text-sm"
-      />
-    </div>
-  );
-}
 
 function BlockedDatesTab() {
   const { data: blocks = [], isLoading } = useBlockedDates();
