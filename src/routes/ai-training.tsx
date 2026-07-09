@@ -160,6 +160,12 @@ function AITrainingSettings() {
           </div>
         </div>
         <div className="flex flex-wrap gap-3 items-center w-full md:w-auto">
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-[12px] border ${form.autopilot_enabled ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <Label htmlFor="autopilot" className="text-xs sm:text-sm font-bold cursor-pointer">
+              Piloto Automático {form.autopilot_enabled ? '· ON' : '· OFF'}
+            </Label>
+            <Switch id="autopilot" checked={form.autopilot_enabled} onCheckedChange={(v) => setField('autopilot_enabled', v)} />
+          </div>
           <div className="flex items-center gap-2 md:mr-4">
             <Label htmlFor="training-mode" className="text-xs sm:text-sm">Modo de Aprendizado</Label>
             <Switch id="training-mode" checked={form.training_mode} onCheckedChange={(v) => setField('training_mode', v)} />
