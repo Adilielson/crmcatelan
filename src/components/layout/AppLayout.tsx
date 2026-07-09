@@ -319,18 +319,96 @@ const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
   );
 };
 
-/* ============ IA SDR Toggle ============ */
-const AiToggle = () => (
-  <div className="hidden xl:flex items-center gap-3 bg-white/5 rounded-full pl-3 pr-1.5 py-1 border border-white/10">
-    <div className="flex flex-col leading-tight">
-      <span className="text-[10px] font-semibold text-white">Monitoramento</span>
-      <span className="text-[9px] font-bold text-[#f5c518] uppercase tracking-wider">IA SDR Ativa</span>
-    </div>
-    <div className="w-8 h-4 bg-[#f5c518] rounded-full relative">
-      <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow" />
-    </div>
-  </div>
-);
+/* ============ IA SDR Kill Switch (emergência) ============ */
+const AiToggle = () => {
+  const qc = useQueryClient();
+  const getCfg = useServerFn(getAiConfig);
+  const saveCfg = useServerFn(updateAiConfig);
+
+  const cfgQuery = useQuery({
+    queryKey: ['ai-config'],
+    queryFn: () => getCfg(),
+    staleTime: 30_000,
+  });
+
+  const on = (cfgQuery.data as any)?.autopilot_enabled !== false;
+
+  const mut = useMutation({
+    mutationFn: (next: boolean) => saveCfg({ data: { autopilot_enabled: next } as any }),
+    onMutate: async (next) => {
+      await qc.cancelQueries({ queryKey: ['ai-config'] });
+      const prev = qc.getQueryData(['ai-config']);
+      qc.setQueryData(['ai-config'], (old: any) => ({ ...(old ?? {}), autopilot_enabled: next }));
+      return { prev };
+    },
+    onError: (err: any, _next, ctx) => {
+      if (ctx?.prev !== undefined) qc.setQueryData(['ai-config'], ctx.prev);
+      toast.error(err?.message ?? 'Falha ao alterar IA');
+    },
+    onSuccess: (_r, next) => {
+      toast[next ? 'success' : 'warning'](
+        next ? 'IA SDR reativada — respondendo automaticamente' : 'IA SDR PAUSADA — nenhum cliente será respondido pela IA',
+      );
+      qc.invalidateQueries({ queryKey: ['ai-config'] });
+    },
+  });
+
+  const handleClick = () => {
+    if (cfgQuery.isLoading || mut.isPending) return;
+    if (on) {
+      const ok = window.confirm(
+        'PAUSAR a IA SDR?\n\nEnquanto estiver pausada, nenhuma mensagem do WhatsApp será respondida automaticamente. Use em caso de alucinação ou emergência.',
+      );
+      if (!ok) return;
+    }
+    mut.mutate(!on);
+  };
+
+  const disabled = cfgQuery.isLoading || mut.isPending;
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={disabled}
+      title={on ? 'IA ATIVA — clique para pausar (emergência)' : 'IA PAUSADA — clique para reativar'}
+      className={cn(
+        'hidden xl:flex items-center gap-3 rounded-full pl-3 pr-1.5 py-1 border transition-all',
+        on
+          ? 'bg-white/5 border-white/10 hover:bg-white/10'
+          : 'bg-red-500/15 border-red-500/40 hover:bg-red-500/25 animate-pulse',
+        disabled && 'opacity-60 cursor-wait',
+      )}
+    >
+      <div className="flex flex-col leading-tight items-start">
+        <span className="text-[10px] font-semibold text-white">
+          {on ? 'Monitoramento' : 'EMERGÊNCIA'}
+        </span>
+        <span
+          className={cn(
+            'text-[9px] font-bold uppercase tracking-wider',
+            on ? 'text-[#f5c518]' : 'text-red-300',
+          )}
+        >
+          {on ? 'IA SDR Ativa' : 'IA SDR Pausada'}
+        </span>
+      </div>
+      <div
+        className={cn(
+          'w-8 h-4 rounded-full relative transition-colors',
+          on ? 'bg-[#f5c518]' : 'bg-red-500/70',
+        )}
+      >
+        <div
+          className={cn(
+            'absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all',
+            on ? 'right-0.5' : 'left-0.5',
+          )}
+        />
+      </div>
+    </button>
+  );
+};
 
 /* ============ MOBILE DRAWER ============ */
 const MobileDrawer = ({
