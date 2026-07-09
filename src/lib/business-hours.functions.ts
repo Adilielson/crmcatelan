@@ -122,55 +122,11 @@ export const updateBusinessHours = createServerFn({ method: "POST" })
   });
 
 /**
- * Normalize common Brazilian address abbreviations for better Nominatim hits.
- */
-function normalizeAddress(input: string): string {
-  return input
-    .replace(/\bR\.\s*/gi, "Rua ")
-    .replace(/\bAv\.\s*/gi, "Avenida ")
-    .replace(/\bAl\.\s*/gi, "Alameda ")
-    .replace(/\bTv\.\s*/gi, "Travessa ")
-    .replace(/\bPç\.\s*/gi, "Praça ")
-    .replace(/\bJorn\.\s*/gi, "Jornalista ")
-    .replace(/\bDr\.\s*/gi, "Doutor ")
-    .replace(/\bDra\.\s*/gi, "Doutora ")
-    .replace(/\bProf\.\s*/gi, "Professor ")
-    .replace(/\bCel\.\s*/gi, "Coronel ")
-    .replace(/\bCap\.\s*/gi, "Capitão ")
-    .replace(/\bGen\.\s*/gi, "General ")
-    .replace(/\bSto\.\s*/gi, "Santo ")
-    .replace(/\bSta\.\s*/gi, "Santa ")
-    .replace(/\bS\.\s*/gi, "São ")
-    .replace(/\bConj\.\s*/gi, "")
-    .replace(/\bJd\.\s*/gi, "Jardim ")
-    .replace(/\bVl\.\s*/gi, "Vila ")
-    .replace(/\bnº?\.?\s*/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-async function nominatimSearch(params: Record<string, string>) {
-  const qs = new URLSearchParams({
-    format: "json",
-    limit: "1",
-    addressdetails: "1",
-    ...params,
-  });
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?${qs}`, {
-    headers: {
-      "User-Agent": "OticaCatelanCRM/1.0 (timezone-resolver)",
-      "Accept-Language": "pt-BR",
-    },
-  });
-  if (!res.ok) return [];
-  const arr = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
-  return Array.isArray(arr) ? arr : [];
-}
-
-/**
  * Resolve IANA timezone from a free-form address using public APIs:
  *  1) Nominatim (OpenStreetMap) -> lat/lng (with abbreviation expansion + fallbacks)
  *  2) timeapi.io -> IANA timezone
+ * Helpers live in business-hours.server.ts so the server-fn split transform
+ * doesn't strip them.
  */
 export const resolveTimezoneFromAddress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -182,45 +138,14 @@ export const resolveTimezoneFromAddress = createServerFn({ method: "POST" })
     return { address: i.address.trim() };
   })
   .handler(async ({ data }) => {
-    const normalized = normalizeAddress(data.address);
-
-    // Attempt 1: full normalized free-form query
-    let hits = await nominatimSearch({ q: normalized });
-
-    // Attempt 2: strip CEP / postal code and try again
-    if (hits.length === 0) {
-      const noCep = normalized.replace(/,?\s*\d{5}-?\d{3}\b/g, "").trim();
-      if (noCep !== normalized) hits = await nominatimSearch({ q: noCep });
+    const { geocodeAddress } = await import("./business-hours.server");
+    const hit = await geocodeAddress(data.address);
+    if (!hit) {
+      throw new Error(
+        `Endereço não encontrado no mapa. Tente incluir cidade e estado (ex.: "Rua X, 100, Campo Grande - MS").`,
+      );
     }
-
-    // Attempt 3: try structured street/city/state parsing from the tail
-    if (hits.length === 0) {
-      // Heuristic: last comma-separated chunk contains "Cidade - UF"
-      const parts = normalized.split(",").map((p) => p.trim()).filter(Boolean);
-      const cityState = parts.find((p) => /-\s*[A-Z]{2}\b/.test(p));
-      if (cityState) {
-        const [city, uf] = cityState.split(/\s*-\s*/);
-        const street = parts[0];
-        hits = await nominatimSearch({
-          street: street || "",
-          city: (city || "").replace(/\d{5}-?\d{3}/, "").trim(),
-          state: (uf || "").replace(/\d{5}-?\d{3}/, "").trim(),
-          country: "Brazil",
-        });
-        // Attempt 4: just city + state
-        if (hits.length === 0) {
-          hits = await nominatimSearch({
-            q: `${city}, ${uf}, Brasil`,
-          });
-        }
-      }
-    }
-
-    if (hits.length === 0) {
-      throw new Error(`Endereço não encontrado no mapa. Tente incluir cidade e estado (ex: "Rua X, 100, Campo Grande - MS").`);
-    }
-
-    const { lat, lon, display_name } = hits[0];
+    const { lat, lon, display_name } = hit;
 
     const tzUrl = `https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lon}`;
     const tzRes = await fetch(tzUrl, { headers: { Accept: "application/json" } });
@@ -235,4 +160,5 @@ export const resolveTimezoneFromAddress = createServerFn({ method: "POST" })
       display_name,
     };
   });
+
 
