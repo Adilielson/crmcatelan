@@ -538,6 +538,24 @@ function Chat() {
     </Tabs>
   )
 
+  const formatLastInteraction = (iso: string) => {
+    const date = new Date(iso)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) {
+      return `visto hoje às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(date)}`
+    } else if (diffDays === 1) {
+      return `visto ontem às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(date)}`
+    } else if (diffDays < 7) {
+      const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(date)
+      return `visto ${weekday} às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(date)}`
+    } else {
+      return `visto em ${new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date)}`
+    }
+  }
+
   return (
     <div className="bg-white border border-[#E3E6EB] rounded-[18px] md:rounded-[24px] h-[calc(100dvh-72px)] flex overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-in fade-in duration-700">
 
@@ -717,9 +735,9 @@ function Chat() {
                   <h3 className="font-jakarta font-black text-base text-ink tracking-tight truncate">
                     {displayConv.name || formatPhoneDisplay(displayConv.phone)}
                   </h3>
-                  {displayConv.name && (
-                    <p className="text-[11px] text-gray-400 font-semibold truncate">{formatPhoneDisplay(displayConv.phone)}</p>
-                  )}
+                  <p className="text-[11px] text-gray-400 font-semibold truncate">
+                    {formatLastInteraction(displayConv.lastAt)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
