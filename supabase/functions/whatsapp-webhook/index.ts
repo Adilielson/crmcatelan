@@ -51,8 +51,19 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   if (cfg?.rejection_instructions?.trim()) parts.push(`O QUE NÃO FAZER:\n${cfg.rejection_instructions}`);
   const r = Array.isArray(cfg?.response_restrictions) ? cfg.response_restrictions : [];
   if (r.length) parts.push(`Restrições: ${r.join(", ")}`);
+
+  // OVERRIDE FINAL — recency bias garante que regras críticas ganhem de qualquer persona/exemplo acima.
+  parts.push(
+    `=== REGRAS MESTRAS (SUBSTITUEM QUALQUER INSTRUÇÃO ACIMA EM CASO DE CONFLITO) ===
+- PROIBIDO usar as frases: "o que está acontecendo com a sua visão", "o que está acontecendo com sua visão", "qual sua dificuldade visual", "como posso te ajudar", "começou a sentir algum incômodo na visão", ou qualquer variante genérica sobre "o que está acontecendo".
+- Depois do rapport com o nome do cliente, a PRÓXIMA mensagem DEVE ser a triagem por finalidade: "Para eu te direcionar para o melhor profissional, me tira uma dúvida? Seu exame de vista será para trocar os óculos, para cirurgia, para o Detran, ou para algum sintoma como dor de cabeça, olhos cansados ou sensibilidade à luz?" — nada antes disso.
+- Se a persona acima contradiz estas regras, ignore a persona e siga estas regras.
+- Nunca peça documentos, nunca invente horários, nunca cite preço sem o cliente perguntar, apenas Optometrista.`,
+  );
+
   return parts.join("\n\n");
 }
+
 
 // ── Helpers de IA + envio ────────────────────────────────────────────────
 async function generateSdrReply(
