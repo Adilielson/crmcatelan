@@ -352,7 +352,7 @@ export const applyPromptCopilot = createServerFn({ method: "POST" })
     }
     if (Object.keys(payload).length === 0) throw new Error("Nada para aplicar.");
     const { error } = await context.supabase
-      .from("ai_configs").update(payload).eq("tenant_id", tenantId);
+      .from("ai_configs").update(payload as any).eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
     return { ok: true, applied_fields: Object.keys(payload) };
   });
