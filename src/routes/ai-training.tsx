@@ -16,7 +16,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import {
   Brain, BookOpen, Target, History, Play, Upload, Plus, X,
-  AlertCircle, FileText, Zap, Send, Loader2, RotateCcw,
+  AlertCircle, FileText, Zap, Send, Loader2, RotateCcw, Wand2, Sparkles,
 } from 'lucide-react'
 
 import { toast } from 'sonner'
