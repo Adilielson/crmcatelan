@@ -302,7 +302,7 @@ function AITrainingSettings() {
             </CardContent>
           </Card>
 
-          <OphthalmologistSaturdaysCard />
+          
         </TabsContent>
 
         <TabsContent value="knowledge" className="space-y-6">
