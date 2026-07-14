@@ -958,21 +958,36 @@ function PromptCopilotCard() {
               <div className="space-y-3">
                 {changeEntries.map(([field, value]) => {
                   const label = COPILOT_FIELD_LABELS[field]
-                  const preview = field === 'qualification_questions'
-                    ? (value as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n')
-                    : String(value ?? '')
+                  const format = (v: unknown) =>
+                    field === 'qualification_questions'
+                      ? (Array.isArray(v) ? (v as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n') : '')
+                      : String(v ?? '')
+                  const beforeText = format(proposal.before?.[field])
+                  const afterText = format(value)
                   return (
                     <div key={field} className="rounded-xl border border-primary/20 bg-white overflow-hidden">
                       <div className="px-3 py-2 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-widest text-primary">{label}</span>
-                        <Badge variant="outline" className="text-[9px] bg-white">Novo valor</Badge>
+                        <Badge variant="outline" className="text-[9px] bg-white">Antes → Depois</Badge>
                       </div>
-                      <ScrollArea className="max-h-56">
-                        <pre className="p-3 text-xs whitespace-pre-wrap break-words text-ink font-mono">{preview}</pre>
-                      </ScrollArea>
+                      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-primary/10">
+                        <div>
+                          <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-50/50">Atual</div>
+                          <ScrollArea className="max-h-56">
+                            <pre className="p-3 text-xs whitespace-pre-wrap break-words text-gray-500 font-mono">{beforeText || '(vazio)'}</pre>
+                          </ScrollArea>
+                        </div>
+                        <div>
+                          <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50/50">Proposto</div>
+                          <ScrollArea className="max-h-56">
+                            <pre className="p-3 text-xs whitespace-pre-wrap break-words text-ink font-mono">{afterText}</pre>
+                          </ScrollArea>
+                        </div>
+                      </div>
                     </div>
                   )
                 })}
+
                 <div className="flex justify-end">
                   <Button
                     onClick={() => applyMut.mutate(proposal.changes)}
