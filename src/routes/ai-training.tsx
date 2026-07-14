@@ -231,10 +231,14 @@ function AITrainingSettings() {
           <TabsTrigger value="simulation" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <Play className="w-4 h-4" /> Simulação
           </TabsTrigger>
+          <TabsTrigger value="rules" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
+            <Brain className="w-4 h-4" /> Regras
+          </TabsTrigger>
           <TabsTrigger value="history" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <History className="w-4 h-4" /> Histórico
           </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="personality" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
