@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const COPILOT_ALLOWED_ROLES = ["admin", "n", "manager"];
+const COPILOT_ALLOWED_ROLES = ["admin", "super_admin", "manager"];
 
 async function assertCopilotRole(supabase: any, userId: string) {
   const { data, error } = await supabase
