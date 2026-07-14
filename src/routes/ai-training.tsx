@@ -27,6 +27,8 @@ import {
   listAiVersions, restoreAiVersion,
   generatePromptCopilot, applyPromptCopilot,
 } from '@/lib/ai-training.functions'
+import { DEFAULT_BEHAVIOR_RULES } from '@/lib/ai-prompt-builder'
+
 import {
   listKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc,
 } from '@/lib/ai-knowledge.functions'
