@@ -816,7 +816,7 @@ function PromptCopilotCard() {
   const [instruction, setInstruction] = useState('')
   const [proposal, setProposal] = useState<{ summary: string; changes: CopilotChanges } | null>(null)
 
-  const allowedRoles = ['admin', 'n', 'manager']
+  const allowedRoles = ['admin', 'super_admin', 'manager']
   if (!user || !allowedRoles.includes(user.role)) return null
 
   const genMut = useMutation({
