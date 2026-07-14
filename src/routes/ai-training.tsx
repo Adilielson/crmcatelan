@@ -326,6 +326,7 @@ function AITrainingSettings() {
         </TabsContent>
 
         <TabsContent value="simulation" className="space-y-6">
+          <PromptCopilotCard />
           <SimulationTab />
         </TabsContent>
 
