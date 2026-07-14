@@ -21,6 +21,7 @@ export type AiConfig = {
   id: string;
   tenant_id: string;
   prompt_system: string;
+  behavior_rules: string;
   knowledge_base: string;
   knowledge_base_faq: string;
   sample_scripts: string;
@@ -35,6 +36,7 @@ export type AiConfig = {
   response_restrictions: string[];
   updated_at: string;
 };
+
 
 async function getUserTenant(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase
