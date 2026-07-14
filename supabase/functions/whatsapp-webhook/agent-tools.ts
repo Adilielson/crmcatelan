@@ -54,8 +54,9 @@ export const AGENT_TOOLS = [
           },
           tipo_consulta: {
             type: "string",
-            description: "Nome do tipo (ex: 'Optometrista' ou 'Oftalmológica').",
+            description: "SEMPRE 'Optometrista' — Oftalmologia não é mais ofertada.",
           },
+
           observacao: {
             type: "string",
             description: "Notas do agendamento (opcional).",
