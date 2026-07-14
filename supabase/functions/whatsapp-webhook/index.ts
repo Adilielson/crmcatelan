@@ -1296,15 +1296,17 @@ Deno.serve(async (req) => {
                   content: m.error_message as string,
                 }));
 
-              // 2b) Se ainda não temos nome, tenta extrair da mensagem atual do lead
-              if (leadId && !leadName) {
+              // 2b) Se ainda não temos nome — OU o nome atual parece lixo (pushName ruim
+              // do WhatsApp tipo "hhhdh") — tenta extrair da mensagem atual do lead.
+              if (leadId && (!leadName || looksLikeJunkName(leadName))) {
                 const extracted = await extractNameFromMessage(text);
-                if (extracted && isValidContactName(extracted, senderPhone)) {
+                if (extracted && isValidContactName(extracted, senderPhone) && !looksLikeJunkName(extracted)) {
                   await adminClient.from("leads").update({ full_name: extracted }).eq("id", leadId);
+                  console.log(`[lead] nome ${leadName ? `sobrescrito (${leadName} → ${extracted})` : `capturado`} da mensagem`);
                   leadName = extracted;
-                  console.log(`[lead] nome capturado da mensagem: ${extracted}`);
                 }
               }
+
 
               // 3) Carrega ai_configs + documentos
               const { data: aiCfg } = await adminClient
