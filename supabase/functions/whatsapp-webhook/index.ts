@@ -25,7 +25,10 @@ const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 import { CORE_BEHAVIOR_RULES } from "./prompt-rules.ts";
 function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   const parts: string[] = [cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT];
-  parts.push(CORE_BEHAVIOR_RULES);
+  // Regras editáveis (banco) sobrescrevem as regras de fábrica.
+  const customRules = typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules.trim() : "";
+  parts.push(customRules.length > 20 ? customRules : CORE_BEHAVIOR_RULES);
+
   if (cfg?.goal) {
     const goalMap: Record<string, string> = {
       appointment: "agendar uma consulta oftalmológica",

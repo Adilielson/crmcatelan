@@ -27,6 +27,8 @@ import {
   listAiVersions, restoreAiVersion,
   generatePromptCopilot, applyPromptCopilot,
 } from '@/lib/ai-training.functions'
+import { DEFAULT_BEHAVIOR_RULES } from '@/lib/ai-prompt-builder'
+
 import {
   listKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc,
 } from '@/lib/ai-knowledge.functions'
@@ -41,6 +43,7 @@ export const Route = createFileRoute('/ai-training')({
 
 type FormState = {
   prompt_system: string
+  behavior_rules: string
   sample_scripts: string
   knowledge_base_faq: string
   qualification_questions: string[]
@@ -52,6 +55,7 @@ type FormState = {
   autopilot_enabled: boolean
   rejection_instructions: string
 }
+
 
 function AITrainingSettings() {
   const qc = useQueryClient()
@@ -71,7 +75,9 @@ function AITrainingSettings() {
       const c = cfgQuery.data
       setForm({
         prompt_system: c.prompt_system ?? '',
+        behavior_rules: (c as any).behavior_rules ?? '',
         sample_scripts: c.sample_scripts ?? '',
+
         knowledge_base_faq: c.knowledge_base_faq ?? '',
         qualification_questions: Array.isArray(c.qualification_questions) ? (c.qualification_questions as string[]) : [],
         response_delay: c.response_delay ?? 5,
@@ -225,10 +231,14 @@ function AITrainingSettings() {
           <TabsTrigger value="simulation" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <Play className="w-4 h-4" /> Simulação
           </TabsTrigger>
+          <TabsTrigger value="rules" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
+            <Brain className="w-4 h-4" /> Regras
+          </TabsTrigger>
           <TabsTrigger value="history" className="text-[10px] font-black uppercase tracking-[0.15em] data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-8 text-ink">
             <History className="w-4 h-4" /> Histórico
           </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="personality" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -329,6 +339,41 @@ function AITrainingSettings() {
           <PromptCopilotCard />
           <SimulationTab />
         </TabsContent>
+
+        <TabsContent value="rules" className="space-y-6">
+          <Card className="shadow-card border-border bg-white rounded-[14px]">
+            <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Regras de Comportamento</CardTitle>
+                <CardDescription>
+                  Estas regras são injetadas no prompt real do WhatsApp e do Simulador. Edite com cuidado — vale para todas as conversas do tenant.
+                </CardDescription>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setField('behavior_rules', DEFAULT_BEHAVIOR_RULES)}
+                className="gap-2 whitespace-nowrap"
+              >
+                <RotateCcw className="w-4 h-4" /> Restaurar padrão
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-3">
+              <Textarea
+                value={form.behavior_rules || ''}
+                onChange={(e) => setField('behavior_rules', e.target.value)}
+                placeholder="Deixe em branco para usar as regras padrão de fábrica."
+                className="min-h-[540px] font-mono text-xs bg-white border-border rounded-xl text-ink p-4"
+              />
+              <p className="text-[11px] text-gray-500 italic">
+                Se este campo estiver vazio, a IA usa automaticamente as regras padrão (mesmas do simulador e do WhatsApp real).
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
 
         <TabsContent value="history" className="space-y-6">
           <HistoryTab />
@@ -793,6 +838,7 @@ function HistoryTab() {
 // ============= Prompt Copilot Card (admin/manager only) =============
 type CopilotChanges = Partial<{
   prompt_system: string
+  behavior_rules: string
   sample_scripts: string
   rejection_instructions: string
   knowledge_base_faq: string
@@ -801,11 +847,13 @@ type CopilotChanges = Partial<{
 
 const COPILOT_FIELD_LABELS: Record<keyof CopilotChanges, string> = {
   prompt_system: 'Prompt do Sistema',
+  behavior_rules: 'Regras de Comportamento',
   sample_scripts: 'Scripts de Exemplo',
   rejection_instructions: 'Instruções de Rejeição',
   knowledge_base_faq: 'FAQ',
   qualification_questions: 'Perguntas de Qualificação',
 }
+
 
 function PromptCopilotCard() {
   const qc = useQueryClient()
@@ -814,7 +862,7 @@ function PromptCopilotCard() {
   const apply = useServerFn(applyPromptCopilot)
 
   const [instruction, setInstruction] = useState('')
-  const [proposal, setProposal] = useState<{ summary: string; changes: CopilotChanges } | null>(null)
+  const [proposal, setProposal] = useState<{ summary: string; changes: CopilotChanges; before: CopilotChanges } | null>(null)
 
   const allowedRoles = ['admin', 'super_admin', 'manager']
   if (!user || !allowedRoles.includes(user.role)) return null
@@ -823,13 +871,15 @@ function PromptCopilotCard() {
     mutationFn: (text: string) => generate({ data: { instruction: text } }),
     onSuccess: (res: any) => {
       const changes = (res?.changes ?? {}) as CopilotChanges
-      setProposal({ summary: res?.summary ?? '', changes })
+      const before = (res?.before ?? {}) as CopilotChanges
+      setProposal({ summary: res?.summary ?? '', changes, before })
       if (!Object.keys(changes).length) {
         toast.info('O Copilot não sugeriu alterações. Refine sua instrução.')
       }
     },
     onError: (e: any) => toast.error(e?.message ?? 'Falha ao consultar o Copilot'),
   })
+
 
   const applyMut = useMutation({
     mutationFn: (changes: CopilotChanges) => apply({ data: { changes } }),
@@ -908,21 +958,36 @@ function PromptCopilotCard() {
               <div className="space-y-3">
                 {changeEntries.map(([field, value]) => {
                   const label = COPILOT_FIELD_LABELS[field]
-                  const preview = field === 'qualification_questions'
-                    ? (value as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n')
-                    : String(value ?? '')
+                  const format = (v: unknown) =>
+                    field === 'qualification_questions'
+                      ? (Array.isArray(v) ? (v as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n') : '')
+                      : String(v ?? '')
+                  const beforeText = format(proposal.before?.[field])
+                  const afterText = format(value)
                   return (
                     <div key={field} className="rounded-xl border border-primary/20 bg-white overflow-hidden">
                       <div className="px-3 py-2 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-widest text-primary">{label}</span>
-                        <Badge variant="outline" className="text-[9px] bg-white">Novo valor</Badge>
+                        <Badge variant="outline" className="text-[9px] bg-white">Antes → Depois</Badge>
                       </div>
-                      <ScrollArea className="max-h-56">
-                        <pre className="p-3 text-xs whitespace-pre-wrap break-words text-ink font-mono">{preview}</pre>
-                      </ScrollArea>
+                      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-primary/10">
+                        <div>
+                          <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-50/50">Atual</div>
+                          <ScrollArea className="max-h-56">
+                            <pre className="p-3 text-xs whitespace-pre-wrap break-words text-gray-500 font-mono">{beforeText || '(vazio)'}</pre>
+                          </ScrollArea>
+                        </div>
+                        <div>
+                          <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50/50">Proposto</div>
+                          <ScrollArea className="max-h-56">
+                            <pre className="p-3 text-xs whitespace-pre-wrap break-words text-ink font-mono">{afterText}</pre>
+                          </ScrollArea>
+                        </div>
+                      </div>
                     </div>
                   )
                 })}
+
                 <div className="flex justify-end">
                   <Button
                     onClick={() => applyMut.mutate(proposal.changes)}

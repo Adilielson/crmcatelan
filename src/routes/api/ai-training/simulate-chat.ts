@@ -1,24 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/integrations/supabase/types'
+import { buildAiSystemPrompt, type AiCfgLike } from '@/lib/ai-prompt-builder'
+
 
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
 }
 
-type AiConfig = {
-  prompt_system?: string | null
-  knowledge_base_faq?: string | null
-  sample_scripts?: string | null
-  qualification_questions?: string[] | null
-  scheduling_link?: string | null
-  goal?: string | null
-  model_temperature?: number | string | null
-  rejection_instructions?: string | null
-  response_restrictions?: string[] | null
-  ophthalmologist_saturdays?: string[] | null
-}
+
+
 
 function json(data: unknown, init?: ResponseInit) {
   return Response.json(data, init)
@@ -83,11 +75,6 @@ function validateMessages(value: unknown): ChatMessage[] {
   return messages.slice(-20)
 }
 
-function formatUpcomingSaturdays(_cfg: AiConfig): string {
-  return 'TIPO DE EXAME DISPONÍVEL: apenas Optometrista (segunda a domingo a partir das 14h, conforme grade cadastrada). NÃO ofereça exame de Oftalmologia — foi descontinuado. NUNCA cite valor/preço do exame sem o cliente perguntar primeiro.'
-}
-
-
 function buildStyleBlock(styleProfile: any): string {
   if (!styleProfile?.style_prompt) return ''
 
@@ -115,52 +102,6 @@ function buildStyleBlock(styleProfile: any): string {
   return lines.join('\n')
 }
 
-function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock = ''): string {
-  const parts: string[] = [cfg.prompt_system || 'Você é um atendente da Ótica Catelan.']
-
-  if (styleBlock) parts.push(styleBlock)
-  if (cfg.goal) {
-    parts.push(
-      `Objetivo principal da conversa: ${
-        cfg.goal === 'appointment'
-          ? 'agendar uma consulta'
-          : cfg.goal === 'qualification'
-            ? 'qualificar o lead'
-            : 'dar suporte'
-      }.`,
-    )
-  }
-  if (cfg.scheduling_link) {
-    parts.push(`Link de agendamento (use quando o lead pedir): ${cfg.scheduling_link}`)
-  }
-
-  parts.push(formatUpcomingSaturdays(cfg))
-
-  if (cfg.knowledge_base_faq?.trim()) {
-    parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`)
-  }
-  if (knowledgeDocs.length) {
-    parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeDocs.join('\n---\n').slice(0, 8000)}`)
-  }
-  if (cfg.sample_scripts?.trim()) {
-    parts.push(`EXEMPLOS DE ATENDIMENTO (mimetize o estilo):\n${cfg.sample_scripts}`)
-  }
-  if (Array.isArray(cfg.qualification_questions) && cfg.qualification_questions.length) {
-    parts.push(
-      `PERGUNTAS DE QUALIFICAÇÃO (faça uma por vez, na ordem):\n${cfg.qualification_questions
-        .map((q, i) => `${i + 1}. ${q}`)
-        .join('\n')}`,
-    )
-  }
-  if (cfg.rejection_instructions?.trim()) {
-    parts.push(`O QUE NÃO FAZER:\n${cfg.rejection_instructions}`)
-  }
-  if (Array.isArray(cfg.response_restrictions) && cfg.response_restrictions.length) {
-    parts.push(`Restrições: ${cfg.response_restrictions.join(', ')}`)
-  }
-
-  return parts.join('\n\n')
-}
 
 export const Route = createFileRoute('/api/ai-training/simulate-chat')({
   server: {
@@ -226,7 +167,24 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
             .maybeSingle()
           styleBlock = buildStyleBlock(styleProfile)
 
-          const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts, styleBlock)
+          const { data: tenantRow } = await supabase
+            .from('tenants')
+            .select('timezone')
+            .eq('id', tenantId)
+            .maybeSingle()
+          const timezone = (tenantRow as any)?.timezone || 'America/Sao_Paulo'
+
+          const behaviorContext =
+            'MODO SIMULADOR: você está sendo testada por um admin no ambiente de treino. Responda EXATAMENTE como responderia no WhatsApp real, obedecendo todas as regras. Se precisaria chamar uma ferramenta (listar horários, agendar, transferir humano) descreva em [colchetes] o que faria, ex.: "[chamaria listar_horarios_disponiveis para amanhã]", e siga a conversa.'
+
+          const systemPrompt = buildAiSystemPrompt({
+            cfg: cfg as AiCfgLike,
+            knowledgeTexts,
+            styleBlock,
+            behaviorContext,
+            timezone,
+          })
+
           const { getTenantAiKey, logAiUsage } = await import('@/lib/ai-credentials.server')
 
           // Prioridade: OpenAI (chave do tenant ou master OPENAI_API_KEY).
@@ -251,7 +209,8 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
           }
 
           async function callLovableGateway() {
-            const model = 'google/gemini-3-flash-preview'
+            const model = 'openai/gpt-5-mini'
+
             const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
               method: 'POST',
               headers: {

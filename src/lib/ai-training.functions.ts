@@ -21,6 +21,7 @@ export type AiConfig = {
   id: string;
   tenant_id: string;
   prompt_system: string;
+  behavior_rules: string;
   knowledge_base: string;
   knowledge_base_faq: string;
   sample_scripts: string;
@@ -35,6 +36,7 @@ export type AiConfig = {
   response_restrictions: string[];
   updated_at: string;
 };
+
 
 async function getUserTenant(supabase: any, userId: string): Promise<string> {
   const { data, error } = await supabase
@@ -71,10 +73,11 @@ export const updateAiConfig = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const tenantId = await getUserTenant(context.supabase, context.userId);
     const allowed: (keyof AiConfig)[] = [
-      "prompt_system", "knowledge_base", "knowledge_base_faq", "sample_scripts",
+      "prompt_system", "behavior_rules", "knowledge_base", "knowledge_base_faq", "sample_scripts",
       "qualification_questions", "response_delay", "scheduling_link", "goal",
       "model_temperature", "training_mode", "autopilot_enabled", "rejection_instructions", "response_restrictions",
     ];
+
     const payload: Record<string, unknown> = {};
     for (const k of allowed) if (k in data) payload[k] = (data as any)[k];
 
@@ -220,6 +223,7 @@ export const simulateChat = createServerFn({ method: "POST" })
 // Editable fields the Copilot may propose changes to.
 const COPILOT_EDITABLE_FIELDS = [
   "prompt_system",
+  "behavior_rules",
   "sample_scripts",
   "rejection_instructions",
   "knowledge_base_faq",
@@ -230,6 +234,7 @@ type CopilotField = (typeof COPILOT_EDITABLE_FIELDS)[number];
 export type CopilotProposal = {
   summary: string;
   changes: Partial<Record<CopilotField, string | string[]>>;
+  before: Partial<Record<CopilotField, string | string[]>>;
 };
 
 async function callCopilotLLM(instruction: string, cfg: any): Promise<CopilotProposal> {
@@ -238,11 +243,13 @@ async function callCopilotLLM(instruction: string, cfg: any): Promise<CopilotPro
 
   const currentSnapshot = {
     prompt_system: cfg.prompt_system ?? "",
+    behavior_rules: cfg.behavior_rules ?? "",
     sample_scripts: cfg.sample_scripts ?? "",
     rejection_instructions: cfg.rejection_instructions ?? "",
     knowledge_base_faq: cfg.knowledge_base_faq ?? "",
     qualification_questions: Array.isArray(cfg.qualification_questions) ? cfg.qualification_questions : [],
   };
+
 
   const system = `Você é um Copilot de Prompt Engineering para o CRM da Ótica Catelan.
 Recebe UMA instrução em linguagem natural do administrador e a configuração atual da IA de atendimento.
@@ -306,8 +313,13 @@ ${JSON.stringify(currentSnapshot, null, 2)}`;
       changes[k] = v;
     }
   }
-  return { summary, changes };
+  const before: CopilotProposal["before"] = {};
+  for (const k of Object.keys(changes) as CopilotField[]) {
+    before[k] = currentSnapshot[k] as any;
+  }
+  return { summary, changes, before };
 }
+
 
 export const generatePromptCopilot = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
