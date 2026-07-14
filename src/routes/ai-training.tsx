@@ -838,6 +838,7 @@ function HistoryTab() {
 // ============= Prompt Copilot Card (admin/manager only) =============
 type CopilotChanges = Partial<{
   prompt_system: string
+  behavior_rules: string
   sample_scripts: string
   rejection_instructions: string
   knowledge_base_faq: string
@@ -846,11 +847,13 @@ type CopilotChanges = Partial<{
 
 const COPILOT_FIELD_LABELS: Record<keyof CopilotChanges, string> = {
   prompt_system: 'Prompt do Sistema',
+  behavior_rules: 'Regras de Comportamento',
   sample_scripts: 'Scripts de Exemplo',
   rejection_instructions: 'Instruções de Rejeição',
   knowledge_base_faq: 'FAQ',
   qualification_questions: 'Perguntas de Qualificação',
 }
+
 
 function PromptCopilotCard() {
   const qc = useQueryClient()
