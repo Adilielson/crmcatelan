@@ -41,6 +41,7 @@ export const Route = createFileRoute('/ai-training')({
 
 type FormState = {
   prompt_system: string
+  behavior_rules: string
   sample_scripts: string
   knowledge_base_faq: string
   qualification_questions: string[]
@@ -52,6 +53,7 @@ type FormState = {
   autopilot_enabled: boolean
   rejection_instructions: string
 }
+
 
 function AITrainingSettings() {
   const qc = useQueryClient()
