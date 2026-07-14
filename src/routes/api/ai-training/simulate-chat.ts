@@ -177,7 +177,24 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
             .maybeSingle()
           styleBlock = buildStyleBlock(styleProfile)
 
-          const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts, styleBlock)
+          const { data: tenantRow } = await supabase
+            .from('tenants')
+            .select('timezone')
+            .eq('id', tenantId)
+            .maybeSingle()
+          const timezone = (tenantRow as any)?.timezone || 'America/Sao_Paulo'
+
+          const behaviorContext =
+            'MODO SIMULADOR: você está sendo testada por um admin no ambiente de treino. Responda EXATAMENTE como responderia no WhatsApp real, obedecendo todas as regras. Se precisaria chamar uma ferramenta (listar horários, agendar, transferir humano) descreva em [colchetes] o que faria, ex.: "[chamaria listar_horarios_disponiveis para amanhã]", e siga a conversa.'
+
+          const systemPrompt = buildAiSystemPrompt({
+            cfg: cfg as AiCfgLike,
+            knowledgeTexts,
+            styleBlock,
+            behaviorContext,
+            timezone,
+          })
+
           const { getTenantAiKey, logAiUsage } = await import('@/lib/ai-credentials.server')
 
           // Prioridade: OpenAI (chave do tenant ou master OPENAI_API_KEY).
