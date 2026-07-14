@@ -1,65 +1,68 @@
+## Objetivo
 
-## Diagnóstico — o que já existe
+Fazer o Simulador de Chat comportar-se **exatamente** como a IA do WhatsApp real, e dar ao admin controle real sobre as regras de comportamento — sem depender de deploy de código.
 
-Antes de criar algo novo, mapeei tudo relacionado a lembretes/notificações:
+## Diagnóstico atual
 
-- **Aba "Notificações" em Configurações** → existe o `TabsTrigger` mas o `TabsContent` está **vazio**. É o local perfeito para plugar a Central.
-- **`NotificationCenter` (sininho no topo)** → só mostra alertas internos do sistema (lead parado, no-show, etc.). Não gerencia mensagens enviadas ao cliente.
-- **Lembretes de agendamento** → templates hard-coded em `process-appointment-reminders.ts` (função `renderMessage`) e prazos hard-coded no trigger `schedule_appointment_reminders` (−24h, −22h, −3h, −1h).
-- **Follow-ups pós-exame** → templates hard-coded no objeto `TEMPLATES` de `process-followups.ts` e prazos hard-coded no trigger `create_followup_schedule` (1, 3, 7, 15, 30, 60, 120, 180 dias).
-- **No-show** → parcialmente configurável em `noshow_settings` (preset light/normal), sem edição de texto.
-- **IA (agente WhatsApp)** → hoje não lê nenhum desses textos; responde livre.
+| Item | Simulador (`/api/ai-training/simulate-chat`) | Webhook real (`whatsapp-webhook`) |
+|---|---|---|
+| Modelo | `gpt-4o-mini` | `gpt-5-mini` |
+| Regras fixas (`CORE_BEHAVIOR_RULES`) | ❌ não injeta | ✅ injeta hardcoded |
+| Tools (agendar, remarcar, etc.) | ❌ não usa | ✅ usa |
+| Contexto de hora ("AGORA são HH:MM") | ❌ | ✅ |
+| Regras editáveis pelo admin | ❌ (código) | ❌ (código) |
 
-**Conclusão:** não existe uma central editável. Precisa ser criada, e nada precisa ser removido — apenas conectado.
+Consequência: o admin testa no simulador, vê um comportamento, e o WhatsApp responde diferente. E qualquer ajuste nas 10 regras exige deploy.
 
----
+## Etapas
 
-## O que vou construir: "Central de Lembretes"
+### 1. Banco — tornar regras editáveis
+Migration: adicionar `behavior_rules TEXT` em `ai_configs`, com seed do `CORE_BEHAVIOR_RULES` atual.
 
-Um único lugar em **Configurações → Notificações** onde o admin edita:
-- **Mensagem** (com variáveis `{nome}`, `{data}`, `{hora}`, `{endereco}`, `{telefone}`)
-- **Quando disparar** (offset em minutos antes/depois do evento)
-- **Canal** (WhatsApp / ligação manual)
-- **Ativo/inativo** (liga/desliga o passo sem apagar)
+### 2. Prompt builder compartilhado
+Criar `src/lib/ai-prompt-builder.ts` — função pura que monta o system prompt idêntico para os dois lados:
+- Persona (`prompt_system`)
+- Regras de comportamento (do banco, com fallback para as regras hardcoded)
+- Contexto de horário/janelas de exame (Optometrista)
+- FAQ, documentos de conhecimento, scripts, perguntas de qualificação
+- Estilo de referência (Raiana)
+- Timestamp real "AGORA são HH:MM"
 
-Cobrindo os 3 fluxos: **Confirmação de agendamento**, **Follow-up pós-exame**, **Alerta de no-show**.
+### 3. Simulador = Webhook
+Refatorar `src/routes/api/ai-training/simulate-chat.ts`:
+- Usar `gpt-5-mini` (mesmo modelo do webhook)
+- Usar `ai-prompt-builder` compartilhado
+- Habilitar as mesmas tools em **modo dry-run** (retornam mocks — não criam agendamento real, não movem Kanban)
+- Injetar timestamp real
+- Retornar também o prompt final montado (para debug do admin)
 
----
+### 4. Webhook lê do banco
+Refatorar `supabase/functions/whatsapp-webhook/index.ts` para ler `behavior_rules` de `ai_configs` (com fallback para `CORE_BEHAVIOR_RULES` do `prompt-rules.ts` se coluna vazia). Deploy da edge function.
+
+### 5. UI — aba "Regras de Comportamento"
+Nova aba em `/ai-training` (roles admin/super_admin/manager):
+- Textarea grande com as 10 regras editáveis
+- Botão "Restaurar padrões de fábrica"
+- Aviso: "Estas regras se aplicam ao WhatsApp real e ao simulador"
+- Save invalida cache; próximo turno já usa a nova versão
+
+### 6. Copilot melhorado
+Em `src/lib/ai-training.functions.ts` + `PromptCopilotCard`:
+- Trocar para `gpt-5-mini` (mesmo modelo)
+- Permitir editar também `behavior_rules`
+- Retornar **diff visual** (antes/depois por campo) antes de aplicar
+- Botão "Aplicar e Testar" → salva + abre o simulador com uma mensagem inicial
+- Se o modelo decidir não alterar nada, mostrar aviso explícito ao admin (em vez de aparentar sucesso silencioso)
 
 ## Detalhes técnicos
 
-### 1. Banco (migration)
-Nova tabela `reminder_templates`:
-- `tenant_id`, `kind` (`appointment` | `followup` | `noshow`), `step_key` (ex: `confirm_24h`, `followup_d3`, `noshow_t15`)
-- `label`, `message_template` (texto com placeholders), `channel` (`whatsapp` | `call`)
-- `offset_minutes` (negativo = antes do evento, positivo = depois), `enabled`, `position`
-- RLS: tenant admin/manager edita; service_role lê tudo
-- Trigger `seed_reminder_templates_for_tenant` popula os defaults atuais em novos tenants
-- Backfill: rodar seed para todos os tenants existentes
+- `ai-prompt-builder.ts` fica em `src/lib/` e é importado por: o server function do simulador **e** também exposto via Deno-compat para o edge function (mais simples: duplicar como `supabase/functions/whatsapp-webhook/prompt-builder.ts` e cobrir os dois com o mesmo teste de snapshot).
+- Testes de regressão em `tests/prompt-rules.test.ts` são estendidos: garantir que builder produz saída idêntica para o mesmo input em ambos os lados.
+- Tools em dry-run: mesmo schema OpenAI, mas `execute` retorna `{ok:true, mock:true, ...}` sem tocar Supabase.
+- Migration inclui `GRANT` correto e não altera RLS (coluna nova em tabela já existente).
+- Não mexer no Kill Switch, no aprendizado contínuo nem no realtime — fora do escopo.
 
-Reescrever os triggers para lerem da tabela:
-- `schedule_appointment_reminders` → itera pelas linhas ativas de `kind='appointment'` e cria `appointment_reminders` com o `offset_minutes` da linha
-- `create_followup_schedule` → mesma coisa para `kind='followup'`
-- `schedule_noshow_alerts` → idem para `kind='noshow'` (substitui o preset light/normal)
-
-### 2. Processadores (server routes)
-- `process-appointment-reminders.ts`, `process-followups.ts`, `process-noshow-alerts.ts`: buscam o `message_template` da linha correspondente e renderizam com os placeholders reais. Fallback para o texto atual se a linha for removida.
-
-### 3. UI — `RemindersCenterTab.tsx`
-Layout mobile-first (CRM roda no celular):
-- 3 seções colapsáveis (Confirmação / Follow-up / No-show)
-- Cada passo: card com preview do texto, offset legível ("24h antes", "3 dias depois"), switch ativo, botão editar
-- Dialog de edição: textarea grande + chips clicáveis para inserir variáveis + input de offset com selector de unidade (min/h/dias) + preview renderizado com dados fake
-- Botão "Restaurar padrão" por passo
-
-### 4. IA lê os templates
-Adicionar em `supabase/functions/whatsapp-webhook/agent-tools.ts` uma tool `get_reminder_schedule` que retorna, para o tenant, quais lembretes o cliente vai receber e quando. Assim quando o cliente pergunta "vou receber lembrete?" a IA responde com dado real, e quando envia manualmente pode usar o mesmo texto padrão.
-
-### 5. Ordem de execução
-1. Migration (tabela + seed + reescrita dos 3 triggers + backfill)
-2. Atualizar os 3 processadores para ler o template do banco
-3. Criar `RemindersCenterTab.tsx` + hook `use-reminder-templates.ts`
-4. Plugar no `TabsContent value="notifications"` de `settings.tsx`
-5. Adicionar tool na IA do WhatsApp
-
-Confirma que sigo por aí?
+## Fora do escopo (para depois)
+- Versionamento visual de regras (já existe `ai_config_versions`, usar depois).
+- A/B testing de prompts.
+- Migração das tools de agendamento para o simulador em modo "real opcional".
