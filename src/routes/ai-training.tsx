@@ -340,6 +340,41 @@ function AITrainingSettings() {
           <SimulationTab />
         </TabsContent>
 
+        <TabsContent value="rules" className="space-y-6">
+          <Card className="shadow-card border-border bg-white rounded-[14px]">
+            <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Regras de Comportamento</CardTitle>
+                <CardDescription>
+                  Estas regras são injetadas no prompt real do WhatsApp e do Simulador. Edite com cuidado — vale para todas as conversas do tenant.
+                </CardDescription>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setField('behavior_rules', DEFAULT_BEHAVIOR_RULES)}
+                className="gap-2 whitespace-nowrap"
+              >
+                <RotateCcw className="w-4 h-4" /> Restaurar padrão
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-3">
+              <Textarea
+                value={form.behavior_rules || ''}
+                onChange={(e) => setField('behavior_rules', e.target.value)}
+                placeholder="Deixe em branco para usar as regras padrão de fábrica."
+                className="min-h-[540px] font-mono text-xs bg-white border-border rounded-xl text-ink p-4"
+              />
+              <p className="text-[11px] text-gray-500 italic">
+                Se este campo estiver vazio, a IA usa automaticamente as regras padrão (mesmas do simulador e do WhatsApp real).
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
+
         <TabsContent value="history" className="space-y-6">
           <HistoryTab />
         </TabsContent>
