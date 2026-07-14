@@ -862,7 +862,7 @@ function PromptCopilotCard() {
   const apply = useServerFn(applyPromptCopilot)
 
   const [instruction, setInstruction] = useState('')
-  const [proposal, setProposal] = useState<{ summary: string; changes: CopilotChanges } | null>(null)
+  const [proposal, setProposal] = useState<{ summary: string; changes: CopilotChanges; before: CopilotChanges } | null>(null)
 
   const allowedRoles = ['admin', 'super_admin', 'manager']
   if (!user || !allowedRoles.includes(user.role)) return null
@@ -871,13 +871,15 @@ function PromptCopilotCard() {
     mutationFn: (text: string) => generate({ data: { instruction: text } }),
     onSuccess: (res: any) => {
       const changes = (res?.changes ?? {}) as CopilotChanges
-      setProposal({ summary: res?.summary ?? '', changes })
+      const before = (res?.before ?? {}) as CopilotChanges
+      setProposal({ summary: res?.summary ?? '', changes, before })
       if (!Object.keys(changes).length) {
         toast.info('O Copilot não sugeriu alterações. Refine sua instrução.')
       }
     },
     onError: (e: any) => toast.error(e?.message ?? 'Falha ao consultar o Copilot'),
   })
+
 
   const applyMut = useMutation({
     mutationFn: (changes: CopilotChanges) => apply({ data: { changes } }),
