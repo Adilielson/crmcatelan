@@ -73,10 +73,11 @@ export const updateAiConfig = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const tenantId = await getUserTenant(context.supabase, context.userId);
     const allowed: (keyof AiConfig)[] = [
-      "prompt_system", "knowledge_base", "knowledge_base_faq", "sample_scripts",
+      "prompt_system", "behavior_rules", "knowledge_base", "knowledge_base_faq", "sample_scripts",
       "qualification_questions", "response_delay", "scheduling_link", "goal",
       "model_temperature", "training_mode", "autopilot_enabled", "rejection_instructions", "response_restrictions",
     ];
+
     const payload: Record<string, unknown> = {};
     for (const k of allowed) if (k in data) payload[k] = (data as any)[k];
 
