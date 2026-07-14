@@ -219,7 +219,8 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
           }
 
           async function callLovableGateway() {
-            const model = 'google/gemini-3-flash-preview'
+            const model = 'openai/gpt-5-mini'
+
             const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
               method: 'POST',
               headers: {
