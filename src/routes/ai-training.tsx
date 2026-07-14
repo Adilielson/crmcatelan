@@ -789,3 +789,154 @@ function HistoryTab() {
     </Card>
   )
 }
+
+// ============= Prompt Copilot Card (admin/manager only) =============
+type CopilotChanges = Partial<{
+  prompt_system: string
+  sample_scripts: string
+  rejection_instructions: string
+  knowledge_base_faq: string
+  qualification_questions: string[]
+}>
+
+const COPILOT_FIELD_LABELS: Record<keyof CopilotChanges, string> = {
+  prompt_system: 'Prompt do Sistema',
+  sample_scripts: 'Scripts de Exemplo',
+  rejection_instructions: 'Instruções de Rejeição',
+  knowledge_base_faq: 'FAQ',
+  qualification_questions: 'Perguntas de Qualificação',
+}
+
+function PromptCopilotCard() {
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  const generate = useServerFn(generatePromptCopilot)
+  const apply = useServerFn(applyPromptCopilot)
+
+  const [instruction, setInstruction] = useState('')
+  const [proposal, setProposal] = useState<{ summary: string; changes: CopilotChanges } | null>(null)
+
+  const allowedRoles = ['admin', 'n', 'manager']
+  if (!user || !allowedRoles.includes(user.role)) return null
+
+  const genMut = useMutation({
+    mutationFn: (text: string) => generate({ data: { instruction: text } }),
+    onSuccess: (res: any) => {
+      const changes = (res?.changes ?? {}) as CopilotChanges
+      setProposal({ summary: res?.summary ?? '', changes })
+      if (!Object.keys(changes).length) {
+        toast.info('O Copilot não sugeriu alterações. Refine sua instrução.')
+      }
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Falha ao consultar o Copilot'),
+  })
+
+  const applyMut = useMutation({
+    mutationFn: (changes: CopilotChanges) => apply({ data: { changes } }),
+    onSuccess: () => {
+      toast.success('Configuração atualizada — já vale para o próximo teste.')
+      setProposal(null)
+      setInstruction('')
+      qc.invalidateQueries({ queryKey: ['ai-config'] })
+      qc.invalidateQueries({ queryKey: ['ai-versions'] })
+      // Força o formulário do topo (Personalidade/FAQ/Qualificação) a recarregar com o novo estado salvo.
+      setTimeout(() => window.location.reload(), 400)
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Falha ao aplicar alterações'),
+  })
+
+  const changeEntries = Object.entries(proposal?.changes ?? {}) as [keyof CopilotChanges, unknown][]
+
+  return (
+    <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/30 rounded-[14px]">
+      <CardHeader className="border-b border-primary/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Wand2 className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-primary">Copilot de Prompt</CardTitle>
+            <CardDescription>
+              Descreva em português a mudança que quer no comportamento da IA. O Copilot reescreve os campos e aplica ao salvar.
+            </CardDescription>
+          </div>
+        </div>
+        <Badge variant="outline" className="bg-white text-primary border-primary/40 shrink-0">
+          {user.role === 'manager' ? 'Gerente' : 'Admin'}
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-6">
+        <Textarea
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          placeholder='Ex.: "A Ana está pedindo o telefone antes de oferecer horário. Nunca peça telefone, só ofereça horário direto."'
+          className="min-h-[110px] bg-white border-border rounded-xl"
+          disabled={genMut.isPending || applyMut.isPending}
+          maxLength={4000}
+        />
+        <div className="flex flex-wrap gap-2 justify-end">
+          {proposal && (
+            <Button
+              variant="ghost"
+              onClick={() => setProposal(null)}
+              disabled={applyMut.isPending}
+            >
+              Descartar sugestão
+            </Button>
+          )}
+          <Button
+            onClick={() => genMut.mutate(instruction.trim())}
+            disabled={!instruction.trim() || genMut.isPending || applyMut.isPending}
+            variant="outline"
+            className="gap-2"
+          >
+            {genMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Gerando...</> : <><Sparkles className="w-4 h-4" /> Gerar sugestão</>}
+          </Button>
+        </div>
+
+        {proposal && (
+          <div className="space-y-4 pt-4 border-t border-primary/20">
+            {proposal.summary && (
+              <div className="p-3 bg-white border border-primary/20 rounded-lg text-sm text-ink">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Resumo</p>
+                {proposal.summary}
+              </div>
+            )}
+            {changeEntries.length === 0 ? (
+              <p className="text-xs text-gray-500 italic">Nenhuma alteração proposta.</p>
+            ) : (
+              <div className="space-y-3">
+                {changeEntries.map(([field, value]) => {
+                  const label = COPILOT_FIELD_LABELS[field]
+                  const preview = field === 'qualification_questions'
+                    ? (value as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n')
+                    : String(value ?? '')
+                  return (
+                    <div key={field} className="rounded-xl border border-primary/20 bg-white overflow-hidden">
+                      <div className="px-3 py-2 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">{label}</span>
+                        <Badge variant="outline" className="text-[9px] bg-white">Novo valor</Badge>
+                      </div>
+                      <ScrollArea className="max-h-56">
+                        <pre className="p-3 text-xs whitespace-pre-wrap break-words text-ink font-mono">{preview}</pre>
+                      </ScrollArea>
+                    </div>
+                  )
+                })}
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => applyMut.mutate(proposal.changes)}
+                    disabled={applyMut.isPending}
+                    className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black gap-2"
+                  >
+                    {applyMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Aplicando...</> : <><Zap className="w-4 h-4" /> Aplicar e salvar</>}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
