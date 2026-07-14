@@ -85,11 +85,6 @@ function validateMessages(value: unknown): ChatMessage[] {
   return messages.slice(-20)
 }
 
-function formatUpcomingSaturdays(_cfg: AiConfig): string {
-  return 'TIPO DE EXAME DISPONÍVEL: apenas Optometrista (segunda a domingo a partir das 14h, conforme grade cadastrada). NÃO ofereça exame de Oftalmologia — foi descontinuado. NUNCA cite valor/preço do exame sem o cliente perguntar primeiro.'
-}
-
-
 function buildStyleBlock(styleProfile: any): string {
   if (!styleProfile?.style_prompt) return ''
 
@@ -117,52 +112,6 @@ function buildStyleBlock(styleProfile: any): string {
   return lines.join('\n')
 }
 
-function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock = ''): string {
-  const parts: string[] = [cfg.prompt_system || 'Você é um atendente da Ótica Catelan.']
-
-  if (styleBlock) parts.push(styleBlock)
-  if (cfg.goal) {
-    parts.push(
-      `Objetivo principal da conversa: ${
-        cfg.goal === 'appointment'
-          ? 'agendar uma consulta'
-          : cfg.goal === 'qualification'
-            ? 'qualificar o lead'
-            : 'dar suporte'
-      }.`,
-    )
-  }
-  if (cfg.scheduling_link) {
-    parts.push(`Link de agendamento (use quando o lead pedir): ${cfg.scheduling_link}`)
-  }
-
-  parts.push(formatUpcomingSaturdays(cfg))
-
-  if (cfg.knowledge_base_faq?.trim()) {
-    parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`)
-  }
-  if (knowledgeDocs.length) {
-    parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeDocs.join('\n---\n').slice(0, 8000)}`)
-  }
-  if (cfg.sample_scripts?.trim()) {
-    parts.push(`EXEMPLOS DE ATENDIMENTO (mimetize o estilo):\n${cfg.sample_scripts}`)
-  }
-  if (Array.isArray(cfg.qualification_questions) && cfg.qualification_questions.length) {
-    parts.push(
-      `PERGUNTAS DE QUALIFICAÇÃO (faça uma por vez, na ordem):\n${cfg.qualification_questions
-        .map((q, i) => `${i + 1}. ${q}`)
-        .join('\n')}`,
-    )
-  }
-  if (cfg.rejection_instructions?.trim()) {
-    parts.push(`O QUE NÃO FAZER:\n${cfg.rejection_instructions}`)
-  }
-  if (Array.isArray(cfg.response_restrictions) && cfg.response_restrictions.length) {
-    parts.push(`Restrições: ${cfg.response_restrictions.join(', ')}`)
-  }
-
-  return parts.join('\n\n')
-}
 
 export const Route = createFileRoute('/api/ai-training/simulate-chat')({
   server: {
