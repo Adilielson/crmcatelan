@@ -83,26 +83,10 @@ function validateMessages(value: unknown): ChatMessage[] {
   return messages.slice(-20)
 }
 
-function formatUpcomingSaturdays(cfg: AiConfig): string {
-  const saturdays = Array.isArray(cfg.ophthalmologist_saturdays)
-    ? cfg.ophthalmologist_saturdays
-    : []
-  const today = new Date().toISOString().slice(0, 10)
-  const upcoming = saturdays.filter((d) => d >= today).sort().slice(0, 8)
-
-  if (!upcoming.length) {
-    return 'OFTALMOLOGISTA NO SÁBADO: nenhuma data de sábado disponível no momento. Ofereça apenas quarta-feira (15h-17h) com o oftalmologista, ou optometrista de segunda a domingo a partir das 14h.'
-  }
-
-  const formatted = upcoming
-    .map((d) => {
-      const [year, month, day] = d.split('-')
-      return `${day}/${month}/${year}`
-    })
-    .join(', ')
-
-  return `SÁBADOS DISPONÍVEIS DO OFTALMOLOGISTA (próximos): ${formatted}. Só ofereça sábado para oftalmologista nessas datas. Se o lead pedir outro sábado, explique que naquele a agenda está fechada e ofereça a próxima da lista ou a quarta-feira (15h-17h).`
+function formatUpcomingSaturdays(_cfg: AiConfig): string {
+  return 'TIPO DE EXAME DISPONÍVEL: apenas Optometrista (segunda a domingo a partir das 14h, conforme grade cadastrada). NÃO ofereça exame de Oftalmologia — foi descontinuado. NUNCA cite valor/preço do exame sem o cliente perguntar primeiro.'
 }
+
 
 function buildStyleBlock(styleProfile: any): string {
   if (!styleProfile?.style_prompt) return ''

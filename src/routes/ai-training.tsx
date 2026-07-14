@@ -18,7 +18,7 @@ import {
   Brain, BookOpen, Target, History, Play, Upload, Plus, X,
   AlertCircle, FileText, Zap, Send, Loader2, RotateCcw,
 } from 'lucide-react'
-import { OphthalmologistSaturdaysCard } from '@/components/ai/OphthalmologistSaturdaysCard'
+
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -302,7 +302,7 @@ function AITrainingSettings() {
             </CardContent>
           </Card>
 
-          <OphthalmologistSaturdaysCard />
+          
         </TabsContent>
 
         <TabsContent value="knowledge" className="space-y-6">
