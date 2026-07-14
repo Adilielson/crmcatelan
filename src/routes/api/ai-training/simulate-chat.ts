@@ -9,18 +9,8 @@ type ChatMessage = {
   content: string
 }
 
-type AiConfig = {
-  prompt_system?: string | null
-  knowledge_base_faq?: string | null
-  sample_scripts?: string | null
-  qualification_questions?: string[] | null
-  scheduling_link?: string | null
-  goal?: string | null
-  model_temperature?: number | string | null
-  rejection_instructions?: string | null
-  response_restrictions?: string[] | null
-  ophthalmologist_saturdays?: string[] | null
-}
+
+
 
 function json(data: unknown, init?: ResponseInit) {
   return Response.json(data, init)
