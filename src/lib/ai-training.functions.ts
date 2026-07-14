@@ -131,21 +131,9 @@ function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock: s
   if (cfg.goal) parts.push(`Objetivo principal da conversa: ${cfg.goal === "appointment" ? "agendar uma consulta" : cfg.goal === "qualification" ? "qualificar o lead" : "dar suporte"}.`);
   if (cfg.scheduling_link) parts.push(`Link de agendamento (use quando o lead pedir): ${cfg.scheduling_link}`);
 
-  // Sábados disponíveis do Oftalmologista (revezamento)
-  const saturdays = Array.isArray((cfg as any).ophthalmologist_saturdays)
-    ? ((cfg as any).ophthalmologist_saturdays as string[])
-    : [];
-  const today = new Date().toISOString().slice(0, 10);
-  const upcoming = saturdays.filter((d) => d >= today).sort().slice(0, 8);
-  if (upcoming.length) {
-    const fmt = upcoming.map((d) => {
-      const [y, m, day] = d.split("-");
-      return `${day}/${m}/${y}`;
-    }).join(", ");
-    parts.push(`SÁBADOS DISPONÍVEIS DO OFTALMOLOGISTA (próximos): ${fmt}. Só ofereça sábado para oftalmologista nessas datas. Se o lead pedir outro sábado, explique que naquele a agenda está fechada e ofereça a próxima da lista ou a quarta-feira (15h-17h).`);
-  } else {
-    parts.push(`OFTALMOLOGISTA NO SÁBADO: nenhuma data de sábado disponível no momento. Ofereça apenas quarta-feira (15h-17h) com o oftalmologista, ou optometrista de segunda a domingo a partir das 14h.`);
-  }
+  // Só oferecemos exame de Optometrista (Oftalmologia descontinuada)
+  parts.push(`TIPO DE EXAME DISPONÍVEL: apenas Optometrista (segunda a domingo a partir das 14h, conforme grade cadastrada). NÃO ofereça exame de Oftalmologia — foi descontinuado. NUNCA cite valor/preço do exame sem o cliente perguntar primeiro.`);
+
 
   if (cfg.knowledge_base_faq?.trim()) parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`);
   if (knowledgeDocs.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeDocs.join("\n---\n").slice(0, 8000)}`);
