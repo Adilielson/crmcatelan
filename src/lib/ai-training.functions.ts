@@ -223,6 +223,7 @@ export const simulateChat = createServerFn({ method: "POST" })
 // Editable fields the Copilot may propose changes to.
 const COPILOT_EDITABLE_FIELDS = [
   "prompt_system",
+  "behavior_rules",
   "sample_scripts",
   "rejection_instructions",
   "knowledge_base_faq",
@@ -233,6 +234,7 @@ type CopilotField = (typeof COPILOT_EDITABLE_FIELDS)[number];
 export type CopilotProposal = {
   summary: string;
   changes: Partial<Record<CopilotField, string | string[]>>;
+  before: Partial<Record<CopilotField, string | string[]>>;
 };
 
 async function callCopilotLLM(instruction: string, cfg: any): Promise<CopilotProposal> {
@@ -241,11 +243,13 @@ async function callCopilotLLM(instruction: string, cfg: any): Promise<CopilotPro
 
   const currentSnapshot = {
     prompt_system: cfg.prompt_system ?? "",
+    behavior_rules: cfg.behavior_rules ?? "",
     sample_scripts: cfg.sample_scripts ?? "",
     rejection_instructions: cfg.rejection_instructions ?? "",
     knowledge_base_faq: cfg.knowledge_base_faq ?? "",
     qualification_questions: Array.isArray(cfg.qualification_questions) ? cfg.qualification_questions : [],
   };
+
 
   const system = `Você é um Copilot de Prompt Engineering para o CRM da Ótica Catelan.
 Recebe UMA instrução em linguagem natural do administrador e a configuração atual da IA de atendimento.
