@@ -1,6 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const COPILOT_ALLOWED_ROLES = ["admin", "n", "manager"];
+
+async function assertCopilotRole(supabase: any, userId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.role || !COPILOT_ALLOWED_ROLES.includes(data.role)) {
+    throw new Error("Apenas administradores ou gerentes podem usar o Copilot de Prompt.");
+  }
+}
+
 export type QualificationQuestion = string;
 
 export type AiConfig = {
