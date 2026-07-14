@@ -25,12 +25,14 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   getAiConfig, updateAiConfig,
   listAiVersions, restoreAiVersion,
+  generatePromptCopilot, applyPromptCopilot,
 } from '@/lib/ai-training.functions'
 import {
   listKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc,
 } from '@/lib/ai-knowledge.functions'
 import { processTrainingObservations } from '@/lib/ai-insights.functions'
 import { supabase } from '@/integrations/supabase/client'
+import { useAuthStore } from '@/hooks/use-auth'
 
 
 export const Route = createFileRoute('/ai-training')({
