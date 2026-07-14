@@ -209,11 +209,15 @@ function buildHoursContext(hours: BusinessHours | null, timezone: string): strin
   }
 
   const todayStr = today ? `${today[0]}–${today[1]}` : "fechado";
+  const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const mm = String(minutes % 60).padStart(2, "0");
+  const nowLabel = `AGORA são ${hh}:${mm} (${DAY_LABEL_PT[dayKey] ?? dayKey}, fuso ${timezone}). Use isso para calcular quanto falta para qualquer agendamento antes de oferecer lembretes ou orientações temporais.`;
   if (isOpen) {
-    return `CONTEXTO DE HORÁRIO (fuso ${timezone}): estamos DENTRO do expediente. Horário de hoje: ${todayStr}. Você PODE oferecer transferir para um atendente humano.`;
+    return `${nowLabel}\nCONTEXTO DE HORÁRIO: estamos DENTRO do expediente. Horário de hoje: ${todayStr}. Você PODE oferecer transferir para um atendente humano.`;
   }
-  return `CONTEXTO DE HORÁRIO (fuso ${timezone}): estamos FORA do expediente. Horário de hoje: ${todayStr}. Próxima abertura: ${nextLabel}. NÃO ofereça transferir para atendente humano agora. Em vez disso, ofereça agendar uma consulta oftalmológica ou diga que a equipe responderá no próximo horário útil.`;
+  return `${nowLabel}\nCONTEXTO DE HORÁRIO: estamos FORA do expediente. Horário de hoje: ${todayStr}. Próxima abertura: ${nextLabel}. NÃO ofereça transferir para atendente humano agora. Em vez disso, ofereça agendar uma consulta oftalmológica ou diga que a equipe responderá no próximo horário útil.`;
 }
+
 
 
 function asObject(value: unknown): Record<string, unknown> {
