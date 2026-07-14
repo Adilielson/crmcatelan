@@ -313,8 +313,13 @@ ${JSON.stringify(currentSnapshot, null, 2)}`;
       changes[k] = v;
     }
   }
-  return { summary, changes };
+  const before: CopilotProposal["before"] = {};
+  for (const k of Object.keys(changes) as CopilotField[]) {
+    before[k] = currentSnapshot[k] as any;
+  }
+  return { summary, changes, before };
 }
+
 
 export const generatePromptCopilot = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
