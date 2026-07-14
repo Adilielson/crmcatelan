@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/integrations/supabase/types'
+import { buildAiSystemPrompt, type AiCfgLike } from '@/lib/ai-prompt-builder'
+
 
 type ChatMessage = {
   role: 'user' | 'assistant'
