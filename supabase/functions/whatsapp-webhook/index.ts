@@ -685,7 +685,24 @@ function isValidContactName(name: string | null, phone: string | null): boolean 
   if (/^\d+$/.test(n)) return false;
   if (n.includes("@")) return false;
   if (phone && n.replace(/\D+/g, "") === phone) return false;
+  // Precisa ter pelo menos uma vogal — descarta lixo tipo "hhhdh", "kkk", "zzzz".
+  if (!/[aeiouáéíóúâêôãõà]/i.test(n)) return false;
+  // Descarta sequências de 5+ consoantes seguidas (nomes reais raramente têm isso).
+  if (/[bcdfghjklmnpqrstvwxyzç]{5,}/i.test(n)) return false;
   return true;
+}
+
+// Detecta se um nome já salvo parece lixo/placeholder (ex: pushName ruim do WhatsApp).
+// Usado para permitir sobrescrever quando o cliente disser o nome real na conversa.
+function looksLikeJunkName(name: string | null): boolean {
+  if (!name) return true;
+  const n = name.trim();
+  if (n.length < 3) return true;
+  if (!/[aeiouáéíóúâêôãõà]/i.test(n)) return true;
+  if (/[bcdfghjklmnpqrstvwxyzç]{4,}/i.test(n)) return true;
+  // Tudo em uma letra repetida (hhh, kkkk)
+  if (/^(.)\1+$/i.test(n.replace(/\s+/g, ""))) return true;
+  return false;
 }
 
 // Extrai o primeiro nome de uma string completa
