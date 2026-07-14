@@ -73,7 +73,9 @@ function AITrainingSettings() {
       const c = cfgQuery.data
       setForm({
         prompt_system: c.prompt_system ?? '',
+        behavior_rules: (c as any).behavior_rules ?? '',
         sample_scripts: c.sample_scripts ?? '',
+
         knowledge_base_faq: c.knowledge_base_faq ?? '',
         qualification_questions: Array.isArray(c.qualification_questions) ? (c.qualification_questions as string[]) : [],
         response_delay: c.response_delay ?? 5,
