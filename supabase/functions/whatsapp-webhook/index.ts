@@ -1329,22 +1329,34 @@ Deno.serve(async (req) => {
             if (!cfg?.instance_token || !cfg.is_connected) {
               console.log("[sdr] pulado: whatsapp não conectado ou sem token");
             } else {
-              // 2) Carrega últimas 10 mensagens dessa conversa pra contexto
+              // 2) Carrega últimas 20 mensagens REAIS dessa conversa (inbound + outbound)
+              //    Fonte: whatsapp_message_logs.body (texto completo); status='received' = cliente,
+              //    'sent' = IA/atendente. Antes lia error_message (só respostas truncadas da IA) —
+              //    por isso ela respondia sem contexto nenhum.
               const { data: hist } = await adminClient
                 .from("whatsapp_message_logs")
-                .select("status, error_message, sent_at")
+                .select("status, body, transcription, error_message, sent_at")
                 .eq("tenant_id", tenantId)
                 .eq("recipient_phone", senderPhone)
                 .order("sent_at", { ascending: false })
-                .limit(10);
+                .limit(20);
 
               const history = (hist ?? [])
                 .reverse()
-                .filter((m) => m.error_message && m.error_message.trim())
-                .map((m) => ({
-                  role: m.status === "sent" ? ("assistant" as const) : ("user" as const),
-                  content: m.error_message as string,
-                }));
+                .map((m: any) => {
+                  const content = (m.body && String(m.body).trim())
+                    || (m.transcription && String(m.transcription).trim())
+                    || (m.error_message && String(m.error_message).trim())
+                    || "";
+                  return content
+                    ? {
+                        role: m.status === "sent" ? ("assistant" as const) : ("user" as const),
+                        content,
+                      }
+                    : null;
+                })
+                .filter((x): x is { role: "user" | "assistant"; content: string } => !!x);
+
 
               // 2b) Se ainda não temos nome — OU o nome atual parece lixo (pushName ruim
               // do WhatsApp tipo "hhhdh") — tenta extrair da mensagem atual do lead.
@@ -1429,7 +1441,39 @@ Deno.serve(async (req) => {
 
 
 
-              const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
+              // Contexto de agendamento ativo — evita a IA perguntar "está tudo certo pra sua consulta?"
+              // quando o lead NÃO tem nada marcado (bug reportado: 15/07 com Adilielson).
+              let apptCtx = "";
+              try {
+                if (leadId) {
+                  const nowIso = new Date().toISOString();
+                  const { data: nextAppt } = await adminClient
+                    .from("appointments")
+                    .select("scheduled_at, status, type_exam")
+                    .eq("lead_id", leadId)
+                    .in("status", ["pending", "confirmed"])
+                    .gt("scheduled_at", nowIso)
+                    .order("scheduled_at", { ascending: true })
+                    .limit(1)
+                    .maybeSingle();
+                  const { data: lastAppt } = await adminClient
+                    .from("appointments")
+                    .select("scheduled_at, status, type_exam")
+                    .eq("lead_id", leadId)
+                    .order("scheduled_at", { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                  if (nextAppt) {
+                    apptCtx = `AGENDAMENTO ATIVO DESTE LEAD: ${nextAppt.type_exam ?? "Optometrista"} em ${new Date(nextAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })} (status: ${nextAppt.status}). Você PODE se referir a esta consulta.`;
+                  } else if (lastAppt) {
+                    apptCtx = `ATENÇÃO: Este lead NÃO tem agendamento futuro. Último registro: ${lastAppt.status} em ${new Date(lastAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })}. NÃO pergunte "está tudo certo para sua consulta" nem invente compromissos.`;
+                  } else {
+                    apptCtx = `ATENÇÃO: Este lead NUNCA agendou nada. NÃO faça perguntas do tipo "está tudo certo para sua consulta/agendamento" — não existe. Trate como lead novo e descubra o interesse dele.`;
+                  }
+                }
+              } catch (_) { /* noop */ }
+
+              const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx, apptCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(
                 systemPrompt,
                 history,
