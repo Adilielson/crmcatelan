@@ -66,6 +66,45 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
 
 
 // ── Helpers de IA + envio ────────────────────────────────────────────────
+// Resolve provider: prioridade para credencial OpenAI do tenant (BYO key).
+// Fallback: Lovable AI Gateway (LOVABLE_API_KEY).
+type AiEndpoint = { url: string; headers: Record<string, string>; model: string; provider: "openai" | "lovable" };
+async function resolveAiEndpoint(tenantId: string | null): Promise<AiEndpoint | null> {
+  if (tenantId) {
+    try {
+      const { data, error } = await adminClient.rpc("get_active_ai_credential", {
+        _tenant_id: tenantId,
+        _provider: "openai",
+      });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!error && row?.api_key) {
+        return {
+          url: "https://api.openai.com/v1/chat/completions",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${row.api_key}`,
+          },
+          model: row.model_default || "gpt-4o-mini",
+          provider: "openai",
+        };
+      }
+    } catch (e) {
+      console.warn("[sdr] falha ao buscar credencial do tenant:", e instanceof Error ? e.message : String(e));
+    }
+  }
+  if (!LOVABLE_API_KEY) return null;
+  return {
+    url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+    headers: {
+      "Content-Type": "application/json",
+      "Lovable-API-Key": LOVABLE_API_KEY,
+      "X-Lovable-AIG-SDK": "edge-function",
+    },
+    model: "openai/gpt-5-mini",
+    provider: "lovable",
+  };
+}
+
 async function generateSdrReply(
   systemPrompt: string,
   history: { role: "user" | "assistant"; content: string }[],
@@ -73,10 +112,12 @@ async function generateSdrReply(
   temperature: number,
   toolCtx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string } | null,
 ): Promise<string | null> {
-  if (!LOVABLE_API_KEY) {
-    console.error("[sdr] LOVABLE_API_KEY ausente");
+  const endpoint = await resolveAiEndpoint(toolCtx?.tenantId ?? null);
+  if (!endpoint) {
+    console.error("[sdr] nenhum provedor de IA disponível (sem credencial do tenant e sem LOVABLE_API_KEY)");
     return null;
   }
+  console.log(`[sdr] provider=${endpoint.provider} model=${endpoint.model}`);
   try {
     const systemMessages: { role: "system"; content: string }[] = [
       { role: "system", content: systemPrompt },
@@ -88,11 +129,10 @@ async function generateSdrReply(
     const useTools = !!toolCtx;
 
     for (let iter = 0; iter < 4; iter++) {
-      const model = "openai/gpt-5-mini";
-      // gpt-5* / o1 / o3 no gateway só aceitam temperature=1
-      const fixedTempModel = /^openai\/(gpt-5|o1|o3)/i.test(model);
+      // gpt-5* / o1 / o3 só aceitam temperature=1
+      const fixedTempModel = /(gpt-5|o1|o3)/i.test(endpoint.model);
       const body: Record<string, unknown> = {
-        model,
+        model: endpoint.model,
         messages,
         temperature: fixedTempModel ? 1 : temperature,
       };
@@ -101,19 +141,15 @@ async function generateSdrReply(
         body.tool_choice = "auto";
       }
 
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch(endpoint.url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Lovable-API-Key": LOVABLE_API_KEY,
-          "X-Lovable-AIG-SDK": "edge-function",
-        },
+        headers: endpoint.headers,
         body: JSON.stringify(body),
       });
 
       if (!res.ok) {
         const txt = await res.text();
-        console.error(`[sdr] gateway ${res.status}: ${txt.slice(0, 300)}`);
+        console.error(`[sdr] ${endpoint.provider} ${res.status}: ${txt.slice(0, 300)}`);
         return null;
       }
       const data = await res.json();
