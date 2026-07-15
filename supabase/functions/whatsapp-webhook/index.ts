@@ -1441,7 +1441,39 @@ Deno.serve(async (req) => {
 
 
 
-              const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx].filter(Boolean).join("\n\n");
+              // Contexto de agendamento ativo — evita a IA perguntar "está tudo certo pra sua consulta?"
+              // quando o lead NÃO tem nada marcado (bug reportado: 15/07 com Adilielson).
+              let apptCtx = "";
+              try {
+                if (leadId) {
+                  const nowIso = new Date().toISOString();
+                  const { data: nextAppt } = await adminClient
+                    .from("appointments")
+                    .select("scheduled_at, status, type_exam")
+                    .eq("lead_id", leadId)
+                    .in("status", ["pending", "confirmed"])
+                    .gt("scheduled_at", nowIso)
+                    .order("scheduled_at", { ascending: true })
+                    .limit(1)
+                    .maybeSingle();
+                  const { data: lastAppt } = await adminClient
+                    .from("appointments")
+                    .select("scheduled_at, status, type_exam")
+                    .eq("lead_id", leadId)
+                    .order("scheduled_at", { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                  if (nextAppt) {
+                    apptCtx = `AGENDAMENTO ATIVO DESTE LEAD: ${nextAppt.type_exam ?? "Optometrista"} em ${new Date(nextAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })} (status: ${nextAppt.status}). Você PODE se referir a esta consulta.`;
+                  } else if (lastAppt) {
+                    apptCtx = `ATENÇÃO: Este lead NÃO tem agendamento futuro. Último registro: ${lastAppt.status} em ${new Date(lastAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })}. NÃO pergunte "está tudo certo para sua consulta" nem invente compromissos.`;
+                  } else {
+                    apptCtx = `ATENÇÃO: Este lead NUNCA agendou nada. NÃO faça perguntas do tipo "está tudo certo para sua consulta/agendamento" — não existe. Trate como lead novo e descubra o interesse dele.`;
+                  }
+                }
+              } catch (_) { /* noop */ }
+
+              const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx, apptCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(
                 systemPrompt,
                 history,
