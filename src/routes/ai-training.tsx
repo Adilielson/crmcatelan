@@ -861,42 +861,93 @@ function PromptCopilotCard() {
   const { user } = useAuthStore()
   const generate = useServerFn(generatePromptCopilot)
   const apply = useServerFn(applyPromptCopilot)
+  const generateAndApply = useServerFn(generateAndApplyPromptCopilot)
+  const listHistory = useServerFn(listCopilotHistory)
 
   const [instruction, setInstruction] = useState('')
   const [proposal, setProposal] = useState<{ summary: string; changes: CopilotChanges; before: CopilotChanges } | null>(null)
+  const [lastApplied, setLastApplied] = useState<{ fields: string[]; when: Date; summary: string; instruction: string } | null>(null)
+  const [noChangeReason, setNoChangeReason] = useState<string | null>(null)
+  const [previewMode, setPreviewMode] = useState(false)
 
   const allowedRoles = ['admin', 'super_admin', 'manager']
   if (!user || !allowedRoles.includes(user.role)) return null
 
-  const genMut = useMutation({
+  const historyQ = useQuery({
+    queryKey: ['copilot-history'],
+    queryFn: () => listHistory(),
+  })
+
+  // Fluxo direto: gera + aplica em uma chamada
+  const runMut = useMutation({
+    mutationFn: (text: string) => generateAndApply({ data: { instruction: text } }),
+    onSuccess: (res: any) => {
+      if (res?.applied) {
+        setLastApplied({
+          fields: res.applied_fields ?? [],
+          when: new Date(),
+          summary: res?.proposal?.summary ?? '',
+          instruction: instruction.trim(),
+        })
+        setNoChangeReason(null)
+        setProposal(null)
+        setInstruction('')
+        toast.success(`IA atualizada — ${res.applied_fields?.length ?? 0} campo(s) alterado(s).`)
+        qc.invalidateQueries({ queryKey: ['ai-config'] })
+        qc.invalidateQueries({ queryKey: ['ai-versions'] })
+        qc.invalidateQueries({ queryKey: ['copilot-history'] })
+        // Recarrega para o formulário do topo refletir o novo estado salvo
+        setTimeout(() => window.location.reload(), 900)
+      } else {
+        setNoChangeReason(res?.reason ?? 'Sem alterações sugeridas.')
+        setProposal(null)
+        qc.invalidateQueries({ queryKey: ['copilot-history'] })
+      }
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Falha ao aplicar mudança'),
+  })
+
+  // Modo preview (opcional): mostra o diff antes de aplicar
+  const previewMut = useMutation({
     mutationFn: (text: string) => generate({ data: { instruction: text } }),
     onSuccess: (res: any) => {
       const changes = (res?.changes ?? {}) as CopilotChanges
       const before = (res?.before ?? {}) as CopilotChanges
-      setProposal({ summary: res?.summary ?? '', changes, before })
       if (!Object.keys(changes).length) {
-        toast.info('O Copilot não sugeriu alterações. Refine sua instrução.')
+        setNoChangeReason(res?.summary || 'O Copilot não sugeriu alterações. Refine a instrução.')
+        setProposal(null)
+      } else {
+        setProposal({ summary: res?.summary ?? '', changes, before })
+        setNoChangeReason(null)
       }
     },
     onError: (e: any) => toast.error(e?.message ?? 'Falha ao consultar o Copilot'),
   })
 
-
-  const applyMut = useMutation({
-    mutationFn: (changes: CopilotChanges) => apply({ data: { changes } }),
-    onSuccess: () => {
-      toast.success('Configuração atualizada — já vale para o próximo teste.')
+  const applyPreviewMut = useMutation({
+    mutationFn: (p: { changes: CopilotChanges; summary: string }) =>
+      apply({ data: { changes: p.changes, instruction: instruction.trim(), summary: p.summary } }),
+    onSuccess: (res: any) => {
+      setLastApplied({
+        fields: res?.applied_fields ?? [],
+        when: new Date(),
+        summary: proposal?.summary ?? '',
+        instruction: instruction.trim(),
+      })
       setProposal(null)
       setInstruction('')
       qc.invalidateQueries({ queryKey: ['ai-config'] })
       qc.invalidateQueries({ queryKey: ['ai-versions'] })
-      // Força o formulário do topo (Personalidade/FAQ/Qualificação) a recarregar com o novo estado salvo.
-      setTimeout(() => window.location.reload(), 400)
+      qc.invalidateQueries({ queryKey: ['copilot-history'] })
+      toast.success('Configuração atualizada.')
+      setTimeout(() => window.location.reload(), 900)
     },
     onError: (e: any) => toast.error(e?.message ?? 'Falha ao aplicar alterações'),
   })
 
+  const busy = runMut.isPending || previewMut.isPending || applyPreviewMut.isPending
   const changeEntries = Object.entries(proposal?.changes ?? {}) as [keyof CopilotChanges, unknown][]
+  const history = (historyQ.data ?? []) as any[]
 
   return (
     <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/30 rounded-[14px]">
@@ -908,7 +959,7 @@ function PromptCopilotCard() {
           <div>
             <CardTitle className="text-sm font-black uppercase tracking-widest text-primary">Copilot de Prompt</CardTitle>
             <CardDescription>
-              Descreva em português a mudança que quer no comportamento da IA. O Copilot reescreve os campos e aplica ao salvar.
+              Descreva a mudança em português. Ao clicar em <b>Aplicar mudança agora</b>, o Copilot reescreve e salva na hora.
             </CardDescription>
           </div>
         </div>
@@ -917,34 +968,95 @@ function PromptCopilotCard() {
         </Badge>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
+        {/* Banner de sucesso persistente */}
+        {lastApplied && (
+          <div className="rounded-xl border-2 border-emerald-400 bg-emerald-50 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 mb-1">
+                  ✓ Aplicado às {lastApplied.when.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+                <p className="text-sm text-emerald-900 font-medium">
+                  {lastApplied.fields.length} campo(s) alterado(s): {lastApplied.fields.map((f) => COPILOT_FIELD_LABELS[f as keyof CopilotChanges] ?? f).join(', ')}
+                </p>
+                {lastApplied.summary && (
+                  <p className="text-xs text-emerald-800/80 mt-1 italic">{lastApplied.summary}</p>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setLastApplied(null)} className="shrink-0">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Aviso quando o LLM não sugeriu nada */}
+        {noChangeReason && (
+          <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-700 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-800 mb-1">Nenhuma alteração aplicada</p>
+                  <p className="text-sm text-amber-900">{noChangeReason}</p>
+                  <p className="text-xs text-amber-800/80 mt-1">Reformule sendo mais específico (ex: "remova a frase X do prompt", "troque Y por Z").</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setNoChangeReason(null)} className="shrink-0">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         <Textarea
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           placeholder='Ex.: "A Ana está pedindo o telefone antes de oferecer horário. Nunca peça telefone, só ofereça horário direto."'
           className="min-h-[110px] bg-white border-border rounded-xl"
-          disabled={genMut.isPending || applyMut.isPending}
+          disabled={busy}
           maxLength={4000}
         />
-        <div className="flex flex-wrap gap-2 justify-end">
-          {proposal && (
-            <Button
-              variant="ghost"
-              onClick={() => setProposal(null)}
-              disabled={applyMut.isPending}
-            >
-              Descartar sugestão
-            </Button>
-          )}
-          <Button
-            onClick={() => genMut.mutate(instruction.trim())}
-            disabled={!instruction.trim() || genMut.isPending || applyMut.isPending}
-            variant="outline"
-            className="gap-2"
-          >
-            {genMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Gerando...</> : <><Sparkles className="w-4 h-4" /> Gerar sugestão</>}
-          </Button>
+
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={previewMode}
+              onChange={(e) => { setPreviewMode(e.target.checked); setProposal(null); setNoChangeReason(null) }}
+              disabled={busy}
+              className="accent-primary"
+            />
+            Ver o que mudou antes de aplicar (modo avançado)
+          </label>
+          <div className="flex gap-2">
+            {proposal && (
+              <Button variant="ghost" onClick={() => setProposal(null)} disabled={busy}>
+                Descartar
+              </Button>
+            )}
+            {previewMode ? (
+              <Button
+                onClick={() => previewMut.mutate(instruction.trim())}
+                disabled={!instruction.trim() || busy}
+                variant="outline"
+                className="gap-2"
+              >
+                {previewMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Gerando...</> : <><Sparkles className="w-4 h-4" /> Gerar preview</>}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => runMut.mutate(instruction.trim())}
+                disabled={!instruction.trim() || busy}
+                className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black gap-2"
+              >
+                {runMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Aplicando...</> : <><Zap className="w-4 h-4" /> Aplicar mudança agora</>}
+              </Button>
+            )}
+          </div>
         </div>
 
+        {/* Diff (só em modo preview) */}
         {proposal && (
           <div className="space-y-4 pt-4 border-t border-primary/20">
             {proposal.summary && (
@@ -953,55 +1065,99 @@ function PromptCopilotCard() {
                 {proposal.summary}
               </div>
             )}
-            {changeEntries.length === 0 ? (
-              <p className="text-xs text-gray-500 italic">Nenhuma alteração proposta.</p>
-            ) : (
-              <div className="space-y-3">
-                {changeEntries.map(([field, value]) => {
-                  const label = COPILOT_FIELD_LABELS[field]
-                  const format = (v: unknown) =>
-                    field === 'qualification_questions'
-                      ? (Array.isArray(v) ? (v as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n') : '')
-                      : String(v ?? '')
-                  const beforeText = format(proposal.before?.[field])
-                  const afterText = format(value)
-                  return (
-                    <div key={field} className="rounded-xl border border-primary/20 bg-white overflow-hidden">
-                      <div className="px-3 py-2 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">{label}</span>
-                        <Badge variant="outline" className="text-[9px] bg-white">Antes → Depois</Badge>
+            <div className="space-y-3">
+              {changeEntries.map(([field, value]) => {
+                const label = COPILOT_FIELD_LABELS[field]
+                const format = (v: unknown) =>
+                  field === 'qualification_questions'
+                    ? (Array.isArray(v) ? (v as string[]).map((q, i) => `${i + 1}. ${q}`).join('\n') : '')
+                    : String(v ?? '')
+                const beforeText = format(proposal.before?.[field])
+                const afterText = format(value)
+                return (
+                  <div key={field} className="rounded-xl border border-primary/20 bg-white overflow-hidden">
+                    <div className="px-3 py-2 bg-primary/5 border-b border-primary/10 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary">{label}</span>
+                      <Badge variant="outline" className="text-[9px] bg-white">Antes → Depois</Badge>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-primary/10">
+                      <div>
+                        <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-50/50">Atual</div>
+                        <ScrollArea className="max-h-56">
+                          <pre className="p-3 text-xs whitespace-pre-wrap break-words text-gray-500 font-mono">{beforeText || '(vazio)'}</pre>
+                        </ScrollArea>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-primary/10">
-                        <div>
-                          <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-50/50">Atual</div>
-                          <ScrollArea className="max-h-56">
-                            <pre className="p-3 text-xs whitespace-pre-wrap break-words text-gray-500 font-mono">{beforeText || '(vazio)'}</pre>
-                          </ScrollArea>
-                        </div>
-                        <div>
-                          <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50/50">Proposto</div>
-                          <ScrollArea className="max-h-56">
-                            <pre className="p-3 text-xs whitespace-pre-wrap break-words text-ink font-mono">{afterText}</pre>
-                          </ScrollArea>
-                        </div>
+                      <div>
+                        <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50/50">Proposto</div>
+                        <ScrollArea className="max-h-56">
+                          <pre className="p-3 text-xs whitespace-pre-wrap break-words text-ink font-mono">{afterText}</pre>
+                        </ScrollArea>
                       </div>
                     </div>
-                  )
-                })}
-
-                <div className="flex justify-end">
-                  <Button
-                    onClick={() => applyMut.mutate(proposal.changes)}
-                    disabled={applyMut.isPending}
-                    className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black gap-2"
-                  >
-                    {applyMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Aplicando...</> : <><Zap className="w-4 h-4" /> Aplicar e salvar</>}
-                  </Button>
-                </div>
+                  </div>
+                )
+              })}
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => applyPreviewMut.mutate({ changes: proposal.changes, summary: proposal.summary })}
+                  disabled={applyPreviewMut.isPending}
+                  className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black gap-2"
+                >
+                  {applyPreviewMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Aplicando...</> : <><Zap className="w-4 h-4" /> Aplicar e salvar</>}
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         )}
+
+        {/* Histórico de auditoria */}
+        <div className="pt-4 border-t border-primary/20">
+          <div className="flex items-center gap-2 mb-3">
+            <History className="w-4 h-4 text-primary" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Últimas alterações do Copilot</span>
+          </div>
+          {historyQ.isLoading ? (
+            <p className="text-xs text-gray-500">Carregando…</p>
+          ) : history.length === 0 ? (
+            <p className="text-xs text-gray-500 italic">Nenhuma alteração registrada ainda.</p>
+          ) : (
+            <ul className="space-y-2">
+              {history.map((h) => (
+                <li key={h.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge
+                        variant="outline"
+                        className={h.status === 'applied' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'}
+                      >
+                        {h.status === 'applied' ? 'Aplicado' : 'Sem mudança'}
+                      </Badge>
+                      <span className="text-[11px] text-gray-500 truncate">
+                        {new Date(h.created_at).toLocaleString('pt-BR')} {h.author_name ? `· ${h.author_name}` : ''}
+                      </span>
+                    </div>
+                    {Array.isArray(h.applied_fields) && h.applied_fields.length > 0 && (
+                      <span className="text-[10px] text-gray-500 shrink-0">
+                        {h.applied_fields.length} campo(s)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-ink line-clamp-2">
+                    <span className="text-gray-500">Instrução:</span> {h.instruction}
+                  </p>
+                  {h.summary && (
+                    <p className="text-xs text-gray-600 mt-1 italic line-clamp-2">{h.summary}</p>
+                  )}
+                  {Array.isArray(h.applied_fields) && h.applied_fields.length > 0 && (
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      {h.applied_fields.map((f: string) => COPILOT_FIELD_LABELS[f as keyof CopilotChanges] ?? f).join(', ')}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
