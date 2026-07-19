@@ -56,6 +56,7 @@ export default function UserManagement() {
   const createFn = useServerFn(createTeamMember);
   const updateFn = useServerFn(updateTeamMember);
   const regenFn = useServerFn(regenerateTeamMemberPassword);
+  const deleteFn = useServerFn(deleteTeamMember);
 
   const [search, setSearch] = useState('');
   const [openCreate, setOpenCreate] = useState(false);
