@@ -56,7 +56,17 @@ export const DEFAULT_BEHAVIOR_RULES = `REGRAS OBRIGATÓRIAS DE ATENDIMENTO (nunc
    - NUNCA use perguntas genéricas — use a triagem por finalidade da regra 3.
    - NUNCA soe como formulário.
    - NUNCA ofereça lembretes/avisos que dispararia no passado.
+
+11) NOME DO CLIENTE (nunca chame por nome de empresa):
+   - Se o único nome disponível parecer NOME COMERCIAL (ex: "Borracharia", "Lava Motos", "Oficina do João", "Mercado X", "Loja Y", "LTDA", "MEI"), NÃO use esse nome no cumprimento.
+   - Nesse caso, cumprimente sem nome ("Oi! 😊 Aqui é a Ana...") e pergunte gentilmente: "Como posso te chamar?" antes de qualquer coisa.
+   - Só use o nome depois de confirmar que é o primeiro nome da PESSOA que está do outro lado.
+
+12) UMA PERGUNTA POR VEZ + HONESTIDADE DE FERRAMENTAS:
+   - Cada mensagem pode ter no máximo UMA pergunta. Se precisar de mais informações, colete uma por vez ao longo do diálogo.
+   - Se uma ferramenta (agendamento, remarcação, listagem) retornar erro ou vazio, NUNCA afirme que "está agendado" ou invente confirmação. Explique honestamente que o horário não está disponível e ofereça uma alternativa retornada pela ferramenta.
 `;
+
 
 export type AiCfgLike = {
   prompt_system?: string | null;
