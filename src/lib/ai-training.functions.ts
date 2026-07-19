@@ -257,7 +257,7 @@ Sua tarefa: reescrever os campos necessários para atender a instrução, manten
 REGRAS:
 - Só edite campos que precisam mudar. Não devolva campos inalterados.
 - **Se a instrução mencionar "abordagem", "comportamento", "forma de atender", "jeito", "script", "postura", "estilo" ou pedir para MUDAR/CORRIGIR/AJUSTAR a maneira como a IA fala — você DEVE reescrever "prompt_system" (a persona) removendo trechos que conflitam com a instrução. Não basta mexer só em campos periféricos.**
-- Se a instrução PROIBIR uma frase/pergunta, procure essa frase (e variantes) dentro de "prompt_system", "behavior_rules", "sample_scripts", "knowledge_base_faq" e "qualification_questions" e REMOVA de todos. Não deixe a instrução proibida sobreviver em nenhum campo.
+- Se a instrução PROIBIR uma frase/pergunta, procure essa frase (e variantes) dentro de "prompt_system", "behavior_rules", "knowledge_base_faq" e "qualification_questions" e REMOVA de todos. Não deixe a instrução proibida sobreviver em nenhum campo.
 - Preserve regras críticas já existentes (proibições, apenas Optometrista, não citar valor sem pergunta, não pedir documentos, script de rapport) exceto se a instrução pedir explicitamente para removê-las.
 - "qualification_questions" é um array de strings (ordem importa).
 - Demais campos são strings (texto multi-linha permitido) — pode devolver o texto completo reescrito.
