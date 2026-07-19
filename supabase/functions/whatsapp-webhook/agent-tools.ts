@@ -9,6 +9,40 @@ const DEFAULT_SLOT_MINUTES = 40; // fallback quando o tipo de exame não define
 const LOOKAHEAD_DAYS = 21;
 const MAX_SLOTS_RETURNED = 6;
 
+// ── Regras de capacidade (definidas com o dono da Ótica) ────────────────
+// Seg/Ter/Qui/Sex: até 8 consultas/dia, máx 2 no mesmo horário cheio (encaixes 10 em 10min).
+// Quarta e Sábado: dia de alto volume, até 20 consultas/dia, sem limite por horário.
+// Domingo: fechado (já filtrado pelo horário da loja).
+// Feriados: nunca agendar — cadastrados manualmente em agenda_blocked_dates (all_day=true).
+const DAILY_CAP_NORMAL = 8;
+const DAILY_CAP_HIGH = 20;
+const PER_HOUR_CAP_NORMAL = 2;
+const HIGH_VOLUME_WEEKDAYS = new Set<number>([3, 6]); // 3 = quarta, 6 = sábado
+
+// Retorna { dayStr:'YYYY-MM-DD', weekday:0-6 } no fuso do tenant.
+function localDayInfo(iso: string | Date, tz: string): { dayStr: string; weekday: number } {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === "year")!.value;
+  const m = parts.find((p) => p.type === "month")!.value;
+  const day = parts.find((p) => p.type === "day")!.value;
+  const wkMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const wk = wkMap[parts.find((p) => p.type === "weekday")!.value] ?? 0;
+  return { dayStr: `${y}-${m}-${day}`, weekday: wk };
+}
+
+async function getTenantTimezone(admin: Supa, tenantId: string): Promise<string> {
+  const { data } = await admin.from("tenants").select("timezone").eq("id", tenantId).maybeSingle();
+  return ((data as any)?.timezone as string) || "America/Sao_Paulo";
+}
+
+function dailyCapFor(weekday: number): number {
+  return HIGH_VOLUME_WEEKDAYS.has(weekday) ? DAILY_CAP_HIGH : DAILY_CAP_NORMAL;
+}
+
 export const AGENT_TOOLS = [
   {
     type: "function" as const,
@@ -330,6 +364,30 @@ async function listAvailableSlots(
   const overrideByDate = new Map<string, ExamOverride>();
   for (const o of (overrideRows ?? []) as any[]) overrideByDate.set(o.override_date as string, o as ExamOverride);
 
+  // 6) capacidade: agendamentos ativos no período (para não ofertar dia/horário cheio)
+  const rangeStartIso = new Date(startDateStr + "T00:00:00Z").toISOString();
+  const rangeEndIso = new Date(dateOnly(addDays(endDate, 1)) + "T00:00:00Z").toISOString();
+  const { data: apptRows } = await admin
+    .from("appointments")
+    .select("scheduled_at")
+    .eq("tenant_id", tenantId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", rangeStartIso)
+    .lte("scheduled_at", rangeEndIso);
+  const countsByDay = new Map<string, number>();
+  const countsByHour = new Map<string, number>(); // key = `${dayStr} ${HH}` (só minuto :00 conta)
+  for (const a of (apptRows ?? []) as any[]) {
+    const iso = a.scheduled_at as string;
+    const day = iso.slice(0, 10);
+    countsByDay.set(day, (countsByDay.get(day) ?? 0) + 1);
+    // minuto local baseado no ISO cru (offset -03:00 aplicado no isoAt)
+    const hm = iso.slice(11, 16); // "HH:MM" na tz do ISO gravado
+    if (hm.endsWith(":00")) {
+      const key = `${day} ${hm.slice(0, 2)}`;
+      countsByHour.set(key, (countsByHour.get(key) ?? 0) + 1);
+    }
+  }
+
   const wantMorning = opts.periodo === "manha";
   const wantAfternoon = opts.periodo === "tarde";
 
@@ -343,9 +401,13 @@ async function listAvailableSlots(
     const store = storeByDow.get(dow);
     if (!store || !store.is_open || !store.open_time || !store.close_time) continue;
 
-    // bloqueio full-day
+    // bloqueio full-day (feriado)
     const dayBlocks = blockedByDate.get(dayStr) ?? [];
     if (dayBlocks.some((b) => b.all_day)) continue;
+
+    // capacidade diária: 8 (dias normais) / 20 (quarta e sábado)
+    const dailyCap = dailyCapFor(dow);
+    if ((countsByDay.get(dayStr) ?? 0) >= dailyCap) continue;
 
     // exceção do exame
     const ov = overrideByDate.get(dayStr);
@@ -403,6 +465,12 @@ async function listAvailableSlots(
       // período
       if (wantMorning && slotStart >= 12 * 60) { cursor += slotMin; continue; }
       if (wantAfternoon && slotStart < 12 * 60) { cursor += slotMin; continue; }
+
+      // máx 2 por horário cheio nos dias normais (seg/ter/qui/sex)
+      if (!HIGH_VOLUME_WEEKDAYS.has(dow) && slotStart % 60 === 0) {
+        const hourKey = `${dayStr} ${String(Math.floor(slotStart / 60)).padStart(2, "0")}`;
+        if ((countsByHour.get(hourKey) ?? 0) >= PER_HOUR_CAP_NORMAL) { cursor += slotMin; continue; }
+      }
 
       const iso = isoAt(dayStr, slotStart);
       if (new Date(iso).getTime() < Date.now() + 60 * 60_000) {
@@ -486,8 +554,69 @@ async function createAppointment(
     };
   }
 
+  // ── Regras de capacidade + feriados (fuso do tenant) ──────────────────
+  const tz = await getTenantTimezone(admin, ctx.tenantId);
+  const local = localDayInfo(scheduled, tz);
 
+  // Feriado / dia bloqueado (cadastro manual em agenda_blocked_dates)
+  const { data: blockedDay } = await admin
+    .from("agenda_blocked_dates")
+    .select("all_day,block_start,block_end,reason")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("blocked_date", local.dayStr);
+  const dayBlocks = (blockedDay ?? []) as any[];
+  if (dayBlocks.some((b) => b.all_day)) {
+    return {
+      ok: false,
+      message: `Não há atendimento em ${local.dayStr} (feriado ou dia bloqueado). Ofereça outro dia.`,
+    };
+  }
 
+  // Conta agendamentos ativos do mesmo dia local (janela ampla ±36h em UTC).
+  const rangeStart = new Date(scheduled.getTime() - 36 * 3600_000).toISOString();
+  const rangeEnd = new Date(scheduled.getTime() + 36 * 3600_000).toISOString();
+  const { data: dayAppts } = await admin
+    .from("appointments")
+    .select("id, scheduled_at")
+    .eq("tenant_id", ctx.tenantId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", rangeStart)
+    .lte("scheduled_at", rangeEnd);
+
+  const sameLocalDay = (dayAppts ?? []).filter(
+    (a: any) => localDayInfo(a.scheduled_at as string, tz).dayStr === local.dayStr,
+  );
+
+  const cap = dailyCapFor(local.weekday);
+  if (sameLocalDay.length >= cap) {
+    return {
+      ok: false,
+      message: `Capacidade do dia ${local.dayStr} atingida (${cap} consultas). Ofereça outro dia — quarta e sábado aceitam mais volume.`,
+    };
+  }
+
+  // Máx 2 no mesmo horário cheio (só nos dias normais). Encaixe: sugerir minuto quebrado.
+  if (!HIGH_VOLUME_WEEKDAYS.has(local.weekday)) {
+    // "Horário cheio" = mesma hora e minuto == 0 (ex: 14:00, 15:00). Nos minutos quebrados (14:10, 14:20…) não aplica.
+    const scheduledLocalHM = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).format(scheduled); // "14:00"
+    const [, mm] = scheduledLocalHM.split(":");
+    if (mm === "00") {
+      const sameHour = sameLocalDay.filter((a: any) => {
+        const hm = new Intl.DateTimeFormat("pt-BR", {
+          timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+        }).format(new Date(a.scheduled_at as string));
+        return hm === scheduledLocalHM;
+      });
+      if (sameHour.length >= PER_HOUR_CAP_NORMAL) {
+        return {
+          ok: false,
+          message: `Horário ${scheduledLocalHM} já tem ${PER_HOUR_CAP_NORMAL} consultas. Ofereça um encaixe quebrado no mesmo bloco (ex.: :10, :20, :30, :40, :50) ou outro horário.`,
+        };
+      }
+    }
+  }
 
   // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
   const { data: types } = await admin
