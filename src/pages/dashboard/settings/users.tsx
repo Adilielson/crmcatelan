@@ -70,6 +70,11 @@ export default function UserManagement() {
   const [permsDialog, setPermsDialog] = useState<{ open: boolean; userId: string | null; name: string }>({
     open: false, userId: null, name: '',
   });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; member: Member | null }>({
+    open: false, member: null,
+  });
+
+  const canDelete = user && ['admin', 'super_admin'].includes(user.role);
 
   const canManage = user && ['admin', 'manager', 'super_admin'].includes(user.role);
 
