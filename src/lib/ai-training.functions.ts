@@ -73,7 +73,7 @@ export const updateAiConfig = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const tenantId = await getUserTenant(context.supabase, context.userId);
     const allowed: (keyof AiConfig)[] = [
-      "prompt_system", "behavior_rules", "knowledge_base", "knowledge_base_faq", "sample_scripts",
+      "prompt_system", "behavior_rules", "knowledge_base", "knowledge_base_faq",
       "qualification_questions", "response_delay", "scheduling_link", "goal",
       "model_temperature", "training_mode", "autopilot_enabled", "rejection_instructions", "response_restrictions",
     ];
@@ -127,7 +127,7 @@ export const restoreAiVersion = createServerFn({ method: "POST" })
       prompt_system: snap.prompt_system,
       knowledge_base: snap.knowledge_base,
       knowledge_base_faq: snap.knowledge_base_faq,
-      sample_scripts: snap.sample_scripts,
+      
       qualification_questions: snap.qualification_questions,
       response_delay: snap.response_delay,
       scheduling_link: snap.scheduling_link,
@@ -154,7 +154,7 @@ function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock: s
 
   if (cfg.knowledge_base_faq?.trim()) parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`);
   if (knowledgeDocs.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeDocs.join("\n---\n").slice(0, 8000)}`);
-  if (cfg.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO (mimetize o estilo):\n${cfg.sample_scripts}`);
+  
   if (Array.isArray(cfg.qualification_questions) && cfg.qualification_questions.length) {
     parts.push(`PERGUNTAS DE QUALIFICAÇÃO (faça uma por vez, na ordem):\n${cfg.qualification_questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}`);
   }
@@ -224,7 +224,6 @@ export const simulateChat = createServerFn({ method: "POST" })
 const COPILOT_EDITABLE_FIELDS = [
   "prompt_system",
   "behavior_rules",
-  "sample_scripts",
   "rejection_instructions",
   "knowledge_base_faq",
   "qualification_questions",
@@ -244,7 +243,7 @@ async function callCopilotLLM(instruction: string, cfg: any): Promise<CopilotPro
   const currentSnapshot = {
     prompt_system: cfg.prompt_system ?? "",
     behavior_rules: cfg.behavior_rules ?? "",
-    sample_scripts: cfg.sample_scripts ?? "",
+    
     rejection_instructions: cfg.rejection_instructions ?? "",
     knowledge_base_faq: cfg.knowledge_base_faq ?? "",
     qualification_questions: Array.isArray(cfg.qualification_questions) ? cfg.qualification_questions : [],
@@ -258,7 +257,7 @@ Sua tarefa: reescrever os campos necessários para atender a instrução, manten
 REGRAS:
 - Só edite campos que precisam mudar. Não devolva campos inalterados.
 - **Se a instrução mencionar "abordagem", "comportamento", "forma de atender", "jeito", "script", "postura", "estilo" ou pedir para MUDAR/CORRIGIR/AJUSTAR a maneira como a IA fala — você DEVE reescrever "prompt_system" (a persona) removendo trechos que conflitam com a instrução. Não basta mexer só em campos periféricos.**
-- Se a instrução PROIBIR uma frase/pergunta, procure essa frase (e variantes) dentro de "prompt_system", "behavior_rules", "sample_scripts", "knowledge_base_faq" e "qualification_questions" e REMOVA de todos. Não deixe a instrução proibida sobreviver em nenhum campo.
+- Se a instrução PROIBIR uma frase/pergunta, procure essa frase (e variantes) dentro de "prompt_system", "behavior_rules", "knowledge_base_faq" e "qualification_questions" e REMOVA de todos. Não deixe a instrução proibida sobreviver em nenhum campo.
 - Preserve regras críticas já existentes (proibições, apenas Optometrista, não citar valor sem pergunta, não pedir documentos, script de rapport) exceto se a instrução pedir explicitamente para removê-las.
 - "qualification_questions" é um array de strings (ordem importa).
 - Demais campos são strings (texto multi-linha permitido) — pode devolver o texto completo reescrito.
