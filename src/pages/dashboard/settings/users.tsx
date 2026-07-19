@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { UserPlus, Search, MoreHorizontal, Copy, KeyRound, Check, ShieldCheck } from 'lucide-react';
+import { UserPlus, Search, MoreHorizontal, Copy, KeyRound, Check, ShieldCheck, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { UserPermissionsDialog } from '@/components/users/UserPermissionsDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
