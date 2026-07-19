@@ -401,9 +401,13 @@ async function listAvailableSlots(
     const store = storeByDow.get(dow);
     if (!store || !store.is_open || !store.open_time || !store.close_time) continue;
 
-    // bloqueio full-day
+    // bloqueio full-day (feriado)
     const dayBlocks = blockedByDate.get(dayStr) ?? [];
     if (dayBlocks.some((b) => b.all_day)) continue;
+
+    // capacidade diária: 8 (dias normais) / 20 (quarta e sábado)
+    const dailyCap = dailyCapFor(dow);
+    if ((countsByDay.get(dayStr) ?? 0) >= dailyCap) continue;
 
     // exceção do exame
     const ov = overrideByDate.get(dayStr);
