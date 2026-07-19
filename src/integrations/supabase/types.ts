@@ -278,6 +278,64 @@ export type Database = {
           },
         ]
       }
+      ai_copilot_history: {
+        Row: {
+          ai_config_id: string | null
+          applied_fields: string[]
+          created_at: string
+          created_by: string | null
+          id: string
+          instruction: string
+          status: string
+          summary: string | null
+          tenant_id: string
+        }
+        Insert: {
+          ai_config_id?: string | null
+          applied_fields?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instruction: string
+          status?: string
+          summary?: string | null
+          tenant_id: string
+        }
+        Update: {
+          ai_config_id?: string | null
+          applied_fields?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instruction?: string
+          status?: string
+          summary?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_copilot_history_ai_config_id_fkey"
+            columns: ["ai_config_id"]
+            isOneToOne: false
+            referencedRelation: "ai_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_copilot_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_copilot_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_knowledge_documents: {
         Row: {
           content: string | null
