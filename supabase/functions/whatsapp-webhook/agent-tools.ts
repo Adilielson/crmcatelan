@@ -520,8 +520,69 @@ async function createAppointment(
     };
   }
 
+  // ── Regras de capacidade + feriados (fuso do tenant) ──────────────────
+  const tz = await getTenantTimezone(admin, ctx.tenantId);
+  const local = localDayInfo(scheduled, tz);
 
+  // Feriado / dia bloqueado (cadastro manual em agenda_blocked_dates)
+  const { data: blockedDay } = await admin
+    .from("agenda_blocked_dates")
+    .select("all_day,block_start,block_end,reason")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("blocked_date", local.dayStr);
+  const dayBlocks = (blockedDay ?? []) as any[];
+  if (dayBlocks.some((b) => b.all_day)) {
+    return {
+      ok: false,
+      message: `Não há atendimento em ${local.dayStr} (feriado ou dia bloqueado). Ofereça outro dia.`,
+    };
+  }
 
+  // Conta agendamentos ativos do mesmo dia local (janela ampla ±36h em UTC).
+  const rangeStart = new Date(scheduled.getTime() - 36 * 3600_000).toISOString();
+  const rangeEnd = new Date(scheduled.getTime() + 36 * 3600_000).toISOString();
+  const { data: dayAppts } = await admin
+    .from("appointments")
+    .select("id, scheduled_at")
+    .eq("tenant_id", ctx.tenantId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", rangeStart)
+    .lte("scheduled_at", rangeEnd);
+
+  const sameLocalDay = (dayAppts ?? []).filter(
+    (a: any) => localDayInfo(a.scheduled_at as string, tz).dayStr === local.dayStr,
+  );
+
+  const cap = dailyCapFor(local.weekday);
+  if (sameLocalDay.length >= cap) {
+    return {
+      ok: false,
+      message: `Capacidade do dia ${local.dayStr} atingida (${cap} consultas). Ofereça outro dia — quarta e sábado aceitam mais volume.`,
+    };
+  }
+
+  // Máx 2 no mesmo horário cheio (só nos dias normais). Encaixe: sugerir minuto quebrado.
+  if (!HIGH_VOLUME_WEEKDAYS.has(local.weekday)) {
+    // "Horário cheio" = mesma hora e minuto == 0 (ex: 14:00, 15:00). Nos minutos quebrados (14:10, 14:20…) não aplica.
+    const scheduledLocalHM = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).format(scheduled); // "14:00"
+    const [, mm] = scheduledLocalHM.split(":");
+    if (mm === "00") {
+      const sameHour = sameLocalDay.filter((a: any) => {
+        const hm = new Intl.DateTimeFormat("pt-BR", {
+          timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+        }).format(new Date(a.scheduled_at as string));
+        return hm === scheduledLocalHM;
+      });
+      if (sameHour.length >= PER_HOUR_CAP_NORMAL) {
+        return {
+          ok: false,
+          message: `Horário ${scheduledLocalHM} já tem ${PER_HOUR_CAP_NORMAL} consultas. Ofereça um encaixe quebrado no mesmo bloco (ex.: :10, :20, :30, :40, :50) ou outro horário.`,
+        };
+      }
+    }
+  }
 
   // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
   const { data: types } = await admin
