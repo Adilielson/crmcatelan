@@ -154,7 +154,7 @@ function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock: s
 
   if (cfg.knowledge_base_faq?.trim()) parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`);
   if (knowledgeDocs.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeDocs.join("\n---\n").slice(0, 8000)}`);
-  if (cfg.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO (mimetize o estilo):\n${cfg.sample_scripts}`);
+  
   if (Array.isArray(cfg.qualification_questions) && cfg.qualification_questions.length) {
     parts.push(`PERGUNTAS DE QUALIFICAÇÃO (faça uma por vez, na ordem):\n${cfg.qualification_questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}`);
   }
