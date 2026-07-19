@@ -242,63 +242,45 @@ function AITrainingSettings() {
 
 
         <TabsContent value="personality" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="shadow-card border-border bg-white rounded-[14px]">
-              <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Instruções de Abordagem</CardTitle>
-                <CardDescription>Defina o tom de voz e o comportamento base da IA.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
+          <Card className="shadow-card border-border bg-white rounded-[14px]">
+            <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
+              <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Identidade da IA</CardTitle>
+              <CardDescription>Nome, tom de voz e persona. O estilo de atendimento é aprendido automaticamente com as conversas reais dos atendentes.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Prompt do Sistema (Personalidade)</Label>
+                <Textarea
+                  className="min-h-[260px] bg-white border-border rounded-xl text-ink font-medium p-4"
+                  value={form.prompt_system}
+                  onChange={(e) => setField('prompt_system', e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Prompt do Sistema (Personalidade)</Label>
-                  <Textarea
-                    className="min-h-[220px] bg-white border-border rounded-xl text-ink font-medium p-4"
-                    value={form.prompt_system}
-                    onChange={(e) => setField('prompt_system', e.target.value)}
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Objetivo da Conversa</Label>
+                  <Select value={form.goal} onValueChange={(v) => setField('goal', v)}>
+                    <SelectTrigger className="bg-white border-border h-12 rounded-xl text-ink font-black text-[10px] uppercase tracking-widest">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="appointment">Agendamento</SelectItem>
+                      <SelectItem value="qualification">Qualificação</SelectItem>
+                      <SelectItem value="support">Suporte</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Temperatura ({form.model_temperature.toFixed(2)})</Label>
+                  <Input
+                    type="range" min={0} max={1} step={0.05}
+                    value={form.model_temperature}
+                    onChange={(e) => setField('model_temperature', Number(e.target.value))}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Objetivo da Conversa</Label>
-                    <Select value={form.goal} onValueChange={(v) => setField('goal', v)}>
-                      <SelectTrigger className="bg-white border-border h-12 rounded-xl text-ink font-black text-[10px] uppercase tracking-widest">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="appointment">Agendamento</SelectItem>
-                        <SelectItem value="qualification">Qualificação</SelectItem>
-                        <SelectItem value="support">Suporte</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Temperatura ({form.model_temperature.toFixed(2)})</Label>
-                    <Input
-                      type="range" min={0} max={1} step={0.05}
-                      value={form.model_temperature}
-                      onChange={(e) => setField('model_temperature', Number(e.target.value))}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-card border-border bg-white rounded-[14px]">
-              <CardHeader className="pb-6 border-b border-border/50 bg-gray-50/50">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-gray-400">Scripts de Exemplo</CardTitle>
-                <CardDescription>Mimetize o estilo de atendimento real.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <Textarea
-                  placeholder="Insira diálogos reais de exemplo aqui..."
-                  className="min-h-[260px] bg-white border-border rounded-xl text-ink font-medium p-4"
-                  value={form.sample_scripts}
-                  onChange={(e) => setField('sample_scripts', e.target.value)}
-                />
-                <p className="text-[11px] text-gray-500 font-bold italic">Bons exemplos ajudam a IA a entender nuances de linguagem.</p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card className="shadow-card border-border bg-white rounded-[14px]">
             <CardHeader className="pb-4 border-b border-border/50 bg-gray-50/50">
