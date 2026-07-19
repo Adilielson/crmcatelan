@@ -9,6 +9,40 @@ const DEFAULT_SLOT_MINUTES = 40; // fallback quando o tipo de exame não define
 const LOOKAHEAD_DAYS = 21;
 const MAX_SLOTS_RETURNED = 6;
 
+// ── Regras de capacidade (definidas com o dono da Ótica) ────────────────
+// Seg/Ter/Qui/Sex: até 8 consultas/dia, máx 2 no mesmo horário cheio (encaixes 10 em 10min).
+// Quarta e Sábado: dia de alto volume, até 20 consultas/dia, sem limite por horário.
+// Domingo: fechado (já filtrado pelo horário da loja).
+// Feriados: nunca agendar — cadastrados manualmente em agenda_blocked_dates (all_day=true).
+const DAILY_CAP_NORMAL = 8;
+const DAILY_CAP_HIGH = 20;
+const PER_HOUR_CAP_NORMAL = 2;
+const HIGH_VOLUME_WEEKDAYS = new Set<number>([3, 6]); // 3 = quarta, 6 = sábado
+
+// Retorna { dayStr:'YYYY-MM-DD', weekday:0-6 } no fuso do tenant.
+function localDayInfo(iso: string | Date, tz: string): { dayStr: string; weekday: number } {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === "year")!.value;
+  const m = parts.find((p) => p.type === "month")!.value;
+  const day = parts.find((p) => p.type === "day")!.value;
+  const wkMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const wk = wkMap[parts.find((p) => p.type === "weekday")!.value] ?? 0;
+  return { dayStr: `${y}-${m}-${day}`, weekday: wk };
+}
+
+async function getTenantTimezone(admin: Supa, tenantId: string): Promise<string> {
+  const { data } = await admin.from("tenants").select("timezone").eq("id", tenantId).maybeSingle();
+  return ((data as any)?.timezone as string) || "America/Sao_Paulo";
+}
+
+function dailyCapFor(weekday: number): number {
+  return HIGH_VOLUME_WEEKDAYS.has(weekday) ? DAILY_CAP_HIGH : DAILY_CAP_NORMAL;
+}
+
 export const AGENT_TOOLS = [
   {
     type: "function" as const,
