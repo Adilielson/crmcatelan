@@ -348,7 +348,7 @@ export const generatePromptCopilot = createServerFn({ method: "POST" })
 export const applyPromptCopilot = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const i = input as { changes: Record<string, unknown> };
+    const i = input as { changes: Record<string, unknown>; instruction?: string; summary?: string };
     if (!i?.changes || typeof i.changes !== "object") throw new Error("Nenhuma alteração para aplicar.");
     return i;
   })
@@ -366,8 +366,130 @@ export const applyPromptCopilot = createServerFn({ method: "POST" })
       }
     }
     if (Object.keys(payload).length === 0) throw new Error("Nada para aplicar.");
+    const { data: cfg } = await context.supabase
+      .from("ai_configs").select("id").eq("tenant_id", tenantId).maybeSingle();
     const { error } = await context.supabase
       .from("ai_configs").update(payload as any).eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
+    // Log de auditoria (best-effort — não bloqueia se a tabela ainda não existir)
+    try {
+      await (context.supabase as any).from("ai_copilot_history").insert({
+        tenant_id: tenantId,
+        ai_config_id: cfg?.id ?? null,
+        created_by: context.userId,
+        instruction: (data.instruction ?? "").slice(0, 4000),
+        summary: (data.summary ?? "").slice(0, 4000),
+        applied_fields: Object.keys(payload),
+        status: "applied",
+      });
+    } catch (e) {
+      console.warn("[copilot] falha ao registrar histórico", e);
+    }
     return { ok: true, applied_fields: Object.keys(payload) };
+  });
+
+// Gera e aplica em uma única chamada (fluxo simplificado para o admin)
+export const generateAndApplyPromptCopilot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => {
+    const i = input as { instruction: string };
+    if (!i?.instruction || typeof i.instruction !== "string" || !i.instruction.trim()) {
+      throw new Error("Descreva a mudança desejada.");
+    }
+    if (i.instruction.length > 4000) throw new Error("Instrução muito longa (máx 4000 chars).");
+    return { instruction: i.instruction.trim() };
+  })
+  .handler(async ({ data, context }) => {
+    await assertCopilotRole(context.supabase, context.userId);
+    const tenantId = await getUserTenant(context.supabase, context.userId);
+    const { data: cfg, error } = await context.supabase
+      .from("ai_configs").select("*").eq("tenant_id", tenantId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!cfg) throw new Error("Sem configuração de IA");
+    const proposal = await callCopilotLLM(data.instruction, cfg);
+
+    // Nada mudou → registra histórico "no_changes" para auditoria e devolve motivo
+    if (!proposal.changes || Object.keys(proposal.changes).length === 0) {
+      try {
+        await (context.supabase as any).from("ai_copilot_history").insert({
+          tenant_id: tenantId,
+          ai_config_id: (cfg as any).id ?? null,
+          created_by: context.userId,
+          instruction: data.instruction.slice(0, 4000),
+          summary: (proposal.summary ?? "").slice(0, 4000),
+          applied_fields: [],
+          status: "no_changes",
+        });
+      } catch (e) {
+        console.warn("[copilot] falha ao registrar histórico", e);
+      }
+      return {
+        ok: false,
+        applied: false,
+        reason: proposal.summary || "O Copilot não identificou nada a alterar. Refine a instrução.",
+        proposal,
+      };
+    }
+
+    // Aplica
+    const payload: Record<string, unknown> = {};
+    for (const k of COPILOT_EDITABLE_FIELDS) {
+      if (!(k in (proposal.changes as any))) continue;
+      const v = (proposal.changes as any)[k];
+      if (k === "qualification_questions") {
+        if (Array.isArray(v)) payload[k] = v.map((x) => String(x)).filter(Boolean);
+      } else if (typeof v === "string") {
+        payload[k] = v;
+      }
+    }
+    const { error: updErr } = await context.supabase
+      .from("ai_configs").update(payload as any).eq("tenant_id", tenantId);
+    if (updErr) throw new Error(updErr.message);
+
+    try {
+      await (context.supabase as any).from("ai_copilot_history").insert({
+        tenant_id: tenantId,
+        ai_config_id: (cfg as any).id ?? null,
+        created_by: context.userId,
+        instruction: data.instruction.slice(0, 4000),
+        summary: (proposal.summary ?? "").slice(0, 4000),
+        applied_fields: Object.keys(payload),
+        status: "applied",
+      });
+    } catch (e) {
+      console.warn("[copilot] falha ao registrar histórico", e);
+    }
+
+    return {
+      ok: true,
+      applied: true,
+      applied_fields: Object.keys(payload),
+      proposal,
+    };
+  });
+
+export const listCopilotHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertCopilotRole(context.supabase, context.userId);
+    const tenantId = await getUserTenant(context.supabase, context.userId);
+    const { data, error } = await (context.supabase as any)
+      .from("ai_copilot_history")
+      .select("id, created_at, created_by, instruction, summary, applied_fields, status")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (error) {
+      console.warn("[copilot] listCopilotHistory falhou", error);
+      return [] as any[];
+    }
+    // Enriquece com nome do autor (best-effort)
+    const authorIds = Array.from(new Set((data ?? []).map((r: any) => r.created_by).filter(Boolean)));
+    let namesById: Record<string, string> = {};
+    if (authorIds.length) {
+      const { data: profs } = await context.supabase
+        .from("profiles").select("id, full_name, email").in("id", authorIds as any);
+      namesById = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name || p.email || ""]));
+    }
+    return (data ?? []).map((r: any) => ({ ...r, author_name: namesById[r.created_by] || "" }));
   });
