@@ -166,7 +166,7 @@ export function buildAiSystemPrompt(opts: BuildSystemPromptOptions): string {
   if (knowledgeTexts.length) {
     parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeTexts.join("\n---\n").slice(0, 8000)}`);
   }
-  if (cfg.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO (mimetize o estilo):\n${cfg.sample_scripts.trim()}`);
+  
 
   // 9) Qualificação
   if (Array.isArray(cfg.qualification_questions) && cfg.qualification_questions.length) {
