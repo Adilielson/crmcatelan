@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  listTeam, createTeamMember, updateTeamMember, regenerateTeamMemberPassword,
+  listTeam, createTeamMember, updateTeamMember, regenerateTeamMemberPassword, deleteTeamMember,
 } from '@/lib/team.functions';
 import { useAuthStore } from '@/hooks/use-auth';
 
