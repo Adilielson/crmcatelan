@@ -115,6 +115,16 @@ export default function UserManagement() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success('Usuário excluído definitivamente');
+      setDeleteDialog({ open: false, member: null });
+      qc.invalidateQueries({ queryKey: ['team-members'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filtered = (members as Member[]).filter((m) => {
     const q = search.toLowerCase();
     return (
