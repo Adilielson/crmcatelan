@@ -224,7 +224,6 @@ export const simulateChat = createServerFn({ method: "POST" })
 const COPILOT_EDITABLE_FIELDS = [
   "prompt_system",
   "behavior_rules",
-  "sample_scripts",
   "rejection_instructions",
   "knowledge_base_faq",
   "qualification_questions",
