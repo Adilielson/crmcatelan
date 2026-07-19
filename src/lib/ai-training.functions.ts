@@ -127,7 +127,7 @@ export const restoreAiVersion = createServerFn({ method: "POST" })
       prompt_system: snap.prompt_system,
       knowledge_base: snap.knowledge_base,
       knowledge_base_faq: snap.knowledge_base_faq,
-      sample_scripts: snap.sample_scripts,
+      
       qualification_questions: snap.qualification_questions,
       response_delay: snap.response_delay,
       scheduling_link: snap.scheduling_link,
