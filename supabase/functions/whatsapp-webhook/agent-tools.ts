@@ -466,6 +466,12 @@ async function listAvailableSlots(
       if (wantMorning && slotStart >= 12 * 60) { cursor += slotMin; continue; }
       if (wantAfternoon && slotStart < 12 * 60) { cursor += slotMin; continue; }
 
+      // máx 2 por horário cheio nos dias normais (seg/ter/qui/sex)
+      if (!HIGH_VOLUME_WEEKDAYS.has(dow) && slotStart % 60 === 0) {
+        const hourKey = `${dayStr} ${String(Math.floor(slotStart / 60)).padStart(2, "0")}`;
+        if ((countsByHour.get(hourKey) ?? 0) >= PER_HOUR_CAP_NORMAL) { cursor += slotMin; continue; }
+      }
+
       const iso = isoAt(dayStr, slotStart);
       if (new Date(iso).getTime() < Date.now() + 60 * 60_000) {
         cursor += slotMin;
