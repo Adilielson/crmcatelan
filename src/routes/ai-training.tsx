@@ -26,6 +26,7 @@ import {
   getAiConfig, updateAiConfig,
   listAiVersions, restoreAiVersion,
   generatePromptCopilot, applyPromptCopilot,
+  generateAndApplyPromptCopilot, listCopilotHistory,
 } from '@/lib/ai-training.functions'
 import { DEFAULT_BEHAVIOR_RULES } from '@/lib/ai-prompt-builder'
 
