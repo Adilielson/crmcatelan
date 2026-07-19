@@ -198,9 +198,13 @@ function AITrainingSettings() {
             <Label htmlFor="training-mode" className="text-xs sm:text-sm">Modo de Aprendizado</Label>
             <Switch id="training-mode" checked={form.training_mode} onCheckedChange={(v) => setField('training_mode', v)} />
           </div>
-          <Button onClick={handleSave} disabled={saveMut.isPending} className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-12 md:h-14 px-5 md:px-10 rounded-[14px] md:rounded-[16px] shadow-xl shadow-primary/20 uppercase tracking-widest border-none text-[11px] flex-1 md:flex-none">
-            {saveMut.isPending ? 'SALVANDO...' : 'SALVAR'}
+          <Button onClick={handleReloadFromServer} variant="outline" className="h-12 md:h-14 px-4 rounded-[14px] md:rounded-[16px] uppercase tracking-widest text-[10px] font-black">
+            <RotateCcw className="w-4 h-4 mr-2" /> Recarregar
           </Button>
+          <Button onClick={handleSave} disabled={saveMut.isPending} className={`${dirty ? 'bg-primary hover:bg-yellow-bright' : 'bg-gray-300 hover:bg-gray-300'} text-[#1a1500] font-black h-12 md:h-14 px-5 md:px-10 rounded-[14px] md:rounded-[16px] shadow-xl shadow-primary/20 uppercase tracking-widest border-none text-[11px] flex-1 md:flex-none`}>
+            {saveMut.isPending ? 'SALVANDO...' : dirty ? 'SALVAR ALTERAÇÕES' : 'SALVO'}
+          </Button>
+
         </div>
       </div>
 
