@@ -715,10 +715,15 @@ async function updateLeadQualification(
   const patch: Record<string, unknown> = {};
   const updated: string[] = [];
 
-  if (args.nome && (!current?.full_name || current.full_name.trim() === "" || /^lead\b/i.test(current.full_name))) {
-    patch.full_name = args.nome.trim();
-    updated.push("nome");
+  if (args.nome) {
+    const cur = (current?.full_name ?? "").trim();
+    const looksBusiness = /\b(borracharia|lava\s*(motos|jato|r[áa]pido|car)?|oficina|mec[âa]nica|mercado|mercadinho|loja|lojas|restaurante|lanchonete|pizzaria|padaria|farm[áa]cia|cl[íi]nica|cons[óo]rcio|imobili[áa]ria|pet\s*shop|hotel|pousada|sal[ãa]o|barbearia|academia|escrit[óo]rio|companhia|empresa|ltda|ltd|s\/?a|eireli|mei|comercial|com[ée]rcio|distribuidora|revendedora?|autopeças?|auto\s+peças?|posto|supermercado|transporte[s]?|construtora|engenharia|contabilidade)\b/i.test(cur);
+    if (!cur || /^lead\b/i.test(cur) || looksBusiness) {
+      patch.full_name = args.nome.trim();
+      updated.push("nome");
+    }
   }
+
   if (args.urgencia) {
     patch.ia_urgencia = args.urgencia;
     patch.ia_urgency = args.urgencia;
