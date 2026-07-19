@@ -364,6 +364,30 @@ async function listAvailableSlots(
   const overrideByDate = new Map<string, ExamOverride>();
   for (const o of (overrideRows ?? []) as any[]) overrideByDate.set(o.override_date as string, o as ExamOverride);
 
+  // 6) capacidade: agendamentos ativos no período (para não ofertar dia/horário cheio)
+  const rangeStartIso = new Date(startDateStr + "T00:00:00Z").toISOString();
+  const rangeEndIso = new Date(dateOnly(addDays(endDate, 1)) + "T00:00:00Z").toISOString();
+  const { data: apptRows } = await admin
+    .from("appointments")
+    .select("scheduled_at")
+    .eq("tenant_id", tenantId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", rangeStartIso)
+    .lte("scheduled_at", rangeEndIso);
+  const countsByDay = new Map<string, number>();
+  const countsByHour = new Map<string, number>(); // key = `${dayStr} ${HH}` (só minuto :00 conta)
+  for (const a of (apptRows ?? []) as any[]) {
+    const iso = a.scheduled_at as string;
+    const day = iso.slice(0, 10);
+    countsByDay.set(day, (countsByDay.get(day) ?? 0) + 1);
+    // minuto local baseado no ISO cru (offset -03:00 aplicado no isoAt)
+    const hm = iso.slice(11, 16); // "HH:MM" na tz do ISO gravado
+    if (hm.endsWith(":00")) {
+      const key = `${day} ${hm.slice(0, 2)}`;
+      countsByHour.set(key, (countsByHour.get(key) ?? 0) + 1);
+    }
+  }
+
   const wantMorning = opts.periodo === "manha";
   const wantAfternoon = opts.periodo === "tarde";
 
