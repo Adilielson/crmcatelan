@@ -66,38 +66,46 @@ function AITrainingSettings() {
   const cfgQuery = useQuery({
     queryKey: ['ai-config'],
     queryFn: () => getCfg(),
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const [form, setForm] = useState<FormState | null>(null)
+  const [dirty, setDirty] = useState(false)
   const [activeTab, setActiveTab] = useState('personality')
 
-  useEffect(() => {
-    if (cfgQuery.data && !form) {
-      const c = cfgQuery.data
-      setForm({
-        prompt_system: c.prompt_system ?? '',
-        behavior_rules: (c as any).behavior_rules ?? '',
+  const syncFormFromServer = (c: any) => {
+    setForm({
+      prompt_system: c.prompt_system ?? '',
+      behavior_rules: c.behavior_rules ?? '',
+      knowledge_base_faq: c.knowledge_base_faq ?? '',
+      qualification_questions: Array.isArray(c.qualification_questions) ? (c.qualification_questions as string[]) : [],
+      response_delay: c.response_delay ?? 5,
+      scheduling_link: c.scheduling_link ?? '',
+      goal: c.goal ?? 'appointment',
+      model_temperature: Number(c.model_temperature ?? 0.7),
+      training_mode: !!c.training_mode,
+      autopilot_enabled: c.autopilot_enabled !== false,
+      rejection_instructions: c.rejection_instructions ?? '',
+    })
+    setDirty(false)
+  }
 
-        knowledge_base_faq: c.knowledge_base_faq ?? '',
-        qualification_questions: Array.isArray(c.qualification_questions) ? (c.qualification_questions as string[]) : [],
-        response_delay: c.response_delay ?? 5,
-        scheduling_link: c.scheduling_link ?? '',
-        goal: c.goal ?? 'appointment',
-        model_temperature: Number(c.model_temperature ?? 0.7),
-        training_mode: !!c.training_mode,
-        autopilot_enabled: (c as any).autopilot_enabled !== false,
-        rejection_instructions: c.rejection_instructions ?? '',
-      })
+  useEffect(() => {
+    if (cfgQuery.data && !dirty) {
+      syncFormFromServer(cfgQuery.data)
     }
-  }, [cfgQuery.data, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfgQuery.data, cfgQuery.dataUpdatedAt])
 
   const saveMut = useMutation({
     mutationFn: (payload: FormState) => saveCfg({ data: payload as any }),
     onSuccess: (_d, vars) => {
       toast.success('Configurações salvas')
+      setDirty(false)
       qc.invalidateQueries({ queryKey: ['ai-config'] })
       qc.invalidateQueries({ queryKey: ['ai-versions'] })
-      // Quando o Modo de Aprendizado acabou de ser ligado, dispara observação inicial
       const wasOn = !!cfgQuery.data?.training_mode
       if (!wasOn && vars.training_mode) {
         observeMut.mutate()
@@ -131,6 +139,14 @@ function AITrainingSettings() {
     saveMut.mutate(form)
   }
 
+  const handleReloadFromServer = async () => {
+    const res = await qc.refetchQueries({ queryKey: ['ai-config'] })
+    const fresh = (res as any)?.[0]?.data ?? cfgQuery.data
+    if (fresh) {
+      syncFormFromServer(fresh)
+      toast.success('Recarregado do banco')
+    }
+  }
 
   if (cfgQuery.isLoading || !form) {
     return (
@@ -147,7 +163,11 @@ function AITrainingSettings() {
     )
   }
 
-  const setField = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => f ? { ...f, [k]: v } : f)
+  const setField = <K extends keyof FormState>(k: K, v: FormState[K]) => {
+    setForm((f) => f ? { ...f, [k]: v } : f)
+    setDirty(true)
+  }
+
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -178,9 +198,13 @@ function AITrainingSettings() {
             <Label htmlFor="training-mode" className="text-xs sm:text-sm">Modo de Aprendizado</Label>
             <Switch id="training-mode" checked={form.training_mode} onCheckedChange={(v) => setField('training_mode', v)} />
           </div>
-          <Button onClick={handleSave} disabled={saveMut.isPending} className="bg-primary hover:bg-yellow-bright text-[#1a1500] font-black h-12 md:h-14 px-5 md:px-10 rounded-[14px] md:rounded-[16px] shadow-xl shadow-primary/20 uppercase tracking-widest border-none text-[11px] flex-1 md:flex-none">
-            {saveMut.isPending ? 'SALVANDO...' : 'SALVAR'}
+          <Button onClick={handleReloadFromServer} variant="outline" className="h-12 md:h-14 px-4 rounded-[14px] md:rounded-[16px] uppercase tracking-widest text-[10px] font-black">
+            <RotateCcw className="w-4 h-4 mr-2" /> Recarregar
           </Button>
+          <Button onClick={handleSave} disabled={saveMut.isPending} className={`${dirty ? 'bg-primary hover:bg-yellow-bright' : 'bg-gray-300 hover:bg-gray-300'} text-[#1a1500] font-black h-12 md:h-14 px-5 md:px-10 rounded-[14px] md:rounded-[16px] shadow-xl shadow-primary/20 uppercase tracking-widest border-none text-[11px] flex-1 md:flex-none`}>
+            {saveMut.isPending ? 'SALVANDO...' : dirty ? 'SALVAR ALTERAÇÕES' : 'SALVO'}
+          </Button>
+
         </div>
       </div>
 
