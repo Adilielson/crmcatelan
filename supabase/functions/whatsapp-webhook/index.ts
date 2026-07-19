@@ -726,8 +726,29 @@ function cleanPhone(raw: string | null): string | null {
   return d;
 }
 
+// Termos que indicam nome COMERCIAL / de empresa (não é primeiro nome de pessoa).
+// Se o pushName do WhatsApp contém qualquer um destes, tratamos como lixo e
+// forçamos a IA a perguntar o nome real do cliente na conversa.
+const BUSINESS_NAME_TERMS = [
+  /\bborracharia\b/i, /\blava\s*(motos|jato|r[áa]pido|car)?\b/i, /\boficina\b/i,
+  /\bmec[âa]nica\b/i, /\bmercado\b/i, /\bmercadinho\b/i, /\bloja\b/i, /\blojas\b/i,
+  /\brestaurante\b/i, /\blanchonete\b/i, /\bpizzaria\b/i, /\bpadaria\b/i,
+  /\bfarm[áa]cia\b/i, /\bcl[íi]nica\b/i, /\bcons[óo]rcio\b/i, /\bimobili[áa]ria\b/i,
+  /\bpet\s*shop\b/i, /\bhotel\b/i, /\bpousada\b/i, /\bsal[ãa]o\b/i, /\bbarbearia\b/i,
+  /\bacademia\b/i, /\bescrit[óo]rio\b/i, /\bcompanhia\b/i, /\bempresa\b/i,
+  /\bltda\b/i, /\bltd\b/i, /\bs\/?a\b/i, /\beireli\b/i, /\bmei\b/i, /\bme\b/i,
+  /\bcomercial\b/i, /\bcom[ée]rcio\b/i, /\bdistribuidora\b/i, /\brevendedora?\b/i,
+  /\bautopeças?\b/i, /\bauto\s+peças?\b/i, /\bposto\b/i, /\bsupermercado\b/i,
+  /\btransporte[s]?\b/i, /\bconstrutora\b/i, /\bengenharia\b/i, /\bcontabilidade\b/i,
+];
+
+function looksLikeBusinessName(name: string | null): boolean {
+  if (!name) return false;
+  return BUSINESS_NAME_TERMS.some((rx) => rx.test(name));
+}
+
 // Valida se um "nome" enviado pelo WhatsApp parece um nome real
-// (não é só dígitos, não é o próprio telefone, não é JID).
+// (não é só dígitos, não é o próprio telefone, não é JID, não é nome de empresa).
 function isValidContactName(name: string | null, phone: string | null): boolean {
   if (!name) return false;
   const n = name.trim();
@@ -739,6 +760,8 @@ function isValidContactName(name: string | null, phone: string | null): boolean 
   if (!/[aeiouáéíóúâêôãõà]/i.test(n)) return false;
   // Descarta sequências de 5+ consoantes seguidas (nomes reais raramente têm isso).
   if (/[bcdfghjklmnpqrstvwxyzç]{5,}/i.test(n)) return false;
+  // Descarta nomes de empresa (Borracharia, Lava Motos, Oficina, etc).
+  if (looksLikeBusinessName(n)) return false;
   return true;
 }
 
@@ -752,8 +775,11 @@ function looksLikeJunkName(name: string | null): boolean {
   if (/[bcdfghjklmnpqrstvwxyzç]{4,}/i.test(n)) return true;
   // Tudo em uma letra repetida (hhh, kkkk)
   if (/^(.)\1+$/i.test(n.replace(/\s+/g, ""))) return true;
+  // Nome de empresa também é lixo para tratamento pessoal.
+  if (looksLikeBusinessName(n)) return true;
   return false;
 }
+
 
 // Extrai o primeiro nome de uma string completa
 function firstName(full: string | null | undefined): string | null {

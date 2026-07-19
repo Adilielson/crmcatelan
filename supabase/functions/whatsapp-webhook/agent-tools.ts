@@ -429,8 +429,17 @@ async function createAppointment(
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
   const scheduled = new Date(args.scheduled_at_iso);
-  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
-  if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível agendar no passado." };
+  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida. Use ISO 8601 (ex: 2026-07-25T14:00:00-04:00)." };
+  const nowMs = Date.now();
+  if (scheduled.getTime() < nowMs) {
+    return { ok: false, message: "Não é possível agendar no passado. Confirme o dia/hora com o cliente e ofereça um horário futuro real." };
+  }
+  // Limita agendamentos a no máximo 90 dias no futuro — evita ano/data alucinada pelo LLM.
+  const maxFutureMs = nowMs + 90 * 24 * 60 * 60_000;
+  if (scheduled.getTime() > maxFutureMs) {
+    return { ok: false, message: "Data muito distante (máx 90 dias). Verifique se o ANO está correto e confirme a data com o cliente antes de tentar de novo." };
+  }
+
 
   // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário entre leads distintos.
   const startMs = scheduled.getTime();
