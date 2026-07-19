@@ -243,7 +243,7 @@ async function callCopilotLLM(instruction: string, cfg: any): Promise<CopilotPro
   const currentSnapshot = {
     prompt_system: cfg.prompt_system ?? "",
     behavior_rules: cfg.behavior_rules ?? "",
-    sample_scripts: cfg.sample_scripts ?? "",
+    
     rejection_instructions: cfg.rejection_instructions ?? "",
     knowledge_base_faq: cfg.knowledge_base_faq ?? "",
     qualification_questions: Array.isArray(cfg.qualification_questions) ? cfg.qualification_questions : [],
