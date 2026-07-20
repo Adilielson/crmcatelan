@@ -1459,6 +1459,30 @@ Deno.serve(async (req) => {
               const iaCtx = iaParts.length
                 ? `CONTEXTO COMPORTAMENTAL DO LEAD (use para personalizar o tom e a abordagem, sem citar literalmente ao cliente):\n${iaParts.join("\n")}`
                 : "";
+
+              // CONTEXTO DE PACIENTE (quando o paciente do exame ≠ contato do WhatsApp)
+              const patientParts: string[] = [];
+              if (leadPatientName?.trim()) {
+                const rel = leadPatientRelation?.trim() ? ` (${leadPatientRelation.trim()} de ${leadName ?? "quem está falando"})` : "";
+                const age = leadPatientAge ? `, ${leadPatientAge} anos` : "";
+                patientParts.push(
+                  `IMPORTANTE — QUEM VAI FAZER O EXAME NÃO É QUEM ESTÁ FALANDO: o paciente é **${leadPatientName.trim()}**${rel}${age}. Você está conversando com ${leadName ?? "o contato"}, que está agendando PARA essa pessoa. Refira-se ao paciente pelo nome (${firstName(leadPatientName)}) — nunca trate ${leadName ?? "o contato"} como o paciente. Nas perguntas, use "seu ${leadPatientRelation?.trim() || "familiar"}" ou o nome. No agendamento, o nome que aparecerá na agenda será o do paciente.`,
+                );
+              }
+              const prefHorario = (leadSchedulePrefs && (leadSchedulePrefs as any).preferencia_horario) ? String((leadSchedulePrefs as any).preferencia_horario) : "";
+              const restrAgenda = (leadSchedulePrefs && (leadSchedulePrefs as any).restricoes_agenda) ? String((leadSchedulePrefs as any).restricoes_agenda) : "";
+              if (prefHorario) {
+                patientParts.push(
+                  `PREFERÊNCIA DE HORÁRIO já declarada pelo cliente: "${prefHorario}". OBEDEÇA essa preferência ao oferecer horários — se o cliente disse "último horário do dia", ofereça o slot mais tarde disponível. Se disse "de manhã", só ofereça manhã. Nunca ignore essa preferência para propor um horário mais cedo/conveniente.`,
+                );
+              }
+              if (restrAgenda) {
+                patientParts.push(
+                  `RESTRIÇÕES DE AGENDA declaradas: "${restrAgenda}". NÃO ofereça horários que violem essa restrição. Se a restrição eliminar todas as opções do dia, pule para o próximo dia útil.`,
+                );
+              }
+              const patientCtx = patientParts.length ? patientParts.join("\n\n") : "";
+
               const toolsInstructions =
                 "CONTEXTO DO NEGÓCIO: você atende para uma ÓTICA. O foco é vender óculos (armações, lentes multifocais/monofocais, óculos de sol, transitions, lentes de contato) e agendar exames de OPTOMETRISTA quando fizer sentido. NÃO oferecemos mais exame de OFTALMOLOGIA — não mencione. NÃO é clínica: NUNCA pergunte sobre plano de saúde/convênio — atendimento é sempre particular. O agendamento é UM dos caminhos, não o único: se o cliente quer comprar óculos, tirar dúvida sobre armação, lente, tratamento ou promoção — conduza a conversa nesse rumo e só ofereça exame se ele precisar de receita atualizada.\n\n" +
                 "REGRA DE PREÇO (crítica): NUNCA fale espontaneamente do VALOR do exame. Só cite valor se o cliente perguntar diretamente ('quanto é?', 'qual o preço?'). Se não houver valor cadastrado, diga que confirma com a loja e transfira para humano. Sobre produtos (óculos, lentes), também evite jogar preço sem o cliente pedir — prefira convidar para a loja.\n\n" +
