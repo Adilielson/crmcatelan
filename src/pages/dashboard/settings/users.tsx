@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { UserPlus, Search, MoreHorizontal, Copy, KeyRound, Check, ShieldCheck } from 'lucide-react';
+import { UserPlus, Search, MoreHorizontal, Copy, KeyRound, Check, ShieldCheck, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { UserPermissionsDialog } from '@/components/users/UserPermissionsDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  listTeam, createTeamMember, updateTeamMember, regenerateTeamMemberPassword,
+  listTeam, createTeamMember, updateTeamMember, regenerateTeamMemberPassword, deleteTeamMember,
 } from '@/lib/team.functions';
 import { useAuthStore } from '@/hooks/use-auth';
 
@@ -52,6 +56,7 @@ export default function UserManagement() {
   const createFn = useServerFn(createTeamMember);
   const updateFn = useServerFn(updateTeamMember);
   const regenFn = useServerFn(regenerateTeamMemberPassword);
+  const deleteFn = useServerFn(deleteTeamMember);
 
   const [search, setSearch] = useState('');
   const [openCreate, setOpenCreate] = useState(false);
@@ -65,6 +70,11 @@ export default function UserManagement() {
   const [permsDialog, setPermsDialog] = useState<{ open: boolean; userId: string | null; name: string }>({
     open: false, userId: null, name: '',
   });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; member: Member | null }>({
+    open: false, member: null,
+  });
+
+  const canDelete = user && ['admin', 'super_admin'].includes(user.role);
 
   const canManage = user && ['admin', 'manager', 'super_admin'].includes(user.role);
 
@@ -101,6 +111,16 @@ export default function UserManagement() {
     onSuccess: (res, id) => {
       const m = (members as Member[]).find((x) => x.id === id);
       setCredentialDialog({ open: true, email: m?.email ?? '', password: res.password });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success('Usuário excluído definitivamente');
+      setDeleteDialog({ open: false, member: null });
+      qc.invalidateQueries({ queryKey: ['team-members'] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -254,10 +274,13 @@ export default function UserManagement() {
                 <TableCell>
                   <RowMenu
                     m={m}
+                    canDelete={!!canDelete && m.id !== user?.id}
                     onToggle={() => toggleStatusMut.mutate(m)}
                     onRegen={() => regenMut.mutate(m.id)}
                     onPerms={() => setPermsDialog({ open: true, userId: m.id, name: m.full_name ?? m.email ?? '' })}
+                    onDelete={() => setDeleteDialog({ open: true, member: m })}
                   />
+
                 </TableCell>
               </TableRow>
             ))}
@@ -284,9 +307,11 @@ export default function UserManagement() {
             </div>
             <RowMenu
               m={m}
+              canDelete={!!canDelete && m.id !== user?.id}
               onToggle={() => toggleStatusMut.mutate(m)}
               onRegen={() => regenMut.mutate(m.id)}
               onPerms={() => setPermsDialog({ open: true, userId: m.id, name: m.full_name ?? m.email ?? '' })}
+              onDelete={() => setDeleteDialog({ open: true, member: m })}
             />
           </div>
         ))}
@@ -328,11 +353,53 @@ export default function UserManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmação de exclusão definitiva */}
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(o) => !o && setDeleteDialog({ open: false, member: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" /> Excluir definitivamente
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é <strong>irreversível</strong>. O login de{' '}
+              <strong>{deleteDialog.member?.full_name ?? deleteDialog.member?.email}</strong>{' '}
+              será removido e o perfil apagado. O histórico (leads, agendamentos, mensagens) será
+              preservado, mas ficará sem responsável atribuído.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMut.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMut.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteDialog.member) deleteMut.mutate(deleteDialog.member.id);
+              }}
+            >
+              {deleteMut.isPending ? 'Excluindo...' : 'Excluir definitivamente'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function RowMenu({ m, onToggle, onRegen, onPerms }: { m: Member; onToggle: () => void; onRegen: () => void; onPerms: () => void }) {
+function RowMenu({
+  m, canDelete, onToggle, onRegen, onPerms, onDelete,
+}: {
+  m: Member;
+  canDelete: boolean;
+  onToggle: () => void;
+  onRegen: () => void;
+  onPerms: () => void;
+  onDelete: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -350,6 +417,14 @@ function RowMenu({ m, onToggle, onRegen, onPerms }: { m: Member; onToggle: () =>
         <DropdownMenuItem onClick={onToggle} className={m.status === 'active' ? 'text-destructive' : 'text-green-600'}>
           {m.status === 'active' ? 'Desativar' : 'Reativar'}
         </DropdownMenuItem>
+        {canDelete && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Excluir definitivamente
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

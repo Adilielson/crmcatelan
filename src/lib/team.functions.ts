@@ -155,3 +155,41 @@ export const updateTeamMember = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// Excluir usuário definitivamente: apaga auth.users + profile.
+// Preserva histórico anulando FKs NO ACTION antes de remover.
+export const deleteTeamMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { tenantId, role: callerRole } = await assertTenantAdmin(context.supabase, context.userId);
+    if (!["admin", "super_admin"].includes(callerRole)) {
+      throw new Error("Apenas admin do tenant ou super admin pode excluir definitivamente");
+    }
+    if (data.id === context.userId) {
+      throw new Error("Você não pode excluir a si mesmo");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Verificar tenant e proteger contra exclusão de super_admin por não super
+    const { data: target, error: tErr } = await supabaseAdmin
+      .from("profiles").select("tenant_id, role").eq("id", data.id).single();
+    if (tErr || !target) throw new Error("Membro não encontrado");
+    if (target.tenant_id !== tenantId && callerRole !== "super_admin") {
+      throw new Error("Acesso negado");
+    }
+    if (target.role === "super_admin" && callerRole !== "super_admin") {
+      throw new Error("Apenas super admin pode excluir outro super admin");
+    }
+
+    // Anular FKs NO ACTION para preservar histórico
+    await supabaseAdmin.from("lead_pipeline_history").update({ changed_by: null } as never).eq("changed_by", data.id);
+    await supabaseAdmin.from("ai_config_versions").update({ created_by: null } as never).eq("created_by", data.id);
+    await supabaseAdmin.from("saas_audit_logs").update({ actor_id: null } as never).eq("actor_id", data.id);
+
+    // Apagar auth.users — cascata remove o profile (profiles.id REFERENCES auth.users ON DELETE CASCADE)
+    const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(data.id);
+    if (delErr) throw new Error(delErr.message);
+    return { ok: true };
+  });
