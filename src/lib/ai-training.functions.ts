@@ -148,8 +148,9 @@ function buildSystemPrompt(cfg: AiConfig, knowledgeDocs: string[], styleBlock: s
   if (cfg.goal) parts.push(`Objetivo principal da conversa: ${cfg.goal === "appointment" ? "agendar uma consulta" : cfg.goal === "qualification" ? "qualificar o lead" : "dar suporte"}.`);
   if (cfg.scheduling_link) parts.push(`Link de agendamento (use quando o lead pedir): ${cfg.scheduling_link}`);
 
-  // Só oferecemos exame de Optometrista (Oftalmologia descontinuada)
-  parts.push(`TIPO DE EXAME DISPONÍVEL: apenas Optometrista (segunda a domingo a partir das 14h, conforme grade cadastrada). NÃO ofereça exame de Oftalmologia — foi descontinuado. NUNCA cite valor/preço do exame sem o cliente perguntar primeiro.`);
+  // Fala com o cliente sempre como "exame de vista com nosso profissional"
+  parts.push(`EXAME DISPONÍVEL: exame de vista com o nosso profissional (segunda a domingo a partir das 14h, conforme grade cadastrada). NUNCA use os termos "optometrista" ou "oftalmologia" com o cliente — sempre "profissional". NUNCA cite valor/preço do exame sem o cliente perguntar primeiro.`);
+
 
 
   if (cfg.knowledge_base_faq?.trim()) parts.push(`BASE DE CONHECIMENTO (FAQ):\n${cfg.knowledge_base_faq}`);
@@ -258,7 +259,7 @@ REGRAS:
 - Só edite campos que precisam mudar. Não devolva campos inalterados.
 - **Se a instrução mencionar "abordagem", "comportamento", "forma de atender", "jeito", "script", "postura", "estilo" ou pedir para MUDAR/CORRIGIR/AJUSTAR a maneira como a IA fala — você DEVE reescrever "prompt_system" (a persona) removendo trechos que conflitam com a instrução. Não basta mexer só em campos periféricos.**
 - Se a instrução PROIBIR uma frase/pergunta, procure essa frase (e variantes) dentro de "prompt_system", "behavior_rules", "knowledge_base_faq" e "qualification_questions" e REMOVA de todos. Não deixe a instrução proibida sobreviver em nenhum campo.
-- Preserve regras críticas já existentes (proibições, apenas Optometrista, não citar valor sem pergunta, não pedir documentos, script de rapport) exceto se a instrução pedir explicitamente para removê-las.
+- Preserve regras críticas já existentes (proibições, sempre falar "profissional" — nunca "optometrista"/"oftalmologia", não citar valor sem pergunta, não pedir documentos, script de rapport) exceto se a instrução pedir explicitamente para removê-las.
 - "qualification_questions" é um array de strings (ordem importa).
 - Demais campos são strings (texto multi-linha permitido) — pode devolver o texto completo reescrito.
 - Responda SOMENTE em JSON estrito no formato:

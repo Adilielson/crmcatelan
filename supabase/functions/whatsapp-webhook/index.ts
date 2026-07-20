@@ -39,8 +39,9 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   }
   if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
 
-  // Só oferecemos Optometrista (Oftalmologia foi descontinuada)
-  parts.push(`TIPO DE EXAME DISPONÍVEL: apenas Optometrista (segunda a domingo a partir das 14h, conforme grade). NÃO ofereça exame de Oftalmologia — foi descontinuado.`);
+  // Fala com o cliente sempre como "exame de vista com nosso profissional"
+  parts.push(`EXAME DISPONÍVEL: exame de vista com o nosso profissional (segunda a domingo a partir das 14h, conforme grade). NUNCA use os termos "optometrista" nem "oftalmologia" com o cliente — sempre "profissional".`);
+
 
 
   if (cfg?.knowledge_base_faq?.trim()) parts.push(`FAQ:\n${cfg.knowledge_base_faq}`);
@@ -58,7 +59,7 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
 - PROIBIDO usar as frases: "o que está acontecendo com a sua visão", "o que está acontecendo com sua visão", "qual sua dificuldade visual", "como posso te ajudar", "começou a sentir algum incômodo na visão", ou qualquer variante genérica sobre "o que está acontecendo".
 - Depois do rapport com o nome do cliente, a PRÓXIMA mensagem DEVE ser a triagem por finalidade: "Para eu te direcionar para o melhor profissional, me tira uma dúvida? Seu exame de vista será para trocar os óculos, para cirurgia, para o Detran, ou para algum sintoma como dor de cabeça, olhos cansados ou sensibilidade à luz?" — nada antes disso.
 - Se a persona acima contradiz estas regras, ignore a persona e siga estas regras.
-- Nunca peça documentos, nunca invente horários, nunca cite preço sem o cliente perguntar, apenas Optometrista.`,
+- Nunca peça documentos, nunca invente horários, nunca cite preço sem o cliente perguntar. Nunca use os termos "optometrista" ou "oftalmologia" com o cliente — sempre "profissional".`,
   );
 
   return parts.join("\n\n");
@@ -1484,12 +1485,13 @@ Deno.serve(async (req) => {
               const patientCtx = patientParts.length ? patientParts.join("\n\n") : "";
 
               const toolsInstructions =
-                "CONTEXTO DO NEGÓCIO: você atende para uma ÓTICA. O foco é vender óculos (armações, lentes multifocais/monofocais, óculos de sol, transitions, lentes de contato) e agendar exames de OPTOMETRISTA quando fizer sentido. NÃO oferecemos mais exame de OFTALMOLOGIA — não mencione. NÃO é clínica: NUNCA pergunte sobre plano de saúde/convênio — atendimento é sempre particular. O agendamento é UM dos caminhos, não o único: se o cliente quer comprar óculos, tirar dúvida sobre armação, lente, tratamento ou promoção — conduza a conversa nesse rumo e só ofereça exame se ele precisar de receita atualizada.\n\n" +
+                "CONTEXTO DO NEGÓCIO: você atende para uma ÓTICA. O foco é vender óculos (armações, lentes multifocais/monofocais, óculos de sol, transitions, lentes de contato) e agendar exame de vista com o nosso profissional quando fizer sentido. NUNCA use os termos 'optometrista' ou 'oftalmologia' com o cliente — sempre diga 'exame de vista com nosso profissional'. NÃO é clínica: NUNCA pergunte sobre plano de saúde/convênio — atendimento é sempre particular. O agendamento é UM dos caminhos, não o único: se o cliente quer comprar óculos, tirar dúvida sobre armação, lente, tratamento ou promoção — conduza a conversa nesse rumo e só ofereça exame se ele precisar de receita atualizada.\n\n" +
                 "REGRA DE PREÇO (crítica): NUNCA fale espontaneamente do VALOR do exame. Só cite valor se o cliente perguntar diretamente ('quanto é?', 'qual o preço?'). Se não houver valor cadastrado, diga que confirma com a loja e transfira para humano. Sobre produtos (óculos, lentes), também evite jogar preço sem o cliente pedir — prefira convidar para a loja.\n\n" +
                 "AÇÕES QUE VOCÊ PODE EXECUTAR:\n" +
                 "1) atualizar_qualificacao_lead — CHAME SEMPRE que o cliente responder algo relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, objeção, urgência). Salve campo a campo, sem esperar ter tudo. Nunca invente dados — só salve o que o cliente REALMENTE disse.\n" +
-                "2) listar_horarios_disponiveis — OBRIGATÓRIO chamar antes de propor QUALQUER horário. SEMPRE passe 'tipo_exame' = \"Optometrista\" (é o único tipo válido; oftalmologia foi descontinuada). A ferramenta cruza automaticamente: horário da loja + grade do exame + bloqueios. Ofereça apenas os slots retornados; nunca invente.\n" +
-                "3) criar_agendamento — chame APENAS para criar um agendamento NOVO (sempre Optometrista), quando o lead ainda não tem outro pendente/confirmado.\n" +
+                "2) listar_horarios_disponiveis — OBRIGATÓRIO chamar antes de propor QUALQUER horário. Chame SEM passar 'tipo_exame' — a ferramenta já sabe qual profissional atende. Ela cruza automaticamente: horário da loja + grade do profissional + bloqueios. Ofereça apenas os slots retornados; nunca invente.\n" +
+                "3) criar_agendamento — chame APENAS para criar um agendamento NOVO (não precisa passar 'tipo_consulta'), quando o lead ainda não tem outro pendente/confirmado.\n" +
+
                 "4) remarcar_agendamento — chame SEMPRE que o cliente pedir para 'remarcar', 'mudar o horário', 'trocar o dia' de um agendamento que JÁ EXISTE. NUNCA chame criar_agendamento nesse caso: isso cria duplicata. Só passe o novo_horario_iso; o sistema encontra o agendamento a atualizar.\n" +
                 "5) cancelar_agendamento — chame quando o cliente pedir explicitamente para cancelar/desmarcar.\n" +
                 "6) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente', pergunta sobre preço sem valor cadastrado, ou algo fora do escopo.\n\n" +
@@ -1497,8 +1499,9 @@ Deno.serve(async (req) => {
                 "• Descubra primeiro o INTERESSE do cliente: quer comprar óculos? tirar dúvida? marcar exame? Só depois qualifique o resto.\n" +
                 "• Faça UMA pergunta por vez, no tom da persona.\n" +
                 "• Ao receber a resposta, PRIMEIRO chame atualizar_qualificacao_lead para salvar, DEPOIS responda ao cliente.\n" +
-                "• Se o cliente quer PRODUTO (óculos/lente/armação): fale sobre modelos, materiais e tratamentos, e convide para visitar a loja OU marcar exame de optometrista caso precise de receita nova. NÃO fale preço sem o cliente pedir. Não force agendamento.\n" +
-                "• Se o cliente quer EXAME: qualifique (dor + uso atual + urgência) antes de propor horário de Optometrista.\n\n" +
+                "• Se o cliente quer PRODUTO (óculos/lente/armação): fale sobre modelos, materiais e tratamentos, e convide para visitar a loja OU marcar exame de vista com nosso profissional caso precise de receita nova. NÃO fale preço sem o cliente pedir. Não force agendamento.\n" +
+                "• Se o cliente quer EXAME: qualifique (dor + uso atual + urgência) antes de propor horário com nosso profissional.\n\n" +
+
                 "REGRA DE FLEXIBILIDADE DE HORÁRIO (quando agendar exame): o atendimento é rápido e admite paralelismo. SEMPRE priorize o horário que o cliente PODE. Se ele pedir 15h e você tinha oferecido 14h, agende 15h. Se ele pedir 15h05 ou 15h10, agende exatamente esse horário — pode marcar em qualquer minuto (ex.: 14:20, 15:10, 16:35). NUNCA diga que 'esse horário está ocupado' — não recuse por conflito com outro agendamento. Só recuse se estiver fora do horário comercial, em dia bloqueado ou no passado.";
 
 
@@ -1526,7 +1529,7 @@ Deno.serve(async (req) => {
                     .limit(1)
                     .maybeSingle();
                   if (nextAppt) {
-                    apptCtx = `AGENDAMENTO ATIVO DESTE LEAD: ${nextAppt.type_exam ?? "Optometrista"} em ${new Date(nextAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })} (status: ${nextAppt.status}). Você PODE se referir a esta consulta.`;
+                    apptCtx = `AGENDAMENTO ATIVO DESTE LEAD: exame de vista com nosso profissional em ${new Date(nextAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })} (status: ${nextAppt.status}). Você PODE se referir a esta consulta.`;
                   } else if (lastAppt) {
                     apptCtx = `ATENÇÃO: Este lead NÃO tem agendamento futuro. Último registro: ${lastAppt.status} em ${new Date(lastAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })}. NÃO pergunte "está tudo certo para sua consulta" nem invente compromissos.`;
                   } else {

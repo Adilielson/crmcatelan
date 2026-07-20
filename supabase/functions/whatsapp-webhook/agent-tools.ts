@@ -49,16 +49,10 @@ export const AGENT_TOOLS = [
     function: {
       name: "listar_horarios_disponiveis",
       description:
-        "OBRIGATÓRIO chamar antes de propor qualquer horário. Lista horários livres para o exame de OPTOMETRISTA (único tipo disponível — Oftalmologia foi descontinuada), cruzando: horário da loja + janela do exame + bloqueios + exceções por data. NUNCA invente ou sugira horários sem chamar esta função. Se o cliente pedir um horário que não retornar aqui, informe que não há atendimento nesse horário.",
+        "OBRIGATÓRIO chamar antes de propor qualquer horário. Lista horários livres do profissional que atende os exames de vista na Ótica Catelan, cruzando: horário da loja + janela de atendimento + bloqueios + exceções por data. NUNCA invente ou sugira horários sem chamar esta função. Se o cliente pedir um horário que não retornar aqui, informe que não há atendimento nesse horário.",
       parameters: {
         type: "object",
-        required: ["tipo_exame"],
         properties: {
-          tipo_exame: {
-            type: "string",
-            description: "SEMPRE 'Optometrista' — é o único tipo de exame ofertado. NÃO usar 'Oftalmológica'.",
-          },
-
           data_preferida: {
             type: "string",
             description: "Data preferida no formato YYYY-MM-DD (opcional).",
@@ -72,6 +66,7 @@ export const AGENT_TOOLS = [
       },
     },
   },
+
   {
     type: "function" as const,
     function: {
@@ -80,23 +75,19 @@ export const AGENT_TOOLS = [
         "Cria o agendamento no sistema DEPOIS que o cliente confirmou explicitamente um horário. IMPORTANTE: o horário pode ser QUALQUER minuto dentro do horário comercial (ex.: 15:10, 15:25). Se o cliente pedir um horário específico que NÃO apareceu na lista de slots, você pode agendar mesmo assim, contanto que esteja dentro do horário comercial e não seja no passado. Só recuse se estiver fora do horário comercial, em bloqueio ou no passado.",
       parameters: {
         type: "object",
-        required: ["scheduled_at_iso", "tipo_consulta"],
+        required: ["scheduled_at_iso"],
         properties: {
           scheduled_at_iso: {
             type: "string",
             description: "Horário exato em ISO 8601 com offset -03:00 (ex: 2026-07-10T15:10:00-03:00). Pode ser um slot da lista OU um horário customizado que o cliente pediu, desde que esteja dentro do horário comercial.",
           },
-          tipo_consulta: {
-            type: "string",
-            description: "SEMPRE 'Optometrista' — Oftalmologia não é mais ofertada.",
-          },
-
           observacao: {
             type: "string",
             description: "Notas do agendamento (opcional).",
           },
         },
       },
+
     },
 
   },
@@ -337,12 +328,16 @@ async function listAvailableSlots(
     .eq("tenant_id", tenantId)
     .eq("is_active", true);
   const norm = (opts.tipo_exame ?? "").trim().toLowerCase();
-  const type = (types ?? []).find(
-    (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
-  );
+  const activeTypes = (types ?? []) as any[];
+  const type = norm
+    ? activeTypes.find(
+        (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
+      ) ?? activeTypes[0]
+    : activeTypes[0];
   if (!type) {
     return [];
   }
+
 
   // 3) janelas do exame por dia da semana
   const { data: examRows } = await admin
@@ -513,7 +508,7 @@ async function listAvailableSlots(
 async function createAppointment(
   admin: Supa,
   ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
-  args: { scheduled_at_iso: string; tipo_consulta: string; observacao?: string },
+  args: { scheduled_at_iso: string; tipo_consulta?: string; observacao?: string },
 ): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
@@ -646,10 +641,15 @@ async function createAppointment(
     .select("id,name,default_value")
     .eq("tenant_id", ctx.tenantId)
     .eq("is_active", true);
-  const norm = args.tipo_consulta.trim().toLowerCase();
-  const match = (types ?? []).find(
-    (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
-  );
+  const norm = (args.tipo_consulta ?? "").trim().toLowerCase();
+  const activeTypes = (types ?? []) as any[];
+  const match = norm
+    ? activeTypes.find(
+        (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
+      ) ?? activeTypes[0]
+    : activeTypes[0];
+  const resolvedTypeName = (match as any)?.name ?? args.tipo_consulta ?? null;
+
 
   // Unidade default: primeira do tenant (quando houver mais de uma, gestor pode reatribuir)
   const { data: unitRow } = await admin
@@ -702,7 +702,7 @@ async function createAppointment(
       scheduled_at: scheduled.toISOString(),
       end_at: new Date(endMs).toISOString(),
       status: "pending",
-      type_exam: args.tipo_consulta,
+      type_exam: resolvedTypeName,
       consultation_type_id: (match as any)?.id ?? null,
       value: (match as any)?.default_value ?? null,
       notification_channel: "whatsapp",
