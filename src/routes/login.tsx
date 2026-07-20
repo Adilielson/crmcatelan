@@ -100,9 +100,18 @@ function LoginPage() {
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'ENTRAR'}
             </Button>
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="w-full text-center text-slate-400 text-xs font-semibold uppercase tracking-widest hover:text-[#FFC400] transition-colors pt-2"
+            >
+              Esqueci minha senha
+            </button>
           </form>
         </div>
       </div>
+      <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
     </div>
   )
 }
+
