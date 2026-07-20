@@ -310,6 +310,13 @@ const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
             Configurações
           </Link>
           <button
+            onClick={() => { setOpen(false); setPwdOpen(true); }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-[#334155] hover:text-white transition-colors duration-150"
+          >
+            <KeyRound className="w-4 h-4 text-[#f5c518]" />
+            Alterar minha senha
+          </button>
+          <button
             onClick={() => { setOpen(false); onLogout(); }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors duration-150"
           >
@@ -318,9 +325,11 @@ const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
           </button>
         </div>
       )}
+      <ChangePasswordDialog open={pwdOpen} onOpenChange={setPwdOpen} userEmail={user?.email ?? ''} />
     </div>
   );
 };
+
 
 /* ============ IA SDR Kill Switch (emergência) ============ */
 const AiToggle = () => {
