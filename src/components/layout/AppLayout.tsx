@@ -247,6 +247,7 @@ const NavDropdown = ({
 /* ============ USER MENU ============ */
 const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
   const [open, setOpen] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
