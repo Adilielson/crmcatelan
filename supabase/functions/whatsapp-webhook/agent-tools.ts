@@ -153,13 +153,13 @@ export const AGENT_TOOLS = [
     function: {
       name: "atualizar_qualificacao_lead",
       description:
-        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
+        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, QUEM é o paciente, preferências de horário, restrições de agenda, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
       parameters: {
         type: "object",
         properties: {
-          nome: { type: "string", description: "Nome do cliente." },
-          idade: { type: "integer", description: "Idade em anos, se mencionada." },
-          usa_oculos: { type: "boolean", description: "Cliente usa óculos hoje?" },
+          nome: { type: "string", description: "Nome do CONTATO do WhatsApp (quem está conversando)." },
+          idade: { type: "integer", description: "Idade em anos, se mencionada (do paciente)." },
+          usa_oculos: { type: "boolean", description: "Paciente usa óculos hoje?" },
           dificuldade_visual: {
             type: "string",
             description: "Sintomas relatados (ex.: 'não enxerga de longe', 'dor de cabeça ao ler', 'vista cansada').",
@@ -185,12 +185,33 @@ export const AGENT_TOOLS = [
             type: "string",
             description: "Objeção principal que o cliente levantou (ex.: 'preço alto', 'sem tempo', 'quer pesquisar').",
           },
+          paciente_nome: {
+            type: "string",
+            description: "Nome do PACIENTE que fará o exame, quando for DIFERENTE do contato do WhatsApp (ex.: contato é a esposa e o paciente é o marido). NUNCA preencha com o mesmo nome do contato — deixe vazio se o próprio contato for o paciente.",
+          },
+          paciente_relacao: {
+            type: "string",
+            description: "Relação do paciente com o contato (ex.: 'esposo', 'esposa', 'filho', 'filha', 'mãe', 'pai', 'irmão', 'amigo'). Só preencha se paciente_nome também for informado.",
+          },
+          paciente_idade: {
+            type: "integer",
+            description: "Idade do paciente em anos, quando ele NÃO é o contato do WhatsApp.",
+          },
+          preferencia_horario: {
+            type: "string",
+            description: "Preferência EXPLÍCITA de horário do cliente (ex.: 'último horário do dia', 'depois das 17h', 'de manhã cedo', 'só à tarde', 'horário do almoço'). Registre a fala do cliente, não invente.",
+          },
+          restricoes_agenda: {
+            type: "string",
+            description: "Restrições de agenda que o cliente citou (ex.: 'não pode segunda por causa do trabalho', 'só sábado', 'evitar sexta', 'não pode antes das 15h'). Registre a fala do cliente, não invente.",
+          },
           notas: {
             type: "string",
             description: "Qualquer informação extra relevante ao contexto do lead.",
           },
         },
       },
+
     },
   },
   {
