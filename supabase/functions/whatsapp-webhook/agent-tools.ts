@@ -702,7 +702,7 @@ async function createAppointment(
       scheduled_at: scheduled.toISOString(),
       end_at: new Date(endMs).toISOString(),
       status: "pending",
-      type_exam: args.tipo_consulta,
+      type_exam: resolvedTypeName,
       consultation_type_id: (match as any)?.id ?? null,
       value: (match as any)?.default_value ?? null,
       notification_channel: "whatsapp",
