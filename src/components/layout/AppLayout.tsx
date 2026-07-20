@@ -570,8 +570,10 @@ const AppLayout = () => {
     initialize();
   }, []);
 
+  const isPublicRoute = location.pathname === '/login' || location.pathname === '/reset-password';
+
   useEffect(() => {
-    if (loading || user || location.pathname === '/login') return;
+    if (loading || user || isPublicRoute) return;
     // Decisão 100% síncrona (sem getSession(), que pode travar após F5 por
     // causa do lock de auth do navegador):
     //  - sem sessão salva no localStorage → /login
