@@ -188,8 +188,15 @@ export const deleteTeamMember = createServerFn({ method: "POST" })
     await supabaseAdmin.from("ai_config_versions").update({ created_by: null } as never).eq("created_by", data.id);
     await supabaseAdmin.from("saas_audit_logs").update({ actor_id: null } as never).eq("actor_id", data.id);
 
-    // Apagar auth.users — cascata remove o profile (profiles.id REFERENCES auth.users ON DELETE CASCADE)
+    // Apagar profile explicitamente — não há FK profiles.id -> auth.users com CASCADE neste projeto,
+    // então precisamos remover o profile "na mão" senão ele fica órfão na lista.
+    const { error: profErr } = await supabaseAdmin.from("profiles").delete().eq("id", data.id);
+    if (profErr) throw new Error(profErr.message);
+
+    // Apagar auth.users (pode não existir se já foi removido antes; ignoramos "not found")
     const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(data.id);
-    if (delErr) throw new Error(delErr.message);
+    if (delErr && !/not.?found|user.?not/i.test(delErr.message)) {
+      throw new Error(delErr.message);
+    }
     return { ok: true };
   });
