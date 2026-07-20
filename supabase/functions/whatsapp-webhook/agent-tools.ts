@@ -328,12 +328,16 @@ async function listAvailableSlots(
     .eq("tenant_id", tenantId)
     .eq("is_active", true);
   const norm = (opts.tipo_exame ?? "").trim().toLowerCase();
-  const type = (types ?? []).find(
-    (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
-  );
+  const activeTypes = (types ?? []) as any[];
+  const type = norm
+    ? activeTypes.find(
+        (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
+      ) ?? activeTypes[0]
+    : activeTypes[0];
   if (!type) {
     return [];
   }
+
 
   // 3) janelas do exame por dia da semana
   const { data: examRows } = await admin
