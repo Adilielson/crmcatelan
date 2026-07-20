@@ -510,6 +510,10 @@ function Settings() {
           <ReminderTemplatesSection />
         </TabsContent>
 
+        <TabsContent value="cadences">
+          <FollowupCadencesSection />
+        </TabsContent>
+
         <TabsContent value="chat">
           <WhatsAppConfig />
         </TabsContent>
