@@ -850,6 +850,11 @@ async function updateLeadQualification(
     urgencia?: "baixa" | "media" | "alta";
     interesses?: string[];
     objecao?: string;
+    paciente_nome?: string;
+    paciente_relacao?: string;
+    paciente_idade?: number;
+    preferencia_horario?: string;
+    restricoes_agenda?: string;
     notas?: string;
   },
 ): Promise<{ ok: boolean; message: string; updated: string[] }> {
@@ -858,7 +863,7 @@ async function updateLeadQualification(
   // Carrega estado atual para mesclar arrays/notas sem sobrescrever
   const { data: current } = await admin
     .from("leads")
-    .select("full_name, notes, ia_summary, ia_interesses, ia_tags, ia_urgencia, ia_receita_grau")
+    .select("full_name, notes, ia_summary, ia_interesses, ia_tags, ia_urgencia, ia_receita_grau, patient_name, patient_relation, patient_age, schedule_preferences")
     .eq("id", ctx.leadId)
     .maybeSingle();
 
@@ -882,6 +887,44 @@ async function updateLeadQualification(
   if (args.grau_receita) {
     patch.ia_receita_grau = args.grau_receita.trim();
     updated.push("grau_receita");
+  }
+
+  // Paciente ≠ contato: guarda separado para uso na agenda e no contexto
+  if (args.paciente_nome && args.paciente_nome.trim()) {
+    const pn = args.paciente_nome.trim();
+    const contatoNome = (current?.full_name ?? args.nome ?? "").trim();
+    // Só grava se realmente for diferente do contato
+    if (!contatoNome || pn.toLowerCase() !== contatoNome.toLowerCase()) {
+      patch.patient_name = pn;
+      updated.push("paciente_nome");
+    }
+  }
+  if (args.paciente_relacao && args.paciente_relacao.trim()) {
+    patch.patient_relation = args.paciente_relacao.trim().toLowerCase();
+    updated.push("paciente_relacao");
+  }
+  if (typeof args.paciente_idade === "number" && args.paciente_idade > 0) {
+    patch.patient_age = args.paciente_idade;
+    updated.push("paciente_idade");
+  }
+
+  // Preferências de horário / restrições de agenda: JSONB acumulativo
+  const prevPrefs = (current?.schedule_preferences ?? {}) as Record<string, unknown>;
+  const nextPrefs: Record<string, unknown> = { ...prevPrefs };
+  let prefsChanged = false;
+  if (args.preferencia_horario && args.preferencia_horario.trim()) {
+    nextPrefs.preferencia_horario = args.preferencia_horario.trim();
+    prefsChanged = true;
+    updated.push("preferencia_horario");
+  }
+  if (args.restricoes_agenda && args.restricoes_agenda.trim()) {
+    nextPrefs.restricoes_agenda = args.restricoes_agenda.trim();
+    prefsChanged = true;
+    updated.push("restricoes_agenda");
+  }
+  if (prefsChanged) {
+    nextPrefs.atualizado_em = new Date().toISOString();
+    patch.schedule_preferences = nextPrefs;
   }
 
   // Interesses: merge case-insensitive
@@ -928,11 +971,18 @@ async function updateLeadQualification(
   const summaryLines: string[] = [];
   if (current?.ia_summary?.trim()) summaryLines.push(current.ia_summary.trim());
   const newFacts: string[] = [];
+  if (args.paciente_nome && args.paciente_relacao) {
+    newFacts.push(`Paciente: ${args.paciente_nome} (${args.paciente_relacao})${args.paciente_idade ? `, ${args.paciente_idade} anos` : ""}`);
+  } else if (args.paciente_nome) {
+    newFacts.push(`Paciente: ${args.paciente_nome}${args.paciente_idade ? `, ${args.paciente_idade} anos` : ""}`);
+  }
   if (args.idade) newFacts.push(`Idade: ${args.idade}`);
   if (args.dificuldade_visual) newFacts.push(`Dificuldade: ${args.dificuldade_visual}`);
   if (args.ultimo_exame) newFacts.push(`Último exame: ${args.ultimo_exame}`);
   if (args.tipo_produto) newFacts.push(`Produto de interesse: ${args.tipo_produto}`);
   if (args.objecao) newFacts.push(`Objeção: ${args.objecao}`);
+  if (args.preferencia_horario) newFacts.push(`Prefere horário: ${args.preferencia_horario}`);
+  if (args.restricoes_agenda) newFacts.push(`Restrição de agenda: ${args.restricoes_agenda}`);
   if (args.notas) newFacts.push(args.notas);
   if (newFacts.length) {
     summaryLines.push(newFacts.join(" • "));
@@ -951,6 +1001,7 @@ async function updateLeadQualification(
 
   return { ok: true, message: `Salvei: ${updated.join(", ")}`, updated };
 }
+
 
 
 
