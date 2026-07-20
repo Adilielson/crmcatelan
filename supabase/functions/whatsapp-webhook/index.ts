@@ -39,8 +39,9 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   }
   if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
 
-  // Só oferecemos Optometrista (Oftalmologia foi descontinuada)
-  parts.push(`TIPO DE EXAME DISPONÍVEL: apenas Optometrista (segunda a domingo a partir das 14h, conforme grade). NÃO ofereça exame de Oftalmologia — foi descontinuado.`);
+  // Fala com o cliente sempre como "exame de vista com nosso profissional"
+  parts.push(`EXAME DISPONÍVEL: exame de vista com o nosso profissional (segunda a domingo a partir das 14h, conforme grade). NUNCA use os termos "optometrista" nem "oftalmologia" com o cliente — sempre "profissional".`);
+
 
 
   if (cfg?.knowledge_base_faq?.trim()) parts.push(`FAQ:\n${cfg.knowledge_base_faq}`);
