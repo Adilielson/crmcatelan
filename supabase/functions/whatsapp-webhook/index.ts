@@ -1163,7 +1163,8 @@ Deno.serve(async (req) => {
         try {
           const { data: existingLead } = await adminClient
             .from("leads")
-            .select("id, full_name, assigned_user_id, status, updated_at, ia_summary, ia_profile, ia_sentiment, ia_urgency")
+            .select("id, full_name, assigned_user_id, status, updated_at, ia_summary, ia_profile, ia_sentiment, ia_urgency, patient_name, patient_relation, patient_age, schedule_preferences")
+
             .eq("tenant_id", tenantId)
             .eq("phone", senderPhone)
             .maybeSingle();
