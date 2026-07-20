@@ -75,23 +75,19 @@ export const AGENT_TOOLS = [
         "Cria o agendamento no sistema DEPOIS que o cliente confirmou explicitamente um horário. IMPORTANTE: o horário pode ser QUALQUER minuto dentro do horário comercial (ex.: 15:10, 15:25). Se o cliente pedir um horário específico que NÃO apareceu na lista de slots, você pode agendar mesmo assim, contanto que esteja dentro do horário comercial e não seja no passado. Só recuse se estiver fora do horário comercial, em bloqueio ou no passado.",
       parameters: {
         type: "object",
-        required: ["scheduled_at_iso", "tipo_consulta"],
+        required: ["scheduled_at_iso"],
         properties: {
           scheduled_at_iso: {
             type: "string",
             description: "Horário exato em ISO 8601 com offset -03:00 (ex: 2026-07-10T15:10:00-03:00). Pode ser um slot da lista OU um horário customizado que o cliente pediu, desde que esteja dentro do horário comercial.",
           },
-          tipo_consulta: {
-            type: "string",
-            description: "SEMPRE 'Optometrista' — Oftalmologia não é mais ofertada.",
-          },
-
           observacao: {
             type: "string",
             description: "Notas do agendamento (opcional).",
           },
         },
       },
+
     },
 
   },
