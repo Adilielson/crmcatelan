@@ -274,10 +274,13 @@ export default function UserManagement() {
                 <TableCell>
                   <RowMenu
                     m={m}
+                    canDelete={!!canDelete && m.id !== user?.id}
                     onToggle={() => toggleStatusMut.mutate(m)}
                     onRegen={() => regenMut.mutate(m.id)}
                     onPerms={() => setPermsDialog({ open: true, userId: m.id, name: m.full_name ?? m.email ?? '' })}
+                    onDelete={() => setDeleteDialog({ open: true, member: m })}
                   />
+
                 </TableCell>
               </TableRow>
             ))}
