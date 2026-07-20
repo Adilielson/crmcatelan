@@ -508,7 +508,7 @@ async function listAvailableSlots(
 async function createAppointment(
   admin: Supa,
   ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
-  args: { scheduled_at_iso: string; tipo_consulta: string; observacao?: string },
+  args: { scheduled_at_iso: string; tipo_consulta?: string; observacao?: string },
 ): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
