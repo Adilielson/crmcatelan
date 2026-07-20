@@ -517,6 +517,7 @@ async function createAppointment(
 ): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
+
   const scheduled = new Date(args.scheduled_at_iso);
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida. Use ISO 8601 (ex: 2026-07-25T14:00:00-04:00)." };
   const nowMs = Date.now();
