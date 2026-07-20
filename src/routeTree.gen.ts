@@ -42,6 +42,7 @@ import { Route as ApiAiTrainingSimulateChatRouteImport } from './routes/api/ai-t
 import { Route as ApiPublicHooksProcessNoshowAlertsRouteImport } from './routes/api/public/hooks/process-noshow-alerts'
 import { Route as ApiPublicHooksProcessFollowupsRouteImport } from './routes/api/public/hooks/process-followups'
 import { Route as ApiPublicHooksProcessAppointmentRemindersRouteImport } from './routes/api/public/hooks/process-appointment-reminders'
+import { Route as ApiPublicHooksEnrollSilentLeadsRouteImport } from './routes/api/public/hooks/enroll-silent-leads'
 import { Route as ApiPublicHooksBuildReferenceStyleRouteImport } from './routes/api/public/hooks/build-reference-style'
 
 const WhatsappRoute = WhatsappRouteImport.update({
@@ -214,6 +215,12 @@ const ApiPublicHooksProcessAppointmentRemindersRoute =
     path: '/api/public/hooks/process-appointment-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksEnrollSilentLeadsRoute =
+  ApiPublicHooksEnrollSilentLeadsRouteImport.update({
+    id: '/api/public/hooks/enroll-silent-leads',
+    path: '/api/public/hooks/enroll-silent-leads',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksBuildReferenceStyleRoute =
   ApiPublicHooksBuildReferenceStyleRouteImport.update({
     id: '/api/public/hooks/build-reference-style',
@@ -253,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/relatorios/': typeof RelatoriosIndexRoute
   '/api/ai-training/simulate-chat': typeof ApiAiTrainingSimulateChatRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
+  '/api/public/hooks/enroll-silent-leads': typeof ApiPublicHooksEnrollSilentLeadsRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
   '/api/public/hooks/process-noshow-alerts': typeof ApiPublicHooksProcessNoshowAlertsRoute
@@ -288,6 +296,7 @@ export interface FileRoutesByTo {
   '/relatorios': typeof RelatoriosIndexRoute
   '/api/ai-training/simulate-chat': typeof ApiAiTrainingSimulateChatRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
+  '/api/public/hooks/enroll-silent-leads': typeof ApiPublicHooksEnrollSilentLeadsRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
   '/api/public/hooks/process-noshow-alerts': typeof ApiPublicHooksProcessNoshowAlertsRoute
@@ -325,6 +334,7 @@ export interface FileRoutesById {
   '/relatorios/': typeof RelatoriosIndexRoute
   '/api/ai-training/simulate-chat': typeof ApiAiTrainingSimulateChatRoute
   '/api/public/hooks/build-reference-style': typeof ApiPublicHooksBuildReferenceStyleRoute
+  '/api/public/hooks/enroll-silent-leads': typeof ApiPublicHooksEnrollSilentLeadsRoute
   '/api/public/hooks/process-appointment-reminders': typeof ApiPublicHooksProcessAppointmentRemindersRoute
   '/api/public/hooks/process-followups': typeof ApiPublicHooksProcessFollowupsRoute
   '/api/public/hooks/process-noshow-alerts': typeof ApiPublicHooksProcessNoshowAlertsRoute
@@ -363,6 +373,7 @@ export interface FileRouteTypes {
     | '/relatorios/'
     | '/api/ai-training/simulate-chat'
     | '/api/public/hooks/build-reference-style'
+    | '/api/public/hooks/enroll-silent-leads'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
     | '/api/public/hooks/process-noshow-alerts'
@@ -398,6 +409,7 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/api/ai-training/simulate-chat'
     | '/api/public/hooks/build-reference-style'
+    | '/api/public/hooks/enroll-silent-leads'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
     | '/api/public/hooks/process-noshow-alerts'
@@ -434,6 +446,7 @@ export interface FileRouteTypes {
     | '/relatorios/'
     | '/api/ai-training/simulate-chat'
     | '/api/public/hooks/build-reference-style'
+    | '/api/public/hooks/enroll-silent-leads'
     | '/api/public/hooks/process-appointment-reminders'
     | '/api/public/hooks/process-followups'
     | '/api/public/hooks/process-noshow-alerts'
@@ -465,6 +478,7 @@ export interface RootRouteChildren {
   AnalyticsNoShowRoute: typeof AnalyticsNoShowRoute
   ApiAiTrainingSimulateChatRoute: typeof ApiAiTrainingSimulateChatRoute
   ApiPublicHooksBuildReferenceStyleRoute: typeof ApiPublicHooksBuildReferenceStyleRoute
+  ApiPublicHooksEnrollSilentLeadsRoute: typeof ApiPublicHooksEnrollSilentLeadsRoute
   ApiPublicHooksProcessAppointmentRemindersRoute: typeof ApiPublicHooksProcessAppointmentRemindersRoute
   ApiPublicHooksProcessFollowupsRoute: typeof ApiPublicHooksProcessFollowupsRoute
   ApiPublicHooksProcessNoshowAlertsRoute: typeof ApiPublicHooksProcessNoshowAlertsRoute
@@ -703,6 +717,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessAppointmentRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/enroll-silent-leads': {
+      id: '/api/public/hooks/enroll-silent-leads'
+      path: '/api/public/hooks/enroll-silent-leads'
+      fullPath: '/api/public/hooks/enroll-silent-leads'
+      preLoaderRoute: typeof ApiPublicHooksEnrollSilentLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/build-reference-style': {
       id: '/api/public/hooks/build-reference-style'
       path: '/api/public/hooks/build-reference-style'
@@ -762,6 +783,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiTrainingSimulateChatRoute: ApiAiTrainingSimulateChatRoute,
   ApiPublicHooksBuildReferenceStyleRoute:
     ApiPublicHooksBuildReferenceStyleRoute,
+  ApiPublicHooksEnrollSilentLeadsRoute: ApiPublicHooksEnrollSilentLeadsRoute,
   ApiPublicHooksProcessAppointmentRemindersRoute:
     ApiPublicHooksProcessAppointmentRemindersRoute,
   ApiPublicHooksProcessFollowupsRoute: ApiPublicHooksProcessFollowupsRoute,
@@ -771,13 +793,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings as SettingsIcon, Store, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2, KeyRound, Target, ShieldAlert, Link as LinkIcon, AtSign, Share2 } from 'lucide-react'
+import { Settings as SettingsIcon, Store, MessageSquare, Zap, Globe, Clock, Bell, Trash2, Plus, Loader2, KeyRound, Target, ShieldAlert, Link as LinkIcon, AtSign, Share2, Repeat } from 'lucide-react'
 import { GoalsSettings } from '@/components/settings/GoalsSettings'
 import { NoShowSettingsSection } from '@/components/settings/NoShowSettingsSection'
 import { ReminderTemplatesSection } from '@/components/settings/ReminderTemplatesSection'
+import { FollowupCadencesSection } from '@/components/settings/FollowupCadencesSection'
 import { WhatsAppConfig } from '@/pages/WhatsAppConfig'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from '@/components/ui/button'
@@ -337,6 +338,7 @@ function Settings() {
           
           <TabsTrigger value="automations" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Zap className="w-4 h-4" /> Automações</TabsTrigger>
           <TabsTrigger value="notifications" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Bell className="w-4 h-4" /> Notificações</TabsTrigger>
+          <TabsTrigger value="cadences" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Repeat className="w-4 h-4" /> Cadências</TabsTrigger>
           <TabsTrigger value="chat" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><MessageSquare className="w-4 h-4" /> WhatsApp</TabsTrigger>
           <TabsTrigger value="noshow" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><ShieldAlert className="w-4 h-4" /> No-Show</TabsTrigger>
           <TabsTrigger value="goals" className="text-[10px] font-black uppercase tracking-widest data-[state=active]:text-primary data-[state=active]:bg-gray-50 rounded-xl h-full flex items-center gap-2 px-6 transition-all text-ink"><Target className="w-4 h-4" /> Metas & Consultas</TabsTrigger>
@@ -506,6 +508,10 @@ function Settings() {
 
         <TabsContent value="notifications">
           <ReminderTemplatesSection />
+        </TabsContent>
+
+        <TabsContent value="cadences">
+          <FollowupCadencesSection />
         </TabsContent>
 
         <TabsContent value="chat">

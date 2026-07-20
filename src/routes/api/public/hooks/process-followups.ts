@@ -2,8 +2,9 @@ import { createFileRoute } from '@tanstack/react-router';
 
 const UAZAPI_BASE_URL = 'https://ipazua.uazapi.com';
 
-function render(template: string, data: { nome: string; telefone: string }) {
+function render(template: string, data: { nome: string; primeiro_nome: string; telefone: string }) {
   return template
+    .replace(/\{primeiro_nome\}/g, data.primeiro_nome)
     .replace(/\{nome\}/g, data.nome)
     .replace(/\{telefone\}/g, data.telefone);
 }
@@ -26,10 +27,9 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-        // Fetch due followups
         const { data: due, error } = await supabaseAdmin
           .from('lead_followups')
-          .select('id, tenant_id, lead_id, template_key, channel, scheduled_at')
+          .select('id, tenant_id, lead_id, template_key, channel, scheduled_at, cadence_id, cadence_step_id')
           .eq('status', 'pending')
           .lte('scheduled_at', new Date().toISOString())
           .limit(200);
@@ -42,10 +42,10 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
         let sent = 0;
         let failed = 0;
         let skipped = 0;
+        let coldMarked = 0;
 
         for (const f of due ?? []) {
           try {
-            // Skip non-whatsapp (e.g. ligação manual) — leaves as pending? Mark as skipped so atendente vê na lista
             if (f.channel !== 'whatsapp') {
               await supabaseAdmin
                 .from('lead_followups')
@@ -55,22 +55,152 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
               continue;
             }
 
-            // Get lead + whatsapp token
             const [{ data: lead }, { data: wa }] = await Promise.all([
-              supabaseAdmin.from('leads').select('full_name, phone, status').eq('id', f.lead_id).single(),
+              supabaseAdmin
+                .from('leads')
+                .select('full_name, phone, status, engagement_status, last_inbound_at, assigned_user_id')
+                .eq('id', f.lead_id)
+                .single(),
               supabaseAdmin.from('whatsapp_config').select('instance_token, is_active').eq('tenant_id', f.tenant_id).maybeSingle(),
             ]);
 
             if (!lead || !lead.phone) {
-              await supabaseAdmin
-                .from('lead_followups')
-                .update({ status: 'failed', error_message: 'Lead sem telefone' })
-                .eq('id', f.id);
+              await supabaseAdmin.from('lead_followups').update({ status: 'failed', error_message: 'Lead sem telefone' }).eq('id', f.id);
               failed++;
               continue;
             }
 
-            // If lead is no longer in followup, skip silently
+            // ── CADENCE-BASED FOLLOWUP ─────────────────────────────────
+            if (f.cadence_id && f.cadence_step_id) {
+              // Cliente respondeu depois do enrollment? Cancela cadeia.
+              const { data: enrollment } = await supabaseAdmin
+                .from('lead_followups')
+                .select('created_at')
+                .eq('id', f.id)
+                .single();
+              if (
+                lead.last_inbound_at &&
+                enrollment?.created_at &&
+                new Date(lead.last_inbound_at) > new Date(enrollment.created_at)
+              ) {
+                await supabaseAdmin
+                  .from('lead_followups')
+                  .update({ status: 'skipped', error_message: 'Cliente voltou a responder' })
+                  .eq('cadence_id', f.cadence_id)
+                  .eq('lead_id', f.lead_id)
+                  .eq('status', 'pending');
+                await supabaseAdmin
+                  .from('leads')
+                  .update({ engagement_status: 'recovered' })
+                  .eq('id', f.lead_id);
+                skipped++;
+                continue;
+              }
+              // Foi atribuído a um humano? Cancela.
+              if (lead.assigned_user_id) {
+                await supabaseAdmin
+                  .from('lead_followups')
+                  .update({ status: 'skipped', error_message: 'Atribuído a atendente' })
+                  .eq('cadence_id', f.cadence_id)
+                  .eq('lead_id', f.lead_id)
+                  .eq('status', 'pending');
+                skipped++;
+                continue;
+              }
+
+              const { data: step } = await supabaseAdmin
+                .from('followup_cadence_steps')
+                .select('message_template, position, enabled')
+                .eq('id', f.cadence_step_id)
+                .single();
+              const { data: cad } = await supabaseAdmin
+                .from('followup_cadences')
+                .select('cold_after_step, enabled')
+                .eq('id', f.cadence_id)
+                .single();
+
+              if (!step || !cad || !cad.enabled || step.enabled === false) {
+                await supabaseAdmin
+                  .from('lead_followups')
+                  .update({ status: 'skipped', error_message: 'Cadência ou passo desativado' })
+                  .eq('id', f.id);
+                skipped++;
+                continue;
+              }
+
+              const isColdMarker =
+                cad.cold_after_step && step.position >= cad.cold_after_step && !step.message_template?.trim();
+
+              if (isColdMarker) {
+                await supabaseAdmin
+                  .from('leads')
+                  .update({ engagement_status: 'cold' })
+                  .eq('id', f.lead_id);
+                await supabaseAdmin
+                  .from('lead_followups')
+                  .update({ status: 'sent', sent_at: new Date().toISOString(), error_message: 'Lead marcado como frio' })
+                  .eq('id', f.id);
+                coldMarked++;
+                continue;
+              }
+
+              if (!wa || !wa.is_active || !wa.instance_token) {
+                await supabaseAdmin
+                  .from('lead_followups')
+                  .update({ status: 'failed', error_message: 'WhatsApp não configurado' })
+                  .eq('id', f.id);
+                failed++;
+                continue;
+              }
+
+              const firstName = (lead.full_name ?? 'cliente').split(' ')[0];
+              const text = render(step.message_template ?? 'Olá {primeiro_nome}!', {
+                nome: lead.full_name ?? 'cliente',
+                primeiro_nome: firstName,
+                telefone: lead.phone,
+              });
+
+              const res = await fetch(`${UAZAPI_BASE_URL}/send/text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', token: wa.instance_token },
+                body: JSON.stringify({ number: lead.phone, text }),
+              });
+              if (!res.ok) {
+                const errText = await res.text().catch(() => '');
+                await supabaseAdmin
+                  .from('lead_followups')
+                  .update({ status: 'failed', error_message: `HTTP ${res.status}: ${errText.slice(0, 200)}` })
+                  .eq('id', f.id);
+                failed++;
+                continue;
+              }
+
+              await supabaseAdmin
+                .from('lead_followups')
+                .update({ status: 'sent', sent_at: new Date().toISOString() })
+                .eq('id', f.id);
+              await supabaseAdmin.from('whatsapp_message_logs').insert({
+                tenant_id: f.tenant_id,
+                recipient_phone: lead.phone,
+                message_type: 'text',
+                status: 'sent',
+                error_message: text.slice(0, 500),
+                sender_name: 'Cadência',
+              });
+
+              // Marca cold se este for o cold_after_step (mesmo tendo mensagem)
+              if (cad.cold_after_step && step.position >= cad.cold_after_step) {
+                await supabaseAdmin
+                  .from('leads')
+                  .update({ engagement_status: 'cold' })
+                  .eq('id', f.lead_id);
+                coldMarked++;
+              }
+              sent++;
+              continue;
+            }
+
+            // ── LEGACY: reminder_templates (kind=followup) ──────────────
             if (lead.status !== 'followup') {
               await supabaseAdmin
                 .from('lead_followups')
@@ -106,8 +236,10 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
               continue;
             }
 
+            const firstName = lead.full_name.split(' ')[0];
             const text = render(tpl?.message_template ?? 'Olá {nome}!', {
-              nome: lead.full_name.split(' ')[0],
+              nome: firstName,
+              primeiro_nome: firstName,
               telefone: lead.phone,
             });
 
@@ -123,7 +255,6 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
                 .from('lead_followups')
                 .update({ status: 'failed', error_message: `HTTP ${res.status}: ${errText.slice(0, 200)}` })
                 .eq('id', f.id);
-
               await supabaseAdmin.from('whatsapp_message_logs').insert({
                 tenant_id: f.tenant_id,
                 recipient_phone: lead.phone,
@@ -139,7 +270,6 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
               .from('lead_followups')
               .update({ status: 'sent', sent_at: new Date().toISOString() })
               .eq('id', f.id);
-
             await supabaseAdmin.from('whatsapp_message_logs').insert({
               tenant_id: f.tenant_id,
               recipient_phone: lead.phone,
@@ -158,7 +288,7 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
           }
         }
 
-        return Response.json({ ok: true, processed: due?.length ?? 0, sent, failed, skipped });
+        return Response.json({ ok: true, processed: due?.length ?? 0, sent, failed, skipped, coldMarked });
       },
     },
   },

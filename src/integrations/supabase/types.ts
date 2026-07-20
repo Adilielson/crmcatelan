@@ -1004,6 +1004,110 @@ export type Database = {
           },
         ]
       }
+      followup_cadence_steps: {
+        Row: {
+          cadence_id: string
+          channel: string
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string | null
+          message_template: string
+          offset_minutes: number
+          position: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cadence_id: string
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string | null
+          message_template: string
+          offset_minutes: number
+          position: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cadence_id?: string
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string | null
+          message_template?: string
+          offset_minutes?: number
+          position?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followup_cadence_steps_cadence_id_fkey"
+            columns: ["cadence_id"]
+            isOneToOne: false
+            referencedRelation: "followup_cadences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followup_cadence_steps_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      followup_cadences: {
+        Row: {
+          cold_after_step: number | null
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          name: string
+          silence_minutes: number
+          tenant_id: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          cold_after_step?: number | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          silence_minutes?: number
+          tenant_id: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          cold_after_step?: number | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          silence_minutes?: number
+          tenant_id?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followup_cadences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_settings: {
         Row: {
           description: string | null
@@ -1233,6 +1337,8 @@ export type Database = {
       }
       lead_followups: {
         Row: {
+          cadence_id: string | null
+          cadence_step_id: string | null
           channel: string
           created_at: string
           day_offset: number
@@ -1248,6 +1354,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cadence_id?: string | null
+          cadence_step_id?: string | null
           channel?: string
           created_at?: string
           day_offset: number
@@ -1263,6 +1371,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cadence_id?: string | null
+          cadence_step_id?: string | null
           channel?: string
           created_at?: string
           day_offset?: number
@@ -1278,6 +1388,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_followups_cadence_id_fkey"
+            columns: ["cadence_id"]
+            isOneToOne: false
+            referencedRelation: "followup_cadences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_followups_cadence_step_id_fkey"
+            columns: ["cadence_step_id"]
+            isOneToOne: false
+            referencedRelation: "followup_cadence_steps"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lead_followups_lead_id_fkey"
             columns: ["lead_id"]
@@ -1433,6 +1557,7 @@ export type Database = {
           ctwa_clid: string | null
           custom_column_id: string | null
           email: string | null
+          engagement_status: string
           first_contact_at: string | null
           full_name: string
           ia_disqualified_reason: string | null
@@ -1500,6 +1625,7 @@ export type Database = {
           ctwa_clid?: string | null
           custom_column_id?: string | null
           email?: string | null
+          engagement_status?: string
           first_contact_at?: string | null
           full_name: string
           ia_disqualified_reason?: string | null
@@ -1567,6 +1693,7 @@ export type Database = {
           ctwa_clid?: string | null
           custom_column_id?: string | null
           email?: string | null
+          engagement_status?: string
           first_contact_at?: string | null
           full_name?: string
           ia_disqualified_reason?: string | null
@@ -3071,6 +3198,10 @@ export type Database = {
       reactivate_lead_if_stale: {
         Args: { _lead_id: string; _stale_days?: number }
         Returns: boolean
+      }
+      seed_default_reengagement_cadence: {
+        Args: { _tenant_id: string }
+        Returns: string
       }
       upsert_ai_credential: {
         Args: {
