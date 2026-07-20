@@ -1455,6 +1455,9 @@ export type Database = {
           next_contact_at: string | null
           noshow_recovery_step: number
           notes: string | null
+          patient_age: number | null
+          patient_name: string | null
+          patient_relation: string | null
           payment_method: string | null
           phone: string | null
           prescription_image_path: string | null
@@ -1463,6 +1466,7 @@ export type Database = {
           products_sold: string | null
           reactivation_count: number
           sales_value: number | null
+          schedule_preferences: Json
           score_ia: number | null
           source: string | null
           source_id: string | null
@@ -1518,6 +1522,9 @@ export type Database = {
           next_contact_at?: string | null
           noshow_recovery_step?: number
           notes?: string | null
+          patient_age?: number | null
+          patient_name?: string | null
+          patient_relation?: string | null
           payment_method?: string | null
           phone?: string | null
           prescription_image_path?: string | null
@@ -1526,6 +1533,7 @@ export type Database = {
           products_sold?: string | null
           reactivation_count?: number
           sales_value?: number | null
+          schedule_preferences?: Json
           score_ia?: number | null
           source?: string | null
           source_id?: string | null
@@ -1581,6 +1589,9 @@ export type Database = {
           next_contact_at?: string | null
           noshow_recovery_step?: number
           notes?: string | null
+          patient_age?: number | null
+          patient_name?: string | null
+          patient_relation?: string | null
           payment_method?: string | null
           phone?: string | null
           prescription_image_path?: string | null
@@ -1589,6 +1600,7 @@ export type Database = {
           products_sold?: string | null
           reactivation_count?: number
           sales_value?: number | null
+          schedule_preferences?: Json
           score_ia?: number | null
           source?: string | null
           source_id?: string | null

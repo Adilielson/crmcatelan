@@ -153,13 +153,13 @@ export const AGENT_TOOLS = [
     function: {
       name: "atualizar_qualificacao_lead",
       description:
-        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
+        "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, QUEM é o paciente, preferências de horário, restrições de agenda, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
       parameters: {
         type: "object",
         properties: {
-          nome: { type: "string", description: "Nome do cliente." },
-          idade: { type: "integer", description: "Idade em anos, se mencionada." },
-          usa_oculos: { type: "boolean", description: "Cliente usa óculos hoje?" },
+          nome: { type: "string", description: "Nome do CONTATO do WhatsApp (quem está conversando)." },
+          idade: { type: "integer", description: "Idade em anos, se mencionada (do paciente)." },
+          usa_oculos: { type: "boolean", description: "Paciente usa óculos hoje?" },
           dificuldade_visual: {
             type: "string",
             description: "Sintomas relatados (ex.: 'não enxerga de longe', 'dor de cabeça ao ler', 'vista cansada').",
@@ -185,12 +185,33 @@ export const AGENT_TOOLS = [
             type: "string",
             description: "Objeção principal que o cliente levantou (ex.: 'preço alto', 'sem tempo', 'quer pesquisar').",
           },
+          paciente_nome: {
+            type: "string",
+            description: "Nome do PACIENTE que fará o exame, quando for DIFERENTE do contato do WhatsApp (ex.: contato é a esposa e o paciente é o marido). NUNCA preencha com o mesmo nome do contato — deixe vazio se o próprio contato for o paciente.",
+          },
+          paciente_relacao: {
+            type: "string",
+            description: "Relação do paciente com o contato (ex.: 'esposo', 'esposa', 'filho', 'filha', 'mãe', 'pai', 'irmão', 'amigo'). Só preencha se paciente_nome também for informado.",
+          },
+          paciente_idade: {
+            type: "integer",
+            description: "Idade do paciente em anos, quando ele NÃO é o contato do WhatsApp.",
+          },
+          preferencia_horario: {
+            type: "string",
+            description: "Preferência EXPLÍCITA de horário do cliente (ex.: 'último horário do dia', 'depois das 17h', 'de manhã cedo', 'só à tarde', 'horário do almoço'). Registre a fala do cliente, não invente.",
+          },
+          restricoes_agenda: {
+            type: "string",
+            description: "Restrições de agenda que o cliente citou (ex.: 'não pode segunda por causa do trabalho', 'só sábado', 'evitar sexta', 'não pode antes das 15h'). Registre a fala do cliente, não invente.",
+          },
           notas: {
             type: "string",
             description: "Qualquer informação extra relevante ao contexto do lead.",
           },
         },
       },
+
     },
   },
   {
@@ -496,6 +517,7 @@ async function createAppointment(
 ): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
+
   const scheduled = new Date(args.scheduled_at_iso);
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida. Use ISO 8601 (ex: 2026-07-25T14:00:00-04:00)." };
   const nowMs = Date.now();
@@ -649,12 +671,31 @@ async function createAppointment(
     .limit(1)
     .maybeSingle();
 
+  // Se houver paciente diferente do contato, usa o nome dele no agendamento (fica claro na agenda quem virá).
+  const { data: leadRow2 } = await admin
+    .from("leads")
+    .select("full_name, patient_name, patient_relation")
+    .eq("id", ctx.leadId)
+    .maybeSingle();
+  const patientName = ((leadRow2 as any)?.patient_name ?? "").trim();
+  const contactName = ((leadRow2 as any)?.full_name ?? ctx.leadName ?? "").trim();
+  const relation = ((leadRow2 as any)?.patient_relation ?? "").trim();
+  const apptLeadName = patientName || contactName || ctx.leadName;
+  const patientNoteParts: string[] = [];
+  if (patientName && contactName && patientName.toLowerCase() !== contactName.toLowerCase()) {
+    patientNoteParts.push(
+      `Paciente: ${patientName}${relation ? ` (${relation} de ${contactName})` : ` — contato: ${contactName}`}`,
+    );
+  }
+  if (args.observacao) patientNoteParts.push(args.observacao);
+  const finalNotes = patientNoteParts.length ? patientNoteParts.join(" • ") : null;
+
   const { data: inserted, error } = await admin
     .from("appointments")
     .insert({
       tenant_id: ctx.tenantId,
       lead_id: ctx.leadId,
-      lead_name: ctx.leadName,
+      lead_name: apptLeadName,
       unit_id: (unitRow as any)?.id ?? null,
       unit_name: (unitRow as any)?.name ?? null,
       professional_id: (profRow as any)?.id ?? null,
@@ -665,12 +706,13 @@ async function createAppointment(
       consultation_type_id: (match as any)?.id ?? null,
       value: (match as any)?.default_value ?? null,
       notification_channel: "whatsapp",
-      notes: args.observacao ?? null,
+      notes: finalNotes,
       origin: "ai_whatsapp",
       created_by_ai: true,
     })
     .select("id")
     .single();
+
 
 
   if (error) {
@@ -829,6 +871,11 @@ async function updateLeadQualification(
     urgencia?: "baixa" | "media" | "alta";
     interesses?: string[];
     objecao?: string;
+    paciente_nome?: string;
+    paciente_relacao?: string;
+    paciente_idade?: number;
+    preferencia_horario?: string;
+    restricoes_agenda?: string;
     notas?: string;
   },
 ): Promise<{ ok: boolean; message: string; updated: string[] }> {
@@ -837,7 +884,7 @@ async function updateLeadQualification(
   // Carrega estado atual para mesclar arrays/notas sem sobrescrever
   const { data: current } = await admin
     .from("leads")
-    .select("full_name, notes, ia_summary, ia_interesses, ia_tags, ia_urgencia, ia_receita_grau")
+    .select("full_name, notes, ia_summary, ia_interesses, ia_tags, ia_urgencia, ia_receita_grau, patient_name, patient_relation, patient_age, schedule_preferences")
     .eq("id", ctx.leadId)
     .maybeSingle();
 
@@ -861,6 +908,44 @@ async function updateLeadQualification(
   if (args.grau_receita) {
     patch.ia_receita_grau = args.grau_receita.trim();
     updated.push("grau_receita");
+  }
+
+  // Paciente ≠ contato: guarda separado para uso na agenda e no contexto
+  if (args.paciente_nome && args.paciente_nome.trim()) {
+    const pn = args.paciente_nome.trim();
+    const contatoNome = (current?.full_name ?? args.nome ?? "").trim();
+    // Só grava se realmente for diferente do contato
+    if (!contatoNome || pn.toLowerCase() !== contatoNome.toLowerCase()) {
+      patch.patient_name = pn;
+      updated.push("paciente_nome");
+    }
+  }
+  if (args.paciente_relacao && args.paciente_relacao.trim()) {
+    patch.patient_relation = args.paciente_relacao.trim().toLowerCase();
+    updated.push("paciente_relacao");
+  }
+  if (typeof args.paciente_idade === "number" && args.paciente_idade > 0) {
+    patch.patient_age = args.paciente_idade;
+    updated.push("paciente_idade");
+  }
+
+  // Preferências de horário / restrições de agenda: JSONB acumulativo
+  const prevPrefs = (current?.schedule_preferences ?? {}) as Record<string, unknown>;
+  const nextPrefs: Record<string, unknown> = { ...prevPrefs };
+  let prefsChanged = false;
+  if (args.preferencia_horario && args.preferencia_horario.trim()) {
+    nextPrefs.preferencia_horario = args.preferencia_horario.trim();
+    prefsChanged = true;
+    updated.push("preferencia_horario");
+  }
+  if (args.restricoes_agenda && args.restricoes_agenda.trim()) {
+    nextPrefs.restricoes_agenda = args.restricoes_agenda.trim();
+    prefsChanged = true;
+    updated.push("restricoes_agenda");
+  }
+  if (prefsChanged) {
+    nextPrefs.atualizado_em = new Date().toISOString();
+    patch.schedule_preferences = nextPrefs;
   }
 
   // Interesses: merge case-insensitive
@@ -907,11 +992,18 @@ async function updateLeadQualification(
   const summaryLines: string[] = [];
   if (current?.ia_summary?.trim()) summaryLines.push(current.ia_summary.trim());
   const newFacts: string[] = [];
+  if (args.paciente_nome && args.paciente_relacao) {
+    newFacts.push(`Paciente: ${args.paciente_nome} (${args.paciente_relacao})${args.paciente_idade ? `, ${args.paciente_idade} anos` : ""}`);
+  } else if (args.paciente_nome) {
+    newFacts.push(`Paciente: ${args.paciente_nome}${args.paciente_idade ? `, ${args.paciente_idade} anos` : ""}`);
+  }
   if (args.idade) newFacts.push(`Idade: ${args.idade}`);
   if (args.dificuldade_visual) newFacts.push(`Dificuldade: ${args.dificuldade_visual}`);
   if (args.ultimo_exame) newFacts.push(`Último exame: ${args.ultimo_exame}`);
   if (args.tipo_produto) newFacts.push(`Produto de interesse: ${args.tipo_produto}`);
   if (args.objecao) newFacts.push(`Objeção: ${args.objecao}`);
+  if (args.preferencia_horario) newFacts.push(`Prefere horário: ${args.preferencia_horario}`);
+  if (args.restricoes_agenda) newFacts.push(`Restrição de agenda: ${args.restricoes_agenda}`);
   if (args.notas) newFacts.push(args.notas);
   if (newFacts.length) {
     summaryLines.push(newFacts.join(" • "));
@@ -930,6 +1022,7 @@ async function updateLeadQualification(
 
   return { ok: true, message: `Salvei: ${updated.join(", ")}`, updated };
 }
+
 
 
 
