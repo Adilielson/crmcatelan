@@ -49,16 +49,10 @@ export const AGENT_TOOLS = [
     function: {
       name: "listar_horarios_disponiveis",
       description:
-        "OBRIGATÓRIO chamar antes de propor qualquer horário. Lista horários livres para o exame de OPTOMETRISTA (único tipo disponível — Oftalmologia foi descontinuada), cruzando: horário da loja + janela do exame + bloqueios + exceções por data. NUNCA invente ou sugira horários sem chamar esta função. Se o cliente pedir um horário que não retornar aqui, informe que não há atendimento nesse horário.",
+        "OBRIGATÓRIO chamar antes de propor qualquer horário. Lista horários livres do profissional que atende os exames de vista na Ótica Catelan, cruzando: horário da loja + janela de atendimento + bloqueios + exceções por data. NUNCA invente ou sugira horários sem chamar esta função. Se o cliente pedir um horário que não retornar aqui, informe que não há atendimento nesse horário.",
       parameters: {
         type: "object",
-        required: ["tipo_exame"],
         properties: {
-          tipo_exame: {
-            type: "string",
-            description: "SEMPRE 'Optometrista' — é o único tipo de exame ofertado. NÃO usar 'Oftalmológica'.",
-          },
-
           data_preferida: {
             type: "string",
             description: "Data preferida no formato YYYY-MM-DD (opcional).",
@@ -72,6 +66,7 @@ export const AGENT_TOOLS = [
       },
     },
   },
+
   {
     type: "function" as const,
     function: {
