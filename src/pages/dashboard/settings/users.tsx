@@ -353,11 +353,53 @@ export default function UserManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmação de exclusão definitiva */}
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(o) => !o && setDeleteDialog({ open: false, member: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" /> Excluir definitivamente
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é <strong>irreversível</strong>. O login de{' '}
+              <strong>{deleteDialog.member?.full_name ?? deleteDialog.member?.email}</strong>{' '}
+              será removido e o perfil apagado. O histórico (leads, agendamentos, mensagens) será
+              preservado, mas ficará sem responsável atribuído.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMut.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMut.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteDialog.member) deleteMut.mutate(deleteDialog.member.id);
+              }}
+            >
+              {deleteMut.isPending ? 'Excluindo...' : 'Excluir definitivamente'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function RowMenu({ m, onToggle, onRegen, onPerms }: { m: Member; onToggle: () => void; onRegen: () => void; onPerms: () => void }) {
+function RowMenu({
+  m, canDelete, onToggle, onRegen, onPerms, onDelete,
+}: {
+  m: Member;
+  canDelete: boolean;
+  onToggle: () => void;
+  onRegen: () => void;
+  onPerms: () => void;
+  onDelete: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -375,6 +417,14 @@ function RowMenu({ m, onToggle, onRegen, onPerms }: { m: Member; onToggle: () =>
         <DropdownMenuItem onClick={onToggle} className={m.status === 'active' ? 'text-destructive' : 'text-green-600'}>
           {m.status === 'active' ? 'Desativar' : 'Reativar'}
         </DropdownMenuItem>
+        {canDelete && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Excluir definitivamente
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
