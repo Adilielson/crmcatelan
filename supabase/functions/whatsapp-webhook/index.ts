@@ -1182,6 +1182,12 @@ Deno.serve(async (req) => {
             leadIaProfile = ((existingLead as any).ia_profile as string | null) ?? null;
             leadIaSentiment = ((existingLead as any).ia_sentiment as string | null) ?? null;
             leadIaUrgency = ((existingLead as any).ia_urgency as string | null) ?? null;
+            leadPatientName = ((existingLead as any).patient_name as string | null) ?? null;
+            leadPatientRelation = ((existingLead as any).patient_relation as string | null) ?? null;
+            leadPatientAge = ((existingLead as any).patient_age as number | null) ?? null;
+            leadSchedulePrefs = ((existingLead as any).schedule_preferences as Record<string, unknown> | null) ?? null;
+
+
 
             // ── REATIVAÇÃO AUTOMÁTICA (30 dias) ──────────────────────────
             // Se o lead está em status terminal (lost/showed_up) e o cliente
