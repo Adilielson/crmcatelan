@@ -671,12 +671,31 @@ async function createAppointment(
     .limit(1)
     .maybeSingle();
 
+  // Se houver paciente diferente do contato, usa o nome dele no agendamento (fica claro na agenda quem virá).
+  const { data: leadRow2 } = await admin
+    .from("leads")
+    .select("full_name, patient_name, patient_relation")
+    .eq("id", ctx.leadId)
+    .maybeSingle();
+  const patientName = ((leadRow2 as any)?.patient_name ?? "").trim();
+  const contactName = ((leadRow2 as any)?.full_name ?? ctx.leadName ?? "").trim();
+  const relation = ((leadRow2 as any)?.patient_relation ?? "").trim();
+  const apptLeadName = patientName || contactName || ctx.leadName;
+  const patientNoteParts: string[] = [];
+  if (patientName && contactName && patientName.toLowerCase() !== contactName.toLowerCase()) {
+    patientNoteParts.push(
+      `Paciente: ${patientName}${relation ? ` (${relation} de ${contactName})` : ` — contato: ${contactName}`}`,
+    );
+  }
+  if (args.observacao) patientNoteParts.push(args.observacao);
+  const finalNotes = patientNoteParts.length ? patientNoteParts.join(" • ") : null;
+
   const { data: inserted, error } = await admin
     .from("appointments")
     .insert({
       tenant_id: ctx.tenantId,
       lead_id: ctx.leadId,
-      lead_name: ctx.leadName,
+      lead_name: apptLeadName,
       unit_id: (unitRow as any)?.id ?? null,
       unit_name: (unitRow as any)?.name ?? null,
       professional_id: (profRow as any)?.id ?? null,
@@ -687,12 +706,13 @@ async function createAppointment(
       consultation_type_id: (match as any)?.id ?? null,
       value: (match as any)?.default_value ?? null,
       notification_channel: "whatsapp",
-      notes: args.observacao ?? null,
+      notes: finalNotes,
       origin: "ai_whatsapp",
       created_by_ai: true,
     })
     .select("id")
     .single();
+
 
 
   if (error) {
