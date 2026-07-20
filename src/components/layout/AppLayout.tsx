@@ -24,11 +24,13 @@ import {
   Target,
   Trophy,
   Award,
+  KeyRound,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getAiConfig, updateAiConfig } from '@/lib/ai-training.functions';
 import { toast } from 'sonner';
+import { ChangePasswordDialog } from '@/components/auth/ChangePasswordDialog';
 
 
 /* ============ MOBILE BOTTOM NAV ============ */
