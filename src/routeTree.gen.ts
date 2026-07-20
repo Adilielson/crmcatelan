@@ -14,6 +14,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SaasRouteImport } from './routes/saas'
 import { Route as ResultadosRouteImport } from './routes/resultados'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as PerformanceRouteImport } from './routes/performance'
@@ -66,6 +67,11 @@ const SaasRoute = SaasRouteImport.update({
 const ResultadosRoute = ResultadosRouteImport.update({
   id: '/resultados',
   path: '/resultados',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RelatoriosRoute = RelatoriosRouteImport.update({
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/resultados': typeof ResultadosRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/resultados': typeof ResultadosRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/resultados': typeof ResultadosRoute
   '/saas': typeof SaasRoute
   '/settings': typeof SettingsRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/performance'
     | '/ranking'
     | '/relatorios'
+    | '/reset-password'
     | '/resultados'
     | '/saas'
     | '/settings'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/metas'
     | '/performance'
     | '/ranking'
+    | '/reset-password'
     | '/resultados'
     | '/saas'
     | '/settings'
@@ -408,6 +419,7 @@ export interface FileRouteTypes {
     | '/performance'
     | '/ranking'
     | '/relatorios'
+    | '/reset-password'
     | '/resultados'
     | '/saas'
     | '/settings'
@@ -444,6 +456,7 @@ export interface RootRouteChildren {
   PerformanceRoute: typeof PerformanceRoute
   RankingRoute: typeof RankingRoute
   RelatoriosRoute: typeof RelatoriosRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ResultadosRoute: typeof ResultadosRoute
   SaasRoute: typeof SaasRoute
   SettingsRoute: typeof SettingsRoute
@@ -492,6 +505,13 @@ declare module '@tanstack/react-router' {
       path: '/resultados'
       fullPath: '/resultados'
       preLoaderRoute: typeof ResultadosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/relatorios': {
@@ -732,6 +752,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerformanceRoute: PerformanceRoute,
   RankingRoute: RankingRoute,
   RelatoriosRoute: RelatoriosRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   ResultadosRoute: ResultadosRoute,
   SaasRoute: SaasRoute,
   SettingsRoute: SettingsRoute,
@@ -750,13 +771,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

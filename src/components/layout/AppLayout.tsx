@@ -24,11 +24,13 @@ import {
   Target,
   Trophy,
   Award,
+  KeyRound,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getAiConfig, updateAiConfig } from '@/lib/ai-training.functions';
 import { toast } from 'sonner';
+import { ChangePasswordDialog } from '@/components/auth/ChangePasswordDialog';
 
 
 /* ============ MOBILE BOTTOM NAV ============ */
@@ -245,6 +247,7 @@ const NavDropdown = ({
 /* ============ USER MENU ============ */
 const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
   const [open, setOpen] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -307,6 +310,13 @@ const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
             Configurações
           </Link>
           <button
+            onClick={() => { setOpen(false); setPwdOpen(true); }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-[#334155] hover:text-white transition-colors duration-150"
+          >
+            <KeyRound className="w-4 h-4 text-[#f5c518]" />
+            Alterar minha senha
+          </button>
+          <button
             onClick={() => { setOpen(false); onLogout(); }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors duration-150"
           >
@@ -315,9 +325,11 @@ const UserMenu = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
           </button>
         </div>
       )}
+      <ChangePasswordDialog open={pwdOpen} onOpenChange={setPwdOpen} userEmail={user?.email ?? ''} />
     </div>
   );
 };
+
 
 /* ============ IA SDR Kill Switch (emergência) ============ */
 const AiToggle = () => {
@@ -558,8 +570,10 @@ const AppLayout = () => {
     initialize();
   }, []);
 
+  const isPublicRoute = location.pathname === '/login' || location.pathname === '/reset-password';
+
   useEffect(() => {
-    if (loading || user || location.pathname === '/login') return;
+    if (loading || user || isPublicRoute) return;
     // Decisão 100% síncrona (sem getSession(), que pode travar após F5 por
     // causa do lock de auth do navegador):
     //  - sem sessão salva no localStorage → /login
@@ -600,7 +614,7 @@ const AppLayout = () => {
   //  - não há user mas estamos numa rota protegida (evita renderizar o conteúdo
   //    sem o header/menu durante a janela entre Ctrl+Shift+R e o restore da sessão).
   // O effect acima cuida de redirecionar p/ /login se realmente não há sessão.
-  if (loading || (!user && location.pathname !== '/login'))
+  if (loading || (!user && !isPublicRoute))
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin" />

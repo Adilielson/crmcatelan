@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -16,6 +17,7 @@ function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [forgotOpen, setForgotOpen] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,9 +100,18 @@ function LoginPage() {
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'ENTRAR'}
             </Button>
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="w-full text-center text-slate-400 text-xs font-semibold uppercase tracking-widest hover:text-[#FFC400] transition-colors pt-2"
+            >
+              Esqueci minha senha
+            </button>
           </form>
         </div>
       </div>
+      <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
     </div>
   )
 }
+
