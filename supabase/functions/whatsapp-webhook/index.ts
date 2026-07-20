@@ -1535,7 +1535,7 @@ Deno.serve(async (req) => {
                 }
               } catch (_) { /* noop */ }
 
-              const contextNote = [toolsInstructions, hoursCtx, nameCtx, iaCtx, apptCtx].filter(Boolean).join("\n\n");
+              const contextNote = [toolsInstructions, hoursCtx, nameCtx, patientCtx, iaCtx, apptCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(
                 systemPrompt,
                 history,
