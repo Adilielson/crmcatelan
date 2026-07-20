@@ -1160,6 +1160,11 @@ Deno.serve(async (req) => {
         let leadIaProfile: string | null = null;
         let leadIaSentiment: string | null = null;
         let leadIaUrgency: string | null = null;
+        let leadPatientName: string | null = null;
+        let leadPatientRelation: string | null = null;
+        let leadPatientAge: number | null = null;
+        let leadSchedulePrefs: Record<string, unknown> | null = null;
+
         try {
           const { data: existingLead } = await adminClient
             .from("leads")
