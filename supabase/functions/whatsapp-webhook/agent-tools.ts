@@ -641,10 +641,15 @@ async function createAppointment(
     .select("id,name,default_value")
     .eq("tenant_id", ctx.tenantId)
     .eq("is_active", true);
-  const norm = args.tipo_consulta.trim().toLowerCase();
-  const match = (types ?? []).find(
-    (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
-  );
+  const norm = (args.tipo_consulta ?? "").trim().toLowerCase();
+  const activeTypes = (types ?? []) as any[];
+  const match = norm
+    ? activeTypes.find(
+        (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
+      ) ?? activeTypes[0]
+    : activeTypes[0];
+  const resolvedTypeName = (match as any)?.name ?? args.tipo_consulta ?? null;
+
 
   // Unidade default: primeira do tenant (quando houver mais de uma, gestor pode reatribuir)
   const { data: unitRow } = await admin
