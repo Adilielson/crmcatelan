@@ -765,6 +765,9 @@ async function rescheduleAppointment(
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
   if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível remarcar para o passado." };
 
+  await autoMarkPastNoShows(admin, ctx.tenantId);
+
+
   let apptId = args.appointment_id;
   if (!apptId) {
     const { data: found } = await admin
