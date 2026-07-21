@@ -540,6 +540,12 @@ async function createAppointment(
     return { ok: false, message: "Data muito distante (máx 90 dias). Verifique se o ANO está correto e confirme a data com o cliente antes de tentar de novo." };
   }
 
+  // Limpa agenda: marca como no_show qualquer consulta pendente/confirmada
+  // já vencida (>2h no passado). Evita que registros esquecidos bloqueiem
+  // o remarque legítimo deste lead abaixo.
+  await autoMarkPastNoShows(admin, ctx.tenantId);
+
+
 
   // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário entre leads distintos.
   const startMs = scheduled.getTime();
