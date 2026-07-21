@@ -19,6 +19,34 @@ const DAILY_CAP_HIGH = 20;
 const PER_HOUR_CAP_NORMAL = 2;
 const HIGH_VOLUME_WEEKDAYS = new Set<number>([3, 6]); // 3 = quarta, 6 = sábado
 
+function normalizeExamName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function isDeprecatedExamType(name: string): boolean {
+  const n = normalizeExamName(name);
+  // A ótica não oferece mais esse exame para a IA; manter invisível mesmo se ainda existir no cadastro legado.
+  return n.includes("oftalm");
+}
+
+function pickDefaultConsultationType<T extends { name?: string | null }>(types: T[], requested?: string | null): T | null {
+  const active = types.filter((t) => !isDeprecatedExamType(String(t.name ?? "")));
+  const pool = active.length ? active : types;
+  const norm = normalizeExamName(requested ?? "");
+  if (norm && !norm.includes("oftalm")) {
+    const match = pool.find((t) => {
+      const name = normalizeExamName(String(t.name ?? ""));
+      return name.includes(norm) || norm.includes(name);
+    });
+    if (match) return match;
+  }
+  return pool.find((t) => normalizeExamName(String(t.name ?? "")).includes("optomet")) ?? pool[0] ?? null;
+}
+
 // Retorna { dayStr:'YYYY-MM-DD', weekday:0-6 } no fuso do tenant.
 function localDayInfo(iso: string | Date, tz: string): { dayStr: string; weekday: number } {
   const d = typeof iso === "string" ? new Date(iso) : iso;
@@ -41,6 +69,32 @@ async function getTenantTimezone(admin: Supa, tenantId: string): Promise<string>
 
 function dailyCapFor(weekday: number): number {
   return HIGH_VOLUME_WEEKDAYS.has(weekday) ? DAILY_CAP_HIGH : DAILY_CAP_NORMAL;
+}
+
+function resolveFutureDate(input: Date): Date {
+  if (isNaN(input.getTime())) return input;
+  const now = new Date();
+  const maxFutureMs = now.getTime() + 90 * 24 * 60 * 60_000;
+  let candidate = new Date(input);
+
+  // Se o modelo mandou ano passado/errado, preserve dia/hora e traga para o ano atual.
+  if (candidate.getTime() < now.getTime()) {
+    const currentYear = now.getFullYear();
+    candidate = new Date(input);
+    candidate.setFullYear(currentYear);
+    if (candidate.getTime() < now.getTime()) candidate.setFullYear(currentYear + 1);
+  }
+
+  // Se ainda ficou distante demais, provavelmente houve alucinação de ano.
+  // Tenta o ano atual antes de rejeitar.
+  if (candidate.getTime() > maxFutureMs) {
+    const currentYear = now.getFullYear();
+    const adjusted = new Date(input);
+    adjusted.setFullYear(currentYear);
+    if (adjusted.getTime() >= now.getTime() && adjusted.getTime() <= maxFutureMs) return adjusted;
+  }
+
+  return candidate;
 }
 
 // Marca automaticamente como no_show qualquer agendamento pending/confirmed
@@ -342,13 +396,8 @@ async function listAvailableSlots(
     .select("id,name")
     .eq("tenant_id", tenantId)
     .eq("is_active", true);
-  const norm = (opts.tipo_exame ?? "").trim().toLowerCase();
   const activeTypes = (types ?? []) as any[];
-  const type = norm
-    ? activeTypes.find(
-        (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
-      ) ?? activeTypes[0]
-    : activeTypes[0];
+  const type = pickDefaultConsultationType(activeTypes, opts.tipo_exame);
   if (!type) {
     return [];
   }
@@ -528,7 +577,8 @@ async function createAppointment(
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
 
-  const scheduled = new Date(args.scheduled_at_iso);
+  const rawScheduled = new Date(args.scheduled_at_iso);
+  const scheduled = resolveFutureDate(rawScheduled);
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida. Use ISO 8601 (ex: 2026-07-25T14:00:00-04:00)." };
   const nowMs = Date.now();
   if (scheduled.getTime() < nowMs) {
@@ -664,13 +714,8 @@ async function createAppointment(
     .select("id,name,default_value")
     .eq("tenant_id", ctx.tenantId)
     .eq("is_active", true);
-  const norm = (args.tipo_consulta ?? "").trim().toLowerCase();
   const activeTypes = (types ?? []) as any[];
-  const match = norm
-    ? activeTypes.find(
-        (t: any) => (t.name as string).toLowerCase().includes(norm) || norm.includes((t.name as string).toLowerCase()),
-      ) ?? activeTypes[0]
-    : activeTypes[0];
+  const match = pickDefaultConsultationType(activeTypes, args.tipo_consulta);
   const resolvedTypeName = (match as any)?.name ?? args.tipo_consulta ?? null;
 
 
