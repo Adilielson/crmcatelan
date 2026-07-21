@@ -43,6 +43,21 @@ function dailyCapFor(weekday: number): number {
   return HIGH_VOLUME_WEEKDAYS.has(weekday) ? DAILY_CAP_HIGH : DAILY_CAP_NORMAL;
 }
 
+// Marca automaticamente como no_show qualquer agendamento pending/confirmed
+// cujo horário já passou há mais de 2h. Assim a agenda fica limpa e não
+// bloqueia novos agendamentos legítimos deste lead. Idempotente e barato.
+async function autoMarkPastNoShows(admin: Supa, tenantId: string): Promise<void> {
+  const cutoff = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
+  try {
+    await admin
+      .from("appointments")
+      .update({ status: "no_show", updated_at: new Date().toISOString() })
+      .eq("tenant_id", tenantId)
+      .in("status", ["pending", "confirmed"])
+      .lt("scheduled_at", cutoff);
+  } catch (_e) { /* não bloqueia o fluxo se falhar */ }
+}
+
 export const AGENT_TOOLS = [
   {
     type: "function" as const,
@@ -525,6 +540,12 @@ async function createAppointment(
     return { ok: false, message: "Data muito distante (máx 90 dias). Verifique se o ANO está correto e confirme a data com o cliente antes de tentar de novo." };
   }
 
+  // Limpa agenda: marca como no_show qualquer consulta pendente/confirmada
+  // já vencida (>2h no passado). Evita que registros esquecidos bloqueiem
+  // o remarque legítimo deste lead abaixo.
+  await autoMarkPastNoShows(admin, ctx.tenantId);
+
+
 
   // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário entre leads distintos.
   const startMs = scheduled.getTime();
@@ -743,6 +764,9 @@ async function rescheduleAppointment(
   const scheduled = new Date(args.novo_horario_iso);
   if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
   if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível remarcar para o passado." };
+
+  await autoMarkPastNoShows(admin, ctx.tenantId);
+
 
   let apptId = args.appointment_id;
   if (!apptId) {
@@ -1034,6 +1058,17 @@ export async function executeToolCall(
   name: string,
   argsJson: string,
 ): Promise<string> {
+  // Envelopa qualquer resposta ok:false com instrução para a IA COMUNICAR
+  // o motivo literal ao cliente (em vez de "engolir" o erro e inventar horário).
+  const wrap = (obj: any): string => {
+    if (obj && obj.ok === false && obj.message) {
+      obj.must_relay_to_user = true;
+      obj.client_hint =
+        "Fale ao cliente com naturalidade o motivo exato desta falha (use o texto de 'message') e proponha o próximo passo. NÃO ignore este erro.";
+    }
+    return JSON.stringify(obj);
+  };
+
   let args: any = {};
   try { args = JSON.parse(argsJson || "{}"); } catch { args = {}; }
 
@@ -1041,39 +1076,24 @@ export async function executeToolCall(
     if (name === "listar_horarios_disponiveis") {
       const slots = await listAvailableSlots(admin, ctx.tenantId, args);
       if (slots.length === 0) {
-        return JSON.stringify({
+        return wrap({
           ok: false,
           message: "Nenhum horário livre nos próximos 14 dias com esses critérios.",
         });
       }
       return JSON.stringify({ ok: true, slots });
     }
-    if (name === "criar_agendamento") {
-      const res = await createAppointment(admin, ctx, args);
-      return JSON.stringify(res);
-    }
-    if (name === "remarcar_agendamento") {
-      const res = await rescheduleAppointment(admin, ctx, args);
-      return JSON.stringify(res);
-    }
-    if (name === "cancelar_agendamento") {
-      const res = await cancelAppointment(admin, ctx, args);
-      return JSON.stringify(res);
-    }
-    if (name === "transferir_para_humano") {
-      const res = await transferToHuman(admin, ctx, args);
-      return JSON.stringify(res);
-    }
-    if (name === "atualizar_qualificacao_lead") {
-      const res = await updateLeadQualification(admin, ctx, args);
-      return JSON.stringify(res);
-    }
-    return JSON.stringify({ ok: false, message: `Tool desconhecida: ${name}` });
-
+    if (name === "criar_agendamento") return wrap(await createAppointment(admin, ctx, args));
+    if (name === "remarcar_agendamento") return wrap(await rescheduleAppointment(admin, ctx, args));
+    if (name === "cancelar_agendamento") return wrap(await cancelAppointment(admin, ctx, args));
+    if (name === "transferir_para_humano") return wrap(await transferToHuman(admin, ctx, args));
+    if (name === "atualizar_qualificacao_lead") return wrap(await updateLeadQualification(admin, ctx, args));
+    return wrap({ ok: false, message: `Tool desconhecida: ${name}` });
   } catch (e) {
-    return JSON.stringify({
+    const msg = e instanceof Error ? e.message : String(e);
+    return wrap({
       ok: false,
-      message: e instanceof Error ? e.message : String(e),
+      message: `Falha técnica ao executar ${name}: ${msg}`,
     });
   }
 }
