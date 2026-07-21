@@ -553,7 +553,7 @@ export async function listAvailableSlots(
       }
 
       const iso = isoAt(dayStr, slotStart);
-      if (new Date(iso).getTime() < Date.now() + 60 * 60_000) {
+      if (new Date(iso).getTime() < Date.now() + 20 * 60_000) {
         cursor += slotMin;
         continue;
       }
