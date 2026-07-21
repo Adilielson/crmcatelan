@@ -3,7 +3,7 @@
 // URL: {SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=00000000-0000-0000-0000-000000000001
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AGENT_TOOLS, executeToolCall } from "./agent-tools.ts";
+import { AGENT_TOOLS, executeToolCall, listAvailableSlots } from "./agent-tools.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
