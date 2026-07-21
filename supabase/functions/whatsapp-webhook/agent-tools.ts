@@ -551,15 +551,17 @@ async function createAppointment(
     };
   }
 
-  // Se o lead já tem outro agendamento futuro ativo em horário diferente,
-  // orienta a IA a REMARCAR em vez de duplicar.
+  // Se o lead já tem outro agendamento REALMENTE FUTURO (scheduled_at > agora)
+  // ativo em horário diferente, orienta a IA a REMARCAR em vez de duplicar.
+  // NOTA: usávamos "now - 1h" antes, mas isso fazia com que consultas passadas
+  // (no-shows não marcados) continuassem bloqueando um remarque legítimo.
   const { data: existingOther } = await admin
     .from("appointments")
     .select("id, scheduled_at")
     .eq("tenant_id", ctx.tenantId)
     .eq("lead_id", ctx.leadId)
     .in("status", ["pending", "confirmed"])
-    .gte("scheduled_at", new Date(Date.now() - 60 * 60_000).toISOString())
+    .gt("scheduled_at", new Date().toISOString())
     .order("scheduled_at", { ascending: true })
     .limit(1)
     .maybeSingle();

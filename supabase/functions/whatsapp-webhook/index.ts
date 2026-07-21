@@ -205,6 +205,38 @@ async function sendWhatsAppText(token: string, phone: string, text: string): Pro
   }
 }
 
+// Hand-off silencioso: se um atendente humano enviou qualquer mensagem para
+// este número nos últimos 30 min, a IA não intervém — a conversa está sendo
+// conduzida por uma pessoa. Considera "humano" qualquer outbound cujo
+// sender_name NÃO seja "IA SDR".
+const HUMAN_ACTIVE_WINDOW_MS = 30 * 60_000;
+async function humanRecentlyActive(
+  admin: ReturnType<typeof createClient>,
+  tenantId: string,
+  phone: string,
+): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - HUMAN_ACTIVE_WINDOW_MS).toISOString();
+    const { data } = await admin
+      .from("whatsapp_message_logs")
+      .select("sender_name")
+      .eq("tenant_id", tenantId)
+      .eq("recipient_phone", phone)
+      .eq("status", "sent")
+      .gte("sent_at", since)
+      .order("sent_at", { ascending: false })
+      .limit(5);
+    return (data ?? []).some((r: any) => {
+      const s = String(r?.sender_name ?? "").trim();
+      return s.length > 0 && s !== "IA SDR";
+    });
+  } catch (e) {
+    console.warn("[sdr] humanRecentlyActive falhou (fail-open):", e instanceof Error ? e.message : String(e));
+    return false;
+  }
+}
+
+
 // ── Horário de expediente ─────────────────────────────────────────────────
 type BusinessHours = Record<string, [string, string] | null>;
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
@@ -1353,9 +1385,13 @@ Deno.serve(async (req) => {
 
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
-          // Guard: se um atendente humano assumiu o lead, NÃO responde
+          // Guard 1: se um atendente humano assumiu o lead, NÃO responde
           if (leadAssignedUserId) {
             console.log(`[sdr] pulado: lead ${leadId} atribuído a atendente humano (${leadAssignedUserId})`);
+          } else if (await humanRecentlyActive(adminClient, tenantId, senderPhone)) {
+            // Guard 2: hand-off silencioso — se um humano enviou mensagem
+            // nos últimos 30 min, a IA não intervém, mesmo sem "assumir" o lead.
+            console.log(`[sdr] pulado: humano ativo recentemente na conversa com ${senderPhone}`);
           } else
           try {
             // 1) Busca token da instância
