@@ -43,6 +43,21 @@ function dailyCapFor(weekday: number): number {
   return HIGH_VOLUME_WEEKDAYS.has(weekday) ? DAILY_CAP_HIGH : DAILY_CAP_NORMAL;
 }
 
+// Marca automaticamente como no_show qualquer agendamento pending/confirmed
+// cujo horário já passou há mais de 2h. Assim a agenda fica limpa e não
+// bloqueia novos agendamentos legítimos deste lead. Idempotente e barato.
+async function autoMarkPastNoShows(admin: Supa, tenantId: string): Promise<void> {
+  const cutoff = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
+  try {
+    await admin
+      .from("appointments")
+      .update({ status: "no_show", updated_at: new Date().toISOString() })
+      .eq("tenant_id", tenantId)
+      .in("status", ["pending", "confirmed"])
+      .lt("scheduled_at", cutoff);
+  } catch (_e) { /* não bloqueia o fluxo se falhar */ }
+}
+
 export const AGENT_TOOLS = [
   {
     type: "function" as const,
