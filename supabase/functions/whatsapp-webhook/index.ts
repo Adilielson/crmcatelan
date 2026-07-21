@@ -3,7 +3,7 @@
 // URL: {SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=00000000-0000-0000-0000-000000000001
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AGENT_TOOLS, executeToolCall } from "./agent-tools.ts";
+import { AGENT_TOOLS, executeToolCall, listAvailableSlots } from "./agent-tools.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1580,7 +1580,20 @@ Deno.serve(async (req) => {
                 }
               } catch (_) { /* noop */ }
 
-              const contextNote = [toolsInstructions, hoursCtx, nameCtx, patientCtx, iaCtx, apptCtx].filter(Boolean).join("\n\n");
+              // Resumo dos próximos slots livres — ajuda a IA a não afirmar "não tem horário"
+              // sem consultar a tool. Fonte de verdade continua sendo listar_horarios_disponiveis.
+              let slotsCtx = "";
+              try {
+                const slots = await listAvailableSlots(adminClient as any, tenantId, {});
+                if (slots.length > 0) {
+                  const preview = slots.slice(0, 6).map((s) => s.label).join(" • ");
+                  slotsCtx = `PRÓXIMOS HORÁRIOS LIVRES (prévia — sempre confirme via listar_horarios_disponiveis antes de ofertar): ${preview}.`;
+                } else {
+                  slotsCtx = `PRÉVIA DE HORÁRIOS: nenhum slot livre encontrado nos próximos dias pela agenda. Antes de dizer isso ao cliente, chame 'listar_horarios_disponiveis' para reconfirmar.`;
+                }
+              } catch (_) { /* noop */ }
+
+              const contextNote = [toolsInstructions, hoursCtx, nameCtx, patientCtx, iaCtx, apptCtx, slotsCtx].filter(Boolean).join("\n\n");
               const reply = await generateSdrReply(
                 systemPrompt,
                 history,

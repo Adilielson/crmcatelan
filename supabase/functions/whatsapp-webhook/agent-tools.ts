@@ -377,7 +377,7 @@ type ExamOverride = {
 };
 
 // Gera candidatos filtrando por: horário da loja ∩ janela do exame ∩ bloqueios ∩ recorrência do sábado ∩ exceções.
-async function listAvailableSlots(
+export async function listAvailableSlots(
   admin: Supa,
   tenantId: string,
   opts: { tipo_exame?: string; data_preferida?: string; periodo?: string },
@@ -553,7 +553,7 @@ async function listAvailableSlots(
       }
 
       const iso = isoAt(dayStr, slotStart);
-      if (new Date(iso).getTime() < Date.now() + 60 * 60_000) {
+      if (new Date(iso).getTime() < Date.now() + 20 * 60_000) {
         cursor += slotMin;
         continue;
       }
