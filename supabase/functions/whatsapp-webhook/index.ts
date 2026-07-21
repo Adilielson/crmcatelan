@@ -1353,9 +1353,13 @@ Deno.serve(async (req) => {
 
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
-          // Guard: se um atendente humano assumiu o lead, NÃO responde
+          // Guard 1: se um atendente humano assumiu o lead, NÃO responde
           if (leadAssignedUserId) {
             console.log(`[sdr] pulado: lead ${leadId} atribuído a atendente humano (${leadAssignedUserId})`);
+          } else if (await humanRecentlyActive(adminClient, tenantId, senderPhone)) {
+            // Guard 2: hand-off silencioso — se um humano enviou mensagem
+            // nos últimos 30 min, a IA não intervém, mesmo sem "assumir" o lead.
+            console.log(`[sdr] pulado: humano ativo recentemente na conversa com ${senderPhone}`);
           } else
           try {
             // 1) Busca token da instância
