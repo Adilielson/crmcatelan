@@ -1097,19 +1097,36 @@ async function updateLeadQualification(
 
 
 
+/** Detecta mensagens que contêm detalhe técnico (Postgres/Supabase/HTTP/stack). */
+function looksTechnical(msg: string): boolean {
+  return /(duplicate key|violates|constraint|relation |column |PGRST|JWT|syntax error|permission denied|fetch failed|ECONN|undefined is not|null value in|TypeError|supabase|postgres)/i.test(
+    msg,
+  );
+}
+
 export async function executeToolCall(
   admin: Supa,
   ctx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string },
   name: string,
   argsJson: string,
 ): Promise<string> {
-  // Envelopa qualquer resposta ok:false com instrução para a IA COMUNICAR
-  // o motivo literal ao cliente (em vez de "engolir" o erro e inventar horário).
+  // Separa o que a IA pode falar (client_message) do detalhe técnico
+  // (internal_error — só log do servidor, NUNCA vai para o cliente).
   const wrap = (obj: any): string => {
-    if (obj && obj.ok === false && obj.message) {
+    if (obj && obj.ok === false) {
+      const raw = String(obj.message ?? "");
+      const technical = !raw || looksTechnical(raw);
+      if (raw) {
+        obj.internal_error = raw;
+        console.error(`[tool:${name}] internal_error: ${raw}`);
+      }
+      obj.client_message = technical
+        ? "Não consegui concluir isso agora aqui no sistema. Posso tentar de outro jeito com você?"
+        : raw;
+      delete obj.message;
       obj.must_relay_to_user = true;
       obj.client_hint =
-        "Fale ao cliente com naturalidade o motivo exato desta falha (use o texto de 'message') e proponha o próximo passo. NÃO ignore este erro.";
+        "Fale ao cliente com naturalidade usando SOMENTE o texto de 'client_message' e proponha o próximo passo. NUNCA repita 'internal_error' nem detalhes técnicos.";
     }
     return JSON.stringify(obj);
   };
@@ -1136,9 +1153,11 @@ export async function executeToolCall(
     return wrap({ ok: false, message: `Tool desconhecida: ${name}` });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[tool:${name}] exceção: ${msg}`);
     return wrap({
       ok: false,
       message: `Falha técnica ao executar ${name}: ${msg}`,
     });
   }
 }
+
