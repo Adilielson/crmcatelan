@@ -597,8 +597,9 @@ const AppLayout = () => {
 
   // Guard: se a rota atual não está permitida, redireciona para /
   useEffect(() => {
-    if (!user || loading) return;
+    if (!user || loading || !permsReady) return;
     if (user.role === 'super_admin' || user.role === 'admin') return;
+
     const moduleForPath = (() => {
       for (const i of rawItems) {
         if (isGroup(i)) {
