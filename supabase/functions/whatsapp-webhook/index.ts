@@ -306,6 +306,39 @@ function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? value as Record<string, unknown> : {};
 }
 
+/** Mascara telefone: mantém só os 4 últimos dígitos. */
+function maskPhone(v: unknown): string | null {
+  const s = typeof v === "string" || typeof v === "number" ? String(v) : "";
+  const digits = s.replace(/\D/g, "");
+  if (!digits) return null;
+  return `***${digits.slice(-4)}`;
+}
+
+/**
+ * Log de debug sem PII: só metadados do evento. Nunca grava o corpo da
+ * mensagem nem o telefone completo.
+ */
+function maskWebhookPayload(b: Record<string, unknown>): Record<string, unknown> {
+  const chat = asObject(b.chat);
+  const message = asObject(b.message);
+  const sender = asObject(b.sender);
+  const text = typeof message.text === "string" ? message.text : "";
+  return {
+    keys: Object.keys(b),
+    event_type: b.EventType ?? b.event ?? b.type ?? null,
+    message_type: message.messageType ?? message.type ?? null,
+    message_id: message.id ?? message.messageid ?? null,
+    from_me: message.fromMe ?? null,
+    has_media: !!(message.mediaUrl ?? message.file ?? message.content),
+    text_length: text.length,
+    chat_id: maskPhone(chat.id ?? chat.wa_chatid ?? message.chatid),
+    sender_id: maskPhone(sender.id ?? message.sender),
+    status: b.status ?? b.state ?? null,
+  };
+}
+
+
+
 function pickString(...vals: unknown[]): string | null {
   for (const v of vals) {
     if (typeof v === "string" && v.trim()) return v.trim();
