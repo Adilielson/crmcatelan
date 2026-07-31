@@ -538,14 +538,11 @@ function addDays(base: Date, days: number): Date {
   return d;
 }
 
+/** YYYY-MM-DD de um Date "calendário" (sempre construído ao meio-dia UTC). */
 function dateOnly(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-// Constrói um Date ISO no fuso do tenant (offset simplificado: -03:00 padrão BR).
-function isoAt(dateStr: string, minutes: number, tzOffset = "-03:00"): string {
-  return `${dateStr}T${fmtMin(minutes)}:00${tzOffset}`;
-}
 
 function ptWeekday(date: string): string {
   const d = new Date(date + "T12:00:00Z");
