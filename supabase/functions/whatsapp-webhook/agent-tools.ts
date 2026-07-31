@@ -618,12 +618,14 @@ export async function listAvailableSlots(
   const examByDow = new Map<number, ExamHour>();
   for (const e of (examRows ?? []) as any[]) examByDow.set(e.weekday as number, e as ExamHour);
 
-  const today = new Date();
-  const startDate = opts.data_preferida
-    ? new Date(opts.data_preferida + "T00:00:00Z")
-    : today;
-  const startDateStr = dateOnly(startDate < today ? today : startDate);
-  const endDate = addDays(new Date(startDateStr + "T00:00:00Z"), LOOKAHEAD_DAYS);
+  const tz = await getTenantTimezone(admin, tenantId);
+  const todayStr = localDayInfo(new Date(), tz).dayStr;
+  const requestedStr = opts.data_preferida && /^\d{4}-\d{2}-\d{2}$/.test(opts.data_preferida)
+    ? opts.data_preferida
+    : todayStr;
+  const startDateStr = requestedStr < todayStr ? todayStr : requestedStr;
+  const endDate = addDays(new Date(startDateStr + "T12:00:00Z"), LOOKAHEAD_DAYS);
+
 
   // 4) bloqueios de agenda
   const { data: blockedRows } = await admin
