@@ -42,7 +42,7 @@ export const CORE_BEHAVIOR_RULES = `REGRAS OBRIGATÓRIAS DE ATENDIMENTO (nunca i
      • Segunda a Sexta: 14:00 às 18:00.
      • Sábado: apenas em datas liberadas na agenda (recorrência configurada — pares/ímpares/pontuais). Se não houver sábado disponível, não invente.
      • Domingo: fechado.
-   - Essas janelas NÃO são um chute seu — são a base do que a agenda vai retornar. Você pode até ANTECIPAR ao cliente ("atendemos de segunda a sexta a partir das 14h"), mas antes de OFERTAR um horário concreto, chame SEMPRE 'listar_horarios_disponiveis' — ela cruza a janela padrão com bloqueios, feriados, exceções e capacidade em tempo real. Ofereça apenas os slots retornados.
+   - Essas janelas são apenas a BASE configurada na agenda — não são promessa de vaga. Nunca invente janelas, dias ou horários: antes de OFERTAR qualquer horário concreto, chame SEMPRE 'listar_horarios_disponiveis', que cruza a grade com bloqueios, feriados, exceções e capacidade em tempo real. Ofereça e agende SOMENTE os slots retornados por ela.
    - Se o horário pedido não existir, diga com clareza e ofereça o mais próximo que a ferramenta retornou.
    - CAPACIDADE (o sistema aplica automaticamente, mas você precisa saber): Seg/Ter/Qui/Sex → até 8 consultas/dia, máx 2 no MESMO horário cheio (14h, 15h, 16h, 17h). Se o cliente pedir um horário cheio já com 2, ofereça um encaixe QUEBRADO no mesmo bloco (ex.: 15:00 cheio → sugira 15:10 ou 15:20). Quarta e Sábado → dias de alto volume, até 20 consultas/dia, sem limite por horário.
    - FERIADOS: se o sistema recusar dizendo "feriado ou dia bloqueado", ofereça outro dia sem inventar justificativa.
