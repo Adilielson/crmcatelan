@@ -945,17 +945,27 @@ async function rescheduleAppointment(
 ): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
   const scheduled = new Date(args.novo_horario_iso);
-  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
-  if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível remarcar para o passado." };
+  const dateCheck = validateRequestedDate(scheduled);
+  if (!dateCheck.ok) return { ok: false, message: dateCheck.reason! };
 
-  await autoMarkPastNoShows(admin, ctx.tenantId);
-
+  await autoMarkPastNoShowsForLead(admin, ctx.tenantId, ctx.leadId);
 
   let apptId = args.appointment_id;
-  if (!apptId) {
+  let current: any = null;
+  if (apptId) {
     const { data: found } = await admin
       .from("appointments")
-      .select("id, scheduled_at, status")
+      .select("id, scheduled_at, status, notes, consultation_type_id")
+      .eq("id", apptId)
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Agendamento não encontrado para este lead." };
+    current = found;
+  } else {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id, scheduled_at, status, notes, consultation_type_id")
       .eq("tenant_id", ctx.tenantId)
       .eq("lead_id", ctx.leadId)
       .in("status", ["pending", "confirmed"])
@@ -964,17 +974,34 @@ async function rescheduleAppointment(
       .limit(1)
       .maybeSingle();
     if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para remarcar. Use criar_agendamento." };
+    current = found;
     apptId = (found as any).id;
   }
 
-  const endMs = scheduled.getTime() + DEFAULT_SLOT_MINUTES * 60_000;
+  // Mesma validação de slot usada na criação e na listagem.
+  const check = await isSlotBookable(admin, {
+    tenantId: ctx.tenantId,
+    consultationTypeId: current?.consultation_type_id ?? null,
+    startsAt: scheduled,
+    ignoreAppointmentId: apptId,
+  });
+  if (!check.ok) return { ok: false, message: check.reason! };
+
+  const endMs = scheduled.getTime() + check.slotMinutes * 60_000;
+
+  // Preserva a nota existente (histórico append) e o status 'confirmed'.
+  const historyLine = `[${new Date().toISOString().slice(0, 16).replace("T", " ")}] Remarcado via IA${args.motivo ? `: ${args.motivo}` : " (WhatsApp)"}`;
+  const prevNotes = String(current?.notes ?? "").trim();
+  const nextNotes = prevNotes ? `${prevNotes}\n${historyLine}` : historyLine;
+  const nextStatus = current?.status === "confirmed" ? "confirmed" : "pending";
+
   const { data: updated, error } = await admin
     .from("appointments")
     .update({
       scheduled_at: scheduled.toISOString(),
       end_at: new Date(endMs).toISOString(),
-      status: "pending",
-      notes: args.motivo ? `Remarcado via IA: ${args.motivo}` : "Remarcado via IA (WhatsApp)",
+      status: nextStatus,
+      notes: nextNotes,
       updated_at: new Date().toISOString(),
     })
     .eq("id", apptId!)
@@ -985,6 +1012,7 @@ async function rescheduleAppointment(
 
   if (error) return { ok: false, message: `Erro ao remarcar: ${error.message}` };
   return { ok: true, message: "Agendamento remarcado com sucesso.", appointment_id: (updated as any).id };
+
 }
 
 async function cancelAppointment(
