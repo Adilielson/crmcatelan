@@ -40,7 +40,7 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
 
   // Fala com o cliente sempre como "exame de vista com nosso profissional"
-  parts.push(`EXAME DISPONÍVEL: exame de vista com o nosso profissional (segunda a domingo a partir das 14h, conforme grade). NUNCA use os termos "optometrista" nem "oftalmologia" com o cliente — sempre "profissional".`);
+  parts.push(`EXAME DISPONÍVEL: exame de vista com o nosso profissional. A grade de dias/horários NÃO é fixa: ela vem em tempo real da ferramenta 'listar_horarios_disponiveis'. NUNCA afirme dias ou faixas de horário de memória. NUNCA use os termos "optometrista" nem "oftalmologia" com o cliente — sempre "profissional".`);
 
 
 
@@ -231,8 +231,9 @@ async function humanRecentlyActive(
       return s.length > 0 && s !== "IA SDR";
     });
   } catch (e) {
-    console.warn("[sdr] humanRecentlyActive falhou (fail-open):", e instanceof Error ? e.message : String(e));
-    return false;
+    // Fail-CLOSED: na dúvida, a IA não responde (evita atropelar atendente humano).
+    console.warn("[sdr] humanRecentlyActive falhou (fail-closed, IA não responde):", e instanceof Error ? e.message : String(e));
+    return true;
   }
 }
 
@@ -1578,7 +1579,7 @@ Deno.serve(async (req) => {
                 "• Se o cliente quer PRODUTO (óculos/lente/armação): fale sobre modelos, materiais e tratamentos, e convide para visitar a loja OU marcar exame de vista com nosso profissional caso precise de receita nova. NÃO fale preço sem o cliente pedir. Não force agendamento.\n" +
                 "• Se o cliente quer EXAME: qualifique (dor + uso atual + urgência) antes de propor horário com nosso profissional.\n\n" +
 
-                "REGRA DE FLEXIBILIDADE DE HORÁRIO (quando agendar exame): o atendimento é rápido e admite paralelismo. SEMPRE priorize o horário que o cliente PODE. Se ele pedir 15h e você tinha oferecido 14h, agende 15h. Se ele pedir 15h05 ou 15h10, agende exatamente esse horário — pode marcar em qualquer minuto (ex.: 14:20, 15:10, 16:35). NUNCA diga que 'esse horário está ocupado' — não recuse por conflito com outro agendamento. Só recuse se estiver fora do horário comercial, em dia bloqueado ou no passado.";
+                "REGRA DE HORÁRIO (fonte única de verdade): só existe um horário se ele veio de 'listar_horarios_disponiveis'. O atendimento admite paralelismo, então priorize sempre a preferência do cliente ENTRE OS SLOTS RETORNADOS. Se o cliente pedir um horário que não está na lista, chame a ferramenta de novo com a data preferida dele e ofereça o slot real mais próximo — nunca prometa um horário que a ferramenta não devolveu. Se 'criar_agendamento' recusar, explique com honestidade e ofereça outro slot da lista.";
 
 
 

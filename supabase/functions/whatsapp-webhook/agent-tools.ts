@@ -27,25 +27,21 @@ function normalizeExamName(value: string): string {
     .trim();
 }
 
-function isDeprecatedExamType(name: string): boolean {
-  const n = normalizeExamName(name);
-  // A ótica não oferece mais esse exame para a IA; manter invisível mesmo se ainda existir no cadastro legado.
-  return n.includes("oftalm");
-}
-
+// Fonte de verdade dos tipos ofertáveis: consultation_types.is_active (banco).
+// Nada de regex hardcoded por nome — se um exame não deve ser ofertado, desative no cadastro.
 function pickDefaultConsultationType<T extends { name?: string | null }>(types: T[], requested?: string | null): T | null {
-  const active = types.filter((t) => !isDeprecatedExamType(String(t.name ?? "")));
-  const pool = active.length ? active : types;
+  const pool = types;
   const norm = normalizeExamName(requested ?? "");
-  if (norm && !norm.includes("oftalm")) {
+  if (norm) {
     const match = pool.find((t) => {
       const name = normalizeExamName(String(t.name ?? ""));
       return name.includes(norm) || norm.includes(name);
     });
     if (match) return match;
   }
-  return pool.find((t) => normalizeExamName(String(t.name ?? "")).includes("optomet")) ?? pool[0] ?? null;
+  return pool[0] ?? null;
 }
+
 
 // Retorna { dayStr:'YYYY-MM-DD', weekday:0-6 } no fuso do tenant.
 function localDayInfo(iso: string | Date, tz: string): { dayStr: string; weekday: number } {
@@ -71,46 +67,259 @@ function dailyCapFor(weekday: number): number {
   return HIGH_VOLUME_WEEKDAYS.has(weekday) ? DAILY_CAP_HIGH : DAILY_CAP_NORMAL;
 }
 
-function resolveFutureDate(input: Date): Date {
-  if (isNaN(input.getTime())) return input;
-  const now = new Date();
-  const maxFutureMs = now.getTime() + 90 * 24 * 60 * 60_000;
-  let candidate = new Date(input);
-
-  // Se o modelo mandou ano passado/errado, preserve dia/hora e traga para o ano atual.
-  if (candidate.getTime() < now.getTime()) {
-    const currentYear = now.getFullYear();
-    candidate = new Date(input);
-    candidate.setFullYear(currentYear);
-    if (candidate.getTime() < now.getTime()) candidate.setFullYear(currentYear + 1);
+// Valida a data recebida do LLM. NÃO reescreve silenciosamente o ano:
+// se vier no passado ou muito distante, devolve erro para a IA confirmar com o cliente.
+function validateRequestedDate(input: Date): { ok: boolean; reason?: string } {
+  if (isNaN(input.getTime())) {
+    return { ok: false, reason: "Data inválida. Use ISO 8601 com offset (ex: 2026-08-05T15:10:00-03:00)." };
   }
-
-  // Se ainda ficou distante demais, provavelmente houve alucinação de ano.
-  // Tenta o ano atual antes de rejeitar.
-  if (candidate.getTime() > maxFutureMs) {
-    const currentYear = now.getFullYear();
-    const adjusted = new Date(input);
-    adjusted.setFullYear(currentYear);
-    if (adjusted.getTime() >= now.getTime() && adjusted.getTime() <= maxFutureMs) return adjusted;
+  const now = Date.now();
+  if (input.getTime() < now) {
+    return {
+      ok: false,
+      reason:
+        "Essa data/hora já passou. Confirme com o cliente o DIA e o ANO corretos e chame a ferramenta de novo com uma data futura real.",
+    };
   }
-
-  return candidate;
+  if (input.getTime() > now + 90 * 24 * 60 * 60_000) {
+    return {
+      ok: false,
+      reason:
+        "Data acima de 90 dias no futuro. Confirme com o cliente o dia/mês/ano exatos antes de tentar de novo.",
+    };
+  }
+  return { ok: true };
 }
 
-// Marca automaticamente como no_show qualquer agendamento pending/confirmed
-// cujo horário já passou há mais de 2h. Assim a agenda fica limpa e não
-// bloqueia novos agendamentos legítimos deste lead. Idempotente e barato.
-async function autoMarkPastNoShows(admin: Supa, tenantId: string): Promise<void> {
+// Marca como no_show os agendamentos vencidos (>2h) APENAS do lead em questão.
+// Nunca varre o tenant inteiro. Registra auditoria de cada mudança.
+async function autoMarkPastNoShowsForLead(admin: Supa, tenantId: string, leadId: string): Promise<void> {
   const cutoff = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
   try {
-    await admin
+    const { data } = await admin
       .from("appointments")
       .update({ status: "no_show", updated_at: new Date().toISOString() })
       .eq("tenant_id", tenantId)
+      .eq("lead_id", leadId)
       .in("status", ["pending", "confirmed"])
-      .lt("scheduled_at", cutoff);
+      .lt("scheduled_at", cutoff)
+      .select("id, scheduled_at, status");
+    for (const row of (data ?? []) as any[]) {
+      console.log(
+        `[agenda] auto no_show lead=${leadId} appt=${row.id} scheduled_at=${row.scheduled_at}`,
+      );
+    }
   } catch (_e) { /* não bloqueia o fluxo se falhar */ }
 }
+
+// ── Fuso do tenant ──────────────────────────────────────────────────────
+function tzOffsetMinutes(d: Date, tz: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(d);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
+  return Math.round((asUtc - d.getTime()) / 60_000);
+}
+
+/** ISO absoluto (UTC) do minuto local `minutes` no dia `dayStr` do fuso `tz`. */
+function isoAtTz(dayStr: string, minutes: number, tz: string): string {
+  const naive = Date.parse(`${dayStr}T${fmtMin(minutes)}:00Z`);
+  let off = tzOffsetMinutes(new Date(`${dayStr}T12:00:00Z`), tz);
+  let ms = naive - off * 60_000;
+  off = tzOffsetMinutes(new Date(ms), tz);
+  ms = naive - off * 60_000;
+  return new Date(ms).toISOString();
+}
+
+/** dia/semana/minuto local no fuso do tenant. */
+function localSlotInfo(iso: string | Date, tz: string): { dayStr: string; weekday: number; minutes: number } {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const base = localDayInfo(d, tz);
+  const hm = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d);
+  const [h, m] = hm.split(":").map((n) => parseInt(n, 10));
+  return { ...base, minutes: h * 60 + m };
+}
+
+const MIN_LEAD_MINUTES = 20;
+
+export interface SlotCheck {
+  ok: boolean;
+  reason?: string;
+  slotMinutes: number;
+  consultationTypeId: string | null;
+  consultationTypeName: string | null;
+  tz: string;
+}
+
+/**
+ * ÚNICA fonte de verdade para "esse horário pode ser agendado?".
+ * Usada por createAppointment e rescheduleAppointment (e espelhada por listAvailableSlots).
+ * Ordem: passado/antecedência → horário da loja (incl. almoço) → janela do exame
+ * → exceções por data → bloqueios (all_day e parciais) → capacidade diária → capacidade por hora.
+ */
+export async function isSlotBookable(
+  admin: Supa,
+  params: {
+    tenantId: string;
+    consultationTypeId?: string | null;
+    requestedTypeName?: string | null;
+    startsAt: Date;
+    tz?: string;
+    ignoreAppointmentId?: string | null;
+  },
+): Promise<SlotCheck> {
+  const { tenantId, startsAt } = params;
+  const tz = params.tz ?? (await getTenantTimezone(admin, tenantId));
+  let slotMinutes = DEFAULT_SLOT_MINUTES;
+  let typeId: string | null = params.consultationTypeId ?? null;
+  let typeName: string | null = null;
+  const fail = (reason: string): SlotCheck => ({ ok: false, reason, slotMinutes, consultationTypeId: typeId, consultationTypeName: typeName, tz });
+
+  const dateCheck = validateRequestedDate(startsAt);
+  if (!dateCheck.ok) return fail(dateCheck.reason!);
+  if (startsAt.getTime() < Date.now() + MIN_LEAD_MINUTES * 60_000) {
+    return fail(`Precisa de pelo menos ${MIN_LEAD_MINUTES} minutos de antecedência. Ofereça o próximo horário disponível.`);
+  }
+
+  const local = localSlotInfo(startsAt, tz);
+
+  // 1) tipo de exame ativo
+  const { data: types } = await admin
+    .from("consultation_types")
+    .select("id,name,default_value")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true);
+  const activeTypes = (types ?? []) as any[];
+  const type = typeId
+    ? activeTypes.find((t) => t.id === typeId) ?? null
+    : pickDefaultConsultationType(activeTypes, params.requestedTypeName);
+  if (!type) return fail("Nenhum tipo de exame ativo cadastrado na agenda. Transfira para um atendente.");
+  typeId = type.id;
+  typeName = type.name ?? null;
+
+  // 2) horário da loja
+  const { data: storeRow } = await admin
+    .from("agenda_business_hours")
+    .select("is_open,open_time,close_time,lunch_start,lunch_end")
+    .eq("tenant_id", tenantId)
+    .eq("weekday", local.weekday)
+    .maybeSingle();
+  const store = storeRow as any;
+  if (!store || !store.is_open || !store.open_time || !store.close_time) {
+    return fail(`A loja não atende em ${local.dayStr}. Ofereça outro dia.`);
+  }
+
+  // 3) janela do exame + exceção por data
+  const { data: examRow } = await admin
+    .from("consultation_type_hours")
+    .select("is_active,start_time,end_time,slot_minutes,saturday_recurrence")
+    .eq("tenant_id", tenantId)
+    .eq("consultation_type_id", typeId)
+    .eq("weekday", local.weekday)
+    .maybeSingle();
+  const exam = examRow as any;
+  const { data: ovRow } = await admin
+    .from("consultation_type_date_overrides")
+    .select("is_available,start_time,end_time")
+    .eq("tenant_id", tenantId)
+    .eq("consultation_type_id", typeId)
+    .eq("override_date", local.dayStr)
+    .maybeSingle();
+  const ov = ovRow as any;
+
+  let examStart: string | null = null;
+  let examEnd: string | null = null;
+  if (ov) {
+    if (!ov.is_available) return fail(`Não há atendimento em ${local.dayStr} (exceção cadastrada na agenda). Ofereça outro dia.`);
+    examStart = ov.start_time ?? exam?.start_time ?? null;
+    examEnd = ov.end_time ?? exam?.end_time ?? null;
+    slotMinutes = exam?.slot_minutes ?? DEFAULT_SLOT_MINUTES;
+  } else {
+    if (!exam || !exam.is_active || !exam.start_time || !exam.end_time) {
+      return fail(`Não há atendimento de exame em ${local.dayStr}. Ofereça um dia com agenda aberta.`);
+    }
+    if (local.weekday === 6 && exam.saturday_recurrence && exam.saturday_recurrence !== "all") {
+      if (exam.saturday_recurrence === "none") return fail("Não há atendimento aos sábados nessa agenda. Ofereça um dia útil.");
+      const parity = isoWeekNumber(local.dayStr) % 2 === 0 ? "even" : "odd";
+      if (exam.saturday_recurrence !== parity) return fail(`Esse sábado (${local.dayStr}) não está na escala. Ofereça outro dia.`);
+    }
+    examStart = exam.start_time;
+    examEnd = exam.end_time;
+    slotMinutes = exam.slot_minutes ?? DEFAULT_SLOT_MINUTES;
+  }
+  if (!examStart || !examEnd) return fail(`Sem janela de atendimento configurada para ${local.dayStr}.`);
+
+  const slotStart = local.minutes;
+  const slotEnd = slotStart + slotMinutes;
+  const windowStart = Math.max(toMin(store.open_time), toMin(examStart));
+  const windowEnd = Math.min(toMin(store.close_time), toMin(examEnd));
+  if (slotStart < windowStart || slotEnd > windowEnd) {
+    return fail(
+      `Fora da janela de atendimento desse dia (${fmtMin(windowStart)}–${fmtMin(windowEnd)}). Ofereça um horário dentro dessa faixa.`,
+    );
+  }
+
+  // almoço
+  const lunchS = store.lunch_start ? toMin(store.lunch_start) : null;
+  const lunchE = store.lunch_end ? toMin(store.lunch_end) : null;
+  if (lunchS !== null && lunchE !== null && slotStart < lunchE && slotEnd > lunchS) {
+    return fail(`Esse horário cai no intervalo de almoço (${fmtMin(lunchS)}–${fmtMin(lunchE)}). Ofereça outro horário.`);
+  }
+
+  // 4) bloqueios (all_day e parciais)
+  const { data: blockedRows } = await admin
+    .from("agenda_blocked_dates")
+    .select("all_day,block_start,block_end,reason")
+    .eq("tenant_id", tenantId)
+    .eq("blocked_date", local.dayStr);
+  const dayBlocks = (blockedRows ?? []) as any[];
+  if (dayBlocks.some((b) => b.all_day)) {
+    return fail(`Não há atendimento em ${local.dayStr} (feriado ou dia bloqueado). Ofereça outro dia.`);
+  }
+  const partial = dayBlocks.find(
+    (b) => !b.all_day && b.block_start && b.block_end && slotStart < toMin(b.block_end) && slotEnd > toMin(b.block_start),
+  );
+  if (partial) {
+    return fail(`Esse horário está bloqueado na agenda (${String(partial.block_start).slice(0, 5)}–${String(partial.block_end).slice(0, 5)}). Ofereça outro horário.`);
+  }
+
+  // 5) capacidade (dia e hora cheia local)
+  const rangeStart = new Date(startsAt.getTime() - 36 * 3600_000).toISOString();
+  const rangeEnd = new Date(startsAt.getTime() + 36 * 3600_000).toISOString();
+  const { data: dayAppts } = await admin
+    .from("appointments")
+    .select("id, scheduled_at")
+    .eq("tenant_id", tenantId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", rangeStart)
+    .lte("scheduled_at", rangeEnd);
+
+  const sameLocalDay = ((dayAppts ?? []) as any[])
+    .filter((a) => a.id !== params.ignoreAppointmentId)
+    .map((a) => ({ id: a.id, ...localSlotInfo(a.scheduled_at as string, tz) }))
+    .filter((a) => a.dayStr === local.dayStr);
+
+  const cap = dailyCapFor(local.weekday);
+  if (sameLocalDay.length >= cap) {
+    return fail(`Capacidade do dia ${local.dayStr} atingida (${cap} consultas). Ofereça outro dia.`);
+  }
+
+  if (!HIGH_VOLUME_WEEKDAYS.has(local.weekday)) {
+    const hour = Math.floor(slotStart / 60);
+    const sameHour = sameLocalDay.filter((a) => Math.floor(a.minutes / 60) === hour);
+    if (sameHour.length >= PER_HOUR_CAP_NORMAL) {
+      return fail(
+        `O bloco das ${fmtMin(hour * 60)} já tem ${PER_HOUR_CAP_NORMAL} consultas. Ofereça outro bloco de horário no mesmo dia ou outro dia.`,
+      );
+    }
+  }
+
+  return { ok: true, slotMinutes, consultationTypeId: typeId, consultationTypeName: typeName, tz };
+}
+
 
 export const AGENT_TOOLS = [
   {
@@ -141,14 +350,14 @@ export const AGENT_TOOLS = [
     function: {
       name: "criar_agendamento",
       description:
-        "Cria o agendamento no sistema DEPOIS que o cliente confirmou explicitamente um horário. IMPORTANTE: o horário pode ser QUALQUER minuto dentro do horário comercial (ex.: 15:10, 15:25). Se o cliente pedir um horário específico que NÃO apareceu na lista de slots, você pode agendar mesmo assim, contanto que esteja dentro do horário comercial e não seja no passado. Só recuse se estiver fora do horário comercial, em bloqueio ou no passado.",
+        "Cria o agendamento DEPOIS que o cliente confirmou explicitamente um horário. Use SOMENTE um horário retornado por 'listar_horarios_disponiveis' — o sistema revalida a agenda (janela do exame, almoço, bloqueios, feriados e capacidade) e recusa qualquer horário fora dela. Se recusar, leia o motivo retornado e ofereça um slot real da lista.",
       parameters: {
         type: "object",
         required: ["scheduled_at_iso"],
         properties: {
           scheduled_at_iso: {
             type: "string",
-            description: "Horário exato em ISO 8601 com offset -03:00 (ex: 2026-07-10T15:10:00-03:00). Pode ser um slot da lista OU um horário customizado que o cliente pediu, desde que esteja dentro do horário comercial.",
+            description: "Horário exato em ISO 8601 com offset do fuso da loja (ex: 2026-07-10T15:10:00-03:00). Deve ser um dos slots retornados por 'listar_horarios_disponiveis'.",
           },
           observacao: {
             type: "string",
@@ -329,14 +538,11 @@ function addDays(base: Date, days: number): Date {
   return d;
 }
 
+/** YYYY-MM-DD de um Date "calendário" (sempre construído ao meio-dia UTC). */
 function dateOnly(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-// Constrói um Date ISO no fuso do tenant (offset simplificado: -03:00 padrão BR).
-function isoAt(dateStr: string, minutes: number, tzOffset = "-03:00"): string {
-  return `${dateStr}T${fmtMin(minutes)}:00${tzOffset}`;
-}
 
 function ptWeekday(date: string): string {
   const d = new Date(date + "T12:00:00Z");
@@ -412,12 +618,14 @@ export async function listAvailableSlots(
   const examByDow = new Map<number, ExamHour>();
   for (const e of (examRows ?? []) as any[]) examByDow.set(e.weekday as number, e as ExamHour);
 
-  const today = new Date();
-  const startDate = opts.data_preferida
-    ? new Date(opts.data_preferida + "T00:00:00Z")
-    : today;
-  const startDateStr = dateOnly(startDate < today ? today : startDate);
-  const endDate = addDays(new Date(startDateStr + "T00:00:00Z"), LOOKAHEAD_DAYS);
+  const tz = await getTenantTimezone(admin, tenantId);
+  const todayStr = localDayInfo(new Date(), tz).dayStr;
+  const requestedStr = opts.data_preferida && /^\d{4}-\d{2}-\d{2}$/.test(opts.data_preferida)
+    ? opts.data_preferida
+    : todayStr;
+  const startDateStr = requestedStr < todayStr ? todayStr : requestedStr;
+  const endDate = addDays(new Date(startDateStr + "T12:00:00Z"), LOOKAHEAD_DAYS);
+
 
   // 4) bloqueios de agenda
   const { data: blockedRows } = await admin
@@ -445,8 +653,9 @@ export async function listAvailableSlots(
   for (const o of (overrideRows ?? []) as any[]) overrideByDate.set(o.override_date as string, o as ExamOverride);
 
   // 6) capacidade: agendamentos ativos no período (para não ofertar dia/horário cheio)
-  const rangeStartIso = new Date(startDateStr + "T00:00:00Z").toISOString();
-  const rangeEndIso = new Date(dateOnly(addDays(endDate, 1)) + "T00:00:00Z").toISOString();
+  // Bucketiza SEMPRE no fuso do tenant — scheduled_at vem em UTC.
+  const rangeStartIso = new Date(new Date(startDateStr + "T12:00:00Z").getTime() - 36 * 3600_000).toISOString();
+  const rangeEndIso = new Date(addDays(endDate, 1).getTime() + 36 * 3600_000).toISOString();
   const { data: apptRows } = await admin
     .from("appointments")
     .select("scheduled_at")
@@ -455,18 +664,14 @@ export async function listAvailableSlots(
     .gte("scheduled_at", rangeStartIso)
     .lte("scheduled_at", rangeEndIso);
   const countsByDay = new Map<string, number>();
-  const countsByHour = new Map<string, number>(); // key = `${dayStr} ${HH}` (só minuto :00 conta)
+  const countsByHour = new Map<string, number>(); // key = `${dayStr} ${HH}` — hora cheia local, todos os minutos
   for (const a of (apptRows ?? []) as any[]) {
-    const iso = a.scheduled_at as string;
-    const day = iso.slice(0, 10);
-    countsByDay.set(day, (countsByDay.get(day) ?? 0) + 1);
-    // minuto local baseado no ISO cru (offset -03:00 aplicado no isoAt)
-    const hm = iso.slice(11, 16); // "HH:MM" na tz do ISO gravado
-    if (hm.endsWith(":00")) {
-      const key = `${day} ${hm.slice(0, 2)}`;
-      countsByHour.set(key, (countsByHour.get(key) ?? 0) + 1);
-    }
+    const info = localSlotInfo(a.scheduled_at as string, tz);
+    countsByDay.set(info.dayStr, (countsByDay.get(info.dayStr) ?? 0) + 1);
+    const hourKey = `${info.dayStr} ${String(Math.floor(info.minutes / 60)).padStart(2, "0")}`;
+    countsByHour.set(hourKey, (countsByHour.get(hourKey) ?? 0) + 1);
   }
+
 
   const wantMorning = opts.periodo === "manha";
   const wantAfternoon = opts.periodo === "tarde";
@@ -546,17 +751,18 @@ export async function listAvailableSlots(
       if (wantMorning && slotStart >= 12 * 60) { cursor += slotMin; continue; }
       if (wantAfternoon && slotStart < 12 * 60) { cursor += slotMin; continue; }
 
-      // máx 2 por horário cheio nos dias normais (seg/ter/qui/sex)
-      if (!HIGH_VOLUME_WEEKDAYS.has(dow) && slotStart % 60 === 0) {
+      // máx 2 por HORA CHEIA local (14:00–14:59) nos dias normais (seg/ter/qui/sex)
+      if (!HIGH_VOLUME_WEEKDAYS.has(dow)) {
         const hourKey = `${dayStr} ${String(Math.floor(slotStart / 60)).padStart(2, "0")}`;
         if ((countsByHour.get(hourKey) ?? 0) >= PER_HOUR_CAP_NORMAL) { cursor += slotMin; continue; }
       }
 
-      const iso = isoAt(dayStr, slotStart);
-      if (new Date(iso).getTime() < Date.now() + 20 * 60_000) {
+      const iso = isoAtTz(dayStr, slotStart, tz);
+      if (new Date(iso).getTime() < Date.now() + MIN_LEAD_MINUTES * 60_000) {
         cursor += slotMin;
         continue;
       }
+
 
       slots.push({
         iso,
@@ -577,29 +783,15 @@ async function createAppointment(
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
 
-  const rawScheduled = new Date(args.scheduled_at_iso);
-  const scheduled = resolveFutureDate(rawScheduled);
-  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida. Use ISO 8601 (ex: 2026-07-25T14:00:00-04:00)." };
-  const nowMs = Date.now();
-  if (scheduled.getTime() < nowMs) {
-    return { ok: false, message: "Não é possível agendar no passado. Confirme o dia/hora com o cliente e ofereça um horário futuro real." };
-  }
-  // Limita agendamentos a no máximo 90 dias no futuro — evita ano/data alucinada pelo LLM.
-  const maxFutureMs = nowMs + 90 * 24 * 60 * 60_000;
-  if (scheduled.getTime() > maxFutureMs) {
-    return { ok: false, message: "Data muito distante (máx 90 dias). Verifique se o ANO está correto e confirme a data com o cliente antes de tentar de novo." };
-  }
+  const scheduled = new Date(args.scheduled_at_iso);
+  const dateCheck = validateRequestedDate(scheduled);
+  if (!dateCheck.ok) return { ok: false, message: dateCheck.reason! };
 
-  // Limpa agenda: marca como no_show qualquer consulta pendente/confirmada
-  // já vencida (>2h no passado). Evita que registros esquecidos bloqueiem
-  // o remarque legítimo deste lead abaixo.
-  await autoMarkPastNoShows(admin, ctx.tenantId);
+  // Limpa agenda APENAS deste lead: consultas vencidas (>2h) viram no_show
+  // para não bloquearem um agendamento novo legítimo.
+  await autoMarkPastNoShowsForLead(admin, ctx.tenantId, ctx.leadId);
 
-
-
-  // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário entre leads distintos.
   const startMs = scheduled.getTime();
-  const endMs = startMs + DEFAULT_SLOT_MINUTES * 60_000;
 
   // ── Deduplicação: evita a IA criar múltiplos registros para o MESMO lead
   // no mesmo horário (janela ±5min) durante o loop de function-calling.
@@ -622,10 +814,8 @@ async function createAppointment(
     };
   }
 
-  // Se o lead já tem outro agendamento REALMENTE FUTURO (scheduled_at > agora)
-  // ativo em horário diferente, orienta a IA a REMARCAR em vez de duplicar.
-  // NOTA: usávamos "now - 1h" antes, mas isso fazia com que consultas passadas
-  // (no-shows não marcados) continuassem bloqueando um remarque legítimo.
+  // Se o lead já tem outro agendamento REALMENTE FUTURO ativo em horário
+  // diferente, orienta a IA a REMARCAR em vez de duplicar.
   const { data: existingOther } = await admin
     .from("appointments")
     .select("id, scheduled_at")
@@ -644,79 +834,27 @@ async function createAppointment(
     };
   }
 
-  // ── Regras de capacidade + feriados (fuso do tenant) ──────────────────
-  const tz = await getTenantTimezone(admin, ctx.tenantId);
-  const local = localDayInfo(scheduled, tz);
+  // ── Validação única do slot (mesma regra usada na listagem) ─────────────
+  const check = await isSlotBookable(admin, {
+    tenantId: ctx.tenantId,
+    requestedTypeName: args.tipo_consulta ?? null,
+    startsAt: scheduled,
+  });
+  if (!check.ok) return { ok: false, message: check.reason! };
 
-  // Feriado / dia bloqueado (cadastro manual em agenda_blocked_dates)
-  const { data: blockedDay } = await admin
-    .from("agenda_blocked_dates")
-    .select("all_day,block_start,block_end,reason")
-    .eq("tenant_id", ctx.tenantId)
-    .eq("blocked_date", local.dayStr);
-  const dayBlocks = (blockedDay ?? []) as any[];
-  if (dayBlocks.some((b) => b.all_day)) {
-    return {
-      ok: false,
-      message: `Não há atendimento em ${local.dayStr} (feriado ou dia bloqueado). Ofereça outro dia.`,
-    };
-  }
+  const endMs = startMs + check.slotMinutes * 60_000;
 
-  // Conta agendamentos ativos do mesmo dia local (janela ampla ±36h em UTC).
-  const rangeStart = new Date(scheduled.getTime() - 36 * 3600_000).toISOString();
-  const rangeEnd = new Date(scheduled.getTime() + 36 * 3600_000).toISOString();
-  const { data: dayAppts } = await admin
-    .from("appointments")
-    .select("id, scheduled_at")
-    .eq("tenant_id", ctx.tenantId)
-    .in("status", ["pending", "confirmed"])
-    .gte("scheduled_at", rangeStart)
-    .lte("scheduled_at", rangeEnd);
-
-  const sameLocalDay = (dayAppts ?? []).filter(
-    (a: any) => localDayInfo(a.scheduled_at as string, tz).dayStr === local.dayStr,
-  );
-
-  const cap = dailyCapFor(local.weekday);
-  if (sameLocalDay.length >= cap) {
-    return {
-      ok: false,
-      message: `Capacidade do dia ${local.dayStr} atingida (${cap} consultas). Ofereça outro dia — quarta e sábado aceitam mais volume.`,
-    };
-  }
-
-  // Máx 2 no mesmo horário cheio (só nos dias normais). Encaixe: sugerir minuto quebrado.
-  if (!HIGH_VOLUME_WEEKDAYS.has(local.weekday)) {
-    // "Horário cheio" = mesma hora e minuto == 0 (ex: 14:00, 15:00). Nos minutos quebrados (14:10, 14:20…) não aplica.
-    const scheduledLocalHM = new Intl.DateTimeFormat("pt-BR", {
-      timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-    }).format(scheduled); // "14:00"
-    const [, mm] = scheduledLocalHM.split(":");
-    if (mm === "00") {
-      const sameHour = sameLocalDay.filter((a: any) => {
-        const hm = new Intl.DateTimeFormat("pt-BR", {
-          timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-        }).format(new Date(a.scheduled_at as string));
-        return hm === scheduledLocalHM;
-      });
-      if (sameHour.length >= PER_HOUR_CAP_NORMAL) {
-        return {
-          ok: false,
-          message: `Horário ${scheduledLocalHM} já tem ${PER_HOUR_CAP_NORMAL} consultas. Ofereça um encaixe quebrado no mesmo bloco (ex.: :10, :20, :30, :40, :50) ou outro horário.`,
-        };
-      }
-    }
-  }
-
-  // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
-  const { data: types } = await admin
-    .from("consultation_types")
-    .select("id,name,default_value")
-    .eq("tenant_id", ctx.tenantId)
-    .eq("is_active", true);
-  const activeTypes = (types ?? []) as any[];
-  const match = pickDefaultConsultationType(activeTypes, args.tipo_consulta);
+  // Tipo e valor resolvidos pela validação
+  const { data: typeRow } = check.consultationTypeId
+    ? await admin
+        .from("consultation_types")
+        .select("id,name,default_value")
+        .eq("id", check.consultationTypeId)
+        .maybeSingle()
+    : { data: null as any };
+  const match = typeRow as any;
   const resolvedTypeName = (match as any)?.name ?? args.tipo_consulta ?? null;
+
 
 
   // Unidade default: primeira do tenant (quando houver mais de uma, gestor pode reatribuir)
@@ -807,17 +945,27 @@ async function rescheduleAppointment(
 ): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
   const scheduled = new Date(args.novo_horario_iso);
-  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida." };
-  if (scheduled.getTime() < Date.now()) return { ok: false, message: "Não é possível remarcar para o passado." };
+  const dateCheck = validateRequestedDate(scheduled);
+  if (!dateCheck.ok) return { ok: false, message: dateCheck.reason! };
 
-  await autoMarkPastNoShows(admin, ctx.tenantId);
-
+  await autoMarkPastNoShowsForLead(admin, ctx.tenantId, ctx.leadId);
 
   let apptId = args.appointment_id;
-  if (!apptId) {
+  let current: any = null;
+  if (apptId) {
     const { data: found } = await admin
       .from("appointments")
-      .select("id, scheduled_at, status")
+      .select("id, scheduled_at, status, notes, consultation_type_id")
+      .eq("id", apptId)
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Agendamento não encontrado para este lead." };
+    current = found;
+  } else {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id, scheduled_at, status, notes, consultation_type_id")
       .eq("tenant_id", ctx.tenantId)
       .eq("lead_id", ctx.leadId)
       .in("status", ["pending", "confirmed"])
@@ -826,17 +974,34 @@ async function rescheduleAppointment(
       .limit(1)
       .maybeSingle();
     if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para remarcar. Use criar_agendamento." };
+    current = found;
     apptId = (found as any).id;
   }
 
-  const endMs = scheduled.getTime() + DEFAULT_SLOT_MINUTES * 60_000;
+  // Mesma validação de slot usada na criação e na listagem.
+  const check = await isSlotBookable(admin, {
+    tenantId: ctx.tenantId,
+    consultationTypeId: current?.consultation_type_id ?? null,
+    startsAt: scheduled,
+    ignoreAppointmentId: apptId,
+  });
+  if (!check.ok) return { ok: false, message: check.reason! };
+
+  const endMs = scheduled.getTime() + check.slotMinutes * 60_000;
+
+  // Preserva a nota existente (histórico append) e o status 'confirmed'.
+  const historyLine = `[${new Date().toISOString().slice(0, 16).replace("T", " ")}] Remarcado via IA${args.motivo ? `: ${args.motivo}` : " (WhatsApp)"}`;
+  const prevNotes = String(current?.notes ?? "").trim();
+  const nextNotes = prevNotes ? `${prevNotes}\n${historyLine}` : historyLine;
+  const nextStatus = current?.status === "confirmed" ? "confirmed" : "pending";
+
   const { data: updated, error } = await admin
     .from("appointments")
     .update({
       scheduled_at: scheduled.toISOString(),
       end_at: new Date(endMs).toISOString(),
-      status: "pending",
-      notes: args.motivo ? `Remarcado via IA: ${args.motivo}` : "Remarcado via IA (WhatsApp)",
+      status: nextStatus,
+      notes: nextNotes,
       updated_at: new Date().toISOString(),
     })
     .eq("id", apptId!)
@@ -847,6 +1012,7 @@ async function rescheduleAppointment(
 
   if (error) return { ok: false, message: `Erro ao remarcar: ${error.message}` };
   return { ok: true, message: "Agendamento remarcado com sucesso.", appointment_id: (updated as any).id };
+
 }
 
 async function cancelAppointment(
@@ -857,10 +1023,21 @@ async function cancelAppointment(
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
 
   let apptId = args.appointment_id;
-  if (!apptId) {
+  let currentNotes = "";
+  if (apptId) {
     const { data: found } = await admin
       .from("appointments")
-      .select("id")
+      .select("id, notes")
+      .eq("id", apptId)
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Agendamento não encontrado para este lead." };
+    currentNotes = String((found as any).notes ?? "").trim();
+  } else {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id, notes")
       .eq("tenant_id", ctx.tenantId)
       .eq("lead_id", ctx.leadId)
       .in("status", ["pending", "confirmed"])
@@ -870,15 +1047,19 @@ async function cancelAppointment(
       .maybeSingle();
     if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para cancelar." };
     apptId = (found as any).id;
+    currentNotes = String((found as any).notes ?? "").trim();
   }
 
+  const cancelLine = `[${new Date().toISOString().slice(0, 16).replace("T", " ")}] Cancelado via IA${args.motivo ? `: ${args.motivo}` : " (WhatsApp)"}`;
   const { error } = await admin
     .from("appointments")
     .update({
       status: "cancelled",
-      notes: args.motivo ? `Cancelado via IA: ${args.motivo}` : "Cancelado via IA (WhatsApp)",
+      notes: currentNotes ? `${currentNotes}\n${cancelLine}` : cancelLine,
+      cancellation_reason: args.motivo ?? "Cancelado pelo cliente via IA",
       updated_at: new Date().toISOString(),
     })
+
     .eq("id", apptId!)
     .eq("tenant_id", ctx.tenantId)
     .eq("lead_id", ctx.leadId);
@@ -1140,7 +1321,7 @@ export async function executeToolCall(
       if (slots.length === 0) {
         return wrap({
           ok: false,
-          message: "Nenhum horário livre nos próximos 14 dias com esses critérios.",
+          message: `Nenhum horário livre nos próximos ${LOOKAHEAD_DAYS} dias com esses critérios.`,
         });
       }
       return JSON.stringify({ ok: true, slots });
