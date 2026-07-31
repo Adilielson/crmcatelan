@@ -43,8 +43,13 @@ export function usePermissions() {
   const can = (key: ModuleKey): boolean => {
     if (!user) return false;
     if (user.role === 'super_admin' || user.role === 'admin') return true;
-    if (!perms) return true; // não bloqueia enquanto carrega — guard final é no servidor
+    // fail-closed: enquanto carrega ou em erro, NÃO libera nada.
+    if (!perms) return false;
     return perms[key] === true;
   };
-  return { can, perms, isLoading };
+  // pronto = já sabemos as permissões (ou o papel dispensa a consulta)
+  const isReady =
+    !!user && (user.role === 'super_admin' || user.role === 'admin' || !!perms);
+  return { can, perms, isLoading, isReady };
 }
+
