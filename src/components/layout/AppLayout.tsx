@@ -590,9 +590,10 @@ const AppLayout = () => {
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const isSuperAdmin = user?.role === 'super_admin';
-  const { can } = usePermissions();
+  const { can, isReady: permsReady } = usePermissions();
   const rawItems = useNavItems(isSuperAdmin);
-  const items = filterItems(rawItems, can);
+  const items = permsReady ? filterItems(rawItems, can) : [];
+
 
   // Guard: se a rota atual não está permitida, redireciona para /
   useEffect(() => {
