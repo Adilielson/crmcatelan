@@ -22,9 +22,17 @@ export function usePermissions() {
     queryFn: async () => {
       // Garante que a sessão (token) já foi restaurada antes de chamar o
       // servidor — evita 401 transitório logo após um refresh (F5).
+      // getSession() pode travar para sempre (navigator.locks); com timeout
+      // caímos na leitura síncrona do localStorage em vez de ficar pendurado.
       const { supabase } = await import('@/integrations/supabase/client');
-      const { data: s } = await supabase.auth.getSession();
-      if (!s.session) throw new Error('Sessão ainda não restaurada');
+      const { readLocalSession } = await import('@/lib/local-session');
+      const s = await Promise.race([
+        supabase.auth.getSession().then((r) => r.data.session),
+        new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 4000)),
+      ]);
+      const hasSession = s === 'timeout' ? !!readLocalSession() : !!s;
+      if (!hasSession) throw new Error('Sessão ainda não restaurada');
+
       const result = await fetchFn();
       if (!isValidPermsMap(result)) {
         // resposta inválida → lança para o react-query tentar de novo,
