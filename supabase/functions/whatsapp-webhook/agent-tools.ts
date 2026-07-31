@@ -1023,10 +1023,21 @@ async function cancelAppointment(
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
 
   let apptId = args.appointment_id;
-  if (!apptId) {
+  let currentNotes = "";
+  if (apptId) {
     const { data: found } = await admin
       .from("appointments")
-      .select("id")
+      .select("id, notes")
+      .eq("id", apptId)
+      .eq("tenant_id", ctx.tenantId)
+      .eq("lead_id", ctx.leadId)
+      .maybeSingle();
+    if (!found) return { ok: false, message: "Agendamento não encontrado para este lead." };
+    currentNotes = String((found as any).notes ?? "").trim();
+  } else {
+    const { data: found } = await admin
+      .from("appointments")
+      .select("id, notes")
       .eq("tenant_id", ctx.tenantId)
       .eq("lead_id", ctx.leadId)
       .in("status", ["pending", "confirmed"])
@@ -1036,15 +1047,19 @@ async function cancelAppointment(
       .maybeSingle();
     if (!found) return { ok: false, message: "Nenhum agendamento futuro encontrado para cancelar." };
     apptId = (found as any).id;
+    currentNotes = String((found as any).notes ?? "").trim();
   }
 
+  const cancelLine = `[${new Date().toISOString().slice(0, 16).replace("T", " ")}] Cancelado via IA${args.motivo ? `: ${args.motivo}` : " (WhatsApp)"}`;
   const { error } = await admin
     .from("appointments")
     .update({
       status: "cancelled",
-      notes: args.motivo ? `Cancelado via IA: ${args.motivo}` : "Cancelado via IA (WhatsApp)",
+      notes: currentNotes ? `${currentNotes}\n${cancelLine}` : cancelLine,
+      cancellation_reason: args.motivo ?? "Cancelado pelo cliente via IA",
       updated_at: new Date().toISOString(),
     })
+
     .eq("id", apptId!)
     .eq("tenant_id", ctx.tenantId)
     .eq("lead_id", ctx.leadId);
