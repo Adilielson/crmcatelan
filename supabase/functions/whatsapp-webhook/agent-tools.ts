@@ -27,25 +27,21 @@ function normalizeExamName(value: string): string {
     .trim();
 }
 
-function isDeprecatedExamType(name: string): boolean {
-  const n = normalizeExamName(name);
-  // A ótica não oferece mais esse exame para a IA; manter invisível mesmo se ainda existir no cadastro legado.
-  return n.includes("oftalm");
-}
-
+// Fonte de verdade dos tipos ofertáveis: consultation_types.is_active (banco).
+// Nada de regex hardcoded por nome — se um exame não deve ser ofertado, desative no cadastro.
 function pickDefaultConsultationType<T extends { name?: string | null }>(types: T[], requested?: string | null): T | null {
-  const active = types.filter((t) => !isDeprecatedExamType(String(t.name ?? "")));
-  const pool = active.length ? active : types;
+  const pool = types;
   const norm = normalizeExamName(requested ?? "");
-  if (norm && !norm.includes("oftalm")) {
+  if (norm) {
     const match = pool.find((t) => {
       const name = normalizeExamName(String(t.name ?? ""));
       return name.includes(norm) || norm.includes(name);
     });
     if (match) return match;
   }
-  return pool.find((t) => normalizeExamName(String(t.name ?? "")).includes("optomet")) ?? pool[0] ?? null;
+  return pool[0] ?? null;
 }
+
 
 // Retorna { dayStr:'YYYY-MM-DD', weekday:0-6 } no fuso do tenant.
 function localDayInfo(iso: string | Date, tz: string): { dayStr: string; weekday: number } {
