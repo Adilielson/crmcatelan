@@ -916,17 +916,18 @@ Deno.serve(async (req) => {
 
     console.log(`[webhook] tenant=${tenantId} event=${eventType} keys=${Object.keys(b).join(",")}`);
 
-    // ── DEBUG: loga payload bruto de eventos desconhecidos (7 dias) ──────
+    // ── DEBUG: metadados do evento (sem PII; retenção 7 dias via cron) ────
     try {
       await adminClient.from("webhook_debug_logs").insert({
         tenant_id: tenantId,
         event_type: eventType,
-        payload: body,
+        payload: maskWebhookPayload(b),
         received_at: new Date().toISOString(),
       });
     } catch {
       // tabela pode não existir ainda — ignora
     }
+
 
     // ── Connection events ──────────────────────────────────────────────────
     if (eventType.includes("connect") || eventType === "status") {
