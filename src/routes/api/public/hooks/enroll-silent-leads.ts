@@ -6,18 +6,9 @@ export const Route = createFileRoute('/api/public/hooks/enroll-silent-leads')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret =
-          request.headers.get('x-cron-secret') ?? request.headers.get('apikey') ?? '';
-        const allowed = [
-          process.env.FOLLOWUPS_CRON_SECRET,
-          process.env.SUPABASE_ANON_KEY,
-          process.env.SUPABASE_PUBLISHABLE_KEY,
-          process.env.VITE_SUPABASE_ANON_KEY,
-          process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        ].filter(Boolean) as string[];
-        if (!secret || (allowed.length > 0 && !allowed.includes(secret))) {
-          return new Response('Unauthorized', { status: 401 });
-        }
+        const { requireCronAuth } = await import('@/lib/cron-auth.server');
+        const auth = requireCronAuth(request);
+        if (!auth.ok) return auth.response;
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
