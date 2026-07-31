@@ -783,29 +783,15 @@ async function createAppointment(
   if (!ctx.leadId) return { ok: false, message: "Lead não identificado no sistema." };
 
 
-  const rawScheduled = new Date(args.scheduled_at_iso);
-  const scheduled = resolveFutureDate(rawScheduled);
-  if (isNaN(scheduled.getTime())) return { ok: false, message: "Data inválida. Use ISO 8601 (ex: 2026-07-25T14:00:00-04:00)." };
-  const nowMs = Date.now();
-  if (scheduled.getTime() < nowMs) {
-    return { ok: false, message: "Não é possível agendar no passado. Confirme o dia/hora com o cliente e ofereça um horário futuro real." };
-  }
-  // Limita agendamentos a no máximo 90 dias no futuro — evita ano/data alucinada pelo LLM.
-  const maxFutureMs = nowMs + 90 * 24 * 60 * 60_000;
-  if (scheduled.getTime() > maxFutureMs) {
-    return { ok: false, message: "Data muito distante (máx 90 dias). Verifique se o ANO está correto e confirme a data com o cliente antes de tentar de novo." };
-  }
+  const scheduled = new Date(args.scheduled_at_iso);
+  const dateCheck = validateRequestedDate(scheduled);
+  if (!dateCheck.ok) return { ok: false, message: dateCheck.reason! };
 
-  // Limpa agenda: marca como no_show qualquer consulta pendente/confirmada
-  // já vencida (>2h no passado). Evita que registros esquecidos bloqueiem
-  // o remarque legítimo deste lead abaixo.
-  await autoMarkPastNoShows(admin, ctx.tenantId);
+  // Limpa agenda APENAS deste lead: consultas vencidas (>2h) viram no_show
+  // para não bloquearem um agendamento novo legítimo.
+  await autoMarkPastNoShowsForLead(admin, ctx.tenantId, ctx.leadId);
 
-
-
-  // Atendimento paralelo permitido: NÃO bloqueamos por colisão de horário entre leads distintos.
   const startMs = scheduled.getTime();
-  const endMs = startMs + DEFAULT_SLOT_MINUTES * 60_000;
 
   // ── Deduplicação: evita a IA criar múltiplos registros para o MESMO lead
   // no mesmo horário (janela ±5min) durante o loop de function-calling.
@@ -828,10 +814,8 @@ async function createAppointment(
     };
   }
 
-  // Se o lead já tem outro agendamento REALMENTE FUTURO (scheduled_at > agora)
-  // ativo em horário diferente, orienta a IA a REMARCAR em vez de duplicar.
-  // NOTA: usávamos "now - 1h" antes, mas isso fazia com que consultas passadas
-  // (no-shows não marcados) continuassem bloqueando um remarque legítimo.
+  // Se o lead já tem outro agendamento REALMENTE FUTURO ativo em horário
+  // diferente, orienta a IA a REMARCAR em vez de duplicar.
   const { data: existingOther } = await admin
     .from("appointments")
     .select("id, scheduled_at")
@@ -850,79 +834,27 @@ async function createAppointment(
     };
   }
 
-  // ── Regras de capacidade + feriados (fuso do tenant) ──────────────────
-  const tz = await getTenantTimezone(admin, ctx.tenantId);
-  const local = localDayInfo(scheduled, tz);
+  // ── Validação única do slot (mesma regra usada na listagem) ─────────────
+  const check = await isSlotBookable(admin, {
+    tenantId: ctx.tenantId,
+    requestedTypeName: args.tipo_consulta ?? null,
+    startsAt: scheduled,
+  });
+  if (!check.ok) return { ok: false, message: check.reason! };
 
-  // Feriado / dia bloqueado (cadastro manual em agenda_blocked_dates)
-  const { data: blockedDay } = await admin
-    .from("agenda_blocked_dates")
-    .select("all_day,block_start,block_end,reason")
-    .eq("tenant_id", ctx.tenantId)
-    .eq("blocked_date", local.dayStr);
-  const dayBlocks = (blockedDay ?? []) as any[];
-  if (dayBlocks.some((b) => b.all_day)) {
-    return {
-      ok: false,
-      message: `Não há atendimento em ${local.dayStr} (feriado ou dia bloqueado). Ofereça outro dia.`,
-    };
-  }
+  const endMs = startMs + check.slotMinutes * 60_000;
 
-  // Conta agendamentos ativos do mesmo dia local (janela ampla ±36h em UTC).
-  const rangeStart = new Date(scheduled.getTime() - 36 * 3600_000).toISOString();
-  const rangeEnd = new Date(scheduled.getTime() + 36 * 3600_000).toISOString();
-  const { data: dayAppts } = await admin
-    .from("appointments")
-    .select("id, scheduled_at")
-    .eq("tenant_id", ctx.tenantId)
-    .in("status", ["pending", "confirmed"])
-    .gte("scheduled_at", rangeStart)
-    .lte("scheduled_at", rangeEnd);
-
-  const sameLocalDay = (dayAppts ?? []).filter(
-    (a: any) => localDayInfo(a.scheduled_at as string, tz).dayStr === local.dayStr,
-  );
-
-  const cap = dailyCapFor(local.weekday);
-  if (sameLocalDay.length >= cap) {
-    return {
-      ok: false,
-      message: `Capacidade do dia ${local.dayStr} atingida (${cap} consultas). Ofereça outro dia — quarta e sábado aceitam mais volume.`,
-    };
-  }
-
-  // Máx 2 no mesmo horário cheio (só nos dias normais). Encaixe: sugerir minuto quebrado.
-  if (!HIGH_VOLUME_WEEKDAYS.has(local.weekday)) {
-    // "Horário cheio" = mesma hora e minuto == 0 (ex: 14:00, 15:00). Nos minutos quebrados (14:10, 14:20…) não aplica.
-    const scheduledLocalHM = new Intl.DateTimeFormat("pt-BR", {
-      timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-    }).format(scheduled); // "14:00"
-    const [, mm] = scheduledLocalHM.split(":");
-    if (mm === "00") {
-      const sameHour = sameLocalDay.filter((a: any) => {
-        const hm = new Intl.DateTimeFormat("pt-BR", {
-          timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-        }).format(new Date(a.scheduled_at as string));
-        return hm === scheduledLocalHM;
-      });
-      if (sameHour.length >= PER_HOUR_CAP_NORMAL) {
-        return {
-          ok: false,
-          message: `Horário ${scheduledLocalHM} já tem ${PER_HOUR_CAP_NORMAL} consultas. Ofereça um encaixe quebrado no mesmo bloco (ex.: :10, :20, :30, :40, :50) ou outro horário.`,
-        };
-      }
-    }
-  }
-
-  // Tipo de consulta (opcional; se não existir, cria appointment sem consultation_type_id)
-  const { data: types } = await admin
-    .from("consultation_types")
-    .select("id,name,default_value")
-    .eq("tenant_id", ctx.tenantId)
-    .eq("is_active", true);
-  const activeTypes = (types ?? []) as any[];
-  const match = pickDefaultConsultationType(activeTypes, args.tipo_consulta);
+  // Tipo e valor resolvidos pela validação
+  const { data: typeRow } = check.consultationTypeId
+    ? await admin
+        .from("consultation_types")
+        .select("id,name,default_value")
+        .eq("id", check.consultationTypeId)
+        .maybeSingle()
+    : { data: null as any };
+  const match = typeRow as any;
   const resolvedTypeName = (match as any)?.name ?? args.tipo_consulta ?? null;
+
 
 
   // Unidade default: primeira do tenant (quando houver mais de uma, gestor pode reatribuir)
