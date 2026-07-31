@@ -350,14 +350,14 @@ export const AGENT_TOOLS = [
     function: {
       name: "criar_agendamento",
       description:
-        "Cria o agendamento no sistema DEPOIS que o cliente confirmou explicitamente um horário. IMPORTANTE: o horário pode ser QUALQUER minuto dentro do horário comercial (ex.: 15:10, 15:25). Se o cliente pedir um horário específico que NÃO apareceu na lista de slots, você pode agendar mesmo assim, contanto que esteja dentro do horário comercial e não seja no passado. Só recuse se estiver fora do horário comercial, em bloqueio ou no passado.",
+        "Cria o agendamento DEPOIS que o cliente confirmou explicitamente um horário. Use SOMENTE um horário retornado por 'listar_horarios_disponiveis' — o sistema revalida a agenda (janela do exame, almoço, bloqueios, feriados e capacidade) e recusa qualquer horário fora dela. Se recusar, leia o motivo retornado e ofereça um slot real da lista.",
       parameters: {
         type: "object",
         required: ["scheduled_at_iso"],
         properties: {
           scheduled_at_iso: {
             type: "string",
-            description: "Horário exato em ISO 8601 com offset -03:00 (ex: 2026-07-10T15:10:00-03:00). Pode ser um slot da lista OU um horário customizado que o cliente pediu, desde que esteja dentro do horário comercial.",
+            description: "Horário exato em ISO 8601 com offset do fuso da loja (ex: 2026-07-10T15:10:00-03:00). Deve ser um dos slots retornados por 'listar_horarios_disponiveis'.",
           },
           observacao: {
             type: "string",
@@ -1321,7 +1321,7 @@ export async function executeToolCall(
       if (slots.length === 0) {
         return wrap({
           ok: false,
-          message: "Nenhum horário livre nos próximos 14 dias com esses critérios.",
+          message: `Nenhum horário livre nos próximos ${LOOKAHEAD_DAYS} dias com esses critérios.`,
         });
       }
       return JSON.stringify({ ok: true, slots });
