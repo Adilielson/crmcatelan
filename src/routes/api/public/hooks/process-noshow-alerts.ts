@@ -29,8 +29,13 @@ async function sendWhatsApp(token: string, number: string, text: string) {
 export const Route = createFileRoute('/api/public/hooks/process-noshow-alerts')({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const { requireCronAuth } = await import('@/lib/cron-auth.server');
+        const auth = requireCronAuth(request);
+        if (!auth.ok) return auth.response;
+
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+
 
         const nowIso = new Date().toISOString();
 

@@ -32,11 +32,29 @@ function pct(num: number, denom: number) {
   return Math.round((num / denom) * 1000) / 10
 }
 
+
+/**
+ * Tenant do usuário autenticado. Filtro explícito em todas as queries
+ * (defense in depth — o RLS continua valendo).
+ */
+async function resolveTenantId(supabase: any, userId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error) throw error
+  const tenantId = data?.tenant_id as string | null | undefined
+  if (!tenantId) throw new Error('Perfil sem tenant associado')
+  return tenantId
+}
+
 export const getDashboardMetrics = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => DashboardInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context
+    const tenantId = await resolveTenantId(supabase, context.userId)
     const unitFilter = data.unitId ?? null
     const fromISO = data.from ?? null
     const toISO = data.to ?? null
@@ -49,6 +67,7 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     let leadsQ = supabase
       .from('leads')
       .select('id, status, sales_value, score_ia, source, updated_at, full_name, ia_summary, created_at, unit_id, phone, last_inbound_at, last_outbound_at, first_contact_at, custom_column_id, assigned_user_id, claimed_by')
+      .eq('tenant_id', tenantId)
     if (unitFilter) leadsQ = leadsQ.eq('unit_id', unitFilter)
     if (fromISO) leadsQ = leadsQ.gte('created_at', fromISO)
     if (toISO) leadsQ = leadsQ.lte('created_at', toISO)
@@ -62,6 +81,7 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     let apptQ = supabase
       .from('appointments')
       .select('id, status, scheduled_at, unit_id')
+      .eq('tenant_id', tenantId)
     if (hasRange) {
       apptQ = apptQ.gte('scheduled_at', fromISO!).lte('scheduled_at', toISO!)
     } else {
@@ -73,7 +93,7 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
     const { data: appts } = await apptQ
 
     // ---- Kanban columns for funnel ----
-    let colsQ = supabase.from('kanban_columns').select('name, system_key, position').order('position')
+    let colsQ = supabase.from('kanban_columns').select('name, system_key, position').eq('tenant_id', tenantId).order('position')
     const { data: cols } = await colsQ
 
     // ---- Delta period (current vs previous of same length) ----
@@ -90,6 +110,7 @@ export const getDashboardMetrics = createServerFn({ method: 'POST' })
       let prevQ = supabase
         .from('leads')
         .select('id, sales_value, created_at, unit_id')
+        .eq('tenant_id', tenantId)
         .gte('created_at', new Date(prevStart).toISOString())
         .lt('created_at', new Date(prevEnd).toISOString())
       if (unitFilter) prevQ = prevQ.eq('unit_id', unitFilter)
@@ -217,6 +238,7 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
   .inputValidator((d: unknown) => NoShowInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context
+    const tenantId = await resolveTenantId(supabase, context.userId)
     const periodDays = { daily: 1, weekly: 7, monthly: 30, yearly: 365 }[data.period]
     const since = new Date()
     since.setDate(since.getDate() - periodDays)
@@ -224,6 +246,7 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
     let q = supabase
       .from('appointments')
       .select('id, status, scheduled_at, value, lead_id, unit_id, lead_name')
+      .eq('tenant_id', tenantId)
       .gte('scheduled_at', since.toISOString())
     if (data.unitId) q = q.eq('unit_id', data.unitId)
     const { data: appts, error } = await q
@@ -250,6 +273,7 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
     let trendQ = supabase
       .from('appointments')
       .select('status, scheduled_at, unit_id')
+      .eq('tenant_id', tenantId)
       .gte('scheduled_at', sixMonthsAgo.toISOString())
     if (data.unitId) trendQ = trendQ.eq('unit_id', data.unitId)
     const { data: trendRows } = await trendQ
@@ -277,6 +301,7 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
         const { data: leadRows } = await supabase
           .from('leads')
           .select('id, source')
+          .eq('tenant_id', tenantId)
           .in('id', leadIds)
         const srcByLead: Record<string, string> = {}
         for (const l of leadRows ?? []) srcByLead[l.id] = l.source || 'Sem origem'
@@ -326,7 +351,12 @@ export const getNoShowMetrics = createServerFn({ method: 'POST' })
 export const getTenantUnits = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.from('units').select('id, name').order('name')
+    const tenantId = await resolveTenantId(context.supabase, context.userId)
+    const { data, error } = await context.supabase
+      .from('units')
+      .select('id, name')
+      .eq('tenant_id', tenantId)
+      .order('name')
     if (error) throw error
     return data ?? []
   })
@@ -340,6 +370,7 @@ export const getIAPerformanceMetrics = createServerFn({ method: 'POST' })
   .inputValidator((d: unknown) => IAPerfInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context
+    const tenantId = await resolveTenantId(supabase, context.userId)
     const periodDays = { weekly: 7, monthly: 30, yearly: 365 }[data.period]
     const since = new Date()
     since.setDate(since.getDate() - periodDays)
@@ -352,11 +383,13 @@ export const getIAPerformanceMetrics = createServerFn({ method: 'POST' })
     const { data: leads } = await supabase
       .from('leads')
       .select('id, score_ia, ia_summary, status, created_at')
+      .eq('tenant_id', tenantId)
       .gte('created_at', sinceISO)
 
     const { data: leadsPrev } = await supabase
       .from('leads')
       .select('id, score_ia, ia_summary')
+      .eq('tenant_id', tenantId)
       .gte('created_at', prevSinceISO)
       .lt('created_at', sinceISO)
 
@@ -371,6 +404,8 @@ export const getIAPerformanceMetrics = createServerFn({ method: 'POST' })
     const qualifiedPrev = prev.filter((l) => (l.score_ia ?? 0) >= 70).length
     const disqualifiedPrev = prev.filter((l) => l.score_ia != null && (l.score_ia ?? 0) < 70).length
 
+    // NOTA: `messages` não possui coluna tenant_id — o isolamento aqui depende
+    // do RLS via conversation_id. (Ver item 27 do plano: apontar para a tabela correta.)
     // Hours saved: count outbound AI messages × 2 minutes average handling time
     const { count: aiMsgCount } = await supabase
       .from('messages')
@@ -416,6 +451,7 @@ export const getIAPerformanceMetrics = createServerFn({ method: 'POST' })
     const { data: reasonRows } = await supabase
       .from('lead_consultation_summary')
       .select('no_close_reason')
+      .eq('tenant_id', tenantId)
       .gte('created_at', sinceISO)
       .not('no_close_reason', 'is', null)
 

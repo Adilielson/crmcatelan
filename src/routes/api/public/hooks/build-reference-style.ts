@@ -7,11 +7,9 @@ export const Route = createFileRoute("/api/public/hooks/build-reference-style")(
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-        if (!expected || apiKey !== expected) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+        const { requireCronAuth } = await import('@/lib/cron-auth.server');
+        const auth = requireCronAuth(request);
+        if (!auth.ok) return auth.response;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
