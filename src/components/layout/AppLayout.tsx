@@ -650,8 +650,16 @@ const AppLayout = () => {
           </div>
 
           {/* Centro: Navegação desktop */}
+          {!permsReady && (
+            <div className="hidden lg:flex items-center gap-2 mx-auto" aria-hidden>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-8 w-24 rounded-md bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          )}
           <nav className="hidden lg:flex items-center gap-1 mx-auto">
             {items.map((item) => {
+
               if (isGroup(item)) {
                 if (tabletHide.has(item.label)) {
                   return (
