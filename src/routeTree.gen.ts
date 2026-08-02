@@ -19,7 +19,6 @@ import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as RankingRouteImport } from './routes/ranking'
 import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MetasRouteImport } from './routes/metas'
-import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as FilaRouteImport } from './routes/fila'
@@ -93,11 +92,6 @@ const PerformanceRoute = PerformanceRouteImport.update({
 const MetasRoute = MetasRouteImport.update({
   id: '/metas',
   path: '/metas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MarketingRoute = MarketingRouteImport.update({
-  id: '/marketing',
-  path: '/marketing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -240,7 +234,6 @@ export interface FileRoutesByFullPath {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
-  '/marketing': typeof MarketingRoute
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
@@ -277,7 +270,6 @@ export interface FileRoutesByTo {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
-  '/marketing': typeof MarketingRoute
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
@@ -314,7 +306,6 @@ export interface FileRoutesById {
   '/fila': typeof FilaRoute
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
-  '/marketing': typeof MarketingRoute
   '/metas': typeof MetasRoute
   '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
@@ -353,7 +344,6 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
-    | '/marketing'
     | '/metas'
     | '/performance'
     | '/ranking'
@@ -390,7 +380,6 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
-    | '/marketing'
     | '/metas'
     | '/performance'
     | '/ranking'
@@ -426,7 +415,6 @@ export interface FileRouteTypes {
     | '/fila'
     | '/kanban'
     | '/login'
-    | '/marketing'
     | '/metas'
     | '/performance'
     | '/ranking'
@@ -464,7 +452,6 @@ export interface RootRouteChildren {
   FilaRoute: typeof FilaRoute
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
-  MarketingRoute: typeof MarketingRoute
   MetasRoute: typeof MetasRoute
   PerformanceRoute: typeof PerformanceRoute
   RankingRoute: typeof RankingRoute
@@ -554,13 +541,6 @@ declare module '@tanstack/react-router' {
       path: '/metas'
       fullPath: '/metas'
       preLoaderRoute: typeof MetasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/marketing': {
-      id: '/marketing'
-      path: '/marketing'
-      fullPath: '/marketing'
-      preLoaderRoute: typeof MarketingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -768,7 +748,6 @@ const rootRouteChildren: RootRouteChildren = {
   FilaRoute: FilaRoute,
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
-  MarketingRoute: MarketingRoute,
   MetasRoute: MetasRoute,
   PerformanceRoute: PerformanceRoute,
   RankingRoute: RankingRoute,
@@ -793,13 +772,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

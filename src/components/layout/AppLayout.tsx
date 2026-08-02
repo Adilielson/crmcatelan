@@ -18,7 +18,6 @@ import {
   ChevronDown,
   BarChart3,
   FileBarChart,
-  Megaphone,
   UserCog,
   Bell,
   Target,
@@ -146,7 +145,6 @@ const useNavItems = (isSuperAdmin: boolean): NavItem[] => {
         { label: 'Relatórios', icon: FileBarChart, href: '/relatorios', module: 'reports' },
       ],
     },
-    { label: 'Marketing', icon: Megaphone, href: '/marketing', module: 'marketing' },
     {
       label: 'Ajustes',
       icon: Settings,
@@ -627,8 +625,8 @@ const AppLayout = () => {
   
   
 
-  // Items priorizados para tablet (esconder Marketing e itens menos prioritários)
-  const tabletHide = new Set(['Marketing']);
+  // Items priorizados para tablet (esconder itens menos prioritários)
+  const tabletHide = new Set<string>([]);
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-900 font-jakarta">
