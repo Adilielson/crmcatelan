@@ -8,7 +8,6 @@ export const MODULE_CATALOG = [
   { key: 'agenda', label: 'Agenda', path: '/agenda' },
   { key: 'clientes', label: 'Clientes', path: '/clientes' },
   { key: 'bi', label: 'BI Executivo', path: '/bi' },
-  { key: 'performance', label: 'Performance / Dashboard', path: '/performance' },
   { key: 'metas', label: 'Metas', path: '/metas' },
   { key: 'ranking', label: 'Ranking', path: '/ranking' },
   { key: 'no_show', label: 'Métricas No-Show', path: '/analytics/no-show' },
@@ -34,7 +33,7 @@ export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   admin: [...ALL_MODULE_KEYS],
   manager: ALL_MODULE_KEYS.filter((k) => k !== 'saas'),
   seller: ['home', 'chat', 'kanban', 'fila', 'agenda', 'clientes', 'resultados', 'metas', 'ranking', 'report_attendants', 'report_appointments'],
-  marketing_partner: ['home', 'performance', 'no_show', 'reports', 'ai_insights'],
+  marketing_partner: ['home', 'no_show', 'reports', 'ai_insights'],
   super_admin: [...ALL_MODULE_KEYS],
 };
 
