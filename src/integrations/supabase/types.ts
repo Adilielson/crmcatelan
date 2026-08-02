@@ -2890,6 +2890,7 @@ export type Database = {
           status: string
           tenant_id: string
           transcription: string | null
+          whatsapp_message_id: string | null
         }
         Insert: {
           body?: string | null
@@ -2906,6 +2907,7 @@ export type Database = {
           status: string
           tenant_id: string
           transcription?: string | null
+          whatsapp_message_id?: string | null
         }
         Update: {
           body?: string | null
@@ -2922,6 +2924,7 @@ export type Database = {
           status?: string
           tenant_id?: string
           transcription?: string | null
+          whatsapp_message_id?: string | null
         }
         Relationships: []
       }
