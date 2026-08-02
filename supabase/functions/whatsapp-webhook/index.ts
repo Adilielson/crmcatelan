@@ -1150,10 +1150,7 @@ Deno.serve(async (req) => {
                 .from("whatsapp_message_logs")
                 .select("id")
                 .eq("tenant_id", tenantId)
-                .eq("recipient_phone", senderPhone)
-                .eq("status", "sent")
-                .gte("sent_at", new Date(Date.now() - 5 * 60_000).toISOString())
-                .eq("error_message", text.slice(0, 500))
+                .eq("whatsapp_message_id", waMsgId)
                 .limit(1);
               dup = !!(existing && existing.length);
             }
@@ -1165,6 +1162,7 @@ Deno.serve(async (req) => {
                   recipient_phone: senderPhone,
                   message_type: msgType,
                   status: "sent",
+                  whatsapp_message_id: waMsgId,
                   body: text,
                   sender_name: "Atendente",
                 });
@@ -1178,7 +1176,26 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (!fromMe && senderPhone) {
+      // ── IDEMPOTÊNCIA por whatsapp_message_id ──────────────────────────
+      // O uazapi reentrega eventos. Sem isso, a mesma mensagem virava duas
+      // gerações concorrentes e o lead recebia respostas duplicadas que se
+      // ignoravam. Substitui a antiga comparação de texto em janela de 5 min.
+      const inboundWamid = pickString(message.messageid, message.id);
+      let duplicateInbound = false;
+      if (!fromMe && senderPhone && inboundWamid) {
+        const { data: seen } = await adminClient
+          .from("whatsapp_message_logs")
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("whatsapp_message_id", inboundWamid)
+          .limit(1);
+        duplicateInbound = !!(seen && seen.length);
+        if (duplicateInbound) {
+          console.log(`[webhook] mensagem duplicada ignorada wamid=${inboundWamid}`);
+        }
+      }
+
+      if (!fromMe && senderPhone && !duplicateInbound) {
         // Persiste a mídia no Storage (histórico permanente) ─────────────
         let mediaStoragePath: string | null = null;
         let finalMime: string | null = media.mime;
@@ -1217,6 +1234,7 @@ Deno.serve(async (req) => {
             recipient_phone: senderPhone,
             message_type: msgType,
             status: "received",
+            whatsapp_message_id: inboundWamid,
             body: hasText ? effectiveText : null,
             sender_name: senderName,
             sender_avatar_url: senderAvatarUrl,
