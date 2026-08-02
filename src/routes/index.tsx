@@ -233,7 +233,7 @@ function Dashboard() {
           changeDesc="leads com score ≥ 70"
           icon={<Brain className="w-5 h-5" />}
           highlight
-          link="/performance"
+          link="/ai-insights"
         />
       </div>
 
@@ -317,9 +317,6 @@ function Dashboard() {
               </div>
               <CardTitle className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-gray-400 truncate">Atividade IA SDR</CardTitle>
             </div>
-            <Link to="/performance" className="shrink-0">
-              <Button variant="ghost" size="sm" className="text-xs h-8 px-2 sm:px-3"><span className="hidden sm:inline">Ver métricas de IA</span><span className="sm:hidden">Ver</span></Button>
-            </Link>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">

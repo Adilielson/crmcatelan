@@ -17,7 +17,6 @@ import { Route as ResultadosRouteImport } from './routes/resultados'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as RankingRouteImport } from './routes/ranking'
-import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MetasRouteImport } from './routes/metas'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KanbanRouteImport } from './routes/kanban'
@@ -82,11 +81,6 @@ const RelatoriosRoute = RelatoriosRouteImport.update({
 const RankingRoute = RankingRouteImport.update({
   id: '/ranking',
   path: '/ranking',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerformanceRoute = PerformanceRouteImport.update({
-  id: '/performance',
-  path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MetasRoute = MetasRouteImport.update({
@@ -235,7 +229,6 @@ export interface FileRoutesByFullPath {
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/metas': typeof MetasRoute
-  '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
@@ -271,7 +264,6 @@ export interface FileRoutesByTo {
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/metas': typeof MetasRoute
-  '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/resultados': typeof ResultadosRoute
@@ -307,7 +299,6 @@ export interface FileRoutesById {
   '/kanban': typeof KanbanRoute
   '/login': typeof LoginRoute
   '/metas': typeof MetasRoute
-  '/performance': typeof PerformanceRoute
   '/ranking': typeof RankingRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
@@ -345,7 +336,6 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/login'
     | '/metas'
-    | '/performance'
     | '/ranking'
     | '/relatorios'
     | '/reset-password'
@@ -381,7 +371,6 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/login'
     | '/metas'
-    | '/performance'
     | '/ranking'
     | '/reset-password'
     | '/resultados'
@@ -416,7 +405,6 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/login'
     | '/metas'
-    | '/performance'
     | '/ranking'
     | '/relatorios'
     | '/reset-password'
@@ -453,7 +441,6 @@ export interface RootRouteChildren {
   KanbanRoute: typeof KanbanRoute
   LoginRoute: typeof LoginRoute
   MetasRoute: typeof MetasRoute
-  PerformanceRoute: typeof PerformanceRoute
   RankingRoute: typeof RankingRoute
   RelatoriosRoute: typeof RelatoriosRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -527,13 +514,6 @@ declare module '@tanstack/react-router' {
       path: '/ranking'
       fullPath: '/ranking'
       preLoaderRoute: typeof RankingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/performance': {
-      id: '/performance'
-      path: '/performance'
-      fullPath: '/performance'
-      preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/metas': {
@@ -749,7 +729,6 @@ const rootRouteChildren: RootRouteChildren = {
   KanbanRoute: KanbanRoute,
   LoginRoute: LoginRoute,
   MetasRoute: MetasRoute,
-  PerformanceRoute: PerformanceRoute,
   RankingRoute: RankingRoute,
   RelatoriosRoute: RelatoriosRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
