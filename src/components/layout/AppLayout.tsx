@@ -133,7 +133,7 @@ const useNavItems = (isSuperAdmin: boolean): NavItem[] => {
     { label: 'Clientes', icon: Contact, href: '/clientes', module: 'clientes' },
     { label: 'Resultados', icon: Award, href: '/resultados', module: 'resultados' },
     {
-      label: 'Performance',
+      label: 'Análises',
       icon: BarChart3,
       children: [
         { label: 'BI Executivo', icon: BarChart3, href: '/bi', module: 'bi' },
