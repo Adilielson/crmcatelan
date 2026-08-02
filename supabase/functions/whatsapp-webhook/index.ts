@@ -117,8 +117,9 @@ async function generateSdrReply(
     // Loop de function-calling — máx 4 iterações
     const messages: any[] = [...systemMessages, ...history];
     const useTools = !!toolCtx;
+    let repaired = false;
 
-    for (let iter = 0; iter < 4; iter++) {
+    for (let iter = 0; iter < 6; iter++) {
       // gpt-5* / o1 / o3 só aceitam temperature=1
       const fixedTempModel = /(gpt-5|o1|o3)/i.test(endpoint.model);
       const body: Record<string, unknown> = {
@@ -164,10 +165,28 @@ async function generateSdrReply(
         continue; // pede a próxima geração à IA com os resultados
       }
 
-      const reply = msg?.content;
-      return typeof reply === "string" && reply.trim() ? reply.trim() : null;
+      const raw = msg?.content;
+      const reply = typeof raw === "string" && raw.trim() ? raw.trim() : null;
+      if (!reply) return null;
+
+      // Guarda-corpo de runtime: valida a resposta antes de enviar.
+      const check = validateOutgoingReply(reply);
+      if (check.ok) return reply;
+
+      console.warn(`[sdr] resposta violou regras: ${check.reasons.join(" | ")}`);
+      if (repaired) return reply; // já tentamos uma vez — envia mesmo assim (nunca silêncio)
+      repaired = true;
+      messages.push(msg);
+      messages.push({
+        role: "system",
+        content:
+          `Sua última resposta violou as regras obrigatórias: ${check.reasons.join("; ")}. ` +
+          "Reescreva a mesma mensagem corrigindo essas violações, mantendo o tom e o objetivo. " +
+          "Máximo UMA pergunta, sem termos proibidos, sem perguntas genéricas.",
+      });
+      continue;
     }
-    console.warn("[sdr] loop de tools esgotou 4 iterações");
+    console.warn("[sdr] loop de tools esgotou as iterações");
     return null;
   } catch (e) {
     console.error("[sdr] erro chamando gateway:", e instanceof Error ? e.message : String(e));
@@ -1146,7 +1165,6 @@ Deno.serve(async (req) => {
                   recipient_phone: senderPhone,
                   message_type: msgType,
                   status: "sent",
-                  error_message: text.slice(0, 500),
                   body: text,
                   sender_name: "Atendente",
                 });
@@ -1199,7 +1217,6 @@ Deno.serve(async (req) => {
             recipient_phone: senderPhone,
             message_type: msgType,
             status: "received",
-            error_message: hasText ? effectiveText!.slice(0, 500) : null,
             body: hasText ? effectiveText : null,
             sender_name: senderName,
             sender_avatar_url: senderAvatarUrl,
@@ -1405,7 +1422,7 @@ Deno.serve(async (req) => {
               //    por isso ela respondia sem contexto nenhum.
               const { data: hist } = await adminClient
                 .from("whatsapp_message_logs")
-                .select("status, body, transcription, error_message, sent_at")
+                .select("status, body, transcription, sent_at")
                 .eq("tenant_id", tenantId)
                 .eq("recipient_phone", senderPhone)
                 .order("sent_at", { ascending: false })
@@ -1416,7 +1433,6 @@ Deno.serve(async (req) => {
                 .map((m: any) => {
                   const content = (m.body && String(m.body).trim())
                     || (m.transcription && String(m.transcription).trim())
-                    || (m.error_message && String(m.error_message).trim())
                     || "";
                   return content
                     ? {
@@ -1583,7 +1599,26 @@ Deno.serve(async (req) => {
                 temperature,
                 leadId ? { tenantId, leadId, leadName, leadPhone: senderPhone } : null,
               );
-              if (reply) {
+              // Fallback audível: o lead NUNCA pode ficar sem resposta.
+              // Se o provedor falhou / estourou iterações, manda uma mensagem
+              // neutra e avisa a equipe para assumir a conversa.
+              let finalReply = reply;
+              if (!finalReply) {
+                finalReply =
+                  "Recebi sua mensagem! 😊 Já estou verificando aqui e te retorno em instantes.";
+                console.error(`[sdr] fallback acionado para ${senderPhone} — IA não retornou resposta`);
+                try {
+                  await adminClient.from("notifications").insert({
+                    tenant_id: tenantId,
+                    title: "IA não conseguiu responder um lead",
+                    message: `Assuma a conversa com ${leadName ?? senderPhone} — a IA falhou ao gerar resposta.`,
+                    category: "system_error",
+                    link: "/chat",
+                  });
+                } catch (_) { /* noop */ }
+              }
+              {
+                const reply = finalReply;
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
                 // 5) Loga a resposta da IA
@@ -1592,7 +1627,6 @@ Deno.serve(async (req) => {
                   recipient_phone: senderPhone,
                   message_type: "text",
                   status: sent ? "sent" : "failed",
-                  error_message: reply.slice(0, 500),
                   body: reply,
                   sender_name: "IA SDR",
                 });
