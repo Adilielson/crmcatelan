@@ -233,6 +233,7 @@ function Dashboard() {
           changeDesc="leads com score ≥ 70"
           icon={<Brain className="w-5 h-5" />}
           highlight
+          link="/ai-insights"
         />
       </div>
 
