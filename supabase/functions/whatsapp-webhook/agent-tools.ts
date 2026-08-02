@@ -420,6 +420,20 @@ export const AGENT_TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "confirmar_agendamento",
+      description:
+        "Marca como CONFIRMADO o próximo agendamento pendente do lead. Use SOMENTE quando o cliente confirmar presença de forma inequívoca no contexto da conversa (ex.: você perguntou 'está confirmado?' e ele respondeu 'sim'). Nunca chame por uma palavra solta fora de contexto.",
+      parameters: {
+        type: "object",
+        properties: {
+          appointment_id: { type: "string", description: "ID do agendamento (opcional)." },
+        },
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "atualizar_qualificacao_lead",
       description:
         "Salva no CRM as informações de qualificação que o cliente forneceu na conversa. CHAME SEMPRE que o cliente responder qualquer pergunta relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, urgência, objeção, QUEM é o paciente, preferências de horário, restrições de agenda, etc). Não espere ter tudo — envie campo a campo conforme aparecer. Só envie campos que o cliente REALMENTE disse; nunca invente. Pode chamar múltiplas vezes na mesma conversa. IMPORTANTE: esta é uma ÓTICA — nunca pergunte sobre plano de saúde/convênio; o atendimento é sempre particular.",
@@ -1015,6 +1029,40 @@ async function rescheduleAppointment(
 
 }
 
+async function confirmAppointment(
+  admin: Supa,
+  ctx: { tenantId: string; leadId: string | null },
+  args: { appointment_id?: string },
+): Promise<{ ok: boolean; message: string; appointment_id?: string }> {
+  if (!ctx.leadId) return { ok: false, message: "Lead não identificado." };
+
+  let query = admin
+    .from("appointments")
+    .select("id, status, scheduled_at")
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId)
+    .in("status", ["pending", "confirmed"])
+    .gt("scheduled_at", new Date().toISOString())
+    .order("scheduled_at", { ascending: true })
+    .limit(1);
+  if (args.appointment_id) query = query.eq("id", args.appointment_id);
+
+  const { data: appt } = await query.maybeSingle();
+  if (!appt) return { ok: false, message: "Nenhum agendamento futuro encontrado para confirmar." };
+  if ((appt as any).status === "confirmed") {
+    return { ok: true, message: "Agendamento já estava confirmado.", appointment_id: (appt as any).id };
+  }
+
+  const { error } = await admin
+    .from("appointments")
+    .update({ status: "confirmed", updated_at: new Date().toISOString() })
+    .eq("id", (appt as any).id)
+    .eq("tenant_id", ctx.tenantId)
+    .eq("lead_id", ctx.leadId);
+  if (error) return { ok: false, message: `Erro ao confirmar: ${error.message}` };
+  return { ok: true, message: "Agendamento confirmado.", appointment_id: (appt as any).id };
+}
+
 async function cancelAppointment(
   admin: Supa,
   ctx: { tenantId: string; leadId: string | null },
@@ -1329,6 +1377,7 @@ export async function executeToolCall(
     if (name === "criar_agendamento") return wrap(await createAppointment(admin, ctx, args));
     if (name === "remarcar_agendamento") return wrap(await rescheduleAppointment(admin, ctx, args));
     if (name === "cancelar_agendamento") return wrap(await cancelAppointment(admin, ctx, args));
+    if (name === "confirmar_agendamento") return wrap(await confirmAppointment(admin, ctx, args));
     if (name === "transferir_para_humano") return wrap(await transferToHuman(admin, ctx, args));
     if (name === "atualizar_qualificacao_lead") return wrap(await updateLeadQualification(admin, ctx, args));
     return wrap({ ok: false, message: `Tool desconhecida: ${name}` });

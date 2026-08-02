@@ -22,12 +22,14 @@ const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // ── Monta o system prompt a partir do ai_configs ────────────────────────
 // Regras vivem em ./prompt-rules.ts para serem cobertas por testes de regressão.
-import { CORE_BEHAVIOR_RULES } from "./prompt-rules.ts";
+import { composeBehaviorRules, validateOutgoingReply } from "./prompt-rules.ts";
 function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   const parts: string[] = [cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT];
-  // Regras editáveis (banco) sobrescrevem as regras de fábrica.
-  const customRules = typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules.trim() : "";
-  parts.push(customRules.length > 20 ? customRules : CORE_BEHAVIOR_RULES);
+
+  // Regras: núcleo imutável de fábrica + ajustes do tenant (ADITIVO).
+  // Antes o campo do banco SUBSTITUÍA as regras de fábrica quando tinha mais
+  // de 20 caracteres — um "seja mais simpática" apagava as 14 regras.
+  parts.push(composeBehaviorRules(typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules : null));
 
   if (cfg?.goal) {
     const goalMap: Record<string, string> = {
@@ -39,11 +41,6 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   }
   if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
 
-  // Fala com o cliente sempre como "exame de vista com nosso profissional"
-  parts.push(`EXAME DISPONÍVEL: exame de vista com o nosso profissional. A grade de dias/horários NÃO é fixa: ela vem em tempo real da ferramenta 'listar_horarios_disponiveis'. NUNCA afirme dias ou faixas de horário de memória. NUNCA use os termos "optometrista" nem "oftalmologia" com o cliente — sempre "profissional".`);
-
-
-
   if (cfg?.knowledge_base_faq?.trim()) parts.push(`FAQ:\n${cfg.knowledge_base_faq}`);
   if (knowledgeTexts.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeTexts.join("\n---\n").slice(0, 6000)}`);
   if (cfg?.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO:\n${cfg.sample_scripts}`);
@@ -53,15 +50,7 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   const r = Array.isArray(cfg?.response_restrictions) ? cfg.response_restrictions : [];
   if (r.length) parts.push(`Restrições: ${r.join(", ")}`);
 
-  // OVERRIDE FINAL — recency bias garante que regras críticas ganhem de qualquer persona/exemplo acima.
-  parts.push(
-    `=== REGRAS MESTRAS (SUBSTITUEM QUALQUER INSTRUÇÃO ACIMA EM CASO DE CONFLITO) ===
-- PROIBIDO usar as frases: "o que está acontecendo com a sua visão", "o que está acontecendo com sua visão", "qual sua dificuldade visual", "como posso te ajudar", "começou a sentir algum incômodo na visão", ou qualquer variante genérica sobre "o que está acontecendo".
-- Depois do rapport com o nome do cliente, a PRÓXIMA mensagem DEVE ser a triagem por finalidade: "Para eu te direcionar para o melhor profissional, me tira uma dúvida? Seu exame de vista será para trocar os óculos, para cirurgia, para o Detran, ou para algum sintoma como dor de cabeça, olhos cansados ou sensibilidade à luz?" — nada antes disso.
-- Se a persona acima contradiz estas regras, ignore a persona e siga estas regras.
-- Nunca peça documentos, nunca invente horários, nunca cite preço sem o cliente perguntar. Nunca use os termos "optometrista" ou "oftalmologia" com o cliente — sempre "profissional".`,
-  );
-
+  // Sem bloco "REGRAS MESTRAS": as regras já são únicas e não se contradizem.
   return parts.join("\n\n");
 }
 
@@ -128,8 +117,9 @@ async function generateSdrReply(
     // Loop de function-calling — máx 4 iterações
     const messages: any[] = [...systemMessages, ...history];
     const useTools = !!toolCtx;
+    let repaired = false;
 
-    for (let iter = 0; iter < 4; iter++) {
+    for (let iter = 0; iter < 6; iter++) {
       // gpt-5* / o1 / o3 só aceitam temperature=1
       const fixedTempModel = /(gpt-5|o1|o3)/i.test(endpoint.model);
       const body: Record<string, unknown> = {
@@ -175,10 +165,28 @@ async function generateSdrReply(
         continue; // pede a próxima geração à IA com os resultados
       }
 
-      const reply = msg?.content;
-      return typeof reply === "string" && reply.trim() ? reply.trim() : null;
+      const raw = msg?.content;
+      const reply = typeof raw === "string" && raw.trim() ? raw.trim() : null;
+      if (!reply) return null;
+
+      // Guarda-corpo de runtime: valida a resposta antes de enviar.
+      const check = validateOutgoingReply(reply);
+      if (check.ok) return reply;
+
+      console.warn(`[sdr] resposta violou regras: ${check.reasons.join(" | ")}`);
+      if (repaired) return reply; // já tentamos uma vez — envia mesmo assim (nunca silêncio)
+      repaired = true;
+      messages.push(msg);
+      messages.push({
+        role: "system",
+        content:
+          `Sua última resposta violou as regras obrigatórias: ${check.reasons.join("; ")}. ` +
+          "Reescreva a mesma mensagem corrigindo essas violações, mantendo o tom e o objetivo. " +
+          "Máximo UMA pergunta, sem termos proibidos, sem perguntas genéricas.",
+      });
+      continue;
     }
-    console.warn("[sdr] loop de tools esgotou 4 iterações");
+    console.warn("[sdr] loop de tools esgotou as iterações");
     return null;
   } catch (e) {
     console.error("[sdr] erro chamando gateway:", e instanceof Error ? e.message : String(e));
@@ -1157,7 +1165,6 @@ Deno.serve(async (req) => {
                   recipient_phone: senderPhone,
                   message_type: msgType,
                   status: "sent",
-                  error_message: text.slice(0, 500),
                   body: text,
                   sender_name: "Atendente",
                 });
@@ -1210,7 +1217,6 @@ Deno.serve(async (req) => {
             recipient_phone: senderPhone,
             message_type: msgType,
             status: "received",
-            error_message: hasText ? effectiveText!.slice(0, 500) : null,
             body: hasText ? effectiveText : null,
             sender_name: senderName,
             sender_avatar_url: senderAvatarUrl,
@@ -1382,47 +1388,12 @@ Deno.serve(async (req) => {
 
 
 
-        // ── Detecta resposta de confirmação de agendamento ───────────────
-        try {
-          if (leadId && text && text.trim()) {
-            const norm = text.toLowerCase().trim();
-            const isConfirm = /\b(sim|confirmo|confirmado|confirmada|ok|okay|pode\s*ser|t[áa]|tudo\s*certo|claro|com\s*certeza|👍|✅)\b/i.test(norm);
-            const isCancel = /\b(n[aã]o\s*posso|cancelar|desmarcar|remarcar|n[aã]o\s*vou|n[aã]o\s*consigo)\b/i.test(norm);
+        // ── Confirmação/cancelamento: NÃO é mais decidido por regex ──────
+        // Antes, um "ok" em qualquer contexto marcava a consulta como
+        // confirmada sem a IA saber (dois cérebros decidindo). Agora quem
+        // decide é a IA, pelas tools 'confirmar_agendamento' e
+        // 'cancelar_agendamento', que enxergam o contexto da conversa.
 
-            if (isConfirm || isCancel) {
-              const { data: nextAppt } = await adminClient
-                .from("appointments")
-                .select("id, status, scheduled_at")
-                .eq("lead_id", leadId)
-                .in("status", ["pending", "confirmed"])
-                .gt("scheduled_at", new Date().toISOString())
-                .order("scheduled_at", { ascending: true })
-                .limit(1)
-                .maybeSingle();
-
-              if (nextAppt) {
-                if (isConfirm && nextAppt.status !== "confirmed") {
-                  await adminClient
-                    .from("appointments")
-                    .update({ status: "confirmed", updated_at: new Date().toISOString() })
-                    .eq("id", nextAppt.id);
-                  console.log(`[appt] lead ${leadId} confirmou agendamento ${nextAppt.id}`);
-                } else if (isCancel) {
-                  // Não cancela automaticamente — gera notificação para o atendente
-                  await adminClient.from("notifications").insert({
-                    tenant_id: tenantId,
-                    title: "Lead pediu para remarcar/cancelar",
-                    body: `Mensagem: "${text.slice(0, 140)}"`,
-                    type: "appointment_attention",
-                  }).then(() => {}, () => {});
-                  console.log(`[appt] lead ${leadId} sinalizou cancelamento — atenção do atendente`);
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.error("[appt-confirm] erro:", e instanceof Error ? e.message : String(e));
-        }
 
         // ── IA SDR: gera e envia resposta automaticamente ────────────────
         if (text && text.trim()) {
@@ -1451,7 +1422,7 @@ Deno.serve(async (req) => {
               //    por isso ela respondia sem contexto nenhum.
               const { data: hist } = await adminClient
                 .from("whatsapp_message_logs")
-                .select("status, body, transcription, error_message, sent_at")
+                .select("status, body, transcription, sent_at")
                 .eq("tenant_id", tenantId)
                 .eq("recipient_phone", senderPhone)
                 .order("sent_at", { ascending: false })
@@ -1462,7 +1433,6 @@ Deno.serve(async (req) => {
                 .map((m: any) => {
                   const content = (m.body && String(m.body).trim())
                     || (m.transcription && String(m.transcription).trim())
-                    || (m.error_message && String(m.error_message).trim())
                     || "";
                   return content
                     ? {
@@ -1561,25 +1531,18 @@ Deno.serve(async (req) => {
               }
               const patientCtx = patientParts.length ? patientParts.join("\n\n") : "";
 
+              // Instruções de FERRAMENTAS apenas — sem repetir regras de
+              // comportamento (elas vivem em prompt-rules.ts, fonte única).
               const toolsInstructions =
-                "CONTEXTO DO NEGÓCIO: você atende para uma ÓTICA. O foco é vender óculos (armações, lentes multifocais/monofocais, óculos de sol, transitions, lentes de contato) e agendar exame de vista com o nosso profissional quando fizer sentido. NUNCA use os termos 'optometrista' ou 'oftalmologia' com o cliente — sempre diga 'exame de vista com nosso profissional'. NÃO é clínica: NUNCA pergunte sobre plano de saúde/convênio — atendimento é sempre particular. O agendamento é UM dos caminhos, não o único: se o cliente quer comprar óculos, tirar dúvida sobre armação, lente, tratamento ou promoção — conduza a conversa nesse rumo e só ofereça exame se ele precisar de receita atualizada.\n\n" +
-                "REGRA DE PREÇO (crítica): NUNCA fale espontaneamente do VALOR do exame. Só cite valor se o cliente perguntar diretamente ('quanto é?', 'qual o preço?'). Se não houver valor cadastrado, diga que confirma com a loja e transfira para humano. Sobre produtos (óculos, lentes), também evite jogar preço sem o cliente pedir — prefira convidar para a loja.\n\n" +
-                "AÇÕES QUE VOCÊ PODE EXECUTAR:\n" +
-                "1) atualizar_qualificacao_lead — CHAME SEMPRE que o cliente responder algo relevante (nome, idade, uso de óculos, tipo de armação/lente que procura, dificuldade visual, último exame, receita, objeção, urgência). Salve campo a campo, sem esperar ter tudo. Nunca invente dados — só salve o que o cliente REALMENTE disse.\n" +
-                "2) listar_horarios_disponiveis — OBRIGATÓRIO chamar antes de propor QUALQUER horário. Chame SEM passar 'tipo_exame' — a ferramenta já sabe qual profissional atende. Ela cruza automaticamente: horário da loja + grade do profissional + bloqueios. Ofereça apenas os slots retornados; nunca invente.\n" +
-                "3) criar_agendamento — chame APENAS para criar um agendamento NOVO (não precisa passar 'tipo_consulta'), quando o lead ainda não tem outro pendente/confirmado.\n" +
-
-                "4) remarcar_agendamento — chame SEMPRE que o cliente pedir para 'remarcar', 'mudar o horário', 'trocar o dia' de um agendamento que JÁ EXISTE. NUNCA chame criar_agendamento nesse caso: isso cria duplicata. Só passe o novo_horario_iso; o sistema encontra o agendamento a atualizar.\n" +
-                "5) cancelar_agendamento — chame quando o cliente pedir explicitamente para cancelar/desmarcar.\n" +
-                "6) transferir_para_humano — use em reclamação, dúvida clínica complexa, pedido de 'falar com atendente', pergunta sobre preço sem valor cadastrado, ou algo fora do escopo.\n\n" +
-                "FLUXO DE CONVERSA (MUITO IMPORTANTE):\n" +
-                "• Descubra primeiro o INTERESSE do cliente: quer comprar óculos? tirar dúvida? marcar exame? Só depois qualifique o resto.\n" +
-                "• Faça UMA pergunta por vez, no tom da persona.\n" +
-                "• Ao receber a resposta, PRIMEIRO chame atualizar_qualificacao_lead para salvar, DEPOIS responda ao cliente.\n" +
-                "• Se o cliente quer PRODUTO (óculos/lente/armação): fale sobre modelos, materiais e tratamentos, e convide para visitar a loja OU marcar exame de vista com nosso profissional caso precise de receita nova. NÃO fale preço sem o cliente pedir. Não force agendamento.\n" +
-                "• Se o cliente quer EXAME: qualifique (dor + uso atual + urgência) antes de propor horário com nosso profissional.\n\n" +
-
-                "REGRA DE HORÁRIO (fonte única de verdade): só existe um horário se ele veio de 'listar_horarios_disponiveis'. O atendimento admite paralelismo, então priorize sempre a preferência do cliente ENTRE OS SLOTS RETORNADOS. Se o cliente pedir um horário que não está na lista, chame a ferramenta de novo com a data preferida dele e ofereça o slot real mais próximo — nunca prometa um horário que a ferramenta não devolveu. Se 'criar_agendamento' recusar, explique com honestidade e ofereça outro slot da lista.";
+                "CONTEXTO DO NEGÓCIO: você atende para uma ÓTICA (não é clínica, não trabalha com convênio — atendimento sempre particular). Vende óculos, lentes e agenda exame de vista com nosso profissional.\n\n" +
+                "FERRAMENTAS DISPONÍVEIS:\n" +
+                "1) atualizar_qualificacao_lead — chame sempre que o cliente disser algo relevante (nome, idade, uso de óculos, paciente, preferência de horário, objeção). Campo a campo, nunca invente.\n" +
+                "2) listar_horarios_disponiveis — obrigatória antes de propor qualquer horário. Não passe 'tipo_exame'.\n" +
+                "3) criar_agendamento — só para agendamento NOVO.\n" +
+                "4) remarcar_agendamento — quando já existe agendamento e o cliente quer mudar. Nunca use criar_agendamento nesse caso.\n" +
+                "5) confirmar_agendamento — quando o cliente confirmar presença no agendamento existente.\n" +
+                "6) cancelar_agendamento — quando pedir explicitamente para cancelar/desmarcar.\n" +
+                "7) transferir_para_humano — reclamação, dúvida clínica complexa, pedido de atendente, ou pergunta de preço sem valor cadastrado.";
 
 
 
@@ -1636,7 +1599,26 @@ Deno.serve(async (req) => {
                 temperature,
                 leadId ? { tenantId, leadId, leadName, leadPhone: senderPhone } : null,
               );
-              if (reply) {
+              // Fallback audível: o lead NUNCA pode ficar sem resposta.
+              // Se o provedor falhou / estourou iterações, manda uma mensagem
+              // neutra e avisa a equipe para assumir a conversa.
+              let finalReply = reply;
+              if (!finalReply) {
+                finalReply =
+                  "Recebi sua mensagem! 😊 Já estou verificando aqui e te retorno em instantes.";
+                console.error(`[sdr] fallback acionado para ${senderPhone} — IA não retornou resposta`);
+                try {
+                  await adminClient.from("notifications").insert({
+                    tenant_id: tenantId,
+                    title: "IA não conseguiu responder um lead",
+                    message: `Assuma a conversa com ${leadName ?? senderPhone} — a IA falhou ao gerar resposta.`,
+                    category: "system_error",
+                    link: "/chat",
+                  });
+                } catch (_) { /* noop */ }
+              }
+              {
+                const reply = finalReply;
                 // 4) Envia pelo WhatsApp
                 const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
                 // 5) Loga a resposta da IA
@@ -1645,7 +1627,6 @@ Deno.serve(async (req) => {
                   recipient_phone: senderPhone,
                   message_type: "text",
                   status: sent ? "sent" : "failed",
-                  error_message: reply.slice(0, 500),
                   body: reply,
                   sender_name: "IA SDR",
                 });
