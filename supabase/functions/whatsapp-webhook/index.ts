@@ -22,12 +22,14 @@ const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // ── Monta o system prompt a partir do ai_configs ────────────────────────
 // Regras vivem em ./prompt-rules.ts para serem cobertas por testes de regressão.
-import { CORE_BEHAVIOR_RULES } from "./prompt-rules.ts";
+import { composeBehaviorRules, validateOutgoingReply } from "./prompt-rules.ts";
 function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   const parts: string[] = [cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT];
-  // Regras editáveis (banco) sobrescrevem as regras de fábrica.
-  const customRules = typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules.trim() : "";
-  parts.push(customRules.length > 20 ? customRules : CORE_BEHAVIOR_RULES);
+
+  // Regras: núcleo imutável de fábrica + ajustes do tenant (ADITIVO).
+  // Antes o campo do banco SUBSTITUÍA as regras de fábrica quando tinha mais
+  // de 20 caracteres — um "seja mais simpática" apagava as 14 regras.
+  parts.push(composeBehaviorRules(typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules : null));
 
   if (cfg?.goal) {
     const goalMap: Record<string, string> = {
@@ -39,11 +41,6 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   }
   if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
 
-  // Fala com o cliente sempre como "exame de vista com nosso profissional"
-  parts.push(`EXAME DISPONÍVEL: exame de vista com o nosso profissional. A grade de dias/horários NÃO é fixa: ela vem em tempo real da ferramenta 'listar_horarios_disponiveis'. NUNCA afirme dias ou faixas de horário de memória. NUNCA use os termos "optometrista" nem "oftalmologia" com o cliente — sempre "profissional".`);
-
-
-
   if (cfg?.knowledge_base_faq?.trim()) parts.push(`FAQ:\n${cfg.knowledge_base_faq}`);
   if (knowledgeTexts.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeTexts.join("\n---\n").slice(0, 6000)}`);
   if (cfg?.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO:\n${cfg.sample_scripts}`);
@@ -53,15 +50,7 @@ function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
   const r = Array.isArray(cfg?.response_restrictions) ? cfg.response_restrictions : [];
   if (r.length) parts.push(`Restrições: ${r.join(", ")}`);
 
-  // OVERRIDE FINAL — recency bias garante que regras críticas ganhem de qualquer persona/exemplo acima.
-  parts.push(
-    `=== REGRAS MESTRAS (SUBSTITUEM QUALQUER INSTRUÇÃO ACIMA EM CASO DE CONFLITO) ===
-- PROIBIDO usar as frases: "o que está acontecendo com a sua visão", "o que está acontecendo com sua visão", "qual sua dificuldade visual", "como posso te ajudar", "começou a sentir algum incômodo na visão", ou qualquer variante genérica sobre "o que está acontecendo".
-- Depois do rapport com o nome do cliente, a PRÓXIMA mensagem DEVE ser a triagem por finalidade: "Para eu te direcionar para o melhor profissional, me tira uma dúvida? Seu exame de vista será para trocar os óculos, para cirurgia, para o Detran, ou para algum sintoma como dor de cabeça, olhos cansados ou sensibilidade à luz?" — nada antes disso.
-- Se a persona acima contradiz estas regras, ignore a persona e siga estas regras.
-- Nunca peça documentos, nunca invente horários, nunca cite preço sem o cliente perguntar. Nunca use os termos "optometrista" ou "oftalmologia" com o cliente — sempre "profissional".`,
-  );
-
+  // Sem bloco "REGRAS MESTRAS": as regras já são únicas e não se contradizem.
   return parts.join("\n\n");
 }
 
