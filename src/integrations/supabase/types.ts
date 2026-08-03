@@ -580,6 +580,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_rule_templates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       appointment_reminders: {
         Row: {
           appointment_id: string
