@@ -1,22 +1,15 @@
 // Shared prompt builder usado por AMBOS: o simulador (/api/ai-training/simulate-chat)
 // e o WhatsApp webhook (via supabase/functions/whatsapp-webhook/index.ts).
 //
-// As REGRAS não moram aqui. Fonte única:
-//   supabase/functions/whatsapp-webhook/prompt-rules.ts
-// Assim o comportamento testado no simulador é exatamente o que responde no
-// WhatsApp real (antes havia duas cópias divergentes: 12 regras aqui, 14 lá).
+// IMPORTANTE (multitenant): NENHUM texto de prompt mora no código.
+// As regras vêm do banco: ai_configs.behavior_rules (editável no front) com
+// fallback em ai_rule_templates.content (modelo padrão).
 //
 // NÃO importar nada de Node/Deno específico — precisa rodar em worker/edge/browser tests.
 
-import {
-  CORE_BEHAVIOR_RULES,
-  composeBehaviorRules,
-} from "../../supabase/functions/whatsapp-webhook/prompt-rules";
+import { composeBehaviorRules } from "../../supabase/functions/whatsapp-webhook/prompt-rules";
 
-export { CORE_BEHAVIOR_RULES, composeBehaviorRules };
-
-/** @deprecated use CORE_BEHAVIOR_RULES — mantido só para imports legados. */
-export const DEFAULT_BEHAVIOR_RULES = CORE_BEHAVIOR_RULES;
+export { composeBehaviorRules };
 
 export type AiCfgLike = {
   prompt_system?: string | null;
@@ -30,9 +23,12 @@ export type AiCfgLike = {
   response_restrictions?: string[] | null;
 };
 
-/** Regras finais: núcleo imutável + ajustes do tenant (ADITIVO, nunca substitui). */
-export function resolveBehaviorRules(cfg: AiCfgLike | null | undefined): string {
-  return composeBehaviorRules(cfg?.behavior_rules);
+/** Regras finais: exclusivamente o que está no banco (com fallback do modelo padrão). */
+export function resolveBehaviorRules(
+  cfg: AiCfgLike | null | undefined,
+  defaultRules?: string | null,
+): string {
+  return composeBehaviorRules(cfg?.behavior_rules, defaultRules);
 }
 
 /** Contexto de tempo real — usado em ambos os lados para respeitar a Regra 8. */
@@ -63,6 +59,8 @@ export interface BuildSystemPromptOptions {
   extraContext?: string;
   timezone?: string;
   fallbackPersona?: string;
+  /** Modelo padrão de regras vindo de ai_rule_templates (fallback). */
+  defaultRules?: string | null;
 }
 
 const GOAL_LABEL: Record<string, string> = {
@@ -96,7 +94,7 @@ export function buildAiSystemPrompt(opts: BuildSystemPromptOptions): string {
   parts.push(cfg.prompt_system?.trim() || fallbackPersona);
 
   // 2) Regras: núcleo imutável + ajustes do tenant
-  parts.push(resolveBehaviorRules(cfg));
+  parts.push(resolveBehaviorRules(cfg, opts.defaultRules));
 
   // 3) Estado dinâmico (contexto puro, sem instruções duplicadas)
   parts.push(buildNowContext(timezone));

@@ -28,7 +28,6 @@ import {
   generatePromptCopilot, applyPromptCopilot,
   generateAndApplyPromptCopilot, listCopilotHistory,
 } from '@/lib/ai-training.functions'
-import { DEFAULT_BEHAVIOR_RULES } from '@/lib/ai-prompt-builder'
 
 import {
   listKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc,
@@ -359,7 +358,20 @@ function AITrainingSettings() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setField('behavior_rules', DEFAULT_BEHAVIOR_RULES)}
+                onClick={async () => {
+                  const { data, error } = await (supabase as any)
+                    .from('ai_rule_templates')
+                    .select('content')
+                    .eq('is_default', true)
+                    .maybeSingle()
+                  const content = (data as { content?: string } | null)?.content
+                  if (error || !content) {
+                    toast.error('Não foi possível carregar o modelo padrão de regras.')
+                    return
+                  }
+                  setField('behavior_rules', content)
+                  toast.success('Modelo padrão carregado. Revise e salve.')
+                }}
                 className="gap-2 whitespace-nowrap"
               >
                 <RotateCcw className="w-4 h-4" /> Restaurar padrão
@@ -369,11 +381,11 @@ function AITrainingSettings() {
               <Textarea
                 value={form.behavior_rules || ''}
                 onChange={(e) => setField('behavior_rules', e.target.value)}
-                placeholder="Deixe em branco para usar as regras padrão de fábrica."
+                placeholder="Escreva aqui todas as regras de atendimento desta loja."
                 className="min-h-[540px] font-mono text-xs bg-white border-border rounded-xl text-ink p-4"
               />
               <p className="text-[11px] text-gray-500 italic">
-                Se este campo estiver vazio, a IA usa automaticamente as regras padrão (mesmas do simulador e do WhatsApp real).
+                Este campo é a ÚNICA fonte das regras da IA (WhatsApp e Simulador). Se ficar vazio, o sistema usa o modelo padrão do botão acima.
               </p>
             </CardContent>
           </Card>
