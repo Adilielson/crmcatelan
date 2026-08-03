@@ -21,15 +21,29 @@ const corsHeaders = {
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // ── Monta o system prompt a partir do ai_configs ────────────────────────
-// Regras vivem em ./prompt-rules.ts para serem cobertas por testes de regressão.
+// Validadores em ./prompt-rules.ts. O TEXTO das regras vem do banco (multitenant).
 import { composeBehaviorRules, validateOutgoingReply } from "./prompt-rules.ts";
-function buildSystemFromConfig(cfg: any, knowledgeTexts: string[]): string {
+
+/** Modelo padrão de regras (usado só quando o tenant não configurou nada no front). */
+async function fetchDefaultRulesTemplate(): Promise<string> {
+  try {
+    const { data } = await adminClient
+      .from("ai_rule_templates")
+      .select("content")
+      .eq("is_default", true)
+      .maybeSingle();
+    return (data as any)?.content ?? "";
+  } catch (_) {
+    return "";
+  }
+}
+
+function buildSystemFromConfig(cfg: any, knowledgeTexts: string[], defaultRules = ""): string {
   const parts: string[] = [cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT];
 
-  // Regras: núcleo imutável de fábrica + ajustes do tenant (ADITIVO).
-  // Antes o campo do banco SUBSTITUÍA as regras de fábrica quando tinha mais
-  // de 20 caracteres — um "seja mais simpática" apagava as 14 regras.
-  parts.push(composeBehaviorRules(typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules : null));
+  // Regras: fonte única = banco (ai_configs.behavior_rules), editável no front.
+  parts.push(composeBehaviorRules(typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules : null, defaultRules));
+
 
   if (cfg?.goal) {
     const goalMap: Record<string, string> = {
