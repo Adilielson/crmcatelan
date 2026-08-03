@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  CORE_BEHAVIOR_RULES,
+  composeBehaviorRules,
   FORBIDDEN_DOCUMENT_TERMS,
   checkNoDocumentRequest,
   checkOpeningScript,
@@ -9,44 +9,26 @@ import {
 } from "../supabase/functions/whatsapp-webhook/prompt-rules";
 
 // ─────────────────────────────────────────────────────────────
-// 1) O prompt sistema precisa cobrir explicitamente as regras chave.
-// Se alguém remover uma dessas linhas, o teste falha.
+// 1) O texto das regras NÃO mora no código (multitenant).
+// composeBehaviorRules apenas resolve banco → fallback do modelo padrão.
 // ─────────────────────────────────────────────────────────────
-describe("CORE_BEHAVIOR_RULES (contrato do prompt)", () => {
-  it("proíbe explicitamente pedir documentos", () => {
-    expect(CORE_BEHAVIOR_RULES).toMatch(/NUNCA peça DOCUMENTOS/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/CPF/);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/RG/);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/conv[êe]nio/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/plano de sa[úu]de/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/Só o primeiro nome basta/i);
+describe("composeBehaviorRules (regras vindas do banco)", () => {
+  it("usa as regras do tenant quando existem", () => {
+    expect(composeBehaviorRules("REGRA DA LOJA", "MODELO PADRÃO")).toBe("REGRA DA LOJA");
   });
 
-  it("exige apresentação com FUNÇÃO (jeito Raiana)", () => {
-    expect(CORE_BEHAVIOR_RULES).toMatch(/apresentação com FUNÇÃO/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/especialista ocular/i);
+  it("cai no modelo padrão quando o tenant não configurou nada", () => {
+    expect(composeBehaviorRules("", "MODELO PADRÃO")).toBe("MODELO PADRÃO");
+    expect(composeBehaviorRules(null, "MODELO PADRÃO")).toBe("MODELO PADRÃO");
   });
 
-  it("exige espelho afirmativo antes de avançar", () => {
-    expect(CORE_BEHAVIOR_RULES).toMatch(/ESPELHO AFIRMATIVO/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/Perfeito|Boa|Vamos te ajudar/);
+  it("nunca concatena duas fontes de regras (evita contradição)", () => {
+    const out = composeBehaviorRules("REGRA DA LOJA", "MODELO PADRÃO");
+    expect(out).not.toMatch(/MODELO PADRÃO/);
   });
 
-  it("exige CTA com horário concreto", () => {
-    expect(CORE_BEHAVIOR_RULES).toMatch(/CTA DIRETO/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/horário CONCRETO/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/fecha pra você/i);
-  });
-
-  it("obriga chamar listar_horarios_disponiveis antes de propor horário", () => {
-    expect(CORE_BEHAVIOR_RULES).toMatch(/listar_horarios_disponiveis/);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/Nunca invente janelas/i);
-  });
-
-  it("cobre recuperação de objeção (preço, tempo, 'vou pensar')", () => {
-    expect(CORE_BEHAVIOR_RULES).toMatch(/Preço/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/Tempo/i);
-    expect(CORE_BEHAVIOR_RULES).toMatch(/Vou pensar/i);
+  it("retorna vazio quando não há nenhuma regra", () => {
+    expect(composeBehaviorRules(null, null)).toBe("");
   });
 });
 
