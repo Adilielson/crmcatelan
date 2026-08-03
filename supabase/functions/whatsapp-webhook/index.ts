@@ -1509,7 +1509,8 @@ Deno.serve(async (req) => {
               const knowledgeTexts = (docs ?? [])
                 .filter((d: any) => d.content && d.content.trim())
                 .map((d: any) => `[${d.name}]\n${(d.content as string).slice(0, 3000)}`);
-              const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts);
+              const defaultRules = await fetchDefaultRulesTemplate();
+              const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts, defaultRules);
               const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
 
               // Marcador de versão do prompt (auditoria em runtime — não há cache no webhook)
