@@ -359,16 +359,17 @@ function AITrainingSettings() {
                 variant="outline"
                 size="sm"
                 onClick={async () => {
-                  const { data, error } = await supabase
+                  const { data, error } = await (supabase as any)
                     .from('ai_rule_templates')
                     .select('content')
                     .eq('is_default', true)
                     .maybeSingle()
-                  if (error || !data?.content) {
+                  const content = (data as { content?: string } | null)?.content
+                  if (error || !content) {
                     toast.error('Não foi possível carregar o modelo padrão de regras.')
                     return
                   }
-                  setField('behavior_rules', data.content)
+                  setField('behavior_rules', content)
                   toast.success('Modelo padrão carregado. Revise e salve.')
                 }}
                 className="gap-2 whitespace-nowrap"
