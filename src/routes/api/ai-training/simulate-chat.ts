@@ -177,12 +177,19 @@ export const Route = createFileRoute('/api/ai-training/simulate-chat')({
           const behaviorContext =
             'MODO SIMULADOR: você está sendo testada por um admin no ambiente de treino. Responda EXATAMENTE como responderia no WhatsApp real, obedecendo todas as regras. Se precisaria chamar uma ferramenta (listar horários, agendar, transferir humano) descreva em [colchetes] o que faria, ex.: "[chamaria listar_horarios_disponiveis para amanhã]", e siga a conversa.'
 
+          const { data: rulesTemplate } = await supabase
+            .from('ai_rule_templates')
+            .select('content')
+            .eq('is_default', true)
+            .maybeSingle()
+
           const systemPrompt = buildAiSystemPrompt({
             cfg: cfg as AiCfgLike,
             knowledgeTexts,
             styleBlock,
             behaviorContext,
             timezone,
+            defaultRules: (rulesTemplate as any)?.content ?? '',
           })
 
           const { getTenantAiKey, logAiUsage } = await import('@/lib/ai-credentials.server')
