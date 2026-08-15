@@ -130,7 +130,7 @@ export async function buildStyleProfileCore(tenantId: string, opts?: { force?: b
     if (!lead.phone) continue;
     const { data: logs } = await supabaseAdmin
       .from("whatsapp_message_logs")
-      .select("status, sender_name, error_message")
+      .select("status, sender_name, body")
       .eq("tenant_id", tenantId)
       .eq("recipient_phone", lead.phone)
       .order("sent_at", { ascending: true })
@@ -145,7 +145,7 @@ export async function buildStyleProfileCore(tenantId: string, opts?: { force?: b
     });
     const firstClientName = (lead.full_name ?? "").trim().split(/\s+/)[0]?.toLowerCase();
     for (const m of outboundFromRef) {
-      const text = String(m.error_message ?? "").trim();
+      const text = String(m.body ?? "").trim();
       if (text.length < 2) continue;
       allOutbound.push(text);
       if (firstClientName && firstClientName.length > 2) {

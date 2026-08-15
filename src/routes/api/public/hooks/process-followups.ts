@@ -176,7 +176,7 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
                 recipient_phone: lead.phone,
                 message_type: 'text',
                 status: 'sent',
-                error_message: text.slice(0, 500),
+                body: text.slice(0, 500),
                 sender_name: 'Cadência',
               });
 
@@ -252,7 +252,7 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
                 recipient_phone: lead.phone,
                 message_type: 'text',
                 status: 'failed',
-                error_message: `Follow-up ${f.template_key}: HTTP ${res.status}`,
+                failure_reason: `Follow-up ${f.template_key}: HTTP ${res.status}`,
               });
               failed++;
               continue;
@@ -267,7 +267,7 @@ export const Route = createFileRoute('/api/public/hooks/process-followups')({
               recipient_phone: lead.phone,
               message_type: 'text',
               status: 'sent',
-              error_message: text.slice(0, 500),
+              body: text.slice(0, 500),
               sender_name: 'Follow-up',
             });
             sent++;

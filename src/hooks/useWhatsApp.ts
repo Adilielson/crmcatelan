@@ -185,7 +185,7 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'text',
           status: 'sent',
-          error_message: text,
+          body: text,
         });
         // Envio OK ⇒ garante que UI reflita "conectado"
         setIsConnected(true);
@@ -195,7 +195,7 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'text',
           status: 'failed',
-          error_message: String(err),
+          failure_reason: String(err),
         });
         throw err;
       }
@@ -213,7 +213,7 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'image',
           status: 'sent',
-          error_message: caption ?? null,
+          body: caption ?? null,
           media_url: imageUrl,
           media_mime: mime ?? 'image/jpeg',
         });
@@ -223,7 +223,7 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'image',
           status: 'failed',
-          error_message: String(err),
+          failure_reason: String(err),
         });
         throw err;
       }
@@ -241,7 +241,7 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'audio',
           status: 'sent',
-          error_message: null,
+          body: null,
           media_url: audioUrl,
           media_mime: mime ?? 'audio/ogg',
         });
@@ -251,7 +251,7 @@ export function useWhatsApp() {
           recipient_phone: phone,
           message_type: 'audio',
           status: 'failed',
-          error_message: String(err),
+          failure_reason: String(err),
         });
         throw err;
       }

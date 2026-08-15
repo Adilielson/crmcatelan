@@ -40,7 +40,7 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
   // Mensagens (whatsapp_message_logs é a fonte real do sistema)
   const { data: logs, error: logsErr } = await supabaseAdmin
     .from("whatsapp_message_logs")
-    .select("id, status, sender_name, error_message, sent_at, message_type, media_mime, media_storage_path, transcription")
+    .select("id, status, sender_name, body, sent_at, message_type, media_mime, media_storage_path, transcription")
     .eq("tenant_id", tenantId)
     .eq("recipient_phone", lead.phone)
     .order("sent_at", { ascending: true })
@@ -56,7 +56,7 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
 
   const filtered = (logs ?? []).filter(
     (m: any) =>
-      (typeof m.error_message === "string" && m.error_message.trim().length > 0) ||
+      (typeof m.body === "string" && m.body.trim().length > 0) ||
       isInboundAudio(m),
   );
   if (filtered.length < 4) {
@@ -138,7 +138,7 @@ async function runLeadAnalysisCore(tenantId: string, leadId: string) {
         const t = m.transcription ? m.transcription : "(áudio sem transcrição)";
         return `[${who} • ÁUDIO] ${t}`;
       }
-      return `[${who}] ${m.error_message}`;
+      return `[${who}] ${m.body}`;
     })
     .join("\n");
 

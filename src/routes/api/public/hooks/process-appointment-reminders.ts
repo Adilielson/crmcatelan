@@ -177,7 +177,7 @@ export const Route = createFileRoute('/api/public/hooks/process-appointment-remi
                 recipient_phone: lead.phone,
                 message_type: 'text',
                 status: 'failed',
-                error_message: `Lembrete ${r.kind}: HTTP ${res.status}`,
+                failure_reason: `Lembrete ${r.kind}: HTTP ${res.status}`,
               });
               failed++;
               continue;
@@ -193,7 +193,7 @@ export const Route = createFileRoute('/api/public/hooks/process-appointment-remi
               recipient_phone: lead.phone,
               message_type: 'text',
               status: 'sent',
-              error_message: text.slice(0, 500),
+              body: text.slice(0, 500),
               sender_name: `Lembrete ${r.kind}`,
             });
             sent++;

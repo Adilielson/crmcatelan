@@ -34,7 +34,7 @@ interface LogRow {
   recipient_phone: string;
   message_type: string;
   status: string;
-  error_message: string | null;
+  body: string | null;
   sent_at: string;
   sender_name: string | null;
   sender_avatar_url: string | null;
@@ -79,7 +79,7 @@ function mapRowSync(row: LogRow, resolvedUrl: string | null): WhatsAppMessage {
   return {
     id: row.id,
     phone: row.recipient_phone,
-    text: row.error_message ?? '',
+    text: row.body ?? '',
     type: row.message_type,
     status: row.status,
     at: row.sent_at,
@@ -184,7 +184,7 @@ export function useWhatsAppChat() {
     for (let from = 0; ; from += PAGE_SIZE) {
       const { data, error } = await db
         .from('whatsapp_message_logs')
-        .select('id, recipient_phone, message_type, status, error_message, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
+        .select('id, recipient_phone, message_type, status, body, sent_at, sender_name, sender_avatar_url, media_url, media_mime, media_storage_path')
         .eq('tenant_id', tenant.id)
         .order('sent_at', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
