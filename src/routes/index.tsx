@@ -356,7 +356,7 @@ function Dashboard() {
               </div>
               <CardTitle className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-gray-400 truncate">Alertas SLA</CardTitle>
             </div>
-            <Link to="/chat" search={{ stage: 'open' }} className="shrink-0">
+            <Link to="/chat" search={{ stage: 'open', phone: undefined }} className="shrink-0">
               <Button size="sm" className="h-8 text-[11px] font-black uppercase tracking-wider px-2 sm:px-3"><span className="hidden sm:inline">Atender Leads</span><span className="sm:hidden">Atender</span></Button>
             </Link>
           </CardHeader>
@@ -382,7 +382,7 @@ function Dashboard() {
                       )}
                     </div>
                   </div>
-                  <Link to="/chat" search={alert.phone ? { phone: alert.phone } : undefined} className="shrink-0 self-stretch sm:self-auto">
+                  <Link to="/chat" search={{ phone: alert.phone || undefined, stage: undefined }} className="shrink-0 self-stretch sm:self-auto">
                     <Button size="sm" className="h-8 w-full sm:w-auto text-[10px] font-bold">Assumir Chat</Button>
                   </Link>
 

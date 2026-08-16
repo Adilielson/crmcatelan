@@ -41,7 +41,7 @@ export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
     phone: (search.phone as string) || undefined,
     stage: (search.stage as string) || undefined,
-  }),
+  } as { phone?: string; stage?: string }),
   component: Chat,
 })
 
