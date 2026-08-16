@@ -2905,6 +2905,7 @@ export type Database = {
         Row: {
           body: string | null
           error_message: string | null
+          failure_reason: string | null
           id: string
           media_mime: string | null
           media_storage_path: string | null
@@ -2922,6 +2923,7 @@ export type Database = {
         Insert: {
           body?: string | null
           error_message?: string | null
+          failure_reason?: string | null
           id?: string
           media_mime?: string | null
           media_storage_path?: string | null
@@ -2939,6 +2941,7 @@ export type Database = {
         Update: {
           body?: string | null
           error_message?: string | null
+          failure_reason?: string | null
           id?: string
           media_mime?: string | null
           media_storage_path?: string | null

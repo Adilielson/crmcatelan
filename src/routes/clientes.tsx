@@ -342,7 +342,7 @@ function Clientes() {
                       onClick={() =>
                         navigate({
                           to: '/chat',
-                          search: { phone: l.phone ?? undefined },
+                          search: { phone: l.phone ?? undefined, stage: undefined },
                         })
                       }
                       className="flex w-full items-center gap-2.5 px-1 py-2 text-left active:bg-[#FAFAFA]"
@@ -426,7 +426,7 @@ function Clientes() {
                               onClick={() =>
                                 navigate({
                                   to: '/chat',
-                                  search: { phone: l.phone ?? undefined },
+                                  search: { phone: l.phone ?? undefined, stage: undefined },
                                 })
                               }
                             >

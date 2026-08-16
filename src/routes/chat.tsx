@@ -39,9 +39,9 @@ import { Label } from '@/components/ui/label'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
-    phone: typeof search.phone === 'string' ? search.phone : undefined,
-    stage: typeof search.stage === 'string' ? search.stage : undefined,
-  }),
+    phone: (search.phone as string) || undefined,
+    stage: (search.stage as string) || undefined,
+  } as { phone?: string; stage?: string }),
   component: Chat,
 })
 
@@ -114,7 +114,7 @@ function Chat() {
 
   const handleBackToList = () => {
     setSelectedPhone(null)
-    navigate({ to: '/chat', search: {} })
+    navigate({ to: '/chat', search: { phone: undefined, stage: undefined } })
   }
 
   // Match tolerante: o WhatsApp grava só dígitos (5511…) e o lead pode estar como
@@ -634,7 +634,7 @@ function Chat() {
                   onClick={() => {
                     setSelectedPhone(conv.phone)
                     setActiveTab('lead')
-                    navigate({ to: '/chat', search: { phone: conv.phone } })
+                    navigate({ to: '/chat', search: { phone: conv.phone, stage: undefined } })
                   }}
                   className={cn(
                     "p-5 pr-6 md:pr-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",

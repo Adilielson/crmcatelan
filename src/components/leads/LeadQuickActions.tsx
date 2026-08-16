@@ -36,7 +36,7 @@ export function LeadQuickActions({
 
   const openChat = () => {
     if (onOpenChat) return onOpenChat();
-    navigate({ to: '/chat', search: { phone: lead.phone ?? '' } });
+    navigate({ to: '/chat', search: { phone: lead.phone ?? '', stage: undefined } });
   };
 
   const actions = [

@@ -319,7 +319,7 @@ function Equipe() {
       qc.invalidateQueries({ queryKey: ['equipe-leads', tenantId] });
       qc.invalidateQueries({ queryKey: ['leads', tenantId] });
       toast.success('Atendimento assumido');
-      navigate({ to: '/chat', search: { phone: lead.phone ?? undefined } });
+      navigate({ to: '/chat', search: { phone: lead.phone ?? undefined, stage: undefined } });
     },
     onError: (e: any) => toast.error(`Erro: ${e.message}`),
   });
@@ -659,7 +659,7 @@ function Equipe() {
                               onClick={() =>
                                 navigate({
                                   to: '/chat',
-                                  search: { phone: l.phone ?? undefined },
+                                  search: { phone: l.phone ?? undefined, stage: undefined },
                                 })
                               }
                             >

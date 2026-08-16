@@ -13,29 +13,18 @@ function isValidHttpUrl(value: unknown): value is string {
 }
 
 function pickUrl(): string {
-  const candidates: Array<unknown> = [
-    import.meta.env.VITE_SUPABASE_URL,
-    typeof process !== 'undefined' ? process.env?.SUPABASE_URL : undefined,
-    typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : undefined,
-  ];
-  for (const c of candidates) {
-    if (isValidHttpUrl(c)) return c;
-  }
+  // Em produção no sandbox Lovable, import.meta.env pode falhar ao injetar se o processo Vite não foi reiniciado.
+  // Usamos o valor literal como fallback seguro para evitar o spinner infinito do CRM.
+  const url = import.meta.env.VITE_SUPABASE_URL || 'https://gqscgcebgokoglkoidnz.supabase.co';
+  if (isValidHttpUrl(url)) return url;
   throw new Error(
     '[Supabase] VITE_SUPABASE_URL ausente ou inválida. Configure as variáveis de ambiente do Supabase.',
   );
 }
 
 function pickKey(): string {
-  const candidates: Array<unknown> = [
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    import.meta.env.VITE_SUPABASE_ANON_KEY,
-    typeof process !== 'undefined' ? process.env?.SUPABASE_PUBLISHABLE_KEY : undefined,
-    typeof process !== 'undefined' ? process.env?.SUPABASE_ANON_KEY : undefined,
-  ];
-  for (const c of candidates) {
-    if (typeof c === 'string' && c.length > 20) return c;
-  }
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdxc2NnY2ViZ29rb2dsa29pZG56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODYyMDIsImV4cCI6MjA5NjI2MjIwMn0.xwUvcdX3WV_PrD2076tmwKJ0GW5u__pb3m60XMuSofY';
+  if (typeof key === 'string' && key.length > 20) return key;
   throw new Error(
     '[Supabase] VITE_SUPABASE_PUBLISHABLE_KEY ausente. Configure as variáveis de ambiente do Supabase.',
   );

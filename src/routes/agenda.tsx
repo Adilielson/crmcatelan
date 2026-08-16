@@ -197,7 +197,7 @@ function Agenda() {
       toast.error('Lead sem telefone cadastrado')
       return
     }
-    navigate({ to: '/chat', search: { phone } })
+    navigate({ to: '/chat', search: { phone, stage: undefined } })
   }
 
 
