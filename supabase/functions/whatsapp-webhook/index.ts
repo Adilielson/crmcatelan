@@ -320,7 +320,7 @@ function buildHoursContext(hours: BusinessHours | null, timezone: string): strin
   if (isOpen) {
     return `${nowLabel}\nCONTEXTO DE HORÁRIO: estamos DENTRO do expediente. Horário de hoje: ${todayStr}. Você PODE oferecer transferir para um atendente humano.`;
   }
-  return `${nowLabel}\nCONTEXTO DE HORÁRIO: estamos FORA do expediente. Horário de hoje: ${todayStr}. Próxima abertura: ${nextLabel}. NÃO ofereça transferir para atendente humano agora. Em vez disso, ofereça agendar exame de vista com nosso profissional ou diga que a equipe responderá no próximo horário útil.`;
+  return `${nowLabel}\nCONTEXTO DE HORÁRIO: estamos FORA do expediente. Horário de hoje: ${todayStr}. Próxima abertura: ${nextLabel}. NÃO ofereça transferir para atendente humano agora. Em vez disso, ofereça agendar uma consulta ou diga que a equipe responderá no próximo horário útil.`;
 }
 
 
