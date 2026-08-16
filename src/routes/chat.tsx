@@ -114,7 +114,7 @@ function Chat() {
 
   const handleBackToList = () => {
     setSelectedPhone(null)
-    navigate({ to: '/chat', search: {} })
+    navigate({ to: '/chat', search: { phone: undefined, stage: undefined } })
   }
 
   // Match tolerante: o WhatsApp grava só dígitos (5511…) e o lead pode estar como
