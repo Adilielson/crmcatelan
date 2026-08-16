@@ -1,5 +1,6 @@
 import { createRootRouteWithContext, ScrollRestoration } from '@tanstack/react-router';
 import { HeadContent, Scripts } from '@tanstack/react-router';
+import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from '../components/layout/AppLayout';
 import '../styles.css';
@@ -48,6 +49,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <Toaster richColors position="top-right" />
         <ScrollRestoration />
         <Scripts />
       </body>
