@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useAuthStore } from '@/hooks/use-auth'
 import { createFileRoute } from '@tanstack/react-router'
 import { 
   Card, 
@@ -95,6 +96,7 @@ function computeRange(period: PeriodKey, customFrom: string, customTo: string): 
 }
 
 function Dashboard() {
+  const { user } = useAuthStore()
   const { data: pipelines = [] } = useUnits()
   const [selectedUnit, setSelectedUnit] = useState<string>('all')
   const [period, setPeriod] = useState<PeriodKey>('all')
@@ -111,6 +113,7 @@ function Dashboard() {
       from: range.from,
       to: range.to,
     } }),
+    enabled: !!user,
   })
 
   const funnelData = metrics?.funnelData ?? []

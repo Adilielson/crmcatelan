@@ -6,10 +6,34 @@ import { supabase } from './client'
 // the browser never attaches the bearer token to serverFn RPCs.
 export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
   async ({ next }) => {
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
+    // getSession() can hang due to browser locks. 
+    // We try to get the session, but we also check the local store directly
+    // as a fallback for the token to ensure the header is always present 
+    // if a session exists.
+    const { data } = await supabase.auth.getSession();
+    let token = data.session?.access_token;
+    
+    if (!token && typeof window !== 'undefined') {
+      // Fallback: read directly from localStorage if getSession() returned null
+      // but we know we have a session (e.g. during hydration or lock contention).
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && /^sb-.+-auth-token$/.test(key)) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              const session = parsed?.currentSession ?? parsed;
+              token = session?.access_token;
+            } catch (e) {}
+          }
+          if (token) break;
+        }
+      }
+    }
+
     return next({
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    });
   },
 )
