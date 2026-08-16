@@ -102,10 +102,9 @@ export const runPrescriptionOcr = createServerFn({ method: "POST" })
     return { leadId: x.leadId };
   })
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY não configurada");
-
     const tenantId = await getUserTenant(context.supabase, context.userId);
+    const { getTenantAiKey, logAiUsage } = await import("./ai-credentials.server");
+    const credential = await getTenantAiKey(tenantId);
     const lead = await assertLeadInTenant(context.supabase, data.leadId, tenantId);
     if (!lead.prescription_image_path) throw new Error("Nenhuma foto de receita salva para este lead");
 
@@ -128,10 +127,10 @@ export const runPrescriptionOcr = createServerFn({ method: "POST" })
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${credential.apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: credential.model,
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -194,6 +193,17 @@ export const runPrescriptionOcr = createServerFn({ method: "POST" })
       })
       .eq("id", data.leadId);
     if (updErr) throw new Error(updErr.message);
+
+    await logAiUsage({
+      tenantId,
+      provider: "openai",
+      model: credential.model,
+      tokensInput: json?.usage?.prompt_tokens ?? 0,
+      tokensOutput: json?.usage?.completion_tokens ?? 0,
+      usedFallback: credential.source === "master",
+      source: credential.source,
+      feature: "prescription-ocr",
+    });
 
     return {
       grau,

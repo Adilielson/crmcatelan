@@ -193,17 +193,17 @@ export const simulateChat = createServerFn({ method: "POST" })
     const styleBlock = await loadStyleBlockForPrompt(tenantId);
     const systemPrompt = buildSystemPrompt(cfg as AiConfig, knowledgeTexts, styleBlock);
 
-    const key = process.env.OPENAI_API_KEY;
-    if (!key) throw new Error("OPENAI_API_KEY ausente");
+    const { getTenantAiKey, logAiUsage } = await import("./ai-credentials.server");
+    const credential = await getTenantAiKey(tenantId);
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${credential.apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: credential.model,
         messages: [{ role: "system", content: systemPrompt }, ...data.messages],
         temperature: Number((cfg as any).model_temperature) || 0.7,
       }),
@@ -217,6 +217,16 @@ export const simulateChat = createServerFn({ method: "POST" })
     const json = await res.json();
     const reply = json?.choices?.[0]?.message?.content;
     if (typeof reply !== "string" || !reply.trim()) throw new Error("Sem resposta do modelo");
+    await logAiUsage({
+      tenantId,
+      provider: "openai",
+      model: credential.model,
+      tokensInput: json?.usage?.prompt_tokens ?? 0,
+      tokensOutput: json?.usage?.completion_tokens ?? 0,
+      usedFallback: credential.source === "master",
+      source: credential.source,
+      feature: "simulate-chat",
+    });
     return { reply: reply.trim() };
   });
 
