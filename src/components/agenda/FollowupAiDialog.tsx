@@ -93,7 +93,7 @@ export function FollowupAiDialog({
     navigator.clipboard.writeText(message).catch(() => {});
     toast.success('Mensagem copiada — cole no chat');
     onOpenChange(false);
-    navigate({ to: '/chat', search: { phone } });
+    navigate({ to: '/chat', search: { phone, stage: undefined } });
   };
 
   const channelLabel = meta.channel === 'call' ? 'Ligação' : 'WhatsApp';
