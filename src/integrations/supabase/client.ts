@@ -13,14 +13,8 @@ function isValidHttpUrl(value: unknown): value is string {
 }
 
 function pickUrl(): string {
-  const candidates: Array<unknown> = [
-    import.meta.env.VITE_SUPABASE_URL,
-    typeof process !== 'undefined' ? process.env?.SUPABASE_URL : undefined,
-    typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : undefined,
-  ];
-  for (const c of candidates) {
-    if (isValidHttpUrl(c)) return c;
-  }
+  const url = import.meta.env.VITE_SUPABASE_URL || 'https://gqscgcebgokoglkoidnz.supabase.co';
+  if (isValidHttpUrl(url)) return url;
   throw new Error(
     '[Supabase] VITE_SUPABASE_URL ausente ou inválida. Configure as variáveis de ambiente do Supabase.',
   );
