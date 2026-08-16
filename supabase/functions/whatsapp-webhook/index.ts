@@ -3,7 +3,7 @@
 // URL: {SUPABASE_URL}/functions/v1/whatsapp-webhook?tenant_id=00000000-0000-0000-0000-000000000001
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AGENT_TOOLS, executeToolCall, listAvailableSlots } from "./agent-tools.ts";
+import { buildSdrSystemPrompt } from "../_shared/ai-prompt-core.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -11,200 +11,398 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 const UAZAPI_BASE_URL = "https://ipazua.uazapi.com";
 const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
 
-const FALLBACK_SYSTEM_PROMPT = `Você é a IA SDR de uma ótica brasileira. Seja breve, humano, em português do BR. Uma pergunta por vez. Nunca invente preços.`;
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-secret",
 };
 
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-// ── Monta o system prompt a partir do ai_configs ────────────────────────
-// Validadores em ./prompt-rules.ts. O TEXTO das regras vem do banco (multitenant).
-import { composeBehaviorRules, validateOutgoingReply } from "./prompt-rules.ts";
-
-/** Modelo padrão de regras (usado só quando o tenant não configurou nada no front). */
-async function fetchDefaultRulesTemplate(): Promise<string> {
-  try {
-    const { data } = await adminClient
-      .from("ai_rule_templates")
-      .select("content")
-      .eq("is_default", true)
-      .maybeSingle();
-    return (data as any)?.content ?? "";
-  } catch (_) {
-    return "";
-  }
+// ── Agendamento: lista horários disponíveis ─────────────────────────────────
+function getISOWeek(date: Date): number {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
-function buildSystemFromConfig(cfg: any, knowledgeTexts: string[], defaultRules = ""): string {
-  const parts: string[] = [cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT];
+async function listAvailableSlots(tenantId: string, timezone: string): Promise<string> {
+  const now = new Date();
+  const lookAheadDays = 14;
+  const maxSlots = 18;
 
-  // Regras: fonte única = banco (ai_configs.behavior_rules), editável no front.
-  parts.push(composeBehaviorRules(typeof cfg?.behavior_rules === "string" ? cfg.behavior_rules : null, defaultRules));
+  const [typesRes, bizRes, blockedRes, apptsRes] = await Promise.all([
+    adminClient.from("consultation_types").select("id, name").eq("tenant_id", tenantId).eq("is_active", true),
+    adminClient.from("agenda_business_hours").select("weekday, is_open, open_time, close_time, lunch_start, lunch_end").eq("tenant_id", tenantId),
+    adminClient.from("agenda_blocked_dates")
+      .select("blocked_date, all_day")
+      .eq("tenant_id", tenantId)
+      .gte("blocked_date", now.toISOString().split("T")[0])
+      .lte("blocked_date", new Date(now.getTime() + lookAheadDays * 86400000).toISOString().split("T")[0]),
+    adminClient.from("appointments")
+      .select("scheduled_at, consultation_type_id")
+      .eq("tenant_id", tenantId)
+      .in("status", ["pending", "confirmed"])
+      .gte("scheduled_at", now.toISOString())
+      .lte("scheduled_at", new Date(now.getTime() + lookAheadDays * 86400000).toISOString()),
+  ]);
 
+  const types = typesRes.data ?? [];
+  if (!types.length) return "Não há tipos de consulta configurados.";
 
-  if (cfg?.goal) {
-    const goalMap: Record<string, string> = {
-      appointment: "agendar exame de vista com nosso profissional",
-      qualification: "qualificar o lead",
-      support: "dar suporte",
-    };
-    parts.push(`Objetivo principal: ${goalMap[cfg.goal] ?? cfg.goal}.`);
-  }
-  if (cfg?.scheduling_link) parts.push(`Link de agendamento: ${cfg.scheduling_link}`);
+  const typeIds = types.map((t: any) => t.id);
+  const { data: typeHours } = await adminClient
+    .from("consultation_type_hours")
+    .select("consultation_type_id, weekday, is_active, start_time, end_time, slot_minutes, saturday_recurrence")
+    .in("consultation_type_id", typeIds);
 
-  if (cfg?.knowledge_base_faq?.trim()) parts.push(`FAQ:\n${cfg.knowledge_base_faq}`);
-  if (knowledgeTexts.length) parts.push(`DOCUMENTOS DE REFERÊNCIA:\n${knowledgeTexts.join("\n---\n").slice(0, 6000)}`);
-  if (cfg?.sample_scripts?.trim()) parts.push(`EXEMPLOS DE ATENDIMENTO:\n${cfg.sample_scripts}`);
-  const qs = Array.isArray(cfg?.qualification_questions) ? cfg.qualification_questions : [];
-  if (qs.length) parts.push(`PERGUNTAS DE QUALIFICAÇÃO (faça uma por vez, na ordem):\n${qs.map((q: string, i: number) => `${i + 1}. ${q}`).join("\n")}`);
-  if (cfg?.rejection_instructions?.trim()) parts.push(`O QUE NÃO FAZER:\n${cfg.rejection_instructions}`);
-  const r = Array.isArray(cfg?.response_restrictions) ? cfg.response_restrictions : [];
-  if (r.length) parts.push(`Restrições: ${r.join(", ")}`);
+  const bizMap = new Map((bizRes.data ?? []).map((h: any) => [h.weekday as number, h]));
+  const blockedDays = new Set((blockedRes.data ?? []).filter((b: any) => b.all_day).map((b: any) => b.blocked_date as string));
 
-  // Sem bloco "REGRAS MESTRAS": as regras já são únicas e não se contradizem.
-  return parts.join("\n\n");
-}
+  // Booked slots as "YYYY-MM-DDTHH:MM" in local timezone
+  const booked = new Set(
+    (apptsRes.data ?? []).map((a: any) => {
+      const localStr = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: timezone, hour12: false,
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit",
+      }).format(new Date(a.scheduled_at as string));
+      return localStr.replace(" ", "T").slice(0, 16);
+    }),
+  );
 
+  const slots: { typeName: string; label: string }[] = [];
 
-// ── Helpers de IA + envio ────────────────────────────────────────────────
-// Resolve provider: prioridade para credencial OpenAI do tenant (BYO key).
-// Fallback: Lovable AI Gateway (LOVABLE_API_KEY).
-type AiEndpoint = { url: string; headers: Record<string, string>; model: string; provider: "openai" | "lovable" };
-async function resolveAiEndpoint(tenantId: string | null): Promise<AiEndpoint | null> {
-  if (tenantId) {
-    try {
-      const { data, error } = await adminClient.rpc("get_active_ai_credential", {
-        _tenant_id: tenantId,
-        _provider: "openai",
-      });
-      const row = Array.isArray(data) ? data[0] : data;
-      if (!error && row?.api_key) {
-        return {
-          url: "https://api.openai.com/v1/chat/completions",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${row.api_key}`,
-          },
-          model: row.model_default || "gpt-4o-mini",
-          provider: "openai",
-        };
+  for (let dayOff = 0; dayOff < lookAheadDays && slots.length < maxSlots; dayOff++) {
+    const dayUtc = new Date(now.getTime() + dayOff * 86400000);
+    const localDateStr = new Intl.DateTimeFormat("sv-SE", { timeZone: timezone }).format(dayUtc);
+    if (blockedDays.has(localDateStr)) continue;
+
+    const localWeekday = new Date(`${localDateStr}T12:00:00.000-03:00`).getUTCDay();
+    const bh = bizMap.get(localWeekday) as any;
+    if (!bh?.is_open) continue;
+
+    for (const type of types as any[]) {
+      if (slots.length >= maxSlots) break;
+      const th = (typeHours ?? []).find(
+        (h: any) => h.consultation_type_id === type.id && h.weekday === localWeekday,
+      ) as any;
+      if (!th?.is_active || !th.start_time || !th.end_time) continue;
+
+      // Saturday recurrence check
+      if (localWeekday === 6) {
+        const weekNum = getISOWeek(new Date(`${localDateStr}T12:00:00.000-03:00`));
+        const rec: string = th.saturday_recurrence ?? "all";
+        if (rec === "none") continue;
+        if (rec === "even" && weekNum % 2 !== 0) continue;
+        if (rec === "odd" && weekNum % 2 === 0) continue;
       }
-    } catch (e) {
-      console.warn("[sdr] falha ao buscar credencial do tenant:", e instanceof Error ? e.message : String(e));
+
+      const [sh, sm] = (th.start_time as string).split(":").map(Number);
+      const [eh, em] = (th.end_time as string).split(":").map(Number);
+      const slotMin: number = th.slot_minutes ?? 30;
+      const endMin = eh * 60 + em;
+
+      for (let m = sh * 60 + sm; m + slotMin <= endMin && slots.length < maxSlots; m += slotMin) {
+        const h = Math.floor(m / 60);
+        const min = m % 60;
+        const timeStr = `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+        const iso = `${localDateStr}T${timeStr}`;
+        const slotUtc = new Date(`${localDateStr}T${timeStr}:00.000-03:00`);
+        if (slotUtc <= now) continue;
+        if (booked.has(iso)) continue;
+
+        const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        const [, mo, d] = localDateStr.split("-");
+        slots.push({ typeName: type.name as string, label: `${dayNames[localWeekday]} ${d}/${mo} às ${timeStr}` });
+      }
     }
   }
-  if (!LOVABLE_API_KEY) return null;
-  return {
-    url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+
+  if (!slots.length) return "Não encontrei horários disponíveis nos próximos 14 dias. Entre em contato diretamente.";
+
+  const byType = new Map<string, string[]>();
+  for (const s of slots) {
+    if (!byType.has(s.typeName)) byType.set(s.typeName, []);
+    byType.get(s.typeName)!.push(s.label);
+  }
+  return [...byType.entries()].map(([t, ls]) => `${t}: ${ls.join(", ")}`).join("\n");
+}
+
+// ── Agendamento: cria consulta ───────────────────────────────────────────────
+async function bookAppointment(
+  tenantId: string,
+  leadId: string | null,
+  consultationTypeName: string,
+  dateTimeStr: string, // "YYYY-MM-DDTHH:MM" in São Paulo time
+  timezone: string,
+): Promise<string> {
+  let scheduledUtc: Date;
+  try {
+    scheduledUtc = new Date(`${dateTimeStr.trim()}:00.000-03:00`);
+    if (isNaN(scheduledUtc.getTime())) throw new Error("invalid");
+  } catch {
+    return "Data/hora inválida. Informe no formato YYYY-MM-DDTHH:MM (ex: 2026-08-18T14:00).";
+  }
+  if (scheduledUtc <= new Date()) return "Não é possível agendar no passado.";
+
+  const { data: ctypes } = await adminClient
+    .from("consultation_types")
+    .select("id, name")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true)
+    .ilike("name", `%${consultationTypeName.trim()}%`)
+    .limit(1);
+
+  if (!ctypes?.length) return `Tipo de consulta '${consultationTypeName}' não encontrado. Use listar_horarios_disponiveis para ver as opções.`;
+  const ctype = ctypes[0] as any;
+
+  // Get slot_minutes for this type on this weekday
+  const localWeekday = (() => {
+    const wk = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(scheduledUtc);
+    return ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[wk] ?? 1;
+  })();
+
+  const { data: th } = await adminClient
+    .from("consultation_type_hours")
+    .select("slot_minutes")
+    .eq("consultation_type_id", ctype.id)
+    .eq("weekday", localWeekday)
+    .maybeSingle();
+
+  const slotMinutes = (th as any)?.slot_minutes ?? 30;
+  const endAt = new Date(scheduledUtc.getTime() + slotMinutes * 60 * 1000);
+
+  // Conflict check
+  const { data: conflicts } = await adminClient
+    .from("appointments")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .in("status", ["pending", "confirmed"])
+    .gte("scheduled_at", scheduledUtc.toISOString())
+    .lt("scheduled_at", endAt.toISOString())
+    .limit(1);
+
+  if (conflicts?.length) return "Esse horário já está ocupado. Use listar_horarios_disponiveis para ver outros horários disponíveis.";
+
+  // Get first unit for this tenant
+  const { data: unit } = await adminClient
+    .from("units")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .limit(1)
+    .maybeSingle();
+
+  const { error: insErr } = await adminClient.from("appointments").insert({
+    tenant_id: tenantId,
+    lead_id: leadId,
+    unit_id: (unit as any)?.id ?? null,
+    consultation_type_id: ctype.id,
+    scheduled_at: scheduledUtc.toISOString(),
+    end_at: endAt.toISOString(),
+    status: "pending",
+    created_by_ai: true,
+    type_exam: ctype.name,
+  });
+
+  if (insErr) {
+    console.error("[bookAppt] erro:", insErr.message);
+    return "Erro ao criar agendamento. Por favor, tente novamente ou fale com a equipe.";
+  }
+
+  const formattedDate = scheduledUtc.toLocaleString("pt-BR", {
+    timeZone: timezone,
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  return `Agendamento criado com sucesso! ${ctype.name} em ${formattedDate}. Em breve a equipe confirma.`;
+}
+
+// ── IA SDR com tool calling ──────────────────────────────────────────────────
+const SDR_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "listar_horarios_disponiveis",
+      description: "Use sempre que o cliente perguntar sobre horários disponíveis ou quiser saber quando pode agendar. Retorna os próximos horários livres.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "criar_agendamento",
+      description: "Use quando o cliente confirmar um horário específico para agendar. Cria o agendamento no sistema.",
+      parameters: {
+        type: "object",
+        properties: {
+          tipo_consulta: { type: "string", description: "Nome do tipo de consulta (ex: Optometrista, Oftalmologista)." },
+          data_hora: { type: "string", description: "Data e hora no formato YYYY-MM-DDTHH:MM no fuso de São Paulo (ex: 2026-08-18T14:00)." },
+        },
+        required: ["tipo_consulta", "data_hora"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "transferir_para_humano",
+      description: "Use quando o cliente pedir explicitamente para falar com um atendente humano.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+];
+
+async function callLovableGateway(payload: Record<string, unknown>): Promise<Response> {
+  return fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Lovable-API-Key": LOVABLE_API_KEY,
       "X-Lovable-AIG-SDK": "edge-function",
     },
-    model: "openai/gpt-5-mini",
-    provider: "lovable",
-  };
+    body: JSON.stringify(payload),
+  });
 }
 
 async function generateSdrReply(
   systemPrompt: string,
   history: { role: "user" | "assistant"; content: string }[],
-  contextNote: string | undefined,
   temperature: number,
-  toolCtx: { tenantId: string; leadId: string | null; leadName: string | null; leadPhone: string } | null,
+  tenantId: string,
+  leadId: string | null,
+  timezone: string,
 ): Promise<string | null> {
-  const endpoint = await resolveAiEndpoint(toolCtx?.tenantId ?? null);
-  if (!endpoint) {
-    console.error("[sdr] nenhum provedor de IA disponível (sem credencial do tenant e sem LOVABLE_API_KEY)");
+  if (!LOVABLE_API_KEY) {
+    console.error("[sdr] LOVABLE_API_KEY ausente");
     return null;
   }
-  console.log(`[sdr] provider=${endpoint.provider} model=${endpoint.model}`);
+
+  const baseMessages = [{ role: "system", content: systemPrompt }, ...history];
+
   try {
-    const systemMessages: { role: "system"; content: string }[] = [
-      { role: "system", content: systemPrompt },
-    ];
-    if (contextNote) systemMessages.push({ role: "system", content: contextNote });
+    const res1 = await callLovableGateway({
+      model: "google/gemini-3-flash-preview",
+      messages: baseMessages,
+      temperature,
+      tools: SDR_TOOLS,
+      tool_choice: "auto",
+    });
 
-    // Loop de function-calling — máx 4 iterações
-    const messages: any[] = [...systemMessages, ...history];
-    const useTools = !!toolCtx;
-    let repaired = false;
+    if (!res1.ok) {
+      const txt = await res1.text();
+      console.error(`[sdr] gateway ${res1.status}: ${txt.slice(0, 300)}`);
+      return null;
+    }
 
-    for (let iter = 0; iter < 6; iter++) {
-      // gpt-5* / o1 / o3 só aceitam temperature=1
-      const fixedTempModel = /(gpt-5|o1|o3)/i.test(endpoint.model);
-      const body: Record<string, unknown> = {
-        model: endpoint.model,
-        messages,
-        temperature: fixedTempModel ? 1 : temperature,
-      };
-      if (useTools) {
-        body.tools = AGENT_TOOLS;
-        body.tool_choice = "auto";
+    const data1 = await res1.json();
+    const choice1 = data1?.choices?.[0];
+    const msg1 = choice1?.message;
+
+    // If model called a tool, execute it and make a second call
+    if (choice1?.finish_reason === "tool_calls" && msg1?.tool_calls?.length > 0) {
+      const toolMessages: unknown[] = [msg1];
+
+      for (const toolCall of msg1.tool_calls) {
+        const fnName: string = toolCall?.function?.name ?? "";
+        let args: Record<string, string> = {};
+        try { args = JSON.parse(toolCall?.function?.arguments ?? "{}"); } catch { /* */ }
+
+        let result = "";
+        if (fnName === "listar_horarios_disponiveis") {
+          result = await listAvailableSlots(tenantId, timezone);
+        } else if (fnName === "criar_agendamento") {
+          result = await bookAppointment(tenantId, leadId, args.tipo_consulta ?? "", args.data_hora ?? "", timezone);
+        } else if (fnName === "transferir_para_humano") {
+          await adminClient.from("notifications").insert({
+            tenant_id: tenantId,
+            title: "Cliente pediu atendente humano",
+            body: "A IA SDR transferiu o cliente para atendimento humano.",
+            type: "appointment_attention",
+          }).then(() => {}, () => {});
+          result = "ok: notificação enviada à equipe";
+        } else {
+          result = "ferramenta desconhecida";
+        }
+
+        console.log(`[sdr-tool] ${fnName} → ${result.slice(0, 120)}`);
+        toolMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: result,
+        });
       }
 
-      const res = await fetch(endpoint.url, {
-        method: "POST",
-        headers: endpoint.headers,
-        body: JSON.stringify(body),
+      const res2 = await callLovableGateway({
+        model: "google/gemini-3-flash-preview",
+        messages: [...baseMessages, ...toolMessages],
+        temperature,
       });
 
-      if (!res.ok) {
-        const txt = await res.text();
-        console.error(`[sdr] ${endpoint.provider} ${res.status}: ${txt.slice(0, 300)}`);
+      if (!res2.ok) {
+        const txt = await res2.text();
+        console.error(`[sdr] gateway2 ${res2.status}: ${txt.slice(0, 300)}`);
         return null;
       }
-      const data = await res.json();
-      const msg = data?.choices?.[0]?.message;
-      const toolCalls = msg?.tool_calls;
-
-      if (Array.isArray(toolCalls) && toolCalls.length > 0 && useTools) {
-        // Anexa a mensagem do assistant (com tool_calls) e resultados
-        messages.push(msg);
-        for (const tc of toolCalls) {
-          const name = tc?.function?.name;
-          const argsJson = tc?.function?.arguments ?? "{}";
-          console.log(`[sdr:tool] iter=${iter} lead=${toolCtx!.leadId} call=${name} args=${String(argsJson).slice(0, 200)}`);
-          const result = await executeToolCall(adminClient, toolCtx!, name, argsJson);
-          console.log(`[sdr:tool] iter=${iter} result=${result.slice(0, 200)}`);
-          messages.push({
-            role: "tool",
-            tool_call_id: tc.id,
-            content: result,
-          });
-        }
-        continue; // pede a próxima geração à IA com os resultados
-      }
-
-      const raw = msg?.content;
-      const reply = typeof raw === "string" && raw.trim() ? raw.trim() : null;
-      if (!reply) return null;
-
-      // Guarda-corpo de runtime: valida a resposta antes de enviar.
-      const check = validateOutgoingReply(reply);
-      if (check.ok) return reply;
-
-      console.warn(`[sdr] resposta violou regras: ${check.reasons.join(" | ")}`);
-      if (repaired) return reply; // já tentamos uma vez — envia mesmo assim (nunca silêncio)
-      repaired = true;
-      messages.push(msg);
-      messages.push({
-        role: "system",
-        content:
-          `Sua última resposta violou as regras obrigatórias: ${check.reasons.join("; ")}. ` +
-          "Reescreva a mesma mensagem corrigindo essas violações, mantendo o tom e o objetivo. " +
-          "Máximo UMA pergunta, sem termos proibidos, sem perguntas genéricas.",
-      });
-      continue;
+      const data2 = await res2.json();
+      const reply = data2?.choices?.[0]?.message?.content;
+      return typeof reply === "string" && reply.trim() ? reply.trim() : null;
     }
-    console.warn("[sdr] loop de tools esgotou as iterações");
-    return null;
+
+    // No tool calls — direct reply
+    const reply = msg1?.content;
+    return typeof reply === "string" && reply.trim() ? reply.trim() : null;
   } catch (e) {
     console.error("[sdr] erro chamando gateway:", e instanceof Error ? e.message : String(e));
     return null;
+  }
+}
+
+const SDR_FALLBACK_REPLY =
+  "Tive uma instabilidade aqui, mas ja deixei sua mensagem registrada. A equipe vai te responder assim que possivel.";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function clampInt(value: unknown, fallback: number, min: number, max: number): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+async function acquireConversationLock(tenantId: string, phone: string, ttlSeconds = 45): Promise<boolean> {
+  try {
+    const { data, error } = await adminClient.rpc("acquire_whatsapp_processing_lock", {
+      _tenant_id: tenantId,
+      _recipient_phone: phone,
+      _ttl_seconds: ttlSeconds,
+    });
+    if (error) {
+      console.error("[sdr-lock] acquire erro:", error.message);
+      return true;
+    }
+    return data === true;
+  } catch (e) {
+    console.error("[sdr-lock] acquire exception:", e instanceof Error ? e.message : String(e));
+    return true;
+  }
+}
+
+async function releaseConversationLock(tenantId: string, phone: string): Promise<void> {
+  try {
+    const { error } = await adminClient.rpc("release_whatsapp_processing_lock", {
+      _tenant_id: tenantId,
+      _recipient_phone: phone,
+    });
+    if (error) console.error("[sdr-lock] release erro:", error.message);
+  } catch (e) {
+    console.error("[sdr-lock] release exception:", e instanceof Error ? e.message : String(e));
   }
 }
 
@@ -226,39 +424,6 @@ async function sendWhatsAppText(token: string, phone: string, text: string): Pro
     return false;
   }
 }
-
-// Hand-off silencioso: se um atendente humano enviou qualquer mensagem para
-// este número nos últimos 30 min, a IA não intervém — a conversa está sendo
-// conduzida por uma pessoa. Considera "humano" qualquer outbound cujo
-// sender_name NÃO seja "IA SDR".
-const HUMAN_ACTIVE_WINDOW_MS = 30 * 60_000;
-async function humanRecentlyActive(
-  admin: ReturnType<typeof createClient>,
-  tenantId: string,
-  phone: string,
-): Promise<boolean> {
-  try {
-    const since = new Date(Date.now() - HUMAN_ACTIVE_WINDOW_MS).toISOString();
-    const { data } = await admin
-      .from("whatsapp_message_logs")
-      .select("sender_name")
-      .eq("tenant_id", tenantId)
-      .eq("recipient_phone", phone)
-      .eq("status", "sent")
-      .gte("sent_at", since)
-      .order("sent_at", { ascending: false })
-      .limit(5);
-    return (data ?? []).some((r: any) => {
-      const s = String(r?.sender_name ?? "").trim();
-      return s.length > 0 && s !== "IA SDR";
-    });
-  } catch (e) {
-    // Fail-CLOSED: na dúvida, a IA não responde (evita atropelar atendente humano).
-    console.warn("[sdr] humanRecentlyActive falhou (fail-closed, IA não responde):", e instanceof Error ? e.message : String(e));
-    return true;
-  }
-}
-
 
 // ── Horário de expediente ─────────────────────────────────────────────────
 type BusinessHours = Record<string, [string, string] | null>;
@@ -308,59 +473,16 @@ function buildHoursContext(hours: BusinessHours | null, timezone: string): strin
   }
 
   const todayStr = today ? `${today[0]}–${today[1]}` : "fechado";
-  const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
-  const mm = String(minutes % 60).padStart(2, "0");
-  const dateParts = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: timezone,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(now);
-  const nowLabel = `AGORA é ${dateParts}, ${hh}:${mm} (${DAY_LABEL_PT[dayKey] ?? dayKey}, fuso ${timezone}). Use ESTA DATA E ESTE ANO para calcular agendamentos e quanto falta antes de oferecer lembretes ou orientações temporais.`;
   if (isOpen) {
-    return `${nowLabel}\nCONTEXTO DE HORÁRIO: estamos DENTRO do expediente. Horário de hoje: ${todayStr}. Você PODE oferecer transferir para um atendente humano.`;
+    return `CONTEXTO DE HORÁRIO (fuso ${timezone}): estamos DENTRO do expediente. Horário de hoje: ${todayStr}. Você PODE oferecer transferir para um atendente humano.`;
   }
-  return `${nowLabel}\nCONTEXTO DE HORÁRIO: estamos FORA do expediente. Horário de hoje: ${todayStr}. Próxima abertura: ${nextLabel}. NÃO ofereça transferir para atendente humano agora. Em vez disso, ofereça agendar uma consulta ou diga que a equipe responderá no próximo horário útil.`;
+  return `CONTEXTO DE HORÁRIO (fuso ${timezone}): estamos FORA do expediente. Horário de hoje: ${todayStr}. Próxima abertura: ${nextLabel}. NÃO ofereça transferir para atendente humano agora. Em vez disso, ofereça agendar uma consulta ou diga que a equipe responderá no próximo horário útil.`;
 }
-
 
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? value as Record<string, unknown> : {};
 }
-
-/** Mascara telefone: mantém só os 4 últimos dígitos. */
-function maskPhone(v: unknown): string | null {
-  const s = typeof v === "string" || typeof v === "number" ? String(v) : "";
-  const digits = s.replace(/\D/g, "");
-  if (!digits) return null;
-  return `***${digits.slice(-4)}`;
-}
-
-/**
- * Log de debug sem PII: só metadados do evento. Nunca grava o corpo da
- * mensagem nem o telefone completo.
- */
-function maskWebhookPayload(b: Record<string, unknown>): Record<string, unknown> {
-  const chat = asObject(b.chat);
-  const message = asObject(b.message);
-  const sender = asObject(b.sender);
-  const text = typeof message.text === "string" ? message.text : "";
-  return {
-    keys: Object.keys(b),
-    event_type: b.EventType ?? b.event ?? b.type ?? null,
-    message_type: message.messageType ?? message.type ?? null,
-    message_id: message.id ?? message.messageid ?? null,
-    from_me: message.fromMe ?? null,
-    has_media: !!(message.mediaUrl ?? message.file ?? message.content),
-    text_length: text.length,
-    chat_id: maskPhone(chat.id ?? chat.wa_chatid ?? message.chatid),
-    sender_id: maskPhone(sender.id ?? message.sender),
-    status: b.status ?? b.state ?? null,
-  };
-}
-
-
 
 function pickString(...vals: unknown[]): string | null {
   for (const v of vals) {
@@ -371,43 +493,20 @@ function pickString(...vals: unknown[]): string | null {
 }
 
 function extractText(msg: Record<string, unknown>): string | null {
-  // uazapi às vezes envia `content` como string JSON: '{"text":"...","contextInfo":...}'
-  // — extrai o `text` interno quando for o caso.
-  const tryParseContent = (v: unknown): string | null => {
-    if (typeof v !== "string") return null;
-    const trimmed = v.trim();
-    if (!trimmed) return null;
-    if (trimmed.startsWith("{") && trimmed.includes('"text"')) {
-      try {
-        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-        const inner = pickString(parsed.text, parsed.body, parsed.caption,
-          (asObject(parsed.message) as any)?.conversation);
-        if (inner) return inner;
-      } catch { /* fallthrough */ }
-    }
-    return trimmed;
-  };
-  const msgMsg = asObject(msg.message);
-  const ext = asObject(msgMsg.extendedTextMessage);
-  return (
-    pickString(msg.text, msg.body, msg.caption) ||
-    tryParseContent(msg.content) ||
-    pickString(
-      msgMsg.conversation,
-      msgMsg.text,
-      msgMsg.body,
-      msgMsg.caption,
-      ext.text,
-      (asObject(msgMsg.imageMessage) as any).caption,
-      (asObject(msgMsg.videoMessage) as any).caption,
-      (asObject(msgMsg.documentMessage) as any).caption,
-    )
+  return pickString(
+    msg.text,
+    msg.body,
+    msg.content,
+    msg.caption,
+    (asObject(msg.message) as any).conversation,
+    (asObject(msg.message) as any).text,
+    (asObject(asObject(msg.message).extendedTextMessage) as any).text,
   );
 }
 
 function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown>): { url: string | null; mime: string | null; kind: string | null } {
   const m = asObject(msg.message);
-  const content = asObject(msg.content); // uazapi: message.content.{URL,mimetype}
+  const content = asObject(msg.content);
   const url = pickString(
     (content as any).URL, (content as any).url,
     msg.mediaUrl, msg.media_url, msg.fileUrl, msg.file_url, msg.url,
@@ -428,7 +527,6 @@ function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown
     (asObject(m.videoMessage) as any).mimetype,
     (asObject(m.documentMessage) as any).mimetype,
   );
-  // uazapi: mediaType = "image" | "ptt" | "audio" | "video" | "document" | "sticker"
   const mediaType = (pickString(msg.mediaType, msg.messageType) || "").toLowerCase();
   let kind: string | null = null;
   if (mediaType.includes("ptt") || mediaType.includes("audio")) kind = "audio";
@@ -445,13 +543,6 @@ function extractMedia(msg: Record<string, unknown>, root: Record<string, unknown
   return { url, mime, kind };
 }
 
-// Extrai contexto de anúncio (Click-to-WhatsApp) do payload ───────────
-// A uazapi propaga o referral do Meta em variações como:
-//   message.contextInfo.externalAdReply
-//   message.ctwaContext / message.adReply
-//   b.ctwaContext / b.referral
-// Quando o lead vem de um anúncio do Meta com botão "Enviar mensagem",
-// esses campos trazem id do anúncio, título, thumb, sourceUrl e ctwa_clid.
 type AdContext = {
   ad_id: string | null;
   ad_name: string | null;
@@ -541,16 +632,10 @@ function extractAdContext(message: Record<string, unknown>, root: Record<string,
 
   return {
     ad_id, ad_name, ad_headline, ad_body, ad_thumbnail_url, ad_source_url, ad_media_type, ctwa_clid,
-    utm_source,
-    utm_medium,
-    utm_campaign,
-    utm_content,
-    utm_term,
+    utm_source, utm_medium, utm_campaign, utm_content, utm_term,
   };
 }
 
-// Baixa/descriptografa mídia via uazapi (URLs mmg.whatsapp.net são criptografadas
-// e não abrem no navegador). Retorna uma URL pública utilizável ou null.
 async function downloadMediaViaUazapi(instanceToken: string, messageId: string): Promise<string | null> {
   try {
     const res = await fetch(`${UAZAPI_BASE_URL}/message/download`, {
@@ -574,7 +659,6 @@ async function downloadMediaViaUazapi(instanceToken: string, messageId: string):
   }
 }
 
-// ── Persistência de mídia no Storage (histórico permanente) ─────────────
 const MEDIA_BUCKET = "whatsapp-media";
 let bucketEnsured = false;
 async function ensureMediaBucket(): Promise<void> {
@@ -608,7 +692,6 @@ function extFromMime(mime: string | null | undefined): string {
   return slash > 0 ? (m.slice(slash + 1).replace(/[^a-z0-9]+/g, "") || "bin") : "bin";
 }
 
-// Baixa a mídia da URL temporária e salva permanentemente no Storage.
 async function persistMediaToStorage(
   tenantId: string,
   mediaUrl: string,
@@ -644,206 +727,18 @@ async function persistMediaToStorage(
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Transcrição de áudio (voice notes / audio messages) ──────────
-// Usamos Google Gemini via chat/completions com input_audio (aceita ogg
-// nativamente); openai/gpt-4o-mini-transcribe rejeita OGG/Opus.
-// ─────────────────────────────────────────────────────────────────────────
-function audioFormatFromMime(mime: string | null | undefined): string | null {
-  if (!mime) return null;
-  const m = mime.split(";")[0].trim().toLowerCase();
-  if (m.startsWith("audio/ogg") || m.includes("opus")) return "ogg";
-  if (m === "audio/mpeg" || m === "audio/mp3") return "mp3";
-  if (m === "audio/wav" || m === "audio/x-wav") return "wav";
-  if (m === "audio/mp4" || m === "audio/m4a" || m === "audio/x-m4a") return "m4a";
-  if (m === "audio/webm") return "webm";
-  if (m === "audio/aac") return "aac";
-  if (m === "audio/flac") return "flac";
-  return null;
-}
-
-async function transcribeAudioFromUrl(
-  mediaUrl: string,
-  mime: string | null | undefined,
-): Promise<string | null> {
-  if (!LOVABLE_API_KEY) {
-    console.warn("[stt] LOVABLE_API_KEY ausente — pulando transcrição");
-    return null;
-  }
-  const fmt = audioFormatFromMime(mime);
-  if (!fmt) {
-    console.warn(`[stt] formato de áudio não suportado: ${mime}`);
-    return null;
-  }
-  try {
-    const res = await fetch(mediaUrl);
-    if (!res.ok) {
-      console.warn(`[stt] fetch áudio falhou: ${res.status}`);
-      return null;
-    }
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    if (bytes.length < 512) {
-      console.warn("[stt] áudio muito curto/vazio");
-      return null;
-    }
-    // Cap ~15 MiB pra evitar payloads absurdos
-    if (bytes.length > 15 * 1024 * 1024) {
-      console.warn("[stt] áudio > 15MiB, pulando");
-      return null;
-    }
-    // base64 em chunks (evita stack overflow com apply)
-    let bin = "";
-    const CHUNK = 0x8000;
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-    }
-    const b64 = btoa(bin);
-
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Lovable-API-Key": LOVABLE_API_KEY,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Transcreva literalmente o áudio a seguir para português do Brasil. Retorne SOMENTE o texto falado, sem comentários, sem introdução, sem timestamps." },
-              { type: "input_audio", input_audio: { data: b64, format: fmt } },
-            ],
-          },
-        ],
-        temperature: 0,
-      }),
-    });
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      console.error(`[stt] gateway ${resp.status}: ${body.slice(0, 300)}`);
-      return null;
-    }
-    const j = await resp.json();
-    const text = String(j?.choices?.[0]?.message?.content ?? "").trim();
-    if (!text) return null;
-    console.log(`[stt] transcrição ok (${text.length} chars): ${text.slice(0, 120)}`);
-    return text;
-  } catch (e) {
-    console.error("[stt] erro:", e instanceof Error ? e.message : String(e));
-    return null;
-  }
-}
-
-// Busca foto de perfil do contato via uazapi (POST /chat/GetNameAndImageURL).
-// Retorna URL pública (CDN da uazapi/WhatsApp). Pode retornar null se o contato
-// não tiver foto, se a privacidade impedir, ou se o endpoint falhar.
-async function fetchUazapiContactImage(
-  instanceToken: string,
-  phone: string,
-): Promise<string | null> {
-  try {
-    const res = await fetch(`${UAZAPI_BASE_URL}/chat/GetNameAndImageURL`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        token: instanceToken,
-      },
-      body: JSON.stringify({ number: phone, preview: false }),
-    });
-    if (!res.ok) {
-      console.warn(`[avatar] uazapi ${res.status} para ${phone}`);
-      return null;
-    }
-    const data = await res.json().catch(() => ({}));
-    const url = pickString(
-      data?.image, data?.imageUrl, data?.imgUrl, data?.profilePicUrl,
-      data?.picture, data?.url, data?.result?.image, data?.result?.imageUrl,
-    );
-    return url || null;
-  } catch (e) {
-    console.warn("[avatar] fetch erro:", e instanceof Error ? e.message : String(e));
-    return null;
-  }
-}
-
-// Baixa a foto de perfil e salva permanentemente no Storage (bucket whatsapp-media)
-// em avatars/{tenantId}/{phone}.{ext}. Devolve o storage path.
-async function persistAvatarToStorage(
-  tenantId: string,
-  phone: string,
-  imageUrl: string,
-): Promise<{ path: string; mime: string } | null> {
-  try {
-    await ensureMediaBucket();
-    const res = await fetch(imageUrl);
-    if (!res.ok) return null;
-    const mime = res.headers.get("content-type") || "image/jpeg";
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    const path = `avatars/${tenantId}/${phone}.${extFromMime(mime)}`;
-    const { error } = await adminClient.storage
-      .from(MEDIA_BUCKET)
-      .upload(path, bytes, { contentType: mime, upsert: true });
-    if (error) {
-      console.error("[avatar] upload erro:", error.message);
-      return null;
-    }
-    return { path, mime };
-  } catch (e) {
-    console.warn("[avatar] persist erro:", e instanceof Error ? e.message : String(e));
-    return null;
-  }
-}
-
-
-// Limpa um identificador de WhatsApp (JID ou telefone) e devolve apenas o número.
-// Retorna null se não for um telefone individual válido (10-13 dígitos).
 function cleanPhone(raw: string | null): string | null {
   if (!raw) return null;
-  // Descarta grupos (@g.us) e broadcast
   if (raw.includes("@g.us") || raw.includes("broadcast") || raw.includes("status@")) return null;
-  // Remove sufixos JID e device-id: "5527...@s.whatsapp.net", "5527...:1@..."
   const noSuffix = raw.split("@")[0].split(":")[0];
-  // Rejeita identificadores internos da uazapi como "r1c11cee3080708" —
-  // ao remover letras, resultam em uma sequência de dígitos que pode ter
-  // 10-13 caracteres e ser erroneamente tratada como telefone brasileiro.
-  // Um telefone real só contém dígitos e caracteres de formatação
-  // ( +, -, espaço, parênteses e ponto).
-  if (/[a-zA-Z]/.test(noSuffix)) return null;
   let d = noSuffix.replace(/\D+/g, "");
   if (d.length < 10 || d.length > 13) return null;
-  // Normaliza para sempre ter DDI 55 (BR) quando o número vier sem código de país.
-  // 10 dígitos = DDD + fixo; 11 dígitos = DDD + celular. Ambos sem DDI → prepend 55.
   if ((d.length === 10 || d.length === 11) && !d.startsWith("55")) {
     d = "55" + d;
   }
   return d;
 }
 
-// Termos que indicam nome COMERCIAL / de empresa (não é primeiro nome de pessoa).
-// Se o pushName do WhatsApp contém qualquer um destes, tratamos como lixo e
-// forçamos a IA a perguntar o nome real do cliente na conversa.
-const BUSINESS_NAME_TERMS = [
-  /\bborracharia\b/i, /\blava\s*(motos|jato|r[áa]pido|car)?\b/i, /\boficina\b/i,
-  /\bmec[âa]nica\b/i, /\bmercado\b/i, /\bmercadinho\b/i, /\bloja\b/i, /\blojas\b/i,
-  /\brestaurante\b/i, /\blanchonete\b/i, /\bpizzaria\b/i, /\bpadaria\b/i,
-  /\bfarm[áa]cia\b/i, /\bcl[íi]nica\b/i, /\bcons[óo]rcio\b/i, /\bimobili[áa]ria\b/i,
-  /\bpet\s*shop\b/i, /\bhotel\b/i, /\bpousada\b/i, /\bsal[ãa]o\b/i, /\bbarbearia\b/i,
-  /\bacademia\b/i, /\bescrit[óo]rio\b/i, /\bcompanhia\b/i, /\bempresa\b/i,
-  /\bltda\b/i, /\bltd\b/i, /\bs\/?a\b/i, /\beireli\b/i, /\bmei\b/i, /\bme\b/i,
-  /\bcomercial\b/i, /\bcom[ée]rcio\b/i, /\bdistribuidora\b/i, /\brevendedora?\b/i,
-  /\bautopeças?\b/i, /\bauto\s+peças?\b/i, /\bposto\b/i, /\bsupermercado\b/i,
-  /\btransporte[s]?\b/i, /\bconstrutora\b/i, /\bengenharia\b/i, /\bcontabilidade\b/i,
-];
-
-function looksLikeBusinessName(name: string | null): boolean {
-  if (!name) return false;
-  return BUSINESS_NAME_TERMS.some((rx) => rx.test(name));
-}
-
-// Valida se um "nome" enviado pelo WhatsApp parece um nome real
-// (não é só dígitos, não é o próprio telefone, não é JID, não é nome de empresa).
 function isValidContactName(name: string | null, phone: string | null): boolean {
   if (!name) return false;
   const n = name.trim();
@@ -851,40 +746,15 @@ function isValidContactName(name: string | null, phone: string | null): boolean 
   if (/^\d+$/.test(n)) return false;
   if (n.includes("@")) return false;
   if (phone && n.replace(/\D+/g, "") === phone) return false;
-  // Precisa ter pelo menos uma vogal — descarta lixo tipo "hhhdh", "kkk", "zzzz".
-  if (!/[aeiouáéíóúâêôãõà]/i.test(n)) return false;
-  // Descarta sequências de 5+ consoantes seguidas (nomes reais raramente têm isso).
-  if (/[bcdfghjklmnpqrstvwxyzç]{5,}/i.test(n)) return false;
-  // Descarta nomes de empresa (Borracharia, Lava Motos, Oficina, etc).
-  if (looksLikeBusinessName(n)) return false;
   return true;
 }
 
-// Detecta se um nome já salvo parece lixo/placeholder (ex: pushName ruim do WhatsApp).
-// Usado para permitir sobrescrever quando o cliente disser o nome real na conversa.
-function looksLikeJunkName(name: string | null): boolean {
-  if (!name) return true;
-  const n = name.trim();
-  if (n.length < 3) return true;
-  if (!/[aeiouáéíóúâêôãõà]/i.test(n)) return true;
-  if (/[bcdfghjklmnpqrstvwxyzç]{4,}/i.test(n)) return true;
-  // Tudo em uma letra repetida (hhh, kkkk)
-  if (/^(.)\1+$/i.test(n.replace(/\s+/g, ""))) return true;
-  // Nome de empresa também é lixo para tratamento pessoal.
-  if (looksLikeBusinessName(n)) return true;
-  return false;
-}
-
-
-// Extrai o primeiro nome de uma string completa
 function firstName(full: string | null | undefined): string | null {
   if (!full) return null;
   const t = full.trim().split(/\s+/)[0];
   return t || null;
 }
 
-// Pede para a IA extrair o nome de uma mensagem curta do lead.
-// Retorna null se não conseguir identificar com confiança.
 async function extractNameFromMessage(message: string): Promise<string | null> {
   if (!LOVABLE_API_KEY) return null;
   try {
@@ -895,7 +765,7 @@ async function extractNameFromMessage(message: string): Promise<string | null> {
         "Lovable-API-Key": LOVABLE_API_KEY,
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "system",
@@ -904,7 +774,7 @@ async function extractNameFromMessage(message: string): Promise<string | null> {
           },
           { role: "user", content: message.slice(0, 300) },
         ],
-        temperature: 1,
+        temperature: 0,
         response_format: { type: "json_object" },
       }),
     });
@@ -937,9 +807,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Shared-secret check — uazapi não assina HMAC, então usamos token
-  // configurável via WHATSAPP_WEBHOOK_SECRET (querystring `secret` ou header
-  // `x-webhook-secret`). Sem isso, qualquer um pode forjar mensagens.
   const expectedSecret = Deno.env.get("WHATSAPP_WEBHOOK_SECRET");
   if (!expectedSecret) {
     console.error("[webhook] WHATSAPP_WEBHOOK_SECRET ausente");
@@ -972,18 +839,16 @@ Deno.serve(async (req) => {
 
     console.log(`[webhook] tenant=${tenantId} event=${eventType} keys=${Object.keys(b).join(",")}`);
 
-    // ── DEBUG: metadados do evento (sem PII; retenção 7 dias via cron) ────
     try {
       await adminClient.from("webhook_debug_logs").insert({
         tenant_id: tenantId,
         event_type: eventType,
-        payload: maskWebhookPayload(b),
+        payload: body,
         received_at: new Date().toISOString(),
       });
     } catch {
       // tabela pode não existir ainda — ignora
     }
-
 
     // ── Connection events ──────────────────────────────────────────────────
     if (eventType.includes("connect") || eventType === "status") {
@@ -999,9 +864,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── Lead events (uazapi "Leads" event) ───────────────────────────────
-    // Quando um contato é identificado como lead de anúncio, a uazapi envia
-    // um evento separado com dados do perfil e possivelmente do anúncio.
+    // ── Lead events ───────────────────────────────────────────────────────
     if (eventType === "lead" || eventType === "leads") {
       const leadPhone = cleanPhone(pickString(b.phone, b.wa_id, b.jid, b.number, b.id));
       const leadName = pickString(b.name, b.pushName, b.notifyName, b.verifiedName);
@@ -1009,11 +872,9 @@ Deno.serve(async (req) => {
       const leadData = asObject(b.lead ?? b.data ?? b.contact ?? b);
 
       if (leadPhone) {
-        // Tenta capturar contexto de anúncio do payload do lead
         const adCtx = extractAdContext(leadData, b);
         console.log(`[webhook] lead event phone=${leadPhone} name=${leadName} ad_id=${adCtx?.ad_id ?? "-"}`);
 
-        // Localiza ou cria lead
         const { data: existing } = await adminClient
           .from("leads")
           .select("id, full_name, source, ad_id, ctwa_clid")
@@ -1031,7 +892,6 @@ Deno.serve(async (req) => {
           }
           if (Object.keys(updates).length) {
             await adminClient.from("leads").update(updates).eq("id", existing.id);
-            console.log(`[webhook] lead ${existing.id} atualizado via evento lead`);
           }
         } else {
           const insert: Record<string, unknown> = {
@@ -1045,7 +905,6 @@ Deno.serve(async (req) => {
           };
           if (adCtx) Object.assign(insert, adCtx, { ad_captured_at: new Date().toISOString() });
           await adminClient.from("leads").insert(insert);
-          console.log(`[webhook] lead criado via evento lead: ${leadPhone}`);
         }
       }
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -1055,18 +914,11 @@ Deno.serve(async (req) => {
     if (eventType.includes("message") || message.id || chat.id) {
       const fromMe = message.fromMe === true || b.fromMe === true || chat.fromMe === true;
 
-      // Tenta vários campos onde o telefone do contato pode estar.
-      // Prioriza chat.id (que normalmente é o JID do contato real).
-      // Prioriza campos que sempre são JIDs reais do WhatsApp
-      // (wa_chatid, message.chatid, remoteJid). O `chat.id` da uazapi pode
-      // ser um identificador interno alfanumérico ("r1c11cee3080708") e vai
-      // por último como fallback.
       const candidates = [
-        chat.wa_chatid, chat.jid, chat.remoteJid, chat.phone, chat.wa_id,
-        message.chatId, message.chatid, message.remoteJid, message.from, message.sender, message.author,
+        chat.id, chat.wa_chatid, chat.jid, chat.remoteJid, chat.phone, chat.wa_id,
         sender.id, sender.jid, sender.phone, sender.wa_id,
+        message.chatId, message.remoteJid, message.from, message.sender, message.author,
         b.sender, b.from, b.phone, b.chatId, b.remoteJid,
-        chat.id,
       ];
       let senderPhone: string | null = null;
       for (const c of candidates) {
@@ -1088,13 +940,12 @@ Deno.serve(async (req) => {
         b.image, b.profilePicUrl, b.avatar,
       );
 
-      let text = extractText(message) || extractText(b);
+      const text = extractText(message) || extractText(b);
       const media = extractMedia(message, b);
       const msgType = media.kind || pickString(message.type, message.messageType, b.messageType) || "text";
 
-      console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} type=${msgType} media=${media.url ? "yes" : "no"} text=${(text || "").slice(0, 80)}`);
+      console.log(`[webhook] msg fromMe=${fromMe} phone=${senderPhone} name=${senderName} type=${msgType} text=${(text || "").slice(0, 80)}`);
 
-      // URLs do WhatsApp (mmg.whatsapp.net) são criptografadas — baixa via uazapi
       let mediaUrl = media.url;
       if (mediaUrl && /whatsapp\.net/.test(mediaUrl)) {
         const instanceToken = pickString(b.token);
@@ -1103,114 +954,41 @@ Deno.serve(async (req) => {
           const downloaded = await downloadMediaViaUazapi(instanceToken, messageId);
           if (downloaded) {
             mediaUrl = downloaded;
-            console.log(`[media] download ok: ${downloaded.slice(0, 120)}`);
           } else {
             console.warn("[media] download falhou, mantendo URL original");
           }
         }
       }
 
-      // ── Mensagem ENVIADA manualmente pelo atendente humano (fromMe) ──
-      // Logamos para que a IA tenha visão completa da conversa quando o
-      // "Modo de Aprendizado" estiver ligado (observa atendimentos humanos)
-      // E, principalmente, para que o CRM reflita em tempo real qualquer
-      // resposta que a atendente digitou no celular (SLA / "Parado em
-      // Leads Prontos há Xh" precisa zerar a contagem nesses casos).
-      if (fromMe && senderPhone) {
+      // ── Mensagem ENVIADA pelo atendente humano (fromMe) ──
+      if (fromMe && senderPhone && text && text.trim()) {
         try {
-          // 1) DEFESA EM PROFUNDIDADE: atualiza diretamente o lead.
-          //    Mesmo que a inserção no log seja deduplicada ou falhe, o
-          //    cronômetro de SLA precisa ser zerado imediatamente — caso
-          //    contrário o CRM mostra "lead parado há Xh" mesmo após a
-          //    atendente já ter respondido pelo WhatsApp.
-          const nowIso = new Date().toISOString();
-          const { data: leadRow } = await adminClient
-            .from("leads")
-            .select("id, status, last_outbound_at")
+          const { data: recent } = await adminClient
+            .from("whatsapp_message_logs")
+            .select("id, body, sent_at")
             .eq("tenant_id", tenantId)
-            .eq("phone", senderPhone)
-            .maybeSingle();
-          if (leadRow) {
-            const leadUpdate: Record<string, unknown> = {
-              last_outbound_at: nowIso,
-              updated_at: nowIso,
-            };
-            // Se ainda estava em "Leads Prontos" (open), move para
-            // "Em Atendimento" — humana já assumiu a conversa.
-            if (leadRow.status === "open") {
-              leadUpdate.status = "in_progress";
-              leadUpdate.custom_column_id = null;
-            }
-            const { error: leadErr } = await adminClient
-              .from("leads")
-              .update(leadUpdate)
-              .eq("id", leadRow.id);
-            if (leadErr) {
-              console.error("[webhook] fromMe lead update erro:", leadErr.message);
-            } else {
-              console.log(`[webhook] fromMe → lead ${leadRow.id} sincronizado (last_outbound_at)`);
-            }
-          }
-
-          // 2) Loga a mensagem (para a IA enxergar o histórico humano).
-          //    Sem dedupe por texto: é mais seguro registrar duplicado do que
-          //    silenciar a mensagem do atendente. Dedupe apenas por
-          //    whatsapp_message_id quando ele existir.
-          if (text && text.trim()) {
-            const waMsgId = pickString(message.messageid, message.id);
-            let dup = false;
-            if (waMsgId) {
-              const { data: existing } = await adminClient
-                .from("whatsapp_message_logs")
-                .select("id")
-                .eq("tenant_id", tenantId)
-                .eq("whatsapp_message_id", waMsgId)
-                .limit(1);
-              dup = !!(existing && existing.length);
-            }
-            if (!dup) {
-              const { error: insErr } = await adminClient
-                .from("whatsapp_message_logs")
-                .insert({
-                  tenant_id: tenantId,
-                  recipient_phone: senderPhone,
-                  message_type: msgType,
-                  status: "sent",
-                  whatsapp_message_id: waMsgId,
-                  body: text,
-                  sender_name: "Atendente",
-                });
-              if (insErr) {
-                console.error("[webhook] fromMe log insert erro:", insErr.message);
-              }
-            }
+            .eq("recipient_phone", senderPhone)
+            .eq("status", "sent")
+            .gte("sent_at", new Date(Date.now() - 30_000).toISOString())
+            .order("sent_at", { ascending: false })
+            .limit(5);
+          const dup = (recent ?? []).some((r: any) => (r.body ?? "").trim() === text.trim());
+          if (!dup) {
+            await adminClient.from("whatsapp_message_logs").insert({
+              tenant_id: tenantId,
+              recipient_phone: senderPhone,
+              message_type: msgType,
+              status: "sent",
+              body: text.slice(0, 500),
+              sender_name: "Atendente",
+            });
           }
         } catch (e) {
-          console.error("[webhook] fromMe erro:", e instanceof Error ? e.message : String(e));
+          console.error("[webhook] log fromMe erro:", e instanceof Error ? e.message : String(e));
         }
       }
 
-      // ── IDEMPOTÊNCIA por whatsapp_message_id ──────────────────────────
-      // O uazapi reentrega eventos. Sem isso, a mesma mensagem virava duas
-      // gerações concorrentes e o lead recebia respostas duplicadas que se
-      // ignoravam. Substitui a antiga comparação de texto em janela de 5 min.
-      const inboundWamid = pickString(message.messageid, message.id);
-      let duplicateInbound = false;
-      if (!fromMe && senderPhone && inboundWamid) {
-        const { data: seen } = await adminClient
-          .from("whatsapp_message_logs")
-          .select("id")
-          .eq("tenant_id", tenantId)
-          .eq("whatsapp_message_id", inboundWamid)
-          .limit(1);
-        duplicateInbound = !!(seen && seen.length);
-        if (duplicateInbound) {
-          console.log(`[webhook] mensagem duplicada ignorada wamid=${inboundWamid}`);
-        }
-      }
-
-      if (!fromMe && senderPhone && !duplicateInbound) {
-        // Persiste a mídia no Storage (histórico permanente) ─────────────
+      if (!fromMe && senderPhone) {
         let mediaStoragePath: string | null = null;
         let finalMime: string | null = media.mime;
         if (mediaUrl) {
@@ -1221,67 +999,28 @@ Deno.serve(async (req) => {
           }
         }
 
-        // ── Transcrição de áudio (voice notes / audio messages) ──────────
-        // Se veio áudio, transcreve com Gemini e mescla no texto pra que:
-        //  1) o chat mostre "🎙️ Áudio: <transcrição>"
-        //  2) a IA SDR receba o conteúdo falado no histórico (não só "áudio")
-        let effectiveText = text;
-        if ((media.kind === "audio") && mediaUrl) {
-          const transcript = await transcribeAudioFromUrl(mediaUrl, finalMime);
-          if (transcript) {
-            const prefix = "🎙️ Áudio: ";
-            effectiveText = effectiveText && effectiveText.trim()
-              ? `${effectiveText.trim()}\n${prefix}${transcript}`
-              : `${prefix}${transcript}`;
-          }
-        }
+        const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
+          tenant_id: tenantId,
+          recipient_phone: senderPhone,
+          message_type: msgType,
+          status: "received",
+          body: text ? text.slice(0, 500) : null,
+          sender_name: senderName,
+          sender_avatar_url: senderAvatarUrl,
+          media_url: mediaUrl,
+          media_mime: finalMime,
+          media_storage_path: mediaStoragePath,
+        });
+        if (logErr) console.error("[webhook] log insert error:", logErr.message);
 
-        // Não polui o histórico com mensagens vazias (sem texto e sem mídia) —
-        // geralmente são eventos de status/notificação mal classificados.
-        const hasText = !!(effectiveText && effectiveText.trim());
-        const hasMedia = !!(mediaUrl || mediaStoragePath);
-        if (!hasText && !hasMedia) {
-          console.log(`[webhook] ignorando msg sem texto/mídia phone=${senderPhone} type=${msgType}`);
-        } else {
-          const { error: logErr } = await adminClient.from("whatsapp_message_logs").insert({
-            tenant_id: tenantId,
-            recipient_phone: senderPhone,
-            message_type: msgType,
-            status: "received",
-            whatsapp_message_id: inboundWamid,
-            body: hasText ? effectiveText : null,
-            sender_name: senderName,
-            sender_avatar_url: senderAvatarUrl,
-            media_url: mediaUrl,
-            media_mime: finalMime,
-            media_storage_path: mediaStoragePath,
-          });
-          if (logErr) console.error("[webhook] log insert error:", logErr.message);
-        }
-
-        // Propaga a transcrição pro fluxo da IA SDR abaixo (histórico, nome, etc.)
-        text = effectiveText;
-
-
-
-        // ── Lead: localiza/cria e captura nome do contato quando possível ─
+        // ── Lead: localiza/cria ─────────────────────────────────────────
         let leadId: string | null = null;
         let leadName: string | null = null;
         let leadAssignedUserId: string | null = null;
-        let leadIaSummary: string | null = null;
-        let leadIaProfile: string | null = null;
-        let leadIaSentiment: string | null = null;
-        let leadIaUrgency: string | null = null;
-        let leadPatientName: string | null = null;
-        let leadPatientRelation: string | null = null;
-        let leadPatientAge: number | null = null;
-        let leadSchedulePrefs: Record<string, unknown> | null = null;
-
         try {
           const { data: existingLead } = await adminClient
             .from("leads")
-            .select("id, full_name, assigned_user_id, status, updated_at, ia_summary, ia_profile, ia_sentiment, ia_urgency, patient_name, patient_relation, patient_age, schedule_preferences")
-
+            .select("id, full_name, assigned_user_id, status, updated_at")
             .eq("tenant_id", tenantId)
             .eq("phone", senderPhone)
             .maybeSingle();
@@ -1290,20 +1029,7 @@ Deno.serve(async (req) => {
             leadId = existingLead.id as string;
             leadName = (existingLead.full_name as string | null) ?? null;
             leadAssignedUserId = (existingLead.assigned_user_id as string | null) ?? null;
-            leadIaSummary = ((existingLead as any).ia_summary as string | null) ?? null;
-            leadIaProfile = ((existingLead as any).ia_profile as string | null) ?? null;
-            leadIaSentiment = ((existingLead as any).ia_sentiment as string | null) ?? null;
-            leadIaUrgency = ((existingLead as any).ia_urgency as string | null) ?? null;
-            leadPatientName = ((existingLead as any).patient_name as string | null) ?? null;
-            leadPatientRelation = ((existingLead as any).patient_relation as string | null) ?? null;
-            leadPatientAge = ((existingLead as any).patient_age as number | null) ?? null;
-            leadSchedulePrefs = ((existingLead as any).schedule_preferences as Record<string, unknown> | null) ?? null;
 
-
-
-            // ── REATIVAÇÃO AUTOMÁTICA (30 dias) ──────────────────────────
-            // Se o lead está em status terminal (lost/showed_up) e o cliente
-            // voltou a falar após +30 dias, reabre preservando 100% do histórico.
             const status = existingLead.status as string | null;
             const updatedAt = existingLead.updated_at as string | null;
             if (status && updatedAt && (status === "lost" || status === "showed_up")) {
@@ -1347,13 +1073,11 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Se o lead existe mas ainda não tem nome, e o WhatsApp trouxe um nome válido, grava
           if (leadId && !leadName && isValidContactName(senderName, senderPhone)) {
             await adminClient.from("leads").update({ full_name: senderName }).eq("id", leadId);
             leadName = senderName;
           }
 
-          // Lead pré-existente sem origem de anúncio ainda? Captura se este evento trouxer.
           if (leadId) {
             const adCtxExisting = extractAdContext(message, b);
             if (adCtxExisting && (adCtxExisting.ad_id || adCtxExisting.ctwa_clid || adCtxExisting.utm_campaign)) {
@@ -1368,307 +1092,128 @@ Deno.serve(async (req) => {
                   .from("leads")
                   .update({ ...adCtxExisting, ad_captured_at: new Date().toISOString() })
                   .eq("id", leadId);
-                console.log(`[lead] origem de anúncio gravada em lead existente ${leadId}`);
               }
             }
           }
-
-          // ── Foto de perfil ────────────────────────────────────────────
-          // Se o webhook trouxe avatar, usa direto. Caso contrário, busca
-          // ativamente via uazapi (só se o lead ainda não tem foto ou se
-          // a foto tem mais de 30 dias). Persiste no Storage (privado) — a
-          // URL bruta do WhatsApp expira; o storage não.
-          try {
-            if (leadId) {
-              const { data: curAvatar } = await adminClient
-                .from("leads")
-                .select("avatar_url, avatar_updated_at")
-                .eq("id", leadId)
-                .maybeSingle();
-              const ageMs = curAvatar?.avatar_updated_at
-                ? Date.now() - new Date(curAvatar.avatar_updated_at as string).getTime()
-                : Infinity;
-              const STALE_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
-              const needsAvatar = !curAvatar?.avatar_url || ageMs > STALE_MS;
-              if (needsAvatar) {
-                let avatarSourceUrl = senderAvatarUrl;
-                if (!avatarSourceUrl) {
-                  const instanceToken = pickString(b.token);
-                  if (instanceToken) {
-                    avatarSourceUrl = await fetchUazapiContactImage(instanceToken, senderPhone);
-                  }
-                }
-                if (avatarSourceUrl) {
-                  const saved = await persistAvatarToStorage(tenantId, senderPhone, avatarSourceUrl);
-                  if (saved) {
-                    await adminClient.from("leads").update({
-                      avatar_url: saved.path,
-                      avatar_updated_at: new Date().toISOString(),
-                    }).eq("id", leadId);
-                    console.log(`[avatar] lead ${leadId} atualizado (${saved.path})`);
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.warn("[avatar] erro:", e instanceof Error ? e.message : String(e));
-          }
-
         } catch (e) {
           console.error("[lead] erro localizar/criar:", e instanceof Error ? e.message : String(e));
         }
 
-
-
-        // ── Confirmação/cancelamento: NÃO é mais decidido por regex ──────
-        // Antes, um "ok" em qualquer contexto marcava a consulta como
-        // confirmada sem a IA saber (dois cérebros decidindo). Agora quem
-        // decide é a IA, pelas tools 'confirmar_agendamento' e
-        // 'cancelar_agendamento', que enxergam o contexto da conversa.
-
-
-        // ── IA SDR: gera e envia resposta automaticamente ────────────────
-        if (text && text.trim()) {
-          // Guard 1: se um atendente humano assumiu o lead, NÃO responde
-          if (leadAssignedUserId) {
-            console.log(`[sdr] pulado: lead ${leadId} atribuído a atendente humano (${leadAssignedUserId})`);
-          } else if (await humanRecentlyActive(adminClient, tenantId, senderPhone)) {
-            // Guard 2: hand-off silencioso — se um humano enviou mensagem
-            // nos últimos 30 min, a IA não intervém, mesmo sem "assumir" o lead.
-            console.log(`[sdr] pulado: humano ativo recentemente na conversa com ${senderPhone}`);
-          } else
-          try {
-            // 1) Busca token da instância
-            const { data: cfg } = await adminClient
-              .from("whatsapp_config")
-              .select("instance_token, is_connected, business_hours, timezone")
-              .eq("tenant_id", tenantId)
-              .maybeSingle();
-
-            if (!cfg?.instance_token || !cfg.is_connected) {
-              console.log("[sdr] pulado: whatsapp não conectado ou sem token");
-            } else {
-              // 2) Carrega últimas 20 mensagens REAIS dessa conversa (inbound + outbound)
-              //    Fonte: whatsapp_message_logs.body (texto completo); status='received' = cliente,
-              //    'sent' = IA/atendente. Antes lia error_message (só respostas truncadas da IA) —
-              //    por isso ela respondia sem contexto nenhum.
-              const { data: hist } = await adminClient
-                .from("whatsapp_message_logs")
-                .select("status, body, transcription, sent_at")
-                .eq("tenant_id", tenantId)
-                .eq("recipient_phone", senderPhone)
-                .order("sent_at", { ascending: false })
-                .limit(20);
-
-              const history = (hist ?? [])
-                .reverse()
-                .map((m: any) => {
-                  const content = (m.body && String(m.body).trim())
-                    || (m.transcription && String(m.transcription).trim())
-                    || "";
-                  return content
-                    ? {
-                        role: m.status === "sent" ? ("assistant" as const) : ("user" as const),
-                        content,
-                      }
-                    : null;
-                })
-                .filter((x): x is { role: "user" | "assistant"; content: string } => !!x);
-
-
-              // 2b) Se ainda não temos nome — OU o nome atual parece lixo (pushName ruim
-              // do WhatsApp tipo "hhhdh") — tenta extrair da mensagem atual do lead.
-              if (leadId && (!leadName || looksLikeJunkName(leadName))) {
-                const extracted = await extractNameFromMessage(text);
-                if (extracted && isValidContactName(extracted, senderPhone) && !looksLikeJunkName(extracted)) {
-                  await adminClient.from("leads").update({ full_name: extracted }).eq("id", leadId);
-                  console.log(`[lead] nome ${leadName ? `sobrescrito (${leadName} → ${extracted})` : `capturado`} da mensagem`);
-                  leadName = extracted;
-                }
+        // ── Detecta pedido de cancelamento/remarcação ────────────────────
+        try {
+          if (leadId && text && text.trim()) {
+            const isCancel = /\b(n[aã]o\s*posso|cancelar|desmarcar|remarcar|n[aã]o\s*vou|n[aã]o\s*consigo)\b/i.test(text);
+            if (isCancel) {
+              const { data: nextAppt } = await adminClient
+                .from("appointments")
+                .select("id")
+                .eq("lead_id", leadId)
+                .in("status", ["pending", "confirmed"])
+                .gt("scheduled_at", new Date().toISOString())
+                .order("scheduled_at", { ascending: true })
+                .limit(1)
+                .maybeSingle();
+              if (nextAppt) {
+                await adminClient.from("notifications").insert({
+                  tenant_id: tenantId,
+                  title: "Lead pediu para remarcar/cancelar",
+                  body: `Mensagem: "${text.slice(0, 140)}"`,
+                  type: "appointment_attention",
+                }).then(() => {}, () => {});
               }
+            }
+          }
+        } catch (e) {
+          console.error("[appt-confirm] erro:", e instanceof Error ? e.message : String(e));
+        }
 
-
-              // 3) Carrega ai_configs + documentos
-              const { data: aiCfg } = await adminClient
-                .from("ai_configs")
-                .select("*")
+        // ── IA SDR ───────────────────────────────────────────────────────
+        if (text && text.trim()) {
+          if (leadAssignedUserId) {
+            console.log(`[sdr] pulado: lead ${leadId} atribuído a atendente humano`);
+          } else {
+            try {
+              const { data: cfg } = await adminClient
+                .from("whatsapp_config")
+                .select("instance_token, is_connected, business_hours, timezone")
                 .eq("tenant_id", tenantId)
                 .maybeSingle();
 
-              // Guard: apenas Piloto Automático controla se a IA responde.
-              // Modo Aprendizado é sempre-observador (não bloqueia respostas) —
-              // a extração de aprendizado acontece em pipeline separado, offline.
-              if ((aiCfg as any)?.autopilot_enabled === false) {
-                console.log(`[sdr] pulado: piloto automático desligado (tenant=${tenantId})`);
+              if (!cfg?.instance_token || !cfg.is_connected) {
+                console.log("[sdr] pulado: whatsapp não conectado ou sem token");
               } else {
-              const { data: docs } = await adminClient
-                .from("ai_knowledge_documents")
-                .select("name, content")
-                .eq("tenant_id", tenantId)
-                .eq("status", "ready");
-              const knowledgeTexts = (docs ?? [])
-                .filter((d: any) => d.content && d.content.trim())
-                .map((d: any) => `[${d.name}]\n${(d.content as string).slice(0, 3000)}`);
-              const defaultRules = await fetchDefaultRulesTemplate();
-              const systemPrompt = buildSystemFromConfig(aiCfg, knowledgeTexts, defaultRules);
-              const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
+                const timezone: string = ((cfg as any).timezone as string) || "America/Sao_Paulo";
 
-              // Marcador de versão do prompt (auditoria em runtime — não há cache no webhook)
-              try {
-                const rawPs = String((aiCfg as any)?.prompt_system ?? "");
-                let h = 0;
-                for (let i = 0; i < rawPs.length; i++) h = ((h << 5) - h + rawPs.charCodeAt(i)) | 0;
-                const promptHash = (h >>> 0).toString(16).padStart(8, "0");
-                console.log(
-                  `[ai_configs] tenant=${tenantId} updated_at=${(aiCfg as any)?.updated_at ?? "?"} prompt_len=${rawPs.length} prompt_hash=${promptHash}`,
-                );
-              } catch (_) { /* noop */ }
+                const { data: hist } = await adminClient
+                  .from("whatsapp_message_logs")
+                  .select("status, body, sent_at")
+                  .eq("tenant_id", tenantId)
+                  .eq("recipient_phone", senderPhone)
+                  .order("sent_at", { ascending: false })
+                  .limit(10);
 
-              // 4) Monta contexto de horário + nome do lead
-              const hoursCtx = buildHoursContext(
-                (cfg as any).business_hours as BusinessHours | null,
-                ((cfg as any).timezone as string) || "America/Sao_Paulo",
-              );
-              const nameCtx = leadName
-                ? `O cliente se chama ${leadName}. Use o primeiro nome dele (${firstName(leadName)}) naturalmente nas respostas, sem repetir em toda mensagem.`
-                : `Você ainda NÃO sabe o nome do cliente. Antes de qualquer qualificação, pergunte o nome dele de forma curta e cordial (uma frase). Quando ele responder, use o primeiro nome dele nas próximas mensagens.`;
-              const iaParts: string[] = [];
-              if (leadIaSummary?.trim()) iaParts.push(`- Resumo do comportamento anterior: ${leadIaSummary.trim()}`);
-              if (leadIaProfile?.trim()) iaParts.push(`- Perfil comportamental: ${leadIaProfile.trim()}`);
-              if (leadIaSentiment?.trim()) iaParts.push(`- Sentimento do cliente: ${leadIaSentiment.trim()}`);
-              if (leadIaUrgency?.trim()) iaParts.push(`- Urgência detectada: ${leadIaUrgency.trim()}`);
-              const iaCtx = iaParts.length
-                ? `CONTEXTO COMPORTAMENTAL DO LEAD (use para personalizar o tom e a abordagem, sem citar literalmente ao cliente):\n${iaParts.join("\n")}`
-                : "";
+                const history = (hist ?? [])
+                  .reverse()
+                  .filter((m: any) => m.body && (m.body as string).trim())
+                  .map((m: any) => ({
+                    role: m.status === "sent" ? ("assistant" as const) : ("user" as const),
+                    content: m.body as string,
+                  }));
 
-              // CONTEXTO DE PACIENTE (quando o paciente do exame ≠ contato do WhatsApp)
-              const patientParts: string[] = [];
-              if (leadPatientName?.trim()) {
-                const rel = leadPatientRelation?.trim() ? ` (${leadPatientRelation.trim()} de ${leadName ?? "quem está falando"})` : "";
-                const age = leadPatientAge ? `, ${leadPatientAge} anos` : "";
-                patientParts.push(
-                  `IMPORTANTE — QUEM VAI FAZER O EXAME NÃO É QUEM ESTÁ FALANDO: o paciente é **${leadPatientName.trim()}**${rel}${age}. Você está conversando com ${leadName ?? "o contato"}, que está agendando PARA essa pessoa. Refira-se ao paciente pelo nome (${firstName(leadPatientName)}) — nunca trate ${leadName ?? "o contato"} como o paciente. Nas perguntas, use "seu ${leadPatientRelation?.trim() || "familiar"}" ou o nome. No agendamento, o nome que aparecerá na agenda será o do paciente.`,
-                );
-              }
-              const prefHorario = (leadSchedulePrefs && (leadSchedulePrefs as any).preferencia_horario) ? String((leadSchedulePrefs as any).preferencia_horario) : "";
-              const restrAgenda = (leadSchedulePrefs && (leadSchedulePrefs as any).restricoes_agenda) ? String((leadSchedulePrefs as any).restricoes_agenda) : "";
-              if (prefHorario) {
-                patientParts.push(
-                  `PREFERÊNCIA DE HORÁRIO já declarada pelo cliente: "${prefHorario}". OBEDEÇA essa preferência ao oferecer horários — se o cliente disse "último horário do dia", ofereça o slot mais tarde disponível. Se disse "de manhã", só ofereça manhã. Nunca ignore essa preferência para propor um horário mais cedo/conveniente.`,
-                );
-              }
-              if (restrAgenda) {
-                patientParts.push(
-                  `RESTRIÇÕES DE AGENDA declaradas: "${restrAgenda}". NÃO ofereça horários que violem essa restrição. Se a restrição eliminar todas as opções do dia, pule para o próximo dia útil.`,
-                );
-              }
-              const patientCtx = patientParts.length ? patientParts.join("\n\n") : "";
-
-              // Instruções de FERRAMENTAS apenas — sem repetir regras de
-              // comportamento (elas vivem em prompt-rules.ts, fonte única).
-              const toolsInstructions =
-                "CONTEXTO DO NEGÓCIO: você atende para uma ÓTICA (não é clínica, não trabalha com convênio — atendimento sempre particular). Vende óculos, lentes e agenda exame de vista com nosso profissional.\n\n" +
-                "FERRAMENTAS DISPONÍVEIS:\n" +
-                "1) atualizar_qualificacao_lead — chame sempre que o cliente disser algo relevante (nome, idade, uso de óculos, paciente, preferência de horário, objeção). Campo a campo, nunca invente.\n" +
-                "2) listar_horarios_disponiveis — obrigatória antes de propor qualquer horário. Não passe 'tipo_exame'.\n" +
-                "3) criar_agendamento — só para agendamento NOVO.\n" +
-                "4) remarcar_agendamento — quando já existe agendamento e o cliente quer mudar. Nunca use criar_agendamento nesse caso.\n" +
-                "5) confirmar_agendamento — quando o cliente confirmar presença no agendamento existente.\n" +
-                "6) cancelar_agendamento — quando pedir explicitamente para cancelar/desmarcar.\n" +
-                "7) transferir_para_humano — reclamação, dúvida clínica complexa, pedido de atendente, ou pergunta de preço sem valor cadastrado.";
-
-
-
-              // Contexto de agendamento ativo — evita a IA perguntar "está tudo certo pra sua consulta?"
-              // quando o lead NÃO tem nada marcado (bug reportado: 15/07 com Adilielson).
-              let apptCtx = "";
-              try {
-                if (leadId) {
-                  const nowIso = new Date().toISOString();
-                  const { data: nextAppt } = await adminClient
-                    .from("appointments")
-                    .select("scheduled_at, status, type_exam")
-                    .eq("lead_id", leadId)
-                    .in("status", ["pending", "confirmed"])
-                    .gt("scheduled_at", nowIso)
-                    .order("scheduled_at", { ascending: true })
-                    .limit(1)
-                    .maybeSingle();
-                  const { data: lastAppt } = await adminClient
-                    .from("appointments")
-                    .select("scheduled_at, status, type_exam")
-                    .eq("lead_id", leadId)
-                    .order("scheduled_at", { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-                  if (nextAppt) {
-                    apptCtx = `AGENDAMENTO ATIVO DESTE LEAD: exame de vista com nosso profissional em ${new Date(nextAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })} (status: ${nextAppt.status}). Você PODE se referir a esta consulta.`;
-                  } else if (lastAppt) {
-                    apptCtx = `ATENÇÃO: Este lead NÃO tem agendamento futuro. Último registro: ${lastAppt.status} em ${new Date(lastAppt.scheduled_at as string).toLocaleString("pt-BR", { timeZone: (cfg as any).timezone || "America/Sao_Paulo" })}. NÃO pergunte "está tudo certo para sua consulta" nem invente compromissos.`;
-                  } else {
-                    apptCtx = `ATENÇÃO: Este lead NUNCA agendou nada. NÃO faça perguntas do tipo "está tudo certo para sua consulta/agendamento" — não existe. Trate como lead novo e descubra o interesse dele.`;
+                if (leadId && !leadName) {
+                  const extracted = await extractNameFromMessage(text);
+                  if (extracted && isValidContactName(extracted, senderPhone)) {
+                    await adminClient.from("leads").update({ full_name: extracted }).eq("id", leadId);
+                    leadName = extracted;
                   }
                 }
-              } catch (_) { /* noop */ }
 
-              // Resumo dos próximos slots livres — ajuda a IA a não afirmar "não tem horário"
-              // sem consultar a tool. Fonte de verdade continua sendo listar_horarios_disponiveis.
-              let slotsCtx = "";
-              try {
-                const slots = await listAvailableSlots(adminClient as any, tenantId, {});
-                if (slots.length > 0) {
-                  const preview = slots.slice(0, 6).map((s) => s.label).join(" • ");
-                  slotsCtx = `PRÓXIMOS HORÁRIOS LIVRES (prévia — sempre confirme via listar_horarios_disponiveis antes de ofertar): ${preview}.`;
+                const { data: aiCfg } = await adminClient
+                  .from("ai_configs")
+                  .select("*")
+                  .eq("tenant_id", tenantId)
+                  .maybeSingle();
+
+                if ((aiCfg as any)?.training_mode === true) {
+                  console.log(`[sdr] pulado: modo de aprendizado ativo`);
                 } else {
-                  slotsCtx = `PRÉVIA DE HORÁRIOS: nenhum slot livre encontrado nos próximos dias pela agenda. Antes de dizer isso ao cliente, chame 'listar_horarios_disponiveis' para reconfirmar.`;
-                }
-              } catch (_) { /* noop */ }
-
-              const contextNote = [toolsInstructions, hoursCtx, nameCtx, patientCtx, iaCtx, apptCtx, slotsCtx].filter(Boolean).join("\n\n");
-              const reply = await generateSdrReply(
-                systemPrompt,
-                history,
-                contextNote || undefined,
-                temperature,
-                leadId ? { tenantId, leadId, leadName, leadPhone: senderPhone } : null,
-              );
-              // Fallback audível: o lead NUNCA pode ficar sem resposta.
-              // Se o provedor falhou / estourou iterações, manda uma mensagem
-              // neutra e avisa a equipe para assumir a conversa.
-              let finalReply = reply;
-              if (!finalReply) {
-                finalReply =
-                  "Recebi sua mensagem! 😊 Já estou verificando aqui e te retorno em instantes.";
-                console.error(`[sdr] fallback acionado para ${senderPhone} — IA não retornou resposta`);
-                try {
-                  await adminClient.from("notifications").insert({
-                    tenant_id: tenantId,
-                    title: "IA não conseguiu responder um lead",
-                    message: `Assuma a conversa com ${leadName ?? senderPhone} — a IA falhou ao gerar resposta.`,
-                    category: "system_error",
-                    link: "/chat",
+                  const { data: docs } = await adminClient
+                    .from("ai_knowledge_documents")
+                    .select("name, content")
+                    .eq("tenant_id", tenantId)
+                    .eq("status", "ready");
+                  const knowledgeTexts = (docs ?? [])
+                    .filter((d: any) => d.content && d.content.trim())
+                    .map((d: any) => `[${d.name}]\n${(d.content as string).slice(0, 3000)}`);
+                  const systemPrompt = buildSdrSystemPrompt(aiCfg, knowledgeTexts, {
+                    hoursContext: buildHoursContext(
+                      (cfg as any).business_hours as BusinessHours | null,
+                      timezone,
+                    ),
+                    leadName,
+                    leadFirstName: leadName ? firstName(leadName) : null,
                   });
-                } catch (_) { /* noop */ }
+                  const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
+
+                  const reply = await generateSdrReply(systemPrompt, history, temperature, tenantId, leadId, timezone);
+                  const outboundText = reply || SDR_FALLBACK_REPLY;
+
+                  const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, outboundText);
+                  await adminClient.from("whatsapp_message_logs").insert({
+                    tenant_id: tenantId,
+                    recipient_phone: senderPhone,
+                    message_type: "text",
+                    status: sent ? "sent" : "failed",
+                    body: outboundText.slice(0, 500),
+                    failure_reason: sent ? null : "Falha ao enviar via WhatsApp",
+                    sender_name: reply ? "IA SDR" : "IA SDR (fallback)",
+                  });
+                  console.log(`[sdr] resposta ${sent ? "enviada" : "falhou"} para ${senderPhone}`);
+                }
               }
-              {
-                const reply = finalReply;
-                // 4) Envia pelo WhatsApp
-                const sent = await sendWhatsAppText(cfg.instance_token, senderPhone, reply);
-                // 5) Loga a resposta da IA
-                await adminClient.from("whatsapp_message_logs").insert({
-                  tenant_id: tenantId,
-                  recipient_phone: senderPhone,
-                  message_type: "text",
-                  status: sent ? "sent" : "failed",
-                  body: reply,
-                  sender_name: "IA SDR",
-                });
-                console.log(`[sdr] resposta ${sent ? "enviada" : "falhou"} para ${senderPhone}`);
-              }
-              }
+            } catch (e) {
+              console.error("[sdr] erro:", e instanceof Error ? e.message : String(e));
             }
-          } catch (e) {
-            console.error("[sdr] erro:", e instanceof Error ? e.message : String(e));
           }
         }
       }
