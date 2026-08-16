@@ -634,7 +634,7 @@ function Chat() {
                   onClick={() => {
                     setSelectedPhone(conv.phone)
                     setActiveTab('lead')
-                    navigate({ to: '/chat', search: { phone: conv.phone } })
+                    navigate({ to: '/chat', search: { phone: conv.phone, stage: undefined } })
                   }}
                   className={cn(
                     "p-5 pr-6 md:pr-5 border-b border-[#E3E6EB]/50 cursor-pointer transition-all flex gap-4 relative hover:bg-white group",

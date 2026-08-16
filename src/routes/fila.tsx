@@ -63,7 +63,7 @@ function FilaAtendimento() {
       qc.invalidateQueries({ queryKey });
       qc.invalidateQueries({ queryKey: ['leads', tenantId] });
       toast.success('Lead atribuído a você');
-      navigate({ to: '/chat', search: { phone: lead.phone ?? undefined } });
+      navigate({ to: '/chat', search: { phone: lead.phone ?? undefined, stage: undefined } });
     },
     onError: (e: any) => toast.error(`Erro ao pegar lead: ${e.message}`),
   });
