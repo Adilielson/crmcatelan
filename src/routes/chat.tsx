@@ -39,9 +39,9 @@ import { Label } from '@/components/ui/label'
 
 export const Route = createFileRoute('/chat')({
   validateSearch: (search: Record<string, unknown>) => ({
-    phone: typeof search.phone === 'string' ? search.phone : undefined,
-    stage: typeof search.stage === 'string' ? search.stage : undefined,
-  } as const),
+    phone: (search.phone as string) || undefined,
+    stage: (search.stage as string) || undefined,
+  }),
   component: Chat,
 })
 
