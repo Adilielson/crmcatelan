@@ -30,11 +30,6 @@ export function FollowupContextBlock({ leadId }: { leadId: string }) {
         </div>
       )}
       
-      {summary.prescription_valid_until && (
-        <div className="text-[10px] text-amber-700">
-          Receita até {format(new Date(summary.prescription_valid_until), 'MM/yy')}
-        </div>
-      )}
       {summary.treatments && summary.treatments.length > 0 && (
         <div>Tratamentos: {summary.treatments.join(', ')}</div>
       )}

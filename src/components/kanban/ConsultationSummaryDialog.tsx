@@ -152,18 +152,6 @@ export function ConsultationSummaryDialog({ lead, open, onOpenChange, moveToFoll
             </div>
           </section>
 
-          {/* Receita */}
-          <section className="grid gap-3">
-            <h4 className="text-xs font-black uppercase tracking-widest text-gray-500">Receita (opcional)</h4>
-            <div className="grid gap-2">
-              <Label>Validade da receita</Label>
-              <Input
-                type="date"
-                value={form.prescription_valid_until ?? ''}
-                onChange={(e) => set('prescription_valid_until', e.target.value || null)}
-              />
-            </div>
-          </section>
 
           {/* Recomendações */}
           <section className="grid gap-3">

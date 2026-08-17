@@ -171,9 +171,6 @@ export function LeadProfilePanel({
                 {summary.lens_type && <span> • {summary.lens_type}</span>}
               </div>
             )}
-            {summary.prescription_valid_until && (
-              <div className="text-[10px]">Receita até {summary.prescription_valid_until}</div>
-            )}
             {summary.treatments && summary.treatments.length > 0 && (
               <div>Tratamentos: {summary.treatments.join(', ')}</div>
             )}

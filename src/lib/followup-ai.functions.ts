@@ -50,9 +50,6 @@ function buildPrompt(args: {
       ctx.push(`Necessidade visual: ${NEEDS_LABEL[summary.needs_glasses] ?? summary.needs_glasses}.`);
     }
     if (summary.lens_type) ctx.push(`Tipo de lente avaliado: ${summary.lens_type}.`);
-    if (summary.prescription_valid_until) {
-      ctx.push(`Receita válida até: ${summary.prescription_valid_until}.`);
-    }
     if (Array.isArray(summary.treatments) && summary.treatments.length) {
       ctx.push(`Tratamentos sugeridos: ${summary.treatments.join(", ")}.`);
     }
