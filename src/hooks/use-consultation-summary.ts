@@ -10,7 +10,7 @@ export interface ConsultationSummary {
   filled_by: string | null;
   needs_glasses: 'yes' | 'no' | 'reading' | 'distance' | 'both' | null;
   lens_type: string | null;
-  prescription_valid_until: string | null;
+  
   frame_recommendation: string | null;
   treatments: string[] | null;
   price_range_presented: string | null;

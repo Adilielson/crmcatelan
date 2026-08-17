@@ -61,7 +61,6 @@ export function ConsultationSummaryDialog({ lead, open, onOpenChange, moveToFoll
         setForm({
           needs_glasses: existing.needs_glasses,
           lens_type: existing.lens_type,
-          prescription_valid_until: existing.prescription_valid_until,
           frame_recommendation: existing.frame_recommendation,
           price_range_presented: existing.price_range_presented,
           products_shown: existing.products_shown,
