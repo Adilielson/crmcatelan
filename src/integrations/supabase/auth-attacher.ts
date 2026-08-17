@@ -10,8 +10,14 @@ export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
     // We try to get the session, but we also check the local store directly
     // as a fallback for the token to ensure the header is always present 
     // if a session exists.
-    const { data } = await supabase.auth.getSession();
-    let token = data.session?.access_token;
+    let token = null;
+    
+    try {
+      const { data } = await supabase.auth.getSession();
+      token = data.session?.access_token;
+    } catch (err) {
+      console.warn('[auth-attacher] getSession failed, trying localStorage fallback', err);
+    }
     
     if (!token && typeof window !== 'undefined') {
       // Fallback: read directly from localStorage if getSession() returned null
