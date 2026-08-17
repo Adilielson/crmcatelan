@@ -1192,7 +1192,7 @@ Deno.serve(async (req) => {
                     ),
                     leadName,
                     leadFirstName: leadName ? firstName(leadName) : null,
-                  });
+                  }, timezone);
                   const temperature = Number((aiCfg as any)?.model_temperature) || 0.7;
 
                   const reply = await generateSdrReply(systemPrompt, history, temperature, tenantId, leadId, timezone);
