@@ -32,7 +32,22 @@ export function buildSdrSystemPrompt(
   cfg: SdrPromptConfig | null | undefined,
   knowledgeTexts: string[],
   runtime: SdrRuntimeContext = {},
+  timezone: string = "America/Sao_Paulo",
 ): string {
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: timezone, hour: "2-digit", minute: "2-digit", weekday: "long",
+    day: "2-digit", month: "2-digit",
+  });
+  const partsNow = fmt.formatToParts(now);
+  const getP = (t: string) => partsNow.find((p) => p.type === t)?.value ?? "";
+  const hh = getP("hour");
+  const mm = getP("minute");
+  const wd = getP("weekday");
+  const dd = getP("day");
+  const mo = getP("month");
+  const nowCtx = `AGORA são ${hh}:${mm} (${wd}, ${dd}/${mo}, fuso ${timezone}). NUNCA sugira horários sem consultar a ferramenta 'listar_horarios_disponiveis'. Ignore horários que já passaram.`;
+
   const persona = cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT;
   const responseRestrictions = asStringList(cfg?.response_restrictions);
 
@@ -72,7 +87,7 @@ export function buildSdrSystemPrompt(
       "Nome do cliente desconhecido. Objetivo imediato: se ainda nao ficou claro pelo historico, pergunte o nome de forma curta antes de iniciar qualificacao.",
     );
   }
-  if (operational.length) parts.push(`CONTEXTO OPERACIONAL\n${operational.join("\n")}`);
+  if (operational.length) parts.push(`CONTEXTO OPERACIONAL\n${nowCtx}\n${operational.join("\n")}`);
 
   if (cfg?.scheduling_link?.trim()) {
     parts.push(`LINK DE AGENDAMENTO\nUse somente quando fizer sentido na conversa: ${cfg.scheduling_link.trim()}`);
