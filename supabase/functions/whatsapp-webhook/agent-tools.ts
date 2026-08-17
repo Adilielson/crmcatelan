@@ -602,6 +602,7 @@ export async function listAvailableSlots(
   tenantId: string,
   opts: { tipo_exame?: string; data_preferida?: string; periodo?: string },
 ): Promise<{ iso: string; label: string; exam?: string }[]> {
+  const now = Date.now();
   // 1) horário da loja
   const { data: hoursRows } = await admin
     .from("agenda_business_hours")
@@ -772,7 +773,7 @@ export async function listAvailableSlots(
       }
 
       const iso = isoAtTz(dayStr, slotStart, tz);
-      if (new Date(iso).getTime() < Date.now() + MIN_LEAD_MINUTES * 60_000) {
+      if (new Date(iso).getTime() < now + MIN_LEAD_MINUTES * 60_000) {
         cursor += slotMin;
         continue;
       }

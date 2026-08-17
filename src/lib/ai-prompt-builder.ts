@@ -46,7 +46,7 @@ export function buildNowContext(timezone: string): string {
   const wd = get("weekday");
   const dd = get("day");
   const mo = get("month");
-  return `AGORA são ${hh}:${mm} (${wd}, ${dd}/${mo}, fuso ${tz}). Use isso para calcular quanto falta para qualquer agendamento antes de oferecer lembretes ou orientações temporais.`;
+  return `AGORA são ${hh}:${mm} (${wd}, ${dd}/${mo}, fuso ${tz}). Use isso para calcular quanto falta para qualquer agendamento antes de oferecer lembretes ou orientações temporais. NUNCA ofereça ou sugira horários de cabeça ou baseados em "hoje". Chame OBRIGATORIAMENTE a ferramenta 'listar_horarios_disponiveis' e ofereça APENAS os slots que ela retornar, pois eles respeitam a disponibilidade real da agenda no momento.`;
 }
 
 export interface BuildSystemPromptOptions {
