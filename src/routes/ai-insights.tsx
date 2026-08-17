@@ -35,16 +35,30 @@ export const Route = createFileRoute('/ai-insights')({
 
 function AiInsightsPage() {
   const fetchFn = useServerFn(getInsightsDashboard);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['ai-insights-dashboard'],
     queryFn: () => fetchFn(),
     staleTime: 60_000,
+    retry: 1,
   });
 
   if (isLoading) {
     return <div className="p-6 text-slate-500">Carregando inteligência de atendimento…</div>;
   }
+  
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card className="p-6 bg-red-50 border-red-200">
+          <h2 className="text-lg font-semibold text-red-900 mb-2">Erro ao carregar insights</h2>
+          <p className="text-sm text-red-700 mb-4">{(error as Error).message || 'Erro desconhecido'}</p>
+        </Card>
+      </div>
+    );
+  }
+  
   if (!data) return <div className="p-6 text-slate-500">Sem dados ainda.</div>;
+
 
   const sentiment = data.sentimentBreakdown || {};
   const pos = sentiment.positive || 0;

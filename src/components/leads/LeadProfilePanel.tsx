@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Brain, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag, Megaphone, ExternalLink } from 'lucide-react';
+import { Brain, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag, Megaphone, ExternalLink, ReceiptText } from 'lucide-react';
 import { DBLead } from '@/hooks/use-leads';
 import { useConsultationSummary } from '@/hooks/use-consultation-summary';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
@@ -8,6 +8,7 @@ import { StageStepper } from '@/components/leads/StageStepper';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { LeadPurchasesCard } from '@/components/leads/LeadPurchasesCard';
 import { cn } from '@/lib/utils';
+
 
 
 /**

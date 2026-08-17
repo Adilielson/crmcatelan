@@ -106,7 +106,7 @@ function Dashboard() {
   const range = useMemo(() => computeRange(period, customFrom, customTo), [period, customFrom, customTo])
 
   const fetchMetrics = useServerFn(getDashboardMetrics)
-  const { data: metrics } = useQuery({
+  const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['dashboard-metrics', selectedUnit, period, range.from, range.to],
     queryFn: () => fetchMetrics({ data: {
       unitId: selectedUnit === 'all' ? null : selectedUnit,
@@ -114,7 +114,24 @@ function Dashboard() {
       to: range.to,
     } }),
     enabled: !!user,
+    retry: 1,
   })
+
+  if (isLoading && !metrics) {
+    return <div className="p-10 text-center text-slate-500">Carregando dashboard…</div>
+  }
+
+  if (error) {
+    return (
+      <div className="p-10">
+        <Card className="p-6 bg-red-50 border-red-200">
+          <h2 className="text-lg font-semibold text-red-900 mb-2">Erro ao carregar dashboard</h2>
+          <p className="text-sm text-red-700">{(error as Error).message || 'Erro de carregamento'}</p>
+        </Card>
+      </div>
+    )
+  }
+
 
   const funnelData = metrics?.funnelData ?? []
   const sourceData = metrics?.sourceData ?? []
