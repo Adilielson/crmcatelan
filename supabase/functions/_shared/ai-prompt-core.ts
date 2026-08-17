@@ -46,7 +46,7 @@ export function buildSdrSystemPrompt(
   const wd = getP("weekday");
   const dd = getP("day");
   const mo = getP("month");
-  const nowCtx = `AGORA são ${hh}:${mm} (${wd}, ${dd}/${mo}, fuso ${timezone}). NUNCA sugira horários sem consultar a ferramenta 'listar_horarios_disponiveis'. Ignore horários que já passaram.`;
+  const nowCtx = `AGORA são ${hh}:${mm} (${wd}, ${dd}/${mo}, fuso ${timezone}). NUNCA sugira horários sem consultar a ferramenta 'listar_horarios_disponiveis'. Ignore horários que já passaram. ATENÇÃO: Se for agendar para HOJE, certifique-se de que o horário é posterior a ${hh}:${mm}. Se estiver próximo de ${hh}:${mm}, ofereça apenas horários com pelo menos 20 minutos de antecedência.`;
 
   const persona = cfg?.prompt_system?.trim() || FALLBACK_SYSTEM_PROMPT;
   const responseRestrictions = asStringList(cfg?.response_restrictions);

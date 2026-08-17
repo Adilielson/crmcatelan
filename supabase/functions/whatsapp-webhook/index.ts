@@ -331,10 +331,12 @@ async function generateSdrReply(
         }
 
         console.log(`[sdr-tool] ${fnName} → ${result.slice(0, 120)}`);
+        // Sanitização: Se o resultado for "ok", removemos para não confundir o modelo no prompt
+        const sanitizedResult = result === "ok: notificação enviada à equipe" ? "Solicitação de atendimento humano registrada." : result;
         toolMessages.push({
           role: "tool",
           tool_call_id: toolCall.id,
-          content: result,
+          content: sanitizedResult,
         });
       }
 
