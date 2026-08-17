@@ -61,14 +61,6 @@ export function ConsultationSummaryDialog({ lead, open, onOpenChange, moveToFoll
         setForm({
           needs_glasses: existing.needs_glasses,
           lens_type: existing.lens_type,
-          od_spherical: existing.od_spherical,
-          od_cylindrical: existing.od_cylindrical,
-          od_axis: existing.od_axis,
-          od_addition: existing.od_addition,
-          oe_spherical: existing.oe_spherical,
-          oe_cylindrical: existing.oe_cylindrical,
-          oe_axis: existing.oe_axis,
-          oe_addition: existing.oe_addition,
           prescription_valid_until: existing.prescription_valid_until,
           frame_recommendation: existing.frame_recommendation,
           price_range_presented: existing.price_range_presented,
@@ -163,25 +155,6 @@ export function ConsultationSummaryDialog({ lead, open, onOpenChange, moveToFoll
           {/* Receita */}
           <section className="grid gap-3">
             <h4 className="text-xs font-black uppercase tracking-widest text-gray-500">Receita (opcional)</h4>
-            <div className="grid grid-cols-5 gap-2 text-xs">
-              <div></div>
-              <Label className="text-center">Esférico</Label>
-              <Label className="text-center">Cilíndrico</Label>
-              <Label className="text-center">Eixo</Label>
-              <Label className="text-center">Adição</Label>
-
-              <Label className="self-center font-bold">OD</Label>
-              <Input type="number" step="0.25" value={form.od_spherical ?? ''} onChange={(e) => set('od_spherical', num(e.target.value))} />
-              <Input type="number" step="0.25" value={form.od_cylindrical ?? ''} onChange={(e) => set('od_cylindrical', num(e.target.value))} />
-              <Input type="number" value={form.od_axis ?? ''} onChange={(e) => set('od_axis', num(e.target.value))} />
-              <Input type="number" step="0.25" value={form.od_addition ?? ''} onChange={(e) => set('od_addition', num(e.target.value))} />
-
-              <Label className="self-center font-bold">OE</Label>
-              <Input type="number" step="0.25" value={form.oe_spherical ?? ''} onChange={(e) => set('oe_spherical', num(e.target.value))} />
-              <Input type="number" step="0.25" value={form.oe_cylindrical ?? ''} onChange={(e) => set('oe_cylindrical', num(e.target.value))} />
-              <Input type="number" value={form.oe_axis ?? ''} onChange={(e) => set('oe_axis', num(e.target.value))} />
-              <Input type="number" step="0.25" value={form.oe_addition ?? ''} onChange={(e) => set('oe_addition', num(e.target.value))} />
-            </div>
             <div className="grid gap-2">
               <Label>Validade da receita</Label>
               <Input
