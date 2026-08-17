@@ -10,14 +10,6 @@ export interface ConsultationSummary {
   filled_by: string | null;
   needs_glasses: 'yes' | 'no' | 'reading' | 'distance' | 'both' | null;
   lens_type: string | null;
-  od_spherical: number | null;
-  od_cylindrical: number | null;
-  od_axis: number | null;
-  od_addition: number | null;
-  oe_spherical: number | null;
-  oe_cylindrical: number | null;
-  oe_axis: number | null;
-  oe_addition: number | null;
   prescription_valid_until: string | null;
   frame_recommendation: string | null;
   treatments: string[] | null;
