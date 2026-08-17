@@ -2,7 +2,6 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, ClipboardList, StickyNote, Phone, Mail, DollarSign, Tag, Megaphone, ExternalLink } from 'lucide-react';
 import { DBLead } from '@/hooks/use-leads';
 import { useConsultationSummary } from '@/hooks/use-consultation-summary';
-import { PrescriptionCard } from '@/components/leads/PrescriptionCard';
 import { LeadQuickActions } from '@/components/leads/LeadQuickActions';
 import { StageBadge } from '@/components/leads/StageBadge';
 import { StageStepper } from '@/components/leads/StageStepper';
@@ -154,16 +153,6 @@ export function LeadProfilePanel({
                 ))}
               </div>
             )}
-            {(lead.ia_receita_grau || lead.ia_receita_validade) && (
-              <div className="pt-2 border-t border-gray-100 text-[11px] space-y-0.5">
-                {lead.ia_receita_grau && (
-                  <div><span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Grau:</span> <span className="font-bold text-ink">{lead.ia_receita_grau}</span></div>
-                )}
-                {lead.ia_receita_validade && (
-                  <div><span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Validade:</span> <span className="font-bold text-ink">{lead.ia_receita_validade}</span></div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -181,9 +170,6 @@ export function LeadProfilePanel({
                 <span className="font-bold capitalize">{summary.needs_glasses}</span>
                 {summary.lens_type && <span> • {summary.lens_type}</span>}
               </div>
-            )}
-            {summary.prescription_valid_until && (
-              <div className="text-[10px]">Receita até {summary.prescription_valid_until}</div>
             )}
             {summary.treatments && summary.treatments.length > 0 && (
               <div>Tratamentos: {summary.treatments.join(', ')}</div>
@@ -220,8 +206,6 @@ export function LeadProfilePanel({
         </div>
       )}
 
-      {/* Receita (foto + OCR) */}
-      <PrescriptionCard lead={lead} />
 
       {/* LTV & Compras */}
       <LeadPurchasesCard lead={lead} />

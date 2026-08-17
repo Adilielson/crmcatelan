@@ -21,7 +21,7 @@ const TOUCH_BRIEF: Record<string, string> = {
   followup_d30: "30 dias — comunique novidades, novas coleções ou promoções relevantes.",
   followup_d60: "60 dias — reengajamento mais leve, pode oferecer brinde ou avaliação gratuita.",
   followup_d120: "120 dias (4 meses) — check-in cuidando da saúde visual, sugira nova avaliação.",
-  followup_d180: "180 dias (6 meses) — revisão semestral, lembrar que a receita pode estar próxima do vencimento.",
+  followup_d180: "180 dias (6 meses) — revisão semestral.",
 };
 
 const NEEDS_LABEL: Record<string, string> = {
@@ -32,18 +32,6 @@ const NEEDS_LABEL: Record<string, string> = {
   both: "precisa de multifocal",
 };
 
-function formatPrescription(s: Record<string, any> | null | undefined): string | null {
-  if (!s) return null;
-  const fmt = (n: number | null | undefined) =>
-    n == null ? null : `${n > 0 ? "+" : ""}${n}`;
-  const eye = (label: string, sph: any, cyl: any, add: any) => {
-    const bits = [fmt(sph), fmt(cyl), add != null ? `Ad ${fmt(add)}` : null].filter(Boolean);
-    return bits.length ? `${label} ${bits.join(" / ")}` : null;
-  };
-  const od = eye("OD", s.od_spherical, s.od_cylindrical, s.od_addition);
-  const oe = eye("OE", s.oe_spherical, s.oe_cylindrical, s.oe_addition);
-  return [od, oe].filter(Boolean).join(" • ") || null;
-}
 
 function buildPrompt(args: {
   leadName: string;
@@ -62,11 +50,6 @@ function buildPrompt(args: {
       ctx.push(`Necessidade visual: ${NEEDS_LABEL[summary.needs_glasses] ?? summary.needs_glasses}.`);
     }
     if (summary.lens_type) ctx.push(`Tipo de lente avaliado: ${summary.lens_type}.`);
-    const rx = formatPrescription(summary);
-    if (rx) ctx.push(`Grau: ${rx}.`);
-    if (summary.prescription_valid_until) {
-      ctx.push(`Receita válida até: ${summary.prescription_valid_until}.`);
-    }
     if (Array.isArray(summary.treatments) && summary.treatments.length) {
       ctx.push(`Tratamentos sugeridos: ${summary.treatments.join(", ")}.`);
     }

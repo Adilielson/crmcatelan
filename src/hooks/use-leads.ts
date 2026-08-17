@@ -41,10 +41,6 @@ export interface DBLead {
   ia_urgencia: string | null;
   ia_interesses: string[] | null;
   ia_tags: string[] | null;
-  ia_receita_grau: string | null;
-  ia_receita_validade: string | null;
-  prescription_image_path: string | null;
-  prescription_ocr_at: string | null;
   first_contact_at: string | null;
   ad_id: string | null;
   ad_name: string | null;

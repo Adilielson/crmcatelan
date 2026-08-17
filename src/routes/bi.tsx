@@ -290,9 +290,7 @@ function BIDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-2 border-t">
-                  <div>
-                    Receita IA <Badge variant="secondary">{fmtBRL(data?.revenue.aiRevenue ?? 0)}</Badge>
-                  </div>
+                  <div>Atend. IA: {data?.ai.apptAi ?? 0}</div>
                   <div>Atend. IA: {data?.ai.apptAi ?? 0}</div>
                   <div>Msgs IA: {data?.ai.msgAi ?? 0}</div>
                   <div>Msgs humanas: {data?.ai.msgHuman ?? 0}</div>
